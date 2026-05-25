@@ -29,12 +29,13 @@ echo "🆙 Mise à jour de pip..."
 # 4. Installation des paquets pip listés dans install.sh
 PACKAGES=(
     pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama 
-    requests geohash beautifulsoup4 cryptography jwcrypto secp256k1 
+    requests geohash beautifulsoup4 browser-cookie3 cryptography jwcrypto secp256k1 
     gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt 
     aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 
     matplotlib readability-lxml duniterpy cachetools pydantic-settings 
-    robohash substrate-interface websocket websockets fastapi aiofiles jinja2 
-    python-multipart python-magic uvicorn python-telegram-bot imap_tools
+    robohash substrate-interface websocket-client websockets imap_tools 
+    fastapi aiofiles jinja2 python-multipart python-magic uvicorn 
+    python-telegram-bot
 )
 
 echo "📦 Installation des dépendances Python..."

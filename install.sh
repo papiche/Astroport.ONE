@@ -806,6 +806,27 @@ echo "## DÉTECTION GPU — Installation IA optionnelle ###########"
 ##   INSTALL_OLLAMA=no     → Ignoré même si GPU présent
 ~/.zen/Astroport.ONE/install/install_gpu_ai.sh
 
+# --- INJECTION : CALCUL VALEUR COMPARATIVE CLOUD ---
+_CLOUD_SAVINGS=0
+
+# Valeur de base (Infrastructure de base, Orchestration, P2P vs Centralisé)
+_CLOUD_SAVINGS=$((_CLOUD_SAVINGS + 1200)) # Équivalent VPS + Orchestrateur managé / an
+
+if [[ "${INSTALL_PROFILE}" == "nextcloud" ]]; then
+    _CLOUD_SAVINGS=$((_CLOUD_SAVINGS + 450)) # Équivalent SaaS Cloud 128Go + Maintenance / an
+fi
+
+if [[ "${INSTALL_PROFILE}" == "ai-company" ]]; then
+    # Comparaison avec une instance GPU managée (ex: Lambda Labs ou AWS p3.2xlarge)
+    # Une instance GPU coûte environ 1$ à 3$ / heure. 
+    # En auto-hébergé, on économise le coût d'une instance "On-Demand".
+    _CLOUD_SAVINGS=$((_CLOUD_SAVINGS + 5200)) # Équivalent Instance GPU 24/7 / an
+fi
+
+# Sauvegarde dans le .env pour persistance
+_env_upsert "CLOUD_EMANCIPATION_VALUE" "${_CLOUD_SAVINGS}" "${HOME}/.zen/Astroport.ONE/.env"
+# ---------------------------------------------------
+
 ###############################################################
 echo "## SCORE CARD DU NŒUD ################################"
 ###############################################################
@@ -846,8 +867,17 @@ printf "║  %-58s ║\n" "Disque écriture : ${_disk_write} Mo/s  lecture : ${_
 printf "║  %-58s ║\n" "Power-Score : ${_SCORE}  →  ${_TIER}"
 printf "║  %-58s ║\n" "Rang DRAGON : ${_RANK}"
 echo "╠══════════════════════════════════════════════════════════════╣"
-printf "║  %-58s ║\n" "Valeur matériel estimée  : ${_MVAL} ẐEN"
-printf "║  %-58s ║\n" "PAF hebdomadaire suggérée : ${_PAF_DEFAULT} ẐEN"
+_CLOUD_VAL=$(grep "^CLOUD_EMANCIPATION_VALUE=" "${HOME}/.zen/Astroport.ONE/.env" | cut -d'=' -f2 || echo "0")
+_TOTAL_ECO=$(( _CLOUD_VAL + _TOTAL_SAVINGS )) # _TOTAL_SAVINGS vient de la partie Desktop
+
+printf "║  %-58s ║\n" "Valeur Matériel (CAPITAL) : ${_MVAL} ẐEN"
+printf "║  %-58s ║\n" "Émancipation Cloud (FLOSS) : ${_CLOUD_VAL} € / an"
+if [ "$_TOTAL_SAVINGS" -gt 0 ]; then
+    printf "║  %-58s ║\n" "Émancipation Créative     : ${_TOTAL_SAVINGS} € / an"
+fi
+echo "╠══════════════════════════════════════════════════════════════╣"
+printf "║  %-58s ║\n" "VALEUR TOTALE LIBÉRÉE : ${_TOTAL_ECO} € / an"
+echo "║  (vs Solutions Cloud Propriétaires & Kubernetes Managé)      ║"
 echo "╠══════════════════════════════════════════════════════════════╣"
 echo "║  Participez au concours DRAGON UPlanet :                    ║"
 echo "║  Publiez votre score → kind:30850 (ECONOMY.broadcast.sh)    ║"
@@ -886,7 +916,8 @@ else
 fi
 
 # echo "######### rnostr + nomic + Qdrant ##############"
-# ~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh ## NEED MORE WORK ---TODO migrate strfry plugin to rnsotr rules 
+# ~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh 
+## NEED MORE WORK ---TODO migrate strfry plugin to rnsotr rules 
 echo "######### Enterprise Swarm AI Stack Manager ##############
 TRY IT UPGRADE IT : ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh"
 

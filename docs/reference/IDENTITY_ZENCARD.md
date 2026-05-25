@@ -19,3 +19,24 @@ La ZEN Card peut être élevée au **Niveau Y** via le script `Ylevel.sh`. Cela 
 
 ## Comment l'obtenir ?
 La ZEN Card s'obtient par une contribution au capital (via OpenCollective) ou par un apport en industrie (développement, maintenance) validé par un Capitaine.
+
+## 💰 Valeur d'Émancipation Économique
+
+La ZEN Card n'est pas une dépense, c'est une stratégie d'investissement. 
+
+https://opencollective.com/monnaie-libre
+
+En devenant sociétaire, vous économisez l'équivalent de abonnements Big Tech suivants :
+
+| Service | Équivalent Propriétaire | Coût Cloud Pro (est.) | Statut ZenCard |
+| :--- | :--- | :--- | :--- |
+| **Stockage Cloud** | Google One / Dropbox (200 Go) | 30€ / an | ✅ 128 Go Nextcloud |
+| **IA Générative** | ChatGPT Plus / Midjourney | 480€ / an | ✅ Ollama + ComfyUI |
+| **Recherche IA** | Perplexity Pro | 200€ / an | ✅ Vane / Perplexica |
+| **Infrastructure** | VPS managé / K8s entry level | 400€ / an | ✅ Station Astroport |
+| **Vie Privée** | VPN + No-Tracking services | 100€ / an | ✅ Souveraineté totale |
+| **TOTAL** | **Cloud Non-Libre** | **~1 210€ / an** | **50€ / an** |
+
+**Économie nette pour le Capitaine : ~1 160 € / an.**
+
+> 💡 *En possédant votre infrastructure, vous transformez une rente versée aux GAFAM en un capital productif pour votre communauté locale.*

@@ -100,6 +100,11 @@ show_dashboard() {
         echo -e "  ${W}G1PUB     :${N} ${CAPTAIN_G1PUB:0:20}..."
     echo ""
 
+    _CLOUD_VAL=$(grep "^CLOUD_EMANCIPATION_VALUE=" "${MY_PATH}/.env" | cut -d'=' -f2 || echo "0")
+    if [ "$_CLOUD_VAL" -gt 0 ]; then
+        echo -e "  ${G}🚀 Émancipation Cloud :${N} ${_CLOUD_VAL}€ économisés / an (vs Big Tech)"
+    fi
+    
     ## Paramètres coopératifs (kind 30800/30850)
     section "Paramètres coopératifs (kind 30800/30850)"
     echo -e "  NCARD=${NCARD:-1} Ẑ/sem | ZCARD=${ZCARD:-4} Ẑ/sem | PAF=${PAF:-14} Ẑ/sem | TVA=${TVA_RATE:-0}%"
