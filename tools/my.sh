@@ -11,9 +11,10 @@ Base32Normalize() {
 }
 
 Normalize() {
-    # Tout en minuscules, remplace _ et + par ., supprime =
-    local val=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-    val=${val//_/.}; val=${val//+/.}
+    local val="${1}"
+    [[ -z "$val" ]] && IFS= read -r val
+    val="${val,,}"
+    val="${val//_/.}"; val="${val//+/.}"
     echo "${val//=/}"
 }
 
@@ -85,7 +86,7 @@ myHName() {
 }
 
 zIp() {
-    zipit=$(cat $HOME/.zen/♥Box 2>/dev/null | head -n 1 )
+    zipit=$(head -n 1 "$HOME/.zen/♥Box" 2>/dev/null)
     [ -n "$zipit" ] && echo "$zipit" || false
 }
 
@@ -288,8 +289,8 @@ _setup_player_identity() {
     myPlayerDomain="${p#*@}"
     [ "$myPlayerDomain" = "$p" ] && myPlayerDomain="" # Pas de @ trouvé
     
-    myPlayerUser=$(echo "$myPlayerUser" | tr '[:upper:]' '[:lower:]')
-    myPlayerDomain=$(echo "$myPlayerDomain" | tr '[:upper:]' '[:lower:]')
+    myPlayerUser="${myPlayerUser,,}"
+    myPlayerDomain="${myPlayerDomain,,}"
     
     myReyalp="${myPlayerUser}.${myPlayerDomain}"
     [ -z "$myPlayerDomain" ] && myReyalp="$myPlayerUser"
@@ -485,13 +486,9 @@ _STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt"
 [[ ! -f "$_STRAPFILE" ]] && _STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
 
 if [[ -f "$_STRAPFILE" ]]; then
-    # On lit la ligne 2 directement avec sed et on la découpe en une fois
     _STRAP_LINE2=$(sed -n '2p' "$_STRAPFILE")
-    # Découpage propre des colonnes sans multiplier les processus
-    set -- $_STRAP_LINE2
-    myIPFSGW="$2"
-    myTUBE="$3"
-    # Utilisation du remplacement interne au shell (plus rapide que sed)
+    myIPFSGW=$(echo "$_STRAP_LINE2" | awk '{print $2}')
+    myTUBE=$(echo "$_STRAP_LINE2" | awk '{print $3}')
     myASTROTUBE="https://${myTUBE//ipfs/astroport}"
 fi
 
@@ -526,15 +523,13 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
         # Check cache first
         cache_file="$HOME/.zen/tmp/screen_dimensions"
         if [[ -f "$cache_file" ]]; then
-            large=$(cat "$cache_file" | cut -d '|' -f1)
-            haut=$(cat "$cache_file" | cut -d '|' -f2)
+            IFS='|' read -r large haut < "$cache_file"
         else
             # Get dimensions and cache them
             screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
-            width=$(echo $screen | cut -d 'x' -f 1)
-            height=$(echo $screen | cut -d 'x' -f 2)
-            large=$((width-300))
-            haut=$((height-200))
+            local _w="${screen%%x*}" _h="${screen##*x}"
+            large=$((_w-300))
+            haut=$((_h-200))
             mkdir -p "$HOME/.zen/tmp"
             echo "${large}|${haut}" > "$cache_file"
         fi
@@ -677,14 +672,19 @@ fi
 [[ $myDOMAIN == "localhost" ]] && myDOMAIN="copylaradio.com"
 
 ## NOSTR RELAY ADDRESS
-myRELAY=$(echo $myIPFS | sed 's|https://ipfs|wss://relay|') ## wss://
-[[ $myRELAY == $myIPFS ]] \
-    && myRELAY=$(echo $myIPFS | sed 's~http://~ws://~' | sed 's~8080~7777~' ) ## ws://
+if [[ $myIPFS == https://ipfs* ]]; then
+    myRELAY="${myIPFS/https:\/\/ipfs/wss:\/\/relay}"
+else
+    myRELAY="${myIPFS/http:\/\//ws:\/\/}"
+    myRELAY="${myRELAY/8080/7777}"
+fi
 
 ## UPassport API node
-uSPOT=$(echo $myIPFS | sed 's|https://ipfs|https://u|') ## https://u. OR :54321
-[[ $uSPOT == $myIPFS ]] \
-    && uSPOT=$(echo $myIPFS | sed 's~8080~54321~' )
+if [[ $myIPFS == https://ipfs* ]]; then
+    uSPOT="${myIPFS/https:\/\/ipfs/https:\/\/u}"
+else
+    uSPOT="${myIPFS/8080/54321}"
+fi
 
 ##########################
 myUPLANET="${myIPFS}/ipns/copylaradio.com" ## UPLANET ENTRANCE
@@ -804,7 +804,7 @@ if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
     if [[ -f "$cache_node" ]]; then
         export UPLANETNAME_NODE=$(cat "$cache_node")
     else
-        UPLANETNAME_NODE=$(cat "$HOME/.zen/game/secret.NODE.dunikey" | grep "pub" | cut -d " " -f 2)
+        UPLANETNAME_NODE=$(awk '/^pub:/{print $2}' "$HOME/.zen/game/secret.NODE.dunikey")
         UPLANETNAME_NODE=$("$HOME/.zen/Astroport.ONE/tools/g1pub_to_ss58.py" "${UPLANETNAME_NODE}")
         echo "$UPLANETNAME_NODE" > "$cache_node"
     fi

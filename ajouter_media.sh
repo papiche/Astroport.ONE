@@ -90,21 +90,23 @@ echo ">>> Log file: $LOG_FILE"
 API_URL="http://127.0.0.1:54321"
 
 # Check who is PLAYER ?
-if [[ ${PLAYER} == "" ]]; then
+# Fall back to interactive selection if empty, not an email, or unknown
+if [[ ${PLAYER} == "" ]] || [[ "$PLAYER" != *"@"* ]] || [[ ! -d "$HOME/.zen/game/nostr/${PLAYER}" ]]; then
+    [[ -n "$PLAYER" && "$PLAYER" != *"@"* ]] && echo "INFO: PLAYER '$PLAYER' is not an email — showing selection dialog"
     players=($(ls ~/.zen/game/nostr 2>/dev/null | grep "@"))
     if [[ ${#players[@]} -ge 1 ]]; then
         espeak "SELECT YOUR MULTIPASS"
         OUTPUT=$(zenity --list --width 480 --height 200 --title="Choix du PLAYER" --column="Astronaute" "${players[@]}")
         [[ ${OUTPUT} == "" ]] && espeak "No player selected. EXIT" && exit 1
     else
-        OUTPUT="${players}"
+        OUTPUT="${players[0]}"
     fi
     PLAYER=${OUTPUT}
 else
     OUTPUT=${PLAYER}
 fi
 
-# Validate PLAYER is a known nostr directory (must contain @)
+# Final validation
 if [[ ! -d "$HOME/.zen/game/nostr/${PLAYER}" ]] || [[ "$PLAYER" != *"@"* ]]; then
     echo "ERROR: Invalid PLAYER '$PLAYER' — not found in ~/.zen/game/nostr/ or not an email"
     espeak "Invalid player parameter"
