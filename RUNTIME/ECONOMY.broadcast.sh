@@ -397,6 +397,8 @@ if [[ -s "$HEARTBOX_CACHE" ]]; then
     HW_RAM_GB=$(jq -r '.system.memory.total_gb        // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
     HW_GPU_VRAM=$(jq -r '.capacities.gpu.vram_gb      // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
     HW_GPU_DETECTED=$(jq -r '.capacities.gpu.detected // false' "$HEARTBOX_CACHE" 2>/dev/null || echo false)
+    HW_DISK_WRITE_MBPS=$(jq -r '.capacities.disk_io.write_mbps // 0' "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
+    HW_DISK_READ_MBPS=$(jq -r  '.capacities.disk_io.read_mbps  // 0' "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
     # Capacités réelles mesurées par heartbox (1 MULTIPASS=10Go IPFS, 1 ZenCard=128Go NextCloud)
     NOSTRCARD_SLOTS=$(jq -r '.capacities.nostr_slots   // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
     ZENCARD_SLOTS=$(jq -r  '.capacities.zencard_slots  // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
@@ -566,6 +568,8 @@ CONTENT_JSON=$(cat <<EOF
     "ram_gb":         ${HW_RAM_GB:-0},
     "gpu_vram_gb":    ${HW_GPU_VRAM:-0},
     "gpu_detected":   ${HW_GPU_DETECTED:-false},
+    "disk_write_mbps":  ${HW_DISK_WRITE_MBPS:-0},
+    "disk_read_mbps":   ${HW_DISK_READ_MBPS:-0},
     "machine_value_zen": ${MACHINE_VALUE:-0}
   }
 }
@@ -620,6 +624,7 @@ TAGS_JSON=$(cat <<EOF
   ["hw:dragon_rank", "$HW_RANK"],["hw:provider_ready", "${HW_PROVIDER_READY:-false}"],["hw:storage_ready", "${HW_STORAGE_READY:-false}"],
   ["hw:cpu_cores", "$HW_CPU_CORES"],
   ["hw:ram_gb", "$HW_RAM_GB"],["hw:gpu_vram_gb", "$HW_GPU_VRAM"],
+  ["hw:disk_write_mbps", "${HW_DISK_WRITE_MBPS:-0}"],["hw:disk_read_mbps", "${HW_DISK_READ_MBPS:-0}"],
   ["station:url", "$uSPOT"]
 ]
 EOF
