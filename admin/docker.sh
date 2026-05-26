@@ -3,8 +3,7 @@
 # Gestion Docker pour le Capitaine — pull, update, status, logs
 # Usage : docker.sh [status|update|pull|logs|restart] [service]
 ################################################################
-MY_PATH="$(dirname "$0")"
-MY_PATH="$(cd "$MY_PATH" && pwd)"
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
 . "${MY_PATH}/../tools/my.sh" 2>/dev/null || true
 

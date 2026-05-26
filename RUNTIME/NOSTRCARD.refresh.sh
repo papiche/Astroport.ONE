@@ -950,7 +950,21 @@ ERRHTML
             rm -f ~/.zen/game/nostr/${PLAYER}/U.SOCIETY.end
         else
             echo "U SOCIETY REGISTRATION : $UDATE"
-            
+
+            ## Zine de bienvenue (envoyé une seule fois à la première détection)
+            if [[ ! -s "${HOME}/.zen/game/nostr/${PLAYER}/.usociety_welcome_sent" ]]; then
+                _welcome_tmp=$(mktemp)
+                sed -e "s~_USPOT_~${uSPOT}~g" \
+                    -e "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" \
+                    "${MY_PATH}/../templates/NOSTR/zine/zine_usociety_welcome.html" > "$_welcome_tmp"
+                ${MY_PATH}/../tools/mailjet.sh \
+                    --template "${MY_PATH}/../templates/NOSTR/zine/zine_usociety_welcome.html" \
+                    --expire 7d "${PLAYER}" "$_welcome_tmp" "🌿 Bienvenue dans la coopérative UPlanet !"
+                rm -f "$_welcome_tmp"
+                echo "${TODATE}" > "${HOME}/.zen/game/nostr/${PLAYER}/.usociety_welcome_sent"
+                log "INFO" "U.SOCIETY welcome Zine sent to ${PLAYER}"
+            fi
+
             if [[ -n "$UENDDATE" ]]; then
                 echo "U SOCIETY EXPIRATION : $UENDDATE"
                 

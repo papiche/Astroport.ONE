@@ -191,22 +191,29 @@ while read LINE; do
         fi
 
         if [[ ! ${ASTROG1} ]]; then
-            echo "<html><head><meta charset='UTF-8'>
-            <style>
-                body {
-                    font-family: 'Courier New', monospace;
-                }
-                pre {
-                    white-space: pre-wrap;
-                }
-            </style></head><body>" > ~/.zen/tmp/palpay.bro
-
-            echo "<h1>BRO.<h1>
-            $PLAYER wants to send you ${SHARE} G1...<br>
-            <br>(♥‿‿♥)... on <a href='https://qo-op.com'>UPlanet</a>
-            </body></html>" >> ~/.zen/tmp/palpay.bro
-
-            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${EMAIL}" ~/.zen/tmp/palpay.bro "BRO. $PLAYER INVITATION"
+            cat > ~/.zen/tmp/palpay.bro <<'PALHTML'
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#e8f5e9}
+.c{max-width:600px;margin:0 auto;background:#fff}
+.h{background:linear-gradient(135deg,#1b5e20,#43a047);color:#fff;padding:1.5rem;text-align:center}
+.lbl{font-size:.75rem;opacity:.85;letter-spacing:2px;text-transform:uppercase;margin-bottom:.3rem}
+h1{margin:0;font-size:1.3rem}
+.b{padding:1.5rem}.box{background:#e8f5e9;border-left:4px solid #43a047;padding:1rem;border-radius:6px;margin:.75rem 0}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
+.btn{display:inline-block;background:#2e7d32;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:700;margin:.5rem 0}
+small{color:#666;font-size:.8rem}</style></head><body><div class="c">
+<div class="h"><div class="lbl">(♥‿‿♥) Invitation PalPay</div>
+<h1>BRO — _PLAYER_ vous envoie _SHARE_ Ğ1</h1></div>
+<div class="b"><div class="box">
+<p><strong>_PLAYER_</strong> souhaite vous envoyer <strong>_SHARE_ Ğ1</strong> via UPlanet.</p>
+<p>Pour recevoir ce paiement, créez votre MULTIPASS UPlanet avec <strong>exactement cet email</strong>.</p>
+</div>
+<p style="text-align:center;margin-top:1rem"><a href="https://qo-op.com" class="btn" target="_blank">Rejoindre UPlanet →</a></p>
+<p style="text-align:center;margin-top:1.5rem"><small>UPlanet / G1FabLab — support@qo-op.com</small></p>
+</div></div></body></html>
+PALHTML
+            sed -i "s~_PLAYER_~${PLAYER}~g; s~_SHARE_~${SHARE}~g" ~/.zen/tmp/palpay.bro
+            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${EMAIL}" ~/.zen/tmp/palpay.bro "BRO. ${PLAYER} vous invite sur UPlanet"
             continue
         fi
 
@@ -301,45 +308,63 @@ while read LINE; do
         ZZMAIL=$(echo "${emails[@]}" | sed "s~${ZMAIL}~~g") # remove ZMAIL from ${emails[@]} list
         ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${nb}" "${ASTROG1}" "UPLANET:${UPLANETG1PUB:0:8}:PIN:${TOPIN}:${PLAYER}" 2>/dev/null
 
-        echo "<html><head><meta charset='UTF-8'>
-            <style>
-                body {
-                    font-family: 'Courier New', monospace;
-                }
-                pre {
-                    white-space: pre-wrap;
-                }
-            </style></head><body><h1>BRO ${PLAYER}</h1> : $MSG" > ~/.zen/tmp/${MOATS}/g1message
         ## PINNING IPFS MEDIA - PROOF OF COPY SYSTEM -
-        [[ ! -z $TOPIN ]] \
-            && ipfs pin add $TOPIN \
-            && echo "<br> <a href='${myIPFSGW}${ASTROTW}#${TTITLE}'>${TTITLE}</a>
-                <br>( ${emails[@]} )<br>
-                <h2>PIN: <a href='${myIPFSGW}${TOPIN}'>$TOPIN</a></h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
-            ## lazy mode... NOT FINISHING HTML TAGGING... browser shoud display html page ;)
+        [[ ! -z $TOPIN ]] && ipfs pin add $TOPIN
+        cat > ~/.zen/tmp/${MOATS}/g1message <<PINHTML
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#e3f2fd}
+.c{max-width:600px;margin:0 auto;background:#fff}
+.h{background:linear-gradient(135deg,#0d47a1,#1565c0);color:#fff;padding:1.5rem;text-align:center}
+.lbl{font-size:.75rem;opacity:.85;letter-spacing:2px;text-transform:uppercase;margin-bottom:.3rem}
+h1{margin:0;font-size:1.3rem}h2{font-size:1rem;margin:.75rem 0 .3rem}
+.b{padding:1.5rem}.box{padding:1rem;border-radius:6px;margin:.75rem 0}
+.blue{background:#e3f2fd;border-left:4px solid #1565c0}.green{background:#e8f5e9;border-left:4px solid #43a047}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}a{color:#1565c0}
+.btn{display:inline-block;background:#1565c0;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:700;margin:.5rem 0}
+small{color:#666;font-size:.8rem}</style></head><body><div class="c">
+<div class="h"><div class="lbl">(☼‿‿☼) PIN confirmé</div>
+<h1>BRO — ${PLAYER} : $MSG</h1></div>
+<div class="b">
+<div class="box blue">
+<h2>Tiddler partagé</h2>
+<p><a href="${myIPFSGW}${ASTROTW}#${TTITLE}">${TTITLE}</a></p>
+<p>Destinataires : ${emails[@]}</p>
+</div>
+$([ ! -z "$TOPIN" ] && echo '<div class="box green"><h2>IPFS PIN</h2><p><a href="'"${myIPFSGW}${TOPIN}"'">'"$TOPIN"'</a></p></div>')
+<p style="text-align:center;margin-top:1.5rem"><small>UPlanet / G1FabLab — support@qo-op.com</small></p>
+</div></div></body></html>
+PINHTML
 
-        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "BRO. ${ZMAIL} TW5 PIN"
+        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "BRO. ${ZMAIL} — PIN TW5 confirmé"
 
     else
         ## ${ZMAIL} NOT A PLAYER YET
         ## SEND MESSAGE TO INFORM ${ZMAIL} OF THIS EXISTING TIDDLER
-        echo "<html><head><meta charset='UTF-8'>
-        <style>
-            body {
-                font-family: 'Courier New', monospace;
-            }
-            pre {
-                white-space: pre-wrap;
-            }
-        </style></head><body>
-        <h1>BRO. </h1>
-        <br> <a href='${myIPFSGW}${ASTROTW}#${TTITLE}'>${TTITLE}</a>
-        <br>( ${emails[@]} )<br>
-        <br><b>${TTITLE}</b><br>(✜‿‿✜)
-        ... Join <a href='https://qo-op.com'>UPlanet</a>
-        </body></html>" > ~/.zen/tmp/palpay.bro
+        cat > ~/.zen/tmp/palpay.bro <<INVHTML
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#f3e5f5}
+.c{max-width:600px;margin:0 auto;background:#fff}
+.h{background:linear-gradient(135deg,#4a148c,#7b1fa2);color:#fff;padding:1.5rem;text-align:center}
+.lbl{font-size:.75rem;opacity:.85;letter-spacing:2px;text-transform:uppercase;margin-bottom:.3rem}
+h1{margin:0;font-size:1.3rem}
+.b{padding:1.5rem}.box{background:#f3e5f5;border-left:4px solid #7b1fa2;padding:1rem;border-radius:6px;margin:.75rem 0}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}a{color:#4a148c}
+.btn{display:inline-block;background:#6a1b9a;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:700;margin:.5rem 0}
+small{color:#666;font-size:.8rem}</style></head><body><div class="c">
+<div class="h"><div class="lbl">(✜‿‿✜) Tiddler partagé</div>
+<h1>BRO — ${PLAYER} partage avec vous</h1></div>
+<div class="b"><div class="box">
+<p><strong>${TTITLE}</strong></p>
+<p><a href="${myIPFSGW}${ASTROTW}#${TTITLE}">Voir le tiddler →</a></p>
+<p>Destinataires : ${emails[@]}</p>
+</div>
+<p>${PLAYER} partage ce contenu via UPlanet. Rejoignez la constellation pour participer pleinement.</p>
+<p style="text-align:center;margin-top:1rem"><a href="https://qo-op.com" class="btn" target="_blank">Rejoindre UPlanet →</a></p>
+<p style="text-align:center;margin-top:1.5rem"><small>UPlanet / G1FabLab — support@qo-op.com</small></p>
+</div></div></body></html>
+INVHTML
 
-        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${ZMAIL}" ~/.zen/tmp/palpay.bro "BRO. ${PLAYER} TW5 LINKING"
+        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${ZMAIL}" ~/.zen/tmp/palpay.bro "BRO. ${PLAYER} partage un tiddler avec vous"
 
     fi
 

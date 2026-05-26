@@ -7,9 +7,8 @@
 # SWARM.notifications.sh
 # Affichage des notifications d'abonnements reçus des autres nodes
 ################################################################################
-MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "${MY_PATH}/my.sh"
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+. "${MY_PATH}/../../tools/my.sh"
 
 #######################################################################
 # Affichage des notifications d'abonnements reçus

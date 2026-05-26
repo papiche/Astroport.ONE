@@ -110,109 +110,22 @@ done
 ## SEND CAPTAINEMAIL PLAYER UNPLUG NOTIFICATION
 TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
 
-# Create professional unplug notification email
-UNPLUG_EMAIL=$(mktemp)
-cat > "$UNPLUG_EMAIL" << EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Player Unplugged from Astroport.ONE</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0; margin: -20px -20px 20px -20px; }
-        .content { padding: 20px 0; }
-        .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin: 15px 0; border-radius: 4px; }
-        .warning-box { background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 15px 0; border-radius: 4px; }
-        .success-box { background: #e8f5e8; border-left: 4px solid #4caf50; padding: 15px; margin: 15px 0; border-radius: 4px; }
-        .code { background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0; }
-        .button { display: inline-block; background: #2196f3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 10px 5px; }
-        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px; }
-        h1 { margin: 0; }
-        h2 { color: #333; margin-top: 25px; }
-        .highlight { background: #fff3cd; padding: 2px 4px; border-radius: 3px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Player Unplugged from Astroport.ONE</h1>
-            <p>Station: <strong>${IPFSNODEID: -8}...</strong> | Date: $(date '+%Y-%m-%d %H:%M:%S UTC')</p>
-        </div>
-        
-        <div class="content">
-            <div class="info-box">
-                <h2>📋 Player Information</h2>
-                <p><strong>Player Email:</strong> ${PLAYER}</p>
-                <p><strong>Reason:</strong> ${SHOUT:-"Standard unplug"}</p>
-                <p><strong>GPS Location:</strong> ${LAT}, ${LON}</p>
-            </div>
-            
-            <div class="success-box">
-                <h2>✅ Unplug Operations Completed</h2>
-                <ul>
-                    <li>IPNS keys removed from station</li>
-                    <li>Player directory cleaned up</li>
-                    <li>Node cache cleared</li>
-                </ul>
-            </div>
-            
-            <div class="info-box">
-                <h2>📦 TimeWarp Backup</h2>
-                <p>The player's TW has been backed up to IPFS:</p>
-                <div class="code">
-                    IPFS CID: <strong>${TW}</strong><br>
-                    Access: <a href="${myIPFS}/ipfs/${TW}" target="_blank">${myIPFS}/ipfs/${TW}</a>
-                </div>
-            </div>
-            
-            <div class="warning-box">
-                <h2>⚠️ Important Notes</h2>
-                <ul>
-                    <li>Player can reconnect to any Astroport.ONE station</li>
-                    <li>TimeWarp backup contains all player data</li>
-                    <li>Player may need to recreate ZEN Card on new station</li>
-                </ul>
-            </div>
-            
-            <div class="info-box">
-                <h2>🔑 ZEN Card Address</h2>
-                <div class="code">
-                    $(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null || echo "No ZEN Card wallet address found")
-                </div>
-                <p><small>This address contains ZEN Card capital owning history received from $UPLANETNAME_SOCIETY</small></p>
-            </div>
-            
-            <h2>🛠️ Captain Actions</h2>
-            <p>As the station captain, you may want to:</p>
-            <ul>
-                <li>Verify the unplug was intentional</li>
-                <li>Check if player needs assistance with migration</li>
-                <li>Monitor station resources after player departure</li>
-            </ul>
-            
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="${myIPFS}/ipfs/${TW}" class="button" target="_blank">📱 View Player TimeWarp</a>
-                <a href="${myIPFS}/ipns/${IPFSNODEID}" class="button" target="_blank">🌐 Access Station</a>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p><strong>Astroport.ONE Station Management</strong></p>
-            <p>Station ID: ${IPFSNODEID} | Generated: $(date '+%Y-%m-%d %H:%M:%S UTC')</p>
-            <p>This is an automated notification from your Astroport.ONE station.</p>
-        </div>
-    </div>
-</body>
-</html>
-EOF
-
-# Send the professional notification email
-${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${CAPTAINEMAIL}" "$UNPLUG_EMAIL" "🚀 Player Unplugged: ${PLAYER} - ${SHOUT:-'Standard unplug'}"
-
-# Clean up temporary email file
-rm -f "$UNPLUG_EMAIL"
+_g1pub=$(cat "${HOME}/.zen/game/players/${PLAYER}/.g1pub" 2>/dev/null || echo "N/A")
+_unplug_tmp=$(mktemp)
+sed -e "s~_PLAYER_~${PLAYER}~g" \
+    -e "s~_IPFSNODEID_SHORT_~${IPFSNODEID:0:8}~g" \
+    -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
+    -e "s~_TODATE_~$(date '+%Y-%m-%d %H:%M UTC')~g" \
+    -e "s~_SHOUT_~${SHOUT:-Déconnexion standard}~g" \
+    -e "s~_LAT_~${LAT:-N/A}~g" \
+    -e "s~_LON_~${LON:-N/A}~g" \
+    -e "s~_TW_CID_~${TW}~g" \
+    -e "s~_MY_IPFS_~${myIPFS}~g" \
+    -e "s~_G1PUB_~${_g1pub}~g" \
+    "${MY_PATH}/../templates/NOSTR/captain_player_unplug.html" > "$_unplug_tmp"
+${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/captain_player_unplug.html" \
+    --expire 7d "${CAPTAINEMAIL}" "$_unplug_tmp" "🔌 Joueur déconnecté : ${PLAYER} — ${SHOUT:-Déconnexion standard}"
+rm -f "$_unplug_tmp"
 
 echo "PLAYER IPNS KEYS UNPLUGED"
 echo "#######################"

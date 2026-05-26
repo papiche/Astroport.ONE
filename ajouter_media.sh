@@ -104,6 +104,13 @@ else
     OUTPUT=${PLAYER}
 fi
 
+# Validate PLAYER is a known nostr directory (must contain @)
+if [[ ! -d "$HOME/.zen/game/nostr/${PLAYER}" ]] || [[ "$PLAYER" != *"@"* ]]; then
+    echo "ERROR: Invalid PLAYER '$PLAYER' — not found in ~/.zen/game/nostr/ or not an email"
+    espeak "Invalid player parameter"
+    exit 1
+fi
+
 ####### NO CURRENT ? PLAYER = .current
 [[ ! -d $(readlink ~/.zen/game/players/.current 2>/dev/null) ]] \
     && rm -f ~/.zen/game/players/.current \
@@ -117,9 +124,10 @@ echo "ADMIN : "$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 
 ## NO PLAYER AT ALL
 [[ ${OUTPUT} == "" ]] \
-&& espeak "Astronaut. Please register." \
-&& xdg-open "$API_URL/g1" \
-&& exit 1 \
+    && espeak "Astronaut. Please register." \
+    && xdg-open "$API_URL/g1" \
+    && exit 1
+
 PSEUDO=$(myPlayerUser)
 
 "$MY_PATH/tools/search_for_this_email_in_players.sh" "${PLAYER}" 2>/dev/null || true
@@ -198,11 +206,13 @@ fi
 # On enregistre l'accord silencieusement (sans GUI) pour éviter les dépendances zenity.
 LEGAL_FILE="$HOME/.zen/game/nostr/${PLAYER}/legal"
 if [[ ! -f "$LEGAL_FILE" ]]; then
-    echo "⚖️  Copie privée — En ajoutant ce média sur UPlanet, vous confirmez agir"
-    echo "   dans le cadre de la copie privée (Code de la propriété intellectuelle français)."
-    echo "   Ref: https://fr.wikipedia.org/wiki/Droit_d%27auteur_en_France"
+    zenity --question --width 560 \
+        --title="⚖️ Copie privée — UPlanet" \
+        --text="En ajoutant ce média sur UPlanet, vous confirmez agir dans le cadre de la <b>copie privée</b> (Code de la propriété intellectuelle français).\n\nRef : https://fr.wikipedia.org/wiki/Droit_d%27auteur_en_France\n\n<b>Acceptez-vous ?</b>" \
+        2>/dev/null \
+        || { espeak "Accord refusé. Exit." && exit 1; }
     echo "$G1PUB" > "$LEGAL_FILE"
-    echo "✅ Accord enregistré pour $PLAYER"
+    echo "✅ Accord copie privée enregistré pour $PLAYER"
 fi
 
 ########################################################################

@@ -9,9 +9,8 @@
 # Optimisé pour l'essaim de nodes interconnectés
 ################################################################################
 
-MY_PATH="`dirname \"$0\"`"
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
-. "${MY_PATH}/my.sh"
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+. "${MY_PATH}/../../tools/my.sh"
 
 # Forcer la locale numérique pour éviter les problèmes de virgule/point
 export LC_NUMERIC=C

@@ -8,8 +8,7 @@
 # Focus: Vue d'ensemble économique, statut services, actions rapides
 # Évite les redondances avec captain.sh (embarquement) et zen.sh (transactions)
 ################################################################################
-MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 SCRIPT_DIR=$MY_PATH
 TOOLS_PATH="${MY_PATH}/../tools"
 

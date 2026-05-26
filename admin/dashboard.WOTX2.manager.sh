@@ -6,8 +6,7 @@
 # Usage: dashboard.WOTX2.manager.sh [COMMAND] [OPTIONS]
 # Depends on: nostr_get_events.sh, nostr_send_note.py, strfry relay
 ################################################################################
-MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 TOOLS_PATH="${MY_PATH}/../tools"
 # Source my.sh
 [[ -s "${TOOLS_PATH}/my.sh" ]] \
@@ -22,8 +21,8 @@ BLUE='\033[0;34m'; CYAN='\033[0;36m'; MAGENTA='\033[0;35m'; NC='\033[0m'
 ################################################################################
 # Configuration
 ################################################################################
-NOSTR_GET="${MY_PATH}/nostr_get_events.sh"
-NOSTR_SEND="${MY_PATH}/nostr_send_note.py"
+NOSTR_GET="${TOOLS_PATH}/nostr_get_events.sh"
+NOSTR_SEND="${TOOLS_PATH}/nostr_send_note.py"
 STRFRY_DIR="${HOME}/.zen/strfry"
 STRFRY_BIN="${STRFRY_DIR}/strfry"
 TEMP_DIR="${HOME}/.zen/tmp/wotx2_mgr_$$"
@@ -1394,6 +1393,7 @@ cmd_certify() {
     [[ "$confirm" != "yes" ]] && { log_warning "Annulé."; return 0; }
 
     # Construire les tags pour Kind 30503
+    local aref="30500:${user_hex}:${skill}"
     local tags_json
     tags_json=$(jq -nc \
         --arg d "$skill" \

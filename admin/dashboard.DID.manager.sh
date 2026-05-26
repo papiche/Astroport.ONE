@@ -10,8 +10,7 @@
 #
 # Uses Nostr as source of truth (kind 30800 - NIP-101)
 ################################################################################
-MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 TOOLS_PATH="${MY_PATH}/../tools"
 
 # Source my.sh

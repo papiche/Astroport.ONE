@@ -8,9 +8,8 @@
 # Fast service detection and Prometheus integration for system metrics
 ################################################################################
 
-MY_PATH="`dirname \"$0\"`"
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
-. "${MY_PATH}/my.sh"
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+. "${MY_PATH}/../../tools/my.sh"
 export LC_NUMERIC=C
 
 # Cache file for fast access
@@ -563,17 +562,29 @@ get_fast_capacities() {
     fi
 
     ## ── Vitesse disque (cache ~/.zen/game/disk_bench.cache) ─────────────────────
+    ## Gère GB/s (NVMe), MB/s (SSD/HDD), kB/s (SD card)
+    _dd_to_mbps_local() {
+        local _raw
+        _raw=$(echo "$1" | grep -oE '[0-9.]+ [GkM]B/s' | tail -1)
+        case "$_raw" in
+            *" GB/s") printf "%.0f" "$(echo "${_raw% GB/s} * 1000" | bc 2>/dev/null || echo 0)" ;;
+            *" MB/s") printf "%.0f" "${_raw% MB/s}" ;;
+            *" kB/s") printf "%.0f" "$(echo "${_raw% kB/s} / 1000" | bc 2>/dev/null || echo 0)" ;;
+            *)        echo 0 ;;
+        esac
+    }
     local disk_write_mbps=0
     local disk_read_mbps=0
     local _DISK_CACHE="$HOME/.zen/game/disk_bench.cache"
-    if [[ ! -s "$_DISK_CACHE" ]]; then
+    ## Relance si absent OU contient "0 0" (bench échoué sur GB/s précédemment)
+    if [[ ! -s "$_DISK_CACHE" ]] || grep -q "^0 0$" "$_DISK_CACHE" 2>/dev/null; then
         mkdir -p "$HOME/.zen/game"
         local _tmp_bench _out
         _tmp_bench=$(mktemp)
         _out=$(LANG=C dd if=/dev/zero of="$_tmp_bench" bs=1M count=256 conv=fdatasync 2>&1)
-        disk_write_mbps=$(echo "$_out" | grep -oE '[0-9.]+ MB/s' | tail -1 | grep -oE '^[0-9]+')
+        disk_write_mbps=$(_dd_to_mbps_local "$_out")
         _out=$(LANG=C dd if="$_tmp_bench" of=/dev/null bs=1M 2>&1)
-        disk_read_mbps=$(echo "$_out"  | grep -oE '[0-9.]+ MB/s' | tail -1 | grep -oE '^[0-9]+')
+        disk_read_mbps=$(_dd_to_mbps_local "$_out")
         rm -f "$_tmp_bench"
         echo "${disk_write_mbps:-0} ${disk_read_mbps:-0}" > "$_DISK_CACHE"
     fi

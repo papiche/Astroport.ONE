@@ -7,8 +7,7 @@
 # ASTROPORT MODE CONTROLLER - cron_VRFY.sh
 ########################################################################
 
-MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 ME="${0##*/}"
 
 echo '
@@ -40,7 +39,7 @@ if [[ -f "/opt/soundspot/picoport/picoport_20h12.sh" ]]; then
 else
     IS_PICOPORT=0
     CRON_JOB_NAME="20h12.process.sh"
-    CRON_JOB_CMD="/bin/bash $MY_PATH/../20h12.process.sh"
+    CRON_JOB_CMD="/bin/bash $MY_PATH/../../20h12.process.sh"
     CRON_LOG_FILE="${HOME}/.zen/log/20h12.log"
     
     SVC_MAIN="astroport"
@@ -58,7 +57,7 @@ if [[ -s ~/.zen/GPS ]]; then
     echo ".... Calibrating to ~/.zen/GPS SOLAR 20H12"
     echo "     LAT=$LAT LON=$LON"
     
-    SOLAR20H12=$(${MY_PATH}/solar_time.sh "$LAT" "$LON" 2>/dev/null | tail -n 1)
+    SOLAR20H12=$(${MY_PATH}/../../tools/solar_time.sh "$LAT" "$LON" 2>/dev/null | tail -n 1)
     
     if [[ -z "$SOLAR20H12" || ! "$SOLAR20H12" =~ ^[0-9]+\ [0-9]+$ ]]; then
         echo "WARNING: solar_time.sh returned invalid format, using default 20:12"
@@ -136,7 +135,7 @@ case "$MODE" in
             echo "📡 Déclenchement de la synchronisation constellation..."
             (
                 sleep 15
-                bash "$MY_PATH/../bootstrap_constellation.sh" > ~/.zen/tmp/coucou/bootstrap_on_start.log 2>&1
+                bash "$MY_PATH/../../bootstrap_constellation.sh" > ~/.zen/tmp/coucou/bootstrap_on_start.log 2>&1
             ) &
         fi
 

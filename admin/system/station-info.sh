@@ -3,8 +3,7 @@
 # Affiche les portefeuilles coopératifs et l'état de la station
 # Symlink : ~/.local/bin/station-info
 ################################################################
-MY_PATH="$(dirname "$0")"
-MY_PATH="$(cd "$MY_PATH" && pwd)"
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
 . "${MY_PATH}/../../tools/my.sh" 2>/dev/null
 

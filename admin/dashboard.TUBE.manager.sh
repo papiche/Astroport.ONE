@@ -4,8 +4,7 @@
 # Description: Monitor and manage NostrTube video chain for MULTIPASS users
 # Usage: dashboard.TUBE.manager.sh [COMMAND] [OPTIONS]
 ################################################################################
-MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 TOOLS_PATH="${MY_PATH}/../tools"
 # Source my.sh
 [[ -s "${TOOLS_PATH}/my.sh" ]] \
@@ -19,6 +18,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
 ################################################################################
@@ -26,10 +26,10 @@ NC='\033[0m' # No Color
 ################################################################################
 IPFS_GATEWAY="${myLIBRA:-http://127.0.0.1:8080}"
 UPASSPORT_API="${myHOST:-http://127.0.0.1:54321}"
-NOSTR_GET_EVENTS="${MY_PATH}/nostr_get_events.sh"
-NOSTR_GET_EVENT_BY_ID="${MY_PATH}/nostr_get_event_by_id.sh"
+NOSTR_GET_EVENTS="${TOOLS_PATH}/nostr_get_events.sh"
+NOSTR_GET_EVENT_BY_ID="${TOOLS_PATH}/nostr_get_event_by_id.sh"
 UPLOAD2IPFS="${HOME}/.zen/UPassport/upload2ipfs.sh"
-PUBLISH_NOSTR_VIDEO="${MY_PATH}/publish_nostr_video.sh"
+PUBLISH_NOSTR_VIDEO="${TOOLS_PATH}/publish_nostr_video.sh"
 TEMP_DIR="${HOME}/.zen/tmp/nostr_tube_$$"
 
 ################################################################################
@@ -367,7 +367,7 @@ delete_event_by_id() {
             fi
         fi
         
-        local NOSTR_SEND_NOTE="${MY_PATH}/nostr_send_note.py"
+        local NOSTR_SEND_NOTE="${TOOLS_PATH}/nostr_send_note.py"
         
         if [[ ! -f "$NOSTR_SEND_NOTE" ]]; then
             log_error "nostr_send_note.py not found at: $NOSTR_SEND_NOTE"
@@ -1828,7 +1828,7 @@ ${ipfs_url}
 This message will expire in 28 days (ephemeral)."
                         
                         # Send kind 1 message with ephemeral duration (28 days = 2419200 seconds)
-                        local nostr_send_script="${MY_PATH}/nostr_send_note.py"
+                        local nostr_send_script="${TOOLS_PATH}/nostr_send_note.py"
                         if [[ -f "$nostr_send_script" ]]; then
                             log_info "Sending notification message (kind 1, ephemeral 28d)..."
                             if python3 "$nostr_send_script" \
@@ -2098,29 +2098,6 @@ show_video_details() {
                     if delete_event_by_id "$event_id" "$author_hex" "true" "kind5"; then
                         log_success "Video deleted (kind 5 published)!"
                         sleep 2
-                        return 0
-                    else
-                        log_error "Failed to delete video"
-                        sleep 2
-                    fi
-                fi
-                ;;
-            7)
-                # Delete video with kind 5 (NIP-09)
-                echo ""
-                echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-                echo -e "${YELLOW}Delete with kind 5 (NIP-09)${NC}"
-                echo ""
-                echo -e "This will publish a deletion event (kind 5) according to NIP-09."
-                echo -e "Compliant clients will hide this video from their interface."
-                echo -e "The original video event remains in the database."
-                echo ""
-                read -p "Delete this video with kind 5? (yes/NO): " confirm
-                if [[ "$confirm" == "yes" ]]; then
-                    if delete_event_by_id "$event_id" "$author_hex" "true" "kind5"; then
-                        log_success "Video deleted (kind 5 published)!"
-                        echo ""
-                        read -p "$(echo -e ${CYAN}Press ENTER to return to video list...${NC} )"
                         return 0
                     else
                         log_error "Failed to delete video"

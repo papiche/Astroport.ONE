@@ -319,25 +319,21 @@ for PLAYER in ${PLAYERONE[@]}; do
                     fi
 
                     # Send error email via mailjet
-                    error_message="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; }
-    .error { color: red; font-weight: bold; }
-    .details { background-color: #f5f5f5; padding: 10px; margin: 10px 0; }
-</style></head><body>
-<h2 class='error'>❌ ZENCard Payment Error</h2>
-<div class='details'>
-<p><strong>Player:</strong> ${PLAYER}</p>
-<p><strong>Date:</strong> $TODATE</p>
-<p><strong>Amount HT:</strong> $Gpaf ẐEN</p>
-<p><strong>TVA Amount:</strong> $TVA_AMOUNT ẐEN</p>
-<p><strong>Payment Status:</strong> Main: $([ $payment_success -eq 0 ] && echo "✅" || echo "❌") | TVA: $([ $tva_success -eq 0 ] && echo "✅" || echo "❌")</p>
-<p><strong>Balance:</strong> $COINS G1 ($ZEN ẐEN)</p>
-</div>
-<p>Both payments must succeed for fiscal compliance.</p>
-</body></html>"
-
-                    ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${PLAYER}" <(echo "$error_message") "ZENCard Payment Error - $TODATE"
+                    _pay_ok="$([ $payment_success -eq 0 ] && echo "✅ OK" || echo "❌ Échec")"
+                    _tva_ok="$([ $tva_success -eq 0 ] && echo "✅ OK" || echo "❌ Échec")"
+                    _tmpf=$(mktemp)
+                    sed -e "s~_PLAYER_~${PLAYER}~g" \
+                        -e "s~_TODATE_~${TODATE}~g" \
+                        -e "s~_GPAF_ZEN_~${Gpaf_ZEN:-0}~g" \
+                        -e "s~_TVA_AMOUNT_~${TVA_AMOUNT:-0}~g" \
+                        -e "s~_PAYMENT_OK_~${_pay_ok}~g" \
+                        -e "s~_TVA_OK_~${_tva_ok}~g" \
+                        -e "s~_COINS_~${COINS:-0}~g" \
+                        -e "s~_ZEN_~${ZEN:-0}~g" \
+                        "${MY_PATH}/../templates/NOSTR/zencard_payment_error.html" > "$_tmpf"
+                    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/zencard_payment_error.html" \
+                        --expire 48h "${PLAYER}" "$_tmpf" "❌ Erreur paiement ZEN Card — $TODATE"
+                    rm -f "$_tmpf"
                     echo "Error email sent to ${PLAYER} for payment failure"
                 fi
             else

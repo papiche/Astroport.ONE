@@ -89,24 +89,24 @@ if [ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ]; then
     echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
     ## SEND AN EMAIL ALERT TO PLAYER
-    echo "<html><head><meta charset='UTF-8'>
-<style>
-    body {
-        font-family: 'Courier New', monospace;
-    }
-    pre {
-        white-space: pre-wrap;
-    }
-</style></head><body><a href='$myIPFS/ipns/${ASTRONAUTENS}'>TW LOADING TIMEOUT</a>" > ~/.zen/tmp/result
-    echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
-    echo "<br>" >> ~/.zen/tmp/result
-    echo "<br><a href='${myIPFS}/ipfs/${LASTCHAIN}'>[yesterday]</a>: /ipfs/${LASTCHAIN}" >> ~/.zen/tmp/result
-    echo "<br><a href='${myIPFS}/ipfs/${NOWCHAIN}'>[today]</a>: /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
-    echo "<br>" >> ~/.zen/tmp/result
-    echo "<br> %%% WARNING %%% $try TRY LEFT %%%" >> ~/.zen/tmp/result
-    echo "<br>------------------------------------------------" >> ~/.zen/tmp/result
-    echo "<br>ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}" >> ~/.zen/tmp/result
-    echo "</body></html>" >> ~/.zen/tmp/result
+    cat > ~/.zen/tmp/result <<TWHTML
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#fff8e1}
+.c{max-width:600px;margin:0 auto;background:#fff}.h{background:linear-gradient(135deg,#e65c00,#f9a825);color:#fff;padding:1.5rem;text-align:center}
+.lbl{font-size:.75rem;opacity:.85;letter-spacing:2px;text-transform:uppercase;margin-bottom:.3rem}h1{margin:0;font-size:1.3rem}
+.b{padding:1.5rem}.box{background:#fff8e1;border-left:4px solid #f9a825;padding:1rem;border-radius:6px;margin:.75rem 0}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}a{color:#e65c00}code{background:#f5f5f5;padding:2px 5px;border-radius:3px;font-size:.85rem}
+small{color:#666;font-size:.8rem}</style></head><body><div class="c">
+<div class="h"><div class="lbl">⚠️ Alerte TW — $try essais restants</div>
+<h1><a href="${myIPFS}/ipns/${ASTRONAUTENS}" style="color:#fff">TW : délai de chargement dépassé</a></h1></div>
+<div class="b"><div class="box">
+<p><strong>Hier :</strong> <a href="${myIPFS}/ipfs/${LASTCHAIN}">/ipfs/${LASTCHAIN}</a></p>
+<p><strong>Aujourd'hui :</strong> <a href="${myIPFS}/ipfs/${NOWCHAIN}">/ipfs/${NOWCHAIN}</a></p>
+</div>
+<p><code>ipfs name publish --key=${PLAYER} /ipfs/${NOWCHAIN}</code></p>
+<p style="text-align:center;margin-top:1.5rem"><small>Astroport.ONE — support@qo-op.com</small></p>
+</div></div></body></html>
+TWHTML
 
     ### TO MANY ERROR LOADING TW
     [[ $try == 0 && "${CURRENT}" != "${PLAYER}" ]] \
@@ -527,18 +527,27 @@ if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" && "$
     echo "ALERT -- RSS IS EMPTY -- COINS=$COINS / ZEN=$ZEN -- $days DAYS"
     ## DEAD PLAYER ??
     if [[ ${days} -eq 27 ]]; then
-        echo "<html><head><meta charset='UTF-8'>
-        <style>
-            body {
-                font-family: 'Courier New', monospace;
-            }
-            pre {
-                white-space: pre-wrap;
-            }
-        </style></head><body><h1>🔋WARNING</h1>" > ~/.zen/tmp/alert
-        echo "<br><h3><a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER} TW 🔌📺 </a></h3> 🌥 $ZEN ZEN 🌥 </body></html>" >> ~/.zen/tmp/alert
+        cat > ~/.zen/tmp/alert <<ALERTHTML
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#fbe9e7}
+.c{max-width:600px;margin:0 auto;background:#fff}.h{background:linear-gradient(135deg,#b71c1c,#e53935);color:#fff;padding:1.5rem;text-align:center}
+.lbl{font-size:.75rem;opacity:.85;letter-spacing:2px;text-transform:uppercase;margin-bottom:.3rem}h1{margin:0;font-size:1.3rem}
+.b{padding:1.5rem}.box{background:#fbe9e7;border-left:4px solid #c62828;padding:1rem;border-radius:6px;margin:.75rem 0}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}a{color:#c62828}
+small{color:#666;font-size:.8rem}</style></head><body><div class="c">
+<div class="h"><div class="lbl">🔋 Jour 27 — Inactivité détectée</div>
+<h1>Votre TiddlyWiki semble inactif</h1></div>
+<div class="b"><div class="box">
+<p>Votre espace <strong>${PLAYER}</strong> n'a pas eu de nouvelles publications depuis 27 jours.</p>
+<p>Solde actuel : <strong>${ZEN} Ẑen</strong></p>
+<p><a href="$(myIpfsGw)/ipfs/${CURCHAIN}">Accéder à votre TiddlyWiki →</a></p>
+</div>
+<p>Si vous n'êtes plus actif sur cette station, votre MULTIPASS sera suspendu automatiquement à J30.</p>
+<p style="text-align:center;margin-top:1.5rem"><small>Astroport.ONE — support@qo-op.com</small></p>
+</div></div></body></html>
+ALERTHTML
 
-        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${PLAYER}" ~/.zen/tmp/alert "TW ZEN ALERT"
+        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${PLAYER}" ~/.zen/tmp/alert "⚠️ Inactivité détectée — ${PLAYER}"
         echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
     fi
 
