@@ -292,7 +292,7 @@ Cherche uniquement ce qui est clairement problématique :
 • Incohérences majeures (ex: fonction modifiée mais appelants non mis à jour)
 
 Si tout va bien → une seule ligne : "✅ Aucun problème détecté."
-Si problème → "⚠️ [fichier] description courte" (une ligne par problème)
+Si problème → "⚠️ \`chemin/fichier.sh:42\` description courte" (chemin du fichier visible dans le diff header, jamais un nom de fonction)
 
 DIFF :
 \`\`\`
@@ -377,6 +377,17 @@ RVPROMPT
                         [[ -n "$_gfound" ]] && _wpath="${_git_root}/${_gfound}"
                     fi
                     [[ ! -f "$_wpath" && -f "${MY_PATH}/$_wf" ]] && _wpath="${MY_PATH}/$_wf"
+                fi
+                # Fallback : si _wf est un nom de fonction (ex: npub_to_hex()), chercher le symbole dans les fichiers stagés
+                if [[ ! -f "$_wpath" ]]; then
+                    local _sym; _sym="${_wf%%(*}"
+                    if [[ -n "$_sym" ]]; then
+                        while IFS= read -r _sf; do
+                            [[ -n "$_sf" && -f "$_sf" ]] && grep -qF "$_sym" "$_sf" 2>/dev/null && {
+                                _wpath="$_sf"; break
+                            }
+                        done < <(git diff --cached --name-only 2>/dev/null)
+                    fi
                 fi
                 _warns+=("${_wpath}|${_wmsg}")
             done <<< "$_review"
@@ -558,7 +569,7 @@ PYEOF
                             echo ""
                             echo -e "${GREEN}✅ code_assistant terminé — relance du cycle de commit...${NC}"
                             git reset HEAD 2>/dev/null || true
-                            exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
+                            exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai "$AI_BACKEND"}
                         else
                             echo -e "${YELLOW}💡 Fichiers non localisés — lance manuellement :${NC}"
                             echo -e "${YELLOW}   code_assistant <fichier> --kvbasename session${NC}"
@@ -616,6 +627,10 @@ while [[ $# -gt 0 ]]; do
             exit 1 ;;
     esac
 done
+
+# Backend d'origine : mémorisé avant qu'un fix ne le remplace par claude
+ORIG_AI_BACKEND="${COMMIT_ORIG_AI_BACKEND:-$AI_BACKEND}"
+export COMMIT_ORIG_AI_BACKEND="$ORIG_AI_BACKEND"
 
 # ── Vérification dépôt Git ────────────────────────────────────────────────────
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
@@ -1154,7 +1169,7 @@ if [[ "$MODE" == "staged" && -n "$COMMIT_MSG" ]]; then
         redo)
             echo -e "${BLUE}↩️  Dé-staging et nouvelle sélection...${NC}"
             git reset HEAD 2>/dev/null || true
-            exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
+            exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai "$AI_BACKEND"}
             ;;
         cancel)
             echo -e "${YELLOW}Annulé.${NC}"
@@ -1256,7 +1271,7 @@ PRPROMPT
                 echo -ne "${CYAN}Traiter le prochain lot ? [o/N] : ${NC}"
                 read -r _next_batch
                 if [[ "$_next_batch" =~ ^[oOyY]$ ]]; then
-                    exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
+                    exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai "$ORIG_AI_BACKEND"}
                 fi
             else
                 echo -e "${GREEN}✅ Tous les fichiers commités !${NC}"
