@@ -5,7 +5,7 @@
 **Statut** : Production  
 **License** : AGPL-3.0
 
-> Pour la description complète des kinds NOSTR, clés, schémas et flows, voir **[MINELIFE.md](MINELIFE.md)**.
+> Pour la description complète des kinds NOSTR, clés, schémas et flows, voir **[MINELIFE.md](../how-to/MINELIFE.md)**.
 
 ---
 
@@ -16,7 +16,7 @@ WoTx2 fonctionne en deux modes complémentaires :
 - **Mode Oracle** : Kind 30503 signé par `UPLANETNAME_G1` — émis par `ORACLE.refresh.sh`
 - **Mode P2P** : Kind 30503 auto-signé par le titulaire — calculé localement (TrocZen, MineLife)
 
-Les deux modes coexistent sur le même relay NOSTR. Voir [MINELIFE.md §2](MINELIFE.md) pour le format exact de chaque Kind.
+Les deux modes coexistent sur le même relay NOSTR. Voir [MINELIFE.md §2](../how-to/MINELIFE.md) pour le format exact de chaque Kind.
 
 ---
 
