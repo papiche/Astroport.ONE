@@ -1,332 +1,144 @@
-# UPlanet Systems Test Suite
+# Tests UPlanet / Astroport.ONE
 
-Comprehensive test suite for validating all UPlanet systems according to their specifications.
+Suite de tests complète pour valider tous les sous-systèmes UPlanet.
 
-**🎮 Captain Validation Test**: The `test_captain_validation.sh` script creates REAL data and allows the captain to validate the complete UPlanet game loop.
-
-## Overview
-
-This test suite validates:
-- **MULTIPASS/ZEN Card** *(nouveau)*: Architecture v1→v2, séparation ZENCARD/MULTIPASS, diceware, _alert_captain
-- **DID System**: Decentralized Identifier implementation and W3C compliance
-- **Oracle System**: Official permits and multi-signature validation
-- **WoTx2 System**: Auto-proclaimed masteries with automatic progression
-- **ORE System**: Environmental contracts and UMAP DIDs
-- **Badge System**: NIP-58 badge definitions, awards, and profile badges
-- **SS58 Integration**: Conversion v1↔SS58, natools.py normalize_pubkey, PAYforSURE DRAIN
-
-## Prerequisites
-
-Before running tests, ensure:
-1. **Environment variables** are set:
-   - `CAPTAINEMAIL`: Captain's email address
-   - `UPLANETNAME_G1`: UPlanet G1 authority key
-   - `IPFSNODEID`: IPFS node identifier
-   - `UPLANETNAME`: UPlanet name
-
-2. **Required files** exist:
-   - `~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr`: Captain's NOSTR keys
-   - `~/.zen/game/uplanet.G1.nostr`: UPLANETNAME_G1 keys
-   - Nostr relay accessible at `$myRELAY`
-
-3. **Services** are running:
-   - Nostr relay (strfry)
-   - IPFS node
-   - Oracle system API (if testing permit creation)
-
-## Usage
-
-### Run All Tests
+## Lancer les tests
 
 ```bash
-cd ~/.zen/Astroport.ONE/tests
-./test_all_systems.sh
+# Depuis la racine du dépôt
+./tests/test_all_systems.sh                     # statiques uniquement (CI-safe)
+./tests/test_all_systems.sh --verbose           # avec sortie détaillée
+./tests/test_all_systems.sh --live              # + intégration réseau (relay + IPFS)
+./tests/test_all_systems.sh --ai                # + Ollama / ComfyUI
+./tests/test_all_systems.sh --demo              # + scénarios (crée des données réelles)
+./tests/test_all_systems.sh --system multipass  # un seul test ciblé
 ```
 
-### Run Specific System Tests
+## Catalogue complet
+
+### Tiers 1 — STATIQUE (sans infra, CI-safe)
+
+| Script | `--system` | Ce qui est testé |
+|--------|-----------|-----------------|
+| `test_multipass_zencard.sh` | `multipass` | SALT/PEPPER, `_diceware()`, `_alert_captain()`, NOMAIL, g1.sh JSON, Connect_PLAYER retiré, identity.py `_DISCO_RAND` |
+| `test_did_system.sh` | `did` | Documents DID, résolution (NOSTR/IPFS/cache), mises à jour, UMAP DID, conformité W3C DID Core 1.1 |
+| `test_oracle_system.sh` | `oracle` | Définition permis (kind 30500), demande (30501), attestation (30502), credential (30503), badge (30009/8), filtre IPFSNODEID |
+| `test_wotx2_system.sh` | `wotx2` | Permis WoTx2 (PERMIT_*_X1), auto-progression X1→X2→X3, PERMIT_DRAGON, NIP-42, filtre IPFSNODEID |
+| `test_ore_system.sh` | `ore` | UMAP DID (kind 30800), contrat ORE, Meeting Space (30312), Verification Meeting (30313), badge ORE |
+| `test_badge_system.sh` | `badge` | Définition (kind 30009), award (kind 8), profil badges (30008), génération image, synchronisation |
+| `test_g1_tools.sh` | `g1tools` | G1balance.sh, G1check.sh, G1history.sh, G1primal.sh, PAYforSURE.sh, gcli CLI, duniter_getnode.sh |
+| `test_primal_control.sh` | `primal` | `primal_wallet_control.sh` : `get_intrusion_pubkey()` SS58, seuils, garde-fous DRAIN |
+| `test_ss58_integration.sh` | `ss58` | Conversion v1↔SS58, `normalize_pubkey()` natools.py, PAYforSURE DRAIN, NaCl encrypt/box round-trip |
+| `test_astrosystemctl.sh` | `astrosystemctl` | Fonctions pures, parsing `modules.list`, `_local_check` profils, résolution scripts `cmd_local install`, gestion erreurs |
+| `test_destroy_restore.sh` | `destroy` | Backup `secret.june` numéroté, chiffrement/déchiffrement clé UPlanet, structure backup, RESTORE : détection CID + restauration |
+
+> `test_destroy_restore.sh --offline` ignore les tests IPFS/relay (défaut en mode `test_all_systems.sh`).
+
+---
+
+### Tiers 2 — INTÉGRATION (`--live`, relay NOSTR + IPFS requis)
+
+| Script | `--system` | Ce qui est testé |
+|--------|-----------|-----------------|
+| `test_intercom.sh` | `intercom` | Imports Python `nostr_node_intercom.py`, payload zen_like, daemon `bro_dm_daemon.sh`, loopback coucou→toto (TTL 300s), `bro_ia #IA`, ComfyUI job |
+| `test_multipass_create.sh` | `create` | Chaîne complète MULTIPASS : keygen→NOSTR→ẐEN pour 3 comptes déterministes, vérif Kind 0 relay, solde G1 |
+
+> `--quick` disponible sur ces deux tests pour n'exécuter que les assertions réseau-free.
+>
+> ```bash
+> bash tests/test_intercom.sh --quick
+> bash tests/test_multipass_create.sh --quick
+> ```
+
+---
+
+### Tiers 3 — IA (`--ai`, Ollama/ComfyUI requis)
+
+| Script | `--system` | Ce qui est testé |
+|--------|-----------|-----------------|
+| `test_ollama.sh` | `ollama` | Connexion `ollama.me.sh` (local→SSH→IPFS P2P), `/api/tags`, génération texte (`question.py`), multilingue, vision (moondream/llava), canal DM `bro_ia` |
+| `test_comfyui.sh` | `comfyui` | Connexion `comfyui.me.sh`, `/system_stats`, queue depth, VRAM, workflow `FluxImage.json`, génération image, CID IPFS, canal DM `comfyui_job` |
+
+---
+
+### Tiers 4 — SCÉNARIOS (`--demo`, crée des données réelles)
+
+| Script | `--system` | Ce qui est testé |
+|--------|-----------|-----------------|
+| `test_knowledge_demo.sh` | `knowledge` | Publication Kind 30504 sur relay NOSTR, indexation Qdrant collection "knowledge", recherche sémantique par skill |
+| `test_minelife_captain.sh` | `minelife` | Scénario MineLife complet : coucou+jean+toto → Capitaine obtient "analytics-uplanet" |
+| `test_wotx2_demo.sh` | `wotx2demo` | Dataset démo WoTx2 (Skills+Craft) : 3 comptes déterministes, toutes les fonctions `minelife.html` |
+| `test_umap_cities.sh` | `umap` | Activation UMAP sur grandes villes françaises, récup opportunités G1+Leboncoin, articles Kind 30023 |
+| `test_captain_validation.sh` | `captain` | Validation Capitaine complète : PERMIT_X1, requête, attestation, credential, badge, contrat ORE, boucle UPlanet |
+
+> **Avertissement** : ces scénarios publient des événements NOSTR réels et écrivent dans `~/.zen/`. Nettoyer avec `cleanup_test_events.sh`.
+
+---
+
+## Utilitaires
+
+| Fichier | Rôle |
+|---------|------|
+| `test_common.sh` | Bibliothèque partagée : `assert_*`, `test_log_*`, couleurs |
+| `run_tests.sh` | Lance tous les `test_*.sh` sans filtrage (glob simple) |
+| `cleanup_test_events.sh` | Supprime les événements NOSTR créés par les scénarios |
+| `test_ss58_integration.py` | Tests unitaires Python NaCl/duniterpy (complémentaire à `test_ss58_integration.sh`) |
+| `fixtures/` | Données de référence pour les tests |
+
+---
+
+## Prérequis
+
+### Variables d'environnement
+Chargées par `tools/my.sh` (sourcé automatiquement si station démarrée) :
+```bash
+CAPTAINEMAIL      # email du capitaine
+IPFSNODEID        # identifiant du nœud IPFS
+UPLANETNAME_G1    # clé d'autorité G1 UPlanet
+UPLANETNAME       # nom UPlanet
+myRELAY           # URL relay NOSTR (ex: ws://localhost:7777)
+```
+
+### Fichiers requis (tests live/scénario)
+```
+~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+~/.zen/game/uplanet.G1.nostr
+```
+
+### Services requis selon le tiers
+| Tiers | Services |
+|-------|---------|
+| Statique | aucun |
+| Intégration | strfry (port 7777) + IPFS daemon |
+| IA | Ollama (11434) et/ou ComfyUI (8188) + tunnel P2P si distant |
+| Scénario | strfry + IPFS + station UPlanet complète |
+
+---
+
+## Résultats
+
+Les logs sont écrits dans `~/.zen/tmp/tests/<nom>_<timestamp>.log`.
+
+| Symbole | Signification |
+|---------|--------------|
+| ✅ | Test réussi |
+| ❌ | Test échoué (exit 1) |
+| ⊘  | Test ignoré (skip, infra absente) |
+| ⚠️  | Avertissement non-bloquant |
+
+---
+
+## CI/CD
 
 ```bash
-# Test MULTIPASS/ZEN Card architecture (migration v1→v2)
-./test_all_systems.sh --system multipass
+# Pipeline CI (statique uniquement)
+./tests/test_all_systems.sh --verbose
+exit $?
 
-# Test DID system only
-./test_all_systems.sh --system did
-
-# Test Oracle system only
-./test_all_systems.sh --system oracle
-
-# Test WoTx2 system only
-./test_all_systems.sh --system wotx2
-
-# Test ORE system only
-./test_all_systems.sh --system ore
-
-# Test Badge system only
-./test_all_systems.sh --system badge
-
-# Test SS58 integration (natools, PAYforSURE DRAIN, conversions)
-./test_all_systems.sh --system ss58
-
-# Captain Validation Test (creates real data)
-./test_captain_validation.sh
-./test_captain_validation.sh --cleanup  # Clean up after test
+# Pipeline complet (station live)
+./tests/test_all_systems.sh --live --verbose
 ```
 
-### Verbose Output
+## Licence
 
-```bash
-./test_all_systems.sh --verbose
-```
-
-### Run Individual Test Scripts
-
-```bash
-# DID System
-./test_did_system.sh
-
-# Oracle System
-./test_oracle_system.sh
-
-# WoTx2 System
-./test_wotx2_system.sh
-
-# ORE System
-./test_ore_system.sh
-
-# Badge System
-./test_badge_system.sh
-
-# SS58 Integration (shell — analyse statique + CLI natools)
-./test_ss58_integration.sh
-
-# SS58 Integration (Python — tests unitaires duniterpy/NaCl)
-~/.astro/bin/python test_ss58_integration.py
-```
-
-## Test Configuration
-
-### Captain as WoTx2 User
-
-Tests use the captain's keys (`~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr`) for:
-- WoTx2 permit requests (PERMIT_DRAGON)
-- Permit attestations
-- Profile badge selection
-
-### UMAP 0.00 0.00 for ORE
-
-Tests use UMAP coordinates `0.00, 0.00` for:
-- ORE contract activation
-- UMAP DID creation
-- Environmental obligation testing
-
-### UPLANETNAME_G1 for Oracle
-
-Tests use `UPLANETNAME_G1` keys for:
-- Official permit definitions
-- Credential issuance
-- Badge emission
-
-### IPFSNODEID Filtering
-
-Tests verify that events are properly tagged with `ipfs_node` tag containing `IPFSNODEID` to ensure proper filtering in constellation environments.
-
-## Test Structure
-
-Each test script follows this structure:
-
-1. **Prerequisites Check**: Verify required files and environment
-2. **Functional Tests**: Test core functionality
-3. **Integration Tests**: Test system integration
-4. **Compliance Tests**: Verify specification compliance
-5. **Summary**: Print test results
-
-## Test Results
-
-Test results are stored in:
-```
-~/.zen/tmp/tests/
-```
-
-Each test run creates timestamped log files:
-- `{system}_{timestamp}.log`: Detailed test output
-
-## Expected Test Outcomes
-
-### Passing Tests
-- ✅ Green checkmark indicates successful test
-- All assertions pass
-- Exit code: 0
-
-### Warning Tests
-- ⚠️ Yellow warning indicates optional/expected behavior
-- Test may pass but indicates missing data (e.g., no events published yet)
-- Does not fail the test suite
-
-### Failing Tests
-- ❌ Red X indicates failed test
-- Assertion failed or error occurred
-- Exit code: 1
-
-## Common Issues
-
-### "CAPTAINEMAIL not set"
-**Solution**: Source `~/.zen/Astroport.ONE/tools/my.sh` or set environment variables manually.
-
-### "Captain's secret file not found"
-**Solution**: Ensure captain's MULTIPASS is created via `make_NOSTRCARD.sh`.
-
-### "UPLANETNAME_G1 keyfile not found"
-**Solution**: Run `UPLANET.init.sh` to initialize UPlanet wallets and keys.
-
-### "No events found on Nostr relay"
-**Solution**: This is expected if systems haven't been used yet. Tests will show warnings but not fail.
-
-### "strfry not available"
-**Solution**: Ensure strfry relay is running and accessible at `$myRELAY`.
-
-## Continuous Integration
-
-These tests can be integrated into CI/CD pipelines:
-
-```bash
-#!/bin/bash
-# CI test script
-cd ~/.zen/Astroport.ONE/tests
-./test_all_systems.sh --verbose > test_results.log 2>&1
-exit_code=$?
-
-if [[ $exit_code -eq 0 ]]; then
-    echo "All tests passed"
-else
-    echo "Some tests failed"
-    cat test_results.log
-fi
-
-exit $exit_code
-```
-
-## Captain Validation Test
-
-The **Captain Validation Test** (`test_captain_validation.sh`) is a comprehensive test that creates REAL data on your UPlanet:
-
-### What It Does
-
-1. **Creates WoTx2 Permit**: Creates `PERMIT_CAPTAINEMAIL_X1` for the captain
-2. **Self-Request**: Captain requests their own permit (kind 30501)
-3. **Self-Attestation**: Captain attests their own request (kind 30502) - valid for WoTx2 X1
-4. **Credential Issuance**: Triggers credential issuance (kind 30503) via API
-5. **Badge Generation**: Generates badge images automatically using AI
-6. **ORE Contract**: Creates ORE contract for UMAP 0.00 0.00
-7. **UX Explanation**: Explains the complete UPlanet game loop
-
-### Usage
-
-```bash
-# Run validation test (creates real data)
-./test_captain_validation.sh
-
-# Run with automatic cleanup
-./test_captain_validation.sh --cleanup
-```
-
-### What Gets Created
-
-- **Permit Definition** (kind 30500): `PERMIT_CAPTAINEMAIL_X1`
-- **Permit Request** (kind 30501): Captain's application
-- **Permit Attestation** (kind 30502): Self-attestation
-- **Credential** (kind 30503): W3C Verifiable Credential
-- **Badge Definition** (kind 30009): Badge for the permit
-- **Badge Award** (kind 8): Badge awarded to captain
-- **ORE Contract**: Environmental contract for UMAP 0.00 0.00
-- **ORE Meeting Space** (kind 30312): Persistent space for verification
-- **UMAP DID** (kind 30800): DID for UMAP with ORE obligations
-
-### Cleanup
-
-After running tests, clean up test events:
-
-```bash
-# Clean up using events file
-./cleanup_test_events.sh --file ~/.zen/tmp/tests/captain_test_events.json
-
-# Clean up with confirmation
-./cleanup_test_events.sh --file ~/.zen/tmp/tests/captain_test_events.json --confirm
-```
-
-## Test Coverage
-
-### MULTIPASS / ZEN Card (migration v1→v2)
-- ✅ `diceware.sh` : génère des passphrases mémorisables depuis wordlist officielle
-- ✅ `make_NOSTRCARD.sh` : `ZENCARD_SALT/PEPPER` séparés du MULTIPASS random
-- ✅ `make_NOSTRCARD.sh` : `_diceware()` appelle `diceware.sh` (pas `/usr/share/dict/words`)
-- ✅ `make_NOSTRCARD.sh` : `_alert_captain()` couvre SSSS, IPFS daemon, DID, nostr_setup_profile
-- ✅ `make_NOSTRCARD.sh` : `VISA.new.sh` appelé avec 9 arguments (LANG, LAT, LON, NPUB, HEX)
-- ✅ `g1.sh` : `write_multipass_json` retourne `zencard_salt/pepper` (pas `salt/pepper`)
-- ✅ `g1.sh` : NSEC lu depuis `.secret.nostr` (MULTIPASS aléatoire, pas dérivé ZEN Card)
-- ✅ `Connect_PLAYER_To_Gchange.sh` : stub deprecated (`exit 0`, aucun script critique appelé)
-- ✅ `TW.refresh.sh` : appel `Connect_PLAYER_To_Gchange.sh` retiré
-- ✅ `VISA.new.sh` : appel `Connect_PLAYER_To_Gchange.sh` retiré
-- ✅ `identity.py` : limite 56 chars supprimée (plus de `HTTPException 422` pour salt/pepper)
-
-### SS58 Integration
-- ✅ `g1pub_to_ss58.py` : round-trip v1 ↔ SS58, idempotence `ensure_ss58`
-- ✅ `natools.py` v1.3.2 : `normalize_pubkey()` dans toutes les fonctions crypto
-- ✅ `natools.py` CLI : SS58 accepté via `-p` (validation longueur après normalize)
-- ✅ `PAYforSURE.sh` : DRAIN accepté sans erreur `bc`, bypass solde nul, `total_balance`
-- ✅ `primal_wallet_control.sh` : `get_intrusion_pubkey()` retourne SS58
-- ✅ `make_NOSTRCARD.sh` : G1PUBNOSTR stocké en SS58, `G1PUBNOSTR_V1` pour Cesium+
-- ✅ `VISA.new.sh` : `.g1pub` stocké en SS58, `G1PUB_V1` pour Cesium+
-- ✅ NaCl `encrypt/decrypt` round-trip v1 et SS58
-- ✅ NaCl `box_encrypt/box_decrypt` DH (Bob→Alice) v1 et SS58
-
-### DID System
-- ✅ DID document creation and structure
-- ✅ DID resolution (Nostr, IPFS, cache)
-- ✅ DID updates and metadata
-- ✅ UMAP DID for geographic cells
-- ✅ W3C DID Core v1.1 compliance
-
-### Oracle System
-- ✅ Permit definition creation (kind 30500)
-- ✅ Permit request submission (kind 30501)
-- ✅ Permit attestation (kind 30502)
-- ✅ Credential issuance (kind 30503)
-- ✅ Badge emission (kind 30009, 8)
-- ✅ IPFSNODEID filtering
-
-### WoTx2 System
-- ✅ WoTx2 permit creation (PERMIT_*_X1)
-- ✅ Auto-progression (X1 → X2 → X3...)
-- ✅ Competency revelation
-- ✅ PERMIT_DRAGON for captain
-- ✅ NIP-42 authentication
-- ✅ IPFSNODEID filtering
-
-### ORE System
-- ✅ UMAP DID creation (kind 30800)
-- ✅ ORE contract activation
-- ✅ ORE Meeting Space (kind 30312)
-- ✅ ORE Verification Meeting (kind 30313)
-- ✅ UMAP 0.00 0.00 as test territory
-- ✅ ORE badge emission
-
-### Badge System
-- ✅ Badge definition (kind 30009)
-- ✅ Badge award (kind 8)
-- ✅ Profile badges (kind 30008)
-- ✅ Badge image generation
-- ✅ Badge display functions
-- ✅ Badge synchronization
-
-## Contributing
-
-When adding new tests:
-1. Follow the existing test structure
-2. Use `test_common.sh` functions for assertions
-3. Add appropriate logging with `test_log_*` functions
-4. Update this README with new test coverage
-
-## License
-
-AGPL-3.0 - Same as UPlanet/Astroport.ONE
-
+AGPL-3.0 — même licence qu'Astroport.ONE.
