@@ -386,9 +386,28 @@ else
     echo "  SKIP mirofish.${DOMAIN} (MiroFish non démarré)"
 fi
 
+## g1.DOMAIN -> duniter-smith:9944 (Duniter v2s RPC WebSocket — WSS via NPM)
+## DUNITER_PUBLIC_ADDR=/dns/g1.HOSTNAME.DOMAIN/tcp/30333 est configuré dans le compose.
+## NPM proxye le RPC WebSocket (port 9944 interne) via dragon-net (pas exposé directement).
+## Cela permet : wss://g1.DOMAIN → Substrate/Duniter RPC (gcli, zelkova, polkadot-js…)
+if docker ps --format '{{.Names}}' | grep -q 'duniter-smith'; then
+    ## Dragon-net : NPM atteint duniter-smith par nom de conteneur (port interne 9944)
+    if getent hosts duniter-smith >/dev/null 2>&1; then
+        npm_create_proxy "g1" "duniter-smith" 9944 "http" "true"
+    else
+        ## Bare metal ou réseau non résolu : passe par le FORWARD_HOST
+        npm_create_proxy "g1" "${FORWARD_HOST}" 9944 "http" "true"
+    fi
+else
+    echo "  SKIP g1.${DOMAIN} (duniter-smith non démarré)"
+    echo "  >>> Pour activer le mirroir Duniter :"
+    echo "  >>> docker compose -f ~/.zen/Astroport.ONE/_DOCKER/duniter_v2/docker-compose.yml up -d"
+    echo "  >>> Puis relancez : ~/.zen/Astroport.ONE/install/setup/setup_npm.sh"
+fi
+
 echo "#############################################"
 echo "## NPM SETUP COMPLETE"
 echo "## Admin UI: ${NPM_URL}"
 echo "## SSL mode: ${SSL_MODE}"
-echo "## Proxied: astroport/ipfs/relay/u .${DOMAIN}"
+echo "## Proxied: astroport/ipfs/relay/u/g1 .${DOMAIN}"
 echo "#############################################"

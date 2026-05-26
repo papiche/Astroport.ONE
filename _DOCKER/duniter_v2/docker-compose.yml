@@ -1,4 +1,15 @@
-# Duniter smith node
+# Duniter smith node — mirroir G1 (Ğ1 libre currency blockchain)
+#
+# Ports :
+#   9615/tcp  127.0.0.1  Prometheus metrics      (localhost uniquement)
+#   9944/tcp  127.0.0.1  RPC WebSocket privé     (localhost + dragon-net → NPM WSS)
+#   30333/tcp public     P2P libp2p              (accès Internet direct)
+#
+# Dragon-net : NPM peut proxyer wss://g1.DOMAIN → duniter-smith:9944
+#
+# Variables d'environnement (héritées du shell ou du fichier .env) :
+#   ASTRO_DOMAIN   domaine principal (défaut: copylaradio.com)
+#   HOSTNAME       nom de la machine hôte (injecté par le shell)
 services:
   duniter-smith:
     image: duniter/duniter-g1-1100:latest             # <--- image Docker
@@ -6,18 +17,25 @@ services:
     ports:
       # prometheus endpoint for monitoring
       - 127.0.0.1:9615:9615
-      # private rpc endpoint (do not expose publicly)
+      # private rpc endpoint (via dragon-net → NPM uniquement, pas exposé directement)
       - 127.0.0.1:9944:9944
       # public p2p endpoint
-      - 30333:30333                             # <--- port p2p public
+      - 30333:30333                                    # <--- port p2p public
     volumes:
       - duniter-data:/var/lib/duniter/
     environment:
-      - DUNITER_CHAIN_NAME=g1                                 # <--- réseau où se connecter
-      - DUNITER_NODE_NAME=$HOSTNAME-g1-mirror                 # <--- https://telemetry.polkadot.io/#list/0xfeb770bbb0344dabc8366b0d1f889a8e4e6ca09b914006655fe795920deb6d56
-      - DUNITER_VALIDATOR=false                               # <---> Forgeron <=> gcli smith --help
-      # - DUNITER_PRUNING_PROFILE=archive                     # <--- conserver 256 blocs d'historique
-      - DUNITER_PUBLIC_ADDR=/dns/g1.$HOSTNAME.copylaradio.com/tcp/30333     # <--- endpoint p2p public
-      - DUNITER_LISTEN_ADDR=/ip4/0.0.0.0/tcp/30333            # <--- adresse d'écoute p2p
+      - DUNITER_CHAIN_NAME=g1                          # <--- réseau où se connecter
+      - DUNITER_NODE_NAME=${HOSTNAME}-g1-mirror        # <--- https://telemetry.polkadot.io/#list/0xfeb770bbb0344dabc8366b0d1f889a8e4e6ca09b914006655fe795920deb6d56
+      - DUNITER_VALIDATOR=false                        # <---> Forgeron <=> gcli smith --help
+      # - DUNITER_PRUNING_PROFILE=archive              # <--- conserver 256 blocs d'historique
+      - DUNITER_PUBLIC_ADDR=/dns/g1.${HOSTNAME}.${ASTRO_DOMAIN:-copylaradio.com}/tcp/30333
+      - DUNITER_LISTEN_ADDR=/ip4/0.0.0.0/tcp/30333    # <--- adresse d'écoute p2p
+    networks:
+      - dragon-net                                     # <--- NPM peut proxyer duniter-smith:9944
+
 volumes:
   duniter-data:
+
+networks:
+  dragon-net:
+    external: true                                     # réseau partagé avec Astroport.ONE + NPM

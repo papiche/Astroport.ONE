@@ -265,7 +265,7 @@ echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
 for i in zip ssss dos2unix make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs \
 parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools \
-curl net-tools libsodium* miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev; do
+curl net-tools libsodium* miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev htop cron psmisc iputils-ping; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -806,6 +806,65 @@ echo "## DÉTECTION GPU — Installation IA optionnelle ###########"
 ##   INSTALL_OLLAMA=no     → Ignoré même si GPU présent
 ~/.zen/Astroport.ONE/install/install_gpu_ai.sh
 
+###############################################################
+echo "## DUNITER v2s — MIRROIR G1 (optionnel) #################"
+###############################################################
+## Un nœud mirroir Duniter v2s synchronise la blockchain G1 localement.
+## Avantages : RPC local :9944 (gcli/wallet sans dépendance externe),
+## participation réseau P2P G1. Prérequis : > 10 Go disque, lien stable.
+##
+## Recommandation selon Power-Score :
+##   Score > 40 🔥 Brain    → optimal (SSD, sync rapide)
+##   Score > 10 ⚡ Standard  → recommandé
+##   Score ≤ 10 🌿 Light    → déconseillé (sync lente, disque limité)
+_DUNITER_DC="$HOME/.zen/Astroport.ONE/_DOCKER/duniter_v2/docker-compose.yml"
+_DUNITER_ACTIVE=false
+
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'duniter'; then
+    echo "✅ Duniter v2s déjà actif"
+    _DUNITER_ACTIVE=true
+elif [[ -f "$_DUNITER_DC" ]] && command -v docker >/dev/null 2>&1; then
+    if   [[ $_SCORE -gt 40 ]]; then _DUNITER_REC="🔥 Optimal — Brain-Node (SSD, sync rapide)"
+    elif [[ $_SCORE -gt 10 ]]; then _DUNITER_REC="⚡ Recommandé — Standard"
+    else                             _DUNITER_REC="⚠️  Déconseillé — Light (sync lente, disque limité)"
+    fi
+    _DISK_AVAIL_GB=$(df "$HOME" --output=avail -BG 2>/dev/null | tail -1 | tr -d 'G ' || echo 0)
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  ⛓️  DUNITER v2s — MIRROIR G1 (blockchain Ğ1 libre currency) ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    printf "║  Matériel : %-47s ║\n" "${_DUNITER_REC}"
+    printf "║  Disque disponible : %-38s ║\n" "${_DISK_AVAIL_GB} Go  (≥ 10 Go requis)"
+    echo "║                                                              ║"
+    echo "║  • RPC local :9944      → gcli/wallet sans dépendance       ║"
+    echo "║  • P2P public :30333    → contribution au réseau G1         ║"
+    echo "║  • Prometheus :9615     → métriques mirroir                 ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    if [[ $_SCORE -le 10 ]]; then
+        read -r -p "⚠️  Non recommandé sur cette machine. Installer quand même ? [y/N] " _dun_cont
+        [[ "${_dun_cont}" == "y" || "${_dun_cont}" == "Y" ]] && _dun_choice="y" || _dun_choice="n"
+    else
+        read -r -p "Installer le mirroir Duniter v2s G1 ? [y/N] " _dun_choice
+    fi
+    if [[ "${_dun_choice}" == "y" || "${_dun_choice}" == "Y" ]]; then
+        echo "⏳ Démarrage mirroir Duniter v2s..."
+        sg docker -c "docker compose -f '$_DUNITER_DC' up -d" 2>/dev/null \
+            && _DUNITER_ACTIVE=true \
+            && echo "✅ Duniter v2s mirroir G1 démarré (RPC: 127.0.0.1:9944, P2P: :30333)" \
+            || echo "⚠️  Duniter v2s — erreur de démarrage (voir: docker compose -f $_DUNITER_DC logs)"
+        if [[ "$_DUNITER_ACTIVE" == "true" ]] && command -v ufw >/dev/null 2>&1 \
+           && sudo ufw status 2>/dev/null | grep -q "Status: active"; then
+            sudo ufw allow 30333/tcp comment 'Duniter v2s P2P TCP' >/dev/null 2>&1
+            sudo ufw allow 30333/udp comment 'Duniter v2s P2P UDP' >/dev/null 2>&1
+            echo "🔥 UFW : port 30333 ouvert (Duniter P2P)"
+        fi
+    else
+        echo "→ Mirroir Duniter ignoré."
+    fi
+else
+    echo "ℹ️  Duniter v2s : docker-compose introuvable — ignoré"
+fi
+
 # --- INJECTION : CALCUL VALEUR COMPARATIVE CLOUD ---
 _CLOUD_SAVINGS=0
 
@@ -1222,6 +1281,35 @@ echo "  │    http://127.0.0.1:54321/UPlanet/earth/minelife.html     │"
 echo "  │    Changez d'identité dans nos2x pour simuler la WoTx2   │"
 echo "  └───────────────────────────────────────────────────────────┘"
 echo ""
+
+##########################################################
+## MULTIPASS CAPITAINE — Clé NOSTR d'identité principale
+##########################################################
+_CAPTAIN_EMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo "")
+_CAP_SECRET="$HOME/.zen/game/nostr/${_CAPTAIN_EMAIL}/.secret.nostr"
+if [[ -n "$_CAPTAIN_EMAIL" && -s "$_CAP_SECRET" ]]; then
+    _CAP_NSEC=$(grep -oP 'NSEC=\K[^;]+' "$_CAP_SECRET" 2>/dev/null || echo "")
+    _CAP_NPUB=$(grep -oP 'NPUB=\K[^;]+' "$_CAP_SECRET" 2>/dev/null || echo "")
+    if [[ -n "$_CAP_NSEC" ]]; then
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  🔑 MULTIPASS CAPITAINE — CLÉ NOSTR PRIVÉE                  ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        printf "║  Capitaine : %-46s ║\n" "${_CAPTAIN_EMAIL:0:46}"
+        echo "║                                                              ║"
+        echo "║  ⚠️  CONSERVEZ CETTE CLÉ EN LIEU SÛR — NE PARTAGEZ JAMAIS   ║"
+        echo "║  ⚠️  Elle donne accès complet à votre identité NOSTR         ║"
+        echo "║                                                              ║"
+        printf "║  nsec : %-51s ║\n" "${_CAP_NSEC}"
+        printf "║  npub : %-51s ║\n" "${_CAP_NPUB:0:51}"
+        echo "║                                                              ║"
+        echo "║  → Importez la nsec dans nos2x / Alby / Amethyst pour       ║"
+        echo "║    accéder à votre identité NOSTR sur tous vos appareils.   ║"
+        echo "║  Sauvegarde : ~/.zen/game/nostr/$_CAPTAIN_EMAIL/.secret.nostr"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        echo ""
+    fi
+fi
 
 ##########################################################
 ## SESSION DE FORMATION LIVE — vdo.ninja UPLANET

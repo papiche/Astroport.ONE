@@ -151,7 +151,7 @@ fi
 # ── WebSocket (services streaming/API) ───────────────────────────────────────
 WEBSOCKET="false"
 case "$SERVICE_NAME" in
-    ollama|open_webui|webui|nostr|relay|comfyui|dify) WEBSOCKET="true" ;;
+    ollama|open_webui|webui|nostr|relay|comfyui|dify|duniter*|g1) WEBSOCKET="true" ;;
 esac
 
 # ── Création proxy ────────────────────────────────────────────────────────────

@@ -24,6 +24,7 @@
 #  │ 4001    │ tcp+udp  │ IPFS Swarm P2P (pairs directs)        │
 #  │ 51820   │ udp      │ WireGuard HUB (VPN Constellation)    │
 #  │ 4002-4100│ tcp+udp │ IPFS Satellites (Redirection VPN)    │
+#  │ 30333   │ tcp+udp  │ Duniter v2s P2P (mirroir G1 — optionnel) │
 #  └─────────┴──────────┴────────────────────────────────────────┘
 #
 #  PORTS LOCALHOST UNIQUEMENT (bloqués depuis l'extérieur)
@@ -50,8 +51,13 @@
 #  │ 3001    │ tcp      │ KasmVNC HTTPS (localhost — SSH tunnel)│
 #  │── Monitoring ─────────────────────────────────────────────── │
 #  │ 9090    │ tcp      │ Prometheus scrape (localhost)         │
-#  │ 9615    │ tcp      │ IPFS exporter (localhost)             │
+#  │ 9615    │ tcp      │ Duniter/IPFS exporter (localhost)     │
+#  │ 9944    │ tcp      │ Duniter v2s RPC (dragon-net → NPM WSS)│
 #  └─────────┴──────────┴────────────────────────────────────────┘
+#
+#  DUNITER v2s SCHEMA COMPLET :
+#    Internet → :30333 (P2P libp2p direct)
+#    Internet → NPM :443 → wss://g1.DOMAIN → duniter-smith:9944 (RPC WSS)
 #
 #  ACCÈS WEBTOP À DISTANCE : utiliser SSH tunnel
 #    ssh -L 3000:localhost:3000 user@VOTRE_IP
@@ -124,6 +130,17 @@ fire_on() {
     sudo ufw allow 4002:4100/udp comment 'IPFS Satellites UDP'
     echo "  ✅ 4002-4100 IPFS Satellites (TCP/UDP)"
 
+    ## Duniter v2s P2P (mirroir G1 — uniquement si le service est configuré ou actif)
+    _DUNITER_DC="$HOME/.zen/Astroport.ONE/_DOCKER/duniter_v2/docker-compose.yml"
+    if [[ -f "$_DUNITER_DC" ]] || docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'duniter'; then
+        sudo ufw allow 30333/tcp comment 'Duniter v2s P2P TCP'
+        sudo ufw allow 30333/udp comment 'Duniter v2s P2P UDP (libp2p)'
+        echo "  ✅ 30333/tcp Duniter v2s P2P (mirroir G1)"
+        echo "  ✅ 30333/udp Duniter v2s P2P UDP"
+    else
+        echo "  ℹ️  30333     Duniter v2s P2P (non configuré — ignoré)"
+    fi
+
     echo "
 ── PRIORITÉ 1 : ALLOWS (avant les DENY pour éviter le masquage) ───"
 
@@ -177,7 +194,8 @@ fire_on() {
         "3000:KasmVNC HTTP (webtop — SSH tunnel requis)" \
         "3001:KasmVNC HTTPS (webtop — SSH tunnel requis)" \
         "9090:Prometheus" \
-        "9615:IPFS exporter" \
+        "9615:Duniter/IPFS exporter (prometheus)" \
+        "9944:Duniter v2s RPC (127.0.0.1 uniquement)" \
         "8111:Icecast Live Broadcasting (SoundSpot)"
     do
         port="${port_comment%%:*}"
@@ -216,7 +234,7 @@ fire_status() {
     sudo ufw status verbose
     echo ""
     echo "Ports d'écoute actifs :"
-    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4002|4003|5001|51820|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|33101|81|1883|9090|8111) " \
+    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4002|4003|5001|51820|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|33101|81|1883|9090|9615|9944|30333|8111) " \
         | awk '{print "  " $1 " " $4 " " $5}' | sort -t: -k2 -n
     echo "########################################################################"
 }

@@ -10,6 +10,7 @@
 #   label         : description lisible (utilisée dans tunnel/swarm)
 #
 # ── Services P2P (port défini) ─────────────────────────────────────────────────
+duniter-g1|9944|docker:duniter-smith|duniter|Duniter v2s Mirror G1 (blockchain Ğ1)
 icecast|8111|auto|icecast|Icecast Live Broadcasting
 dify|8010|docker:dify-api|ai-company|Dify AI Workflow
 mirofish|5050|docker:mirofish|ai-company|MiroFish Multi-Agent Simulation Engine

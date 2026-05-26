@@ -20,7 +20,7 @@ _SCRIPT="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0
 # MY_PATH peut être pré-positionné par les tests (ASTROSYSTEMCTL_TEST=1)
 MY_PATH="${MY_PATH:-$(dirname "$_SCRIPT")}"
 MY_PATH="$(cd "$MY_PATH" && pwd)"
-. "${MY_PATH}/my.sh"
+. "${HOME}/.zen/Astroport.ONE/tools/my.sh"
 
 SWARM_DIR="$HOME/.zen/tmp/swarm"
 TUNNELS_ENABLED="$HOME/.zen/tunnels/enabled"
@@ -135,6 +135,7 @@ get_service_category() {
         ollama|dify|webui|open-webui|mirofish|comfyui|vane|qdrant|orpheus) echo "🧠 IA" ;;
         icecast|snapcast|audio|spotify|jukebox|mpd) echo "🎵 Audio" ;;
         ssh|npm|nextcloud|upassport|node|proxy|vpn) echo "⚙️  Sys" ;;
+        duniter*|g1-mirror*) echo "⛓️  Chain" ;;
         *) echo "📦 App" ;;
     esac
 }
@@ -346,6 +347,7 @@ cmd_connect() {
         mirofish)                    local_port="5050"  ;;
         orpheus)                     local_port="5005"  ;;
         vane)                        local_port="3002"  ;;
+        duniter-g1|duniter)          local_port="9944"  ;;
     esac
     if [[ -n "$local_port" ]] && ss -tln 2>/dev/null | grep -q ":${local_port} "; then
         echo "✅ ${service} disponible localement → http://127.0.0.1:${local_port}"
@@ -862,7 +864,7 @@ _check_requirements() {
     command -v docker >/dev/null 2>&1 && has_docker=true
 
     case "$svc" in
-        dify|open-webui|open_webui|mirofish|qdrant|vane|orpheus)
+        dify|open-webui|open_webui|mirofish|qdrant|vane|orpheus|duniter-g1|duniter)
             if [[ "$has_docker" == "false" ]]; then
                 echo -e "${RED}❌  Docker non installé — requis pour ${svc}${NC}"
                 echo    "    https://docs.docker.com/engine/install/"
@@ -907,6 +909,16 @@ _check_requirements() {
         orpheus)
             [[ ${score:-0} -lt 41 ]] && \
                 echo -e "${YELLOW}⚠️  Power-Score ${score} — Orpheus TTS est lent sans GPU${NC}" ;;
+        duniter-g1|duniter)
+            if command -v bc >/dev/null 2>&1 && [[ $(echo "$avail_gb < 10" | bc 2>/dev/null) -eq 1 ]]; then
+                echo -e "${RED}❌  Espace insuffisant : ${avail_gb} Go disponibles (10 Go requis pour la blockchain G1)${NC}"
+                return 1
+            fi
+            if [[ ${score:-0} -lt 11 ]]; then
+                echo -e "${YELLOW}⚠️  Power-Score ${score} 🌿 Light — mirroir Duniter possible mais synchronisation très lente${NC}"
+                echo    "   Recommandé sur Standard+ (score > 10)"
+                [[ "$force" != "force" ]] && return 1
+            fi ;;
     esac
     return 0
 }
@@ -978,6 +990,23 @@ _local_start_service() {
 
     echo "🚀 Démarrage ${svc}..."
 
+    # ── Duniter G1 : compose dédié dans _DOCKER/duniter_v2/ ─────────────────
+    if [[ "$svc" == "duniter-g1" || "$svc" == "duniter" ]]; then
+        local _ddc="$HOME/.zen/Astroport.ONE/_DOCKER/duniter_v2/docker-compose.yml"
+        if [[ ! -f "$_ddc" ]]; then
+            echo "❌ docker-compose Duniter introuvable : $_ddc"
+            return 1
+        fi
+        if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'duniter-smith'; then
+            echo "✅ duniter-smith tourne déjà"
+            return 0
+        fi
+        sg docker -c "docker compose -f '$_ddc' up -d" 2>/dev/null \
+            && echo "✅ duniter-smith démarré (RPC: 127.0.0.1:9944, P2P: :30333)" \
+            || { echo "❌ docker compose Duniter échoué"; return 1; }
+        return 0
+    fi
+
     # ── 1. Docker : container dont le nom contient le slug ───────────────────
     if command -v docker >/dev/null 2>&1; then
         local container_id container_name container_st
@@ -1042,6 +1071,14 @@ _local_stop_service() {
 
     echo "🛑 Arrêt ${svc}..."
 
+    # ── Duniter G1 : compose dédié dans _DOCKER/duniter_v2/ ─────────────────
+    if [[ "$svc" == "duniter-g1" || "$svc" == "duniter" ]]; then
+        local _ddc="$HOME/.zen/Astroport.ONE/_DOCKER/duniter_v2/docker-compose.yml"
+        [[ -f "$_ddc" ]] && sg docker -c "docker compose -f '$_ddc' stop" 2>/dev/null \
+            && echo "✅ duniter-smith arrêté" || echo "ℹ️  duniter-smith non actif"
+        return 0
+    fi
+
     # ── 1. Docker container en cours d'exécution ─────────────────────────────
     if command -v docker >/dev/null 2>&1; then
         local container_id
@@ -1095,7 +1132,7 @@ _local_check() {
         cpu=$(jq -r         '.system.cpu.cores                 // 0'     "$cache" 2>/dev/null || echo 0)
     else
         echo -e "${YELLOW}ℹ️  heartbox_analysis.json absent — lancement de l'analyse...${NC}"
-        local astro_dir; [[ -n "$(_ia_dir)" ]] && astro_dir="$(cd "$(_ia_dir)/.." && pwd)" || astro_dir="${MY_PATH}/.."
+        local astro_dir; [[ -n "$(_ia_dir)" ]] && astro_dir="$(cd "$(_ia_dir)/.." && pwd)" || astro_dir="${HOME}/.zen/Astroport.ONE"
         bash "${astro_dir}/admin/monitor/heartbox_analysis.sh" update 2>/dev/null
         [[ -s "$cache" ]] && {
             score=$(jq -r       '.capacities.power_score        // 0'     "$cache" 2>/dev/null || echo 0)
@@ -1198,6 +1235,18 @@ _local_check() {
                     rec="❌ Docker requis"
                 elif command -v bc >/dev/null 2>&1 && [[ $(echo "${avail_gb:-0} < 5" | bc 2>/dev/null) -eq 1 ]]; then
                     rec="⚠️  Espace faible (<5Go)"
+                fi ;;
+            duniter)
+                if [[ "$has_docker" == "false" ]]; then
+                    rec="❌ Docker requis"
+                elif command -v bc >/dev/null 2>&1 && [[ $(echo "${avail_gb:-0} < 10" | bc 2>/dev/null) -eq 1 ]]; then
+                    rec="⚠️  Espace faible (<10Go — blockchain G1)"
+                elif [[ ${score:-0} -lt 11 ]]; then
+                    rec="⚠️  Light — sync lente (Standard+ recommandé)"
+                elif [[ ${score:-0} -gt 40 ]]; then
+                    rec="✅ Optimal (Brain-Node — sync rapide)"
+                else
+                    rec="✅ Recommandé (Standard)"
                 fi ;;
             webtop)
                 [[ "$has_docker" == "false" ]] && rec="❌ Docker requis" ;;
@@ -1471,6 +1520,8 @@ Exemples local (services IA + outils système + partage constellation) :
   astrosystemctl local install youtube-antibot # Installer Deno+EJS+bgutil
   astrosystemctl local install powerjoular     # Installer PowerJoular
   astrosystemctl local install qdrant          # Installer Qdrant VectorDB
+  astrosystemctl local start  duniter-g1       # Démarrer mirroir Duniter v2s G1
+  astrosystemctl local stop   duniter-g1       # Arrêter le mirroir Duniter
   astrosystemctl local uninstall ollama        # Désinstaller (arrêt + suppression container)
   astrosystemctl local uninstall dify --purge  # Désinstaller + supprimer volumes/données
   astrosystemctl local feed                    # Alimenter MiroFish (RAG NOSTR)
