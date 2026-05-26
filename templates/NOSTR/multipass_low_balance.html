@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solde faible — Wallet UPlanet</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #ffebee; color: #1a1a1a; }
+.container { max-width: 600px; margin: 0 auto; background: white; }
+.header { background: linear-gradient(135deg, #c62828, #e53935); color: white; padding: 2rem; text-align: center; }
+.header .label { font-size: 0.78rem; opacity: 0.85; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.4rem; }
+.header h1 { margin: 0; font-size: 1.4rem; line-height: 1.3; }
+.content { padding: 1.5rem; }
+.section { margin: 0.75rem 0; padding: 1rem; border-radius: 8px; }
+.alert { background: #ffebee; border-left: 4px solid #c62828; }
+.solutions { background: #fff8e1; border-left: 4px solid #f9a825; }
+.cobuild { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.danger { background: #fce4ec; border-left: 4px solid #e91e63; }
+h2 { font-size: 1.05rem; margin: 0 0 0.5rem 0; }
+p { line-height: 1.6; margin: 0.4rem 0; font-size: 0.93rem; }
+ul { margin: 0.4rem 0; padding-left: 1.4rem; }
+li { font-size: 0.93rem; line-height: 1.7; }
+.btn { display: inline-block; background: #c62828; color: white; padding: 12px 26px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.95rem; margin: 0.5rem 0.25rem; }
+.btn-green { background: #2e7d32; }
+.balance-box { text-align: center; padding: 0.75rem; background: #ffebee; border-radius: 8px; margin: 0.75rem 0; }
+.balance-box strong { font-size: 1.6rem; color: #c62828; display: block; }
+small { color: #666; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+  <div class="label">⚠️ Solde faible</div>
+  <h1>Votre wallet approche de zéro</h1>
+</div>
+<div class="content">
+
+<div class="balance-box">
+  <strong>_ZEN_ Ẑen</strong>
+  <span style="font-size:0.85rem; color:#555">Solde actuel · Prochain prélèvement : _NEXT_PAYMENT_DATE_</span>
+</div>
+
+<div class="section alert">
+<h2>Situation actuelle</h2>
+<p>Votre MULTIPASS (<strong>_PLAYER_</strong>) coûte <strong>_NCARD_ Ẑen/semaine</strong>. À ce rythme, votre solde ne couvrira pas le prochain prélèvement du <strong>_NEXT_PAYMENT_DATE_</strong>.</p>
+</div>
+
+<div class="section solutions">
+<h2>Solutions immédiates</h2>
+<ul>
+<li><strong>Publiez sur Nostr</strong> : 1 like reçu = 1 Ẑen automatiquement crédité sur votre wallet.</li>
+<li><strong>Géolocalisez vos posts</strong> : les publications localisées attirent plus de voisins et génèrent plus de likes.</li>
+<li><strong>Parrainez un proche</strong> : chaque MULTIPASS actif dans votre constellation vous rapporte +1 Ẑen/semaine.</li>
+</ul>
+</div>
+
+<div class="section cobuild">
+<h2>Devenez Co-Bâtisseur — plus de redevance</h2>
+<p>Un parrainage annuel sur OpenCollective supprime la redevance hebdomadaire et vous accorde un NextCloud 128 Go souverain. Vous financez l'infrastructure coopérative et n'êtes plus dépendant de votre solde Ẑen.</p>
+<p style="text-align:center; margin-top:0.75rem">
+<a href="_OC_URL_SATELLITE_" class="btn btn-green" target="_blank">Devenir Co-Bâtisseur (50 €/an) →</a>
+</p>
+</div>
+
+<div class="section danger">
+<h2>Si votre solde atteint 0</h2>
+<p>Votre MULTIPASS sera <strong>suspendu automatiquement</strong>. Vos données IPFS sont conservées et récupérables. Votre Capitaine (<a href="mailto:_CAPTAINEMAIL_">_CAPTAINEMAIL_</a>) peut débloquer temporairement la situation le temps que vous rechargez votre wallet.</p>
+<p>Le flag <code>.balance_low_warned</code> a été positionné sur votre profil.</p>
+</div>
+
+<p style="text-align:center; margin-top:1.5rem"><small>UPlanet ORIGIN — support@qo-op.com</small></p>
+</div>
+</div>
+</body>
+</html>

@@ -303,7 +303,7 @@ handle_fresh_update() {
         echo ""
         echo -e "${YELLOW}Prochaines étapes:${NC}"
         echo -e "   • Embarquement: ${CYAN}$MY_PATH/uplanet_onboarding.sh${NC}"
-        echo -e "   • Tableau de bord: ${CYAN}$MY_PATH/tools/dashboard.sh${NC}"
+        echo -e "   • Tableau de bord: ${CYAN}$MY_PATH/admin/dashboard.sh${NC}"
     fi
 }
 
@@ -346,7 +346,7 @@ launch_onboarding_assistant() {
         print_error "Assistant d'embarquement non trouvé"
         echo ""
         echo -e "${BLUE}📋 Prochaines étapes recommandées:${NC}"
-        echo -e "   • Tableau de bord: ${CYAN}$MY_PATH/tools/dashboard.sh${NC}"
+        echo -e "   • Tableau de bord: ${CYAN}$MY_PATH/admin/dashboard.sh${NC}"
         echo -e "   • Configuration: ${CYAN}$ENV_FILE${NC}"
     fi
 }
@@ -477,8 +477,8 @@ show_menu() {
             fi
             ;;
         5)
-            if [[ -f "$MY_PATH/tools/dashboard.sh" ]]; then
-                "$MY_PATH/tools/dashboard.sh"
+            if [[ -f "$MY_PATH/admin/dashboard.sh" ]]; then
+                "$MY_PATH/admin/dashboard.sh"
             else
                 print_error "Tableau de bord non trouvé"
                 read -p "Appuyez sur Entrée pour continuer..."

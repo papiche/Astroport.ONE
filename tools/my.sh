@@ -1,24 +1,30 @@
 #shellcheck shell=sh disable=SC2034
 export LC_ALL=C.utf8
-function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
+urldecode() {
+    # Version pure shell sans echo -e
+    local data="${*//+/ }"
+    printf '%b\n' "${data//%/\\x}"
+}
 
 Base32Normalize() {
     awk '{printf $0}' | basenc --base32 | Normalize
 }
 
 Normalize() {
-    awk '{print tolower($1)}' | sed 's/\(_\|+\)/./g; s/=//g;'
+    # Tout en minuscules, remplace _ et + par ., supprime =
+    local val=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+    val=${val//_/.}; val=${val//+/.}
+    echo "${val//=/}"
 }
+
 
 Revert() {
     awk -F. '{for (i=NF; i>1; i--) printf("%s.",$i); print $1;}'
 }
 
 isLan() {
-    local isLan=$(ip route | awk '$1 == "default" {print $3}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
-               || route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/" \
-               || true)
-} 2>/dev/null
+    [ -n "$isLAN" ] && return 0 || return 1
+}
 
 isPlayerLegal() {
     local isPlayerLegal=$(cat "$(myPlayerPath)"/.legal 2>/dev/null || true)
@@ -46,8 +52,8 @@ myAstroKeyFile() {
 }
 
 myAstroPath() {
-    local myAstroPath=$(cd $HOME/.zen/Astroport.ONE/ && pwd -P)
-    [ -n "$myAstroPath" ] && echo "$myAstroPath"
+    [ -z "$__CACHE_ASTROPATH" ] && __CACHE_ASTROPATH="$HOME/.zen/Astroport.ONE"
+    echo "$__CACHE_ASTROPATH"
 }
 
 myDate() {
@@ -61,14 +67,16 @@ myDomainName() {
 }
 
 myHome() {
-    local myHome=$(cd ~ && pwd -P)
-    [ -n "$myHome" ] && echo "$myHome"
+    echo "$HOME"
 }
 
 myHostName() {
-    local myHostName=$(hostname |sed 's/\.'"$(myDomainName)"'$//')
-    [ -n "$(myDomainName)" ] && myHostName="${myHostName}.$(myDomainName)"
-    [ -n "$myHostName" ] && echo "$myHostName"
+    if [ -z "$__CACHE_HOSTNAME" ]; then
+        local h=$(hostname)
+        local d=$(myDomainName)
+        [[ "$h" != *"$d"* ]] && __CACHE_HOSTNAME="${h}.${d}" || __CACHE_HOSTNAME="$h"
+    fi
+    echo "$__CACHE_HOSTNAME"
 }
 
 myHName() {
@@ -95,9 +103,17 @@ myIp() {
 }
 
 myIpfsApi() {
-    ipfs --timeout 10s --api "$(cat "$(myHome)"/.ipfs/api)" swarm peers >/dev/null 2>&1 \
-     && local myIpfsApi=$(cat "$(myHome)"/.ipfs/api)
-    [ -n "$myIpfsApi" ] && echo "$myIpfsApi"
+    if [ -z "$__CACHE_IPFS_API" ]; then
+        local api_file="$HOME/.ipfs/api"
+        if [ -f "$api_file" ]; then
+            local api_val=$(cat "$api_file")
+            # On teste la connexion une seule fois pour toute la session (timeout court)
+            if ipfs --timeout 2s --api "$api_val" id >/dev/null 2>&1; then
+                __CACHE_IPFS_API="$api_val"
+            fi
+        fi
+    fi
+    echo "$__CACHE_IPFS_API"
 }
 
 myIpfsApiGw() {
@@ -114,36 +130,45 @@ myIpfsBootstrapNode() {
 }
 
 myIpfsBootstrapNodes() {
-    [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myIpfsBootstrapNodes=$(awk -F/ '$6 != "" {print}' "$(myAstroPath)/A_boostrap_nodes.txt")
-    [ -f "$(myAstroPath)/../game/MY_boostrap_nodes.txt" ] \
-     && local myIpfsBootstrapNodes=$(awk -F/ '$6 != "" {print}' "$(myAstroPath)/../game/MY_boostrap_nodes.txt")
-    [ -n "$myIpfsBootstrapNodes" ] && echo "$myIpfsBootstrapNodes"
+    if [ -z "$__CACHE_BOOTSTRAP_NODES" ]; then
+        local file1="$(myAstroPath)/A_boostrap_nodes.txt"
+        local file2="$(myAstroPath)/../game/MY_boostrap_nodes.txt"
+        local nodes=""
+        
+        for f in "$file1" "$file2"; do
+            if [ -f "$f" ]; then
+                while read -r line; do
+                    # Si la ligne contient au moins 6 slashs (format multiaddr)
+                    [[ "$line" == */*/*/*/*/* ]] && nodes="$nodes$line "
+                done < "$f"
+            fi
+        done
+        __CACHE_BOOTSTRAP_NODES="$nodes"
+    fi
+    echo "$__CACHE_BOOTSTRAP_NODES"
 }
 
-myIpfsGw() {
-    [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myIpfsGw=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 2)
-    [ -f "$(myAstroPath)/../game/MY_boostrap_nodes.txt" ] \
-     && local myIpfsGw=$(head -n2 "$(myAstroPath)/../game/MY_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 2)
-    [ -n "$myIpfsGw" ] && echo "$myIpfsGw"
-}
+myIpfsGw() { echo "$myIPFSGW"; }
 
 myIpfsKey() {
-    local myIpfsKey=$(ipfs --api "$(myIpfsApi)" key list -l | awk '$2 == "self" {print $1}')
-    [ -n "$myIpfsKey" ] && echo "$myIpfsKey"
+    if [ -z "$__CACHE_IPFS_SELF_KEY" ]; then
+        # On ne lance ipfs que si nécessaire
+        __CACHE_IPFS_SELF_KEY=$(ipfs --api "$(myIpfsApi)" key list -l | awk '$2 == "self" {print $1}')
+    fi
+    echo "$__CACHE_IPFS_SELF_KEY"
 }
 
 myIpfsKeyStore() {
-    local myIpfsKeyStore=$(cd "$(myHome)"/.ipfs/keystore && pwd -P)
-    [ -n "$myIpfsKeyStore" ] && echo "$myIpfsKeyStore"
+    [ -z "$__CACHE_KEYSTORE" ] && __CACHE_KEYSTORE="$HOME/.ipfs/keystore"
+    echo "$__CACHE_KEYSTORE"
 }
 
 myIpfsPeerId() {
-    local config="$(myHome)/.ipfs/config"
-    [ ! -f "$config" ] && return 0
-    local myIpfsPeerId=$(jq -r .Identity.PeerID "$config" 2>/dev/null)
-    [ -n "$myIpfsPeerId" ] && [ "$myIpfsPeerId" != "null" ] && echo "$myIpfsPeerId"
+    if [ -z "$__CACHE_PEERID" ]; then
+        local config="$HOME/.ipfs/config"
+        [ -f "$config" ] && __CACHE_PEERID=$(jq -r .Identity.PeerID "$config" 2>/dev/null)
+    fi
+    echo "$__CACHE_PEERID"
 }
 
 myIpns() {
@@ -152,14 +177,16 @@ myIpns() {
      && echo "$myIpns"
 }
 
-myPath() {
-    local myPath=$(cd $HOME/.zen/game/players/ && pwd -P)
-    [ -n "$myPath" ] && echo "$myPath"
+myPlayer() {
+    if [ -z "$__CACHE_PLAYER" ]; then
+        __CACHE_PLAYER=$(cat "$(myPath)/.current/.player" 2>/dev/null)
+    fi
+    echo "$__CACHE_PLAYER"
 }
 
-myPlayer() {
-    local myPlayer=$(cat "$(myPath)"/.current/.player 2>/dev/null)
-    [ -n "$myPlayer" ] && echo "$myPlayer"
+myPath() {
+    [ -z "$__CACHE_MYPATH" ] && __CACHE_MYPATH=$(cd $HOME/.zen/game/players/ && pwd -P)
+    echo "$__CACHE_MYPATH"
 }
 
 myPlayerApi() {
@@ -240,9 +267,11 @@ myPlayerNs() {
 }
 
 myPlayerPath() {
-    [ -n "$(myPlayer)" ] \
-     && local myPlayerPath=$(cd "$(myPath)"/"$(myPlayer)" && pwd -P)
-    [ -n "$myPlayerPath" ] && echo "$myPlayerPath"
+    if [ -z "$__CACHE_MYPLAYERPATH" ]; then
+        local p=$(myPlayer)
+        [ -n "$p" ] && __CACHE_MYPLAYERPATH=$(cd "$(myPath)/$p" 2>/dev/null && pwd -P)
+    fi
+    echo "$__CACHE_MYPLAYERPATH"
 }
 
 myPlayerPseudo() {
@@ -250,24 +279,27 @@ myPlayerPseudo() {
     [ -n "$myPlayerPseudo" ] && echo "$myPseudo"
 }
 
-myPlayerUser() {
-    echo "$(myPlayer)" | grep "@" >/dev/null \
-     && local myPlayerUser=$(echo "$(myPlayer)" | awk -F "@" '{print $1}' | Normalize)
-    [ -n "$myPlayerUser" ] && echo "$myPlayerUser"
+_setup_player_identity() {
+    [ -n "$__PLAYER_ID_SET" ] && return
+    local p=$(myPlayer)
+    [ -z "$p" ] && return
+
+    myPlayerUser="${p%%@*}"
+    myPlayerDomain="${p#*@}"
+    [ "$myPlayerDomain" = "$p" ] && myPlayerDomain="" # Pas de @ trouvé
+    
+    myPlayerUser=$(echo "$myPlayerUser" | tr '[:upper:]' '[:lower:]')
+    myPlayerDomain=$(echo "$myPlayerDomain" | tr '[:upper:]' '[:lower:]')
+    
+    myReyalp="${myPlayerUser}.${myPlayerDomain}"
+    [ -z "$myPlayerDomain" ] && myReyalp="$myPlayerUser"
+    
+    __PLAYER_ID_SET=1
 }
 
-myPlayerUserDomain() {
-    [ -n "$(myPlayerDomain)" ] \
-     && local myPlayerUserDomain="$(myPlayerUser).$(myPlayerDomain)" \
-     && echo "$myPlayerUserDomain"
-}
-
-myReyalp() {
-    [ -n "$(myPlayerDomain)" ] \
-     && local myReyalp="$(myPlayerUser).$(myPlayerDomain)" \
-     && echo "$myReyalp" \
-     || echo "$(myPlayer)"
-}
+myPlayerUser() { _setup_player_identity; echo "$myPlayerUser"; }
+myPlayerDomain() { _setup_player_identity; echo "$myPlayerDomain"; }
+myReyalp() { _setup_player_identity; echo "$myReyalp"; }
 
 myReyalpHome() {
     [ -n "$(myReyalpResuPath)" ] \
@@ -297,37 +329,23 @@ myReyalpResu() {
 }
 
 myReyalpResuNiamod() {
-    [ -n "$(myReyalpNiamod)" ] \
-     && local myReyalpResuNiamod="$(myReyalpNiamod).$(myReyalpResu)" \
-     && echo "$myReyalpResuNiamod"
+    _setup_player_identity
+    [ -z "$__CACHE_REYALP_RESU_NIAMOD" ] && __CACHE_REYALP_RESU_NIAMOD="${myPlayerDomain}.${myPlayerUser}"
+    echo "$__CACHE_REYALP_RESU_NIAMOD"
 }
 
 myReyalpResuPath() {
-    [ -n "$(myReyalpResuNiamod)" ] \
-     && local myReyalpResuPath=$(echo "$(myReyalpResuNiamod)" | sed 's/\./\//g';)
-    [ -n "$myReyalpResuPath" ] && echo "$myReyalpResuPath"
+    local niamod=$(myReyalpResuNiamod)
+    echo "${niamod//.//}"
 }
 
 myTs() {
-    local myTs=$(date +%s)
-    [ -n "$myTs" ] && echo "$myTs"
+    echo "${EPOCHSECONDS:-$(date +%s)}"
 }
 
-myTube() {
-    [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3)
-    [ -f "$(myAstroPath)/../game/MY_boostrap_nodes.txt" ] \
-     && local myTube=$(head -n2 "$(myAstroPath)/../game/MY_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3)
-    [ -n "$myTube" ] && echo "$myTube"
-}
+myTube() { echo "$myTUBE"; }
 
-myAstroTube() {
-    [ -f "$(myAstroPath)/A_boostrap_nodes.txt" ] \
-     && local myAstroTube=$(head -n2 "$(myAstroPath)/A_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3 | sed "s~ipfs~astroport~g")
-    [ -f "$(myAstroPath)/../game/MY_boostrap_nodes.txt" ] \
-     && local myAstroTube=$(head -n2 "$(myAstroPath)/../game/MY_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 3 | sed "s~ipfs~astroport~g")
-    [ -n "$myAstroTube" ] && echo "$myAstroTube"
-}
+myAstroTube() { echo "$myASTROTUBE"; }
 
 function makecoord() {
     local input="$1"
@@ -403,24 +421,24 @@ my_IPCity() {
 }
 
 my_LatLon() {
-    local ip=$1
-
-    if [ -z "$ip" ]; then
-        ip=$(curl 'https://api.ipify.org?format=json' --silent | jq -r '.ip')
+    local cache_geo="$HOME/.zen/tmp/geo_latlon.cache"
+    # Si le cache a moins de 24h (86400 sec), on l'utilise
+    if [[ -f "$cache_geo" ]] && [[ $(( $(date +%s) - $(stat -c %Y "$cache_geo") )) -lt 86400 ]]; then
+        cat "$cache_geo"
+        return
     fi
 
-    local url="http://ip-api.com/json/$ip"
-    local geolocalisation=$(curl -s "$url")
+    local ip=$(curl -s --max-time 2 'https://api.ipify.org')
+    [ -z "$ip" ] && echo "FR 48.85 2.35" && return # Fallback Paris si hors ligne
 
-    local countrycode=$(echo "$geolocalisation" | jq -r '.countryCode')
-    local lat=$(echo "$geolocalisation" | jq -r '.lat')
-    local lon=$(echo "$geolocalisation" | jq -r '.lon')
-
-    # Format lat and lon with 2 decimals using awk
-    local lat_formatted=$(echo "$lat" | awk '{printf "%.2f", $0}')
-    local lon_formatted=$(echo "$lon" | awk '{printf "%.2f", $0}')
-
-    echo "$countrycode $lat_formatted $lon_formatted"
+    local geo=$(curl -s --max-time 3 "http://ip-api.com/json/$ip")
+    local country=$(echo "$geo" | jq -r '.countryCode')
+    local lat=$(echo "$geo" | jq -r '.lat')
+    local lon=$(echo "$geo" | jq -r '.lon')
+    
+    local res=$(printf "%s %.2f %.2f" "$country" "$lat" "$lon")
+    echo "$res" > "$cache_geo"
+    echo "$res"
 }
 
 ## IPFSNODEID cache 1h (myIpfsPeerId lit ~/.ipfs/config via jq — subshell évité)
@@ -465,12 +483,16 @@ myIPFS="http://ipfs.copylaradio.com" ## Used to create IPFS URL
 ## Lecture unique du fichier bootstrap pour myIPFSGW, myTUBE, myASTROTUBE
 _STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt"
 [[ ! -f "$_STRAPFILE" ]] && _STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
+
 if [[ -f "$_STRAPFILE" ]]; then
-    _STRAP_LINE2=$(head -n2 "$_STRAPFILE" | tail -n1 | xargs)
-    myIPFSGW=$(echo "$_STRAP_LINE2" | cut -d ' ' -f 2)
-    myTUBE=$(echo   "$_STRAP_LINE2" | cut -d ' ' -f 3)
-    myASTROTUBE="https://$(echo "$myTUBE" | sed 's~ipfs~astroport~g')"
-    unset _STRAPFILE _STRAP_LINE2
+    # On lit la ligne 2 directement avec sed et on la découpe en une fois
+    _STRAP_LINE2=$(sed -n '2p' "$_STRAPFILE")
+    # Découpage propre des colonnes sans multiplier les processus
+    set -- $_STRAP_LINE2
+    myIPFSGW="$2"
+    myTUBE="$3"
+    # Utilisation du remplacement interne au shell (plus rapide que sed)
+    myASTROTUBE="https://${myTUBE//ipfs/astroport}"
 fi
 
 ## WAN STATION
@@ -553,16 +575,9 @@ if [ -n "$myWG_IP" ]; then
 fi
 
 _swarm_tcp_probe() {
-    local host="$1"
-    local port="$2"
-    local target="$host"
-
+    local host="$1" port="$2"
     [[ -z "$host" || -z "$port" ]] && return 1
-    if [[ "$host" == *:* && "$host" != \[*\] ]]; then
-        target="[$host]"
-    fi
-
-    timeout 2 bash -c ": >/dev/tcp/$target/$port" >/dev/null 2>&1
+    timeout 1 bash -c "cat < /dev/tcp/$host/$port" >/dev/null 2>&1
 }
 
 check_wireguard_tunnel() {
@@ -713,28 +728,39 @@ init_and_cache_wallet() {
     local file_prefix="$1"
     local seed="$2"
     local legacy_name="${3:-}"
+    
+    # Identifiant unique pour le cache en mémoire (ex: CACHE_uplanet_G1)
+    local var_cache="CACHE_${file_prefix//./_}"
+    
+    # Si déjà en mémoire, on retourne immédiatement
+    if [ -n "${!var_cache}" ]; then
+        echo "${!var_cache}"
+        return
+    fi
+
     local dunikey_file="$HOME/.zen/game/${file_prefix}.dunikey"
     local cache_file="$HOME/.zen/game/${file_prefix}.ss58"
     
-    mkdir -p "$HOME/.zen/tmp" 2>/dev/null
-
-    # 1. Génère le fichier clé s'il n'existe pas (physiquement sur le disque)
+    # 1. Création fichier si absent
     if [[ ! -s "$dunikey_file" ]]; then
         "$HOME/.zen/Astroport.ONE/tools/keygen" -t duniter -o "$dunikey_file" "$seed" "$seed" >/dev/null 2>&1
         chmod 600 "$dunikey_file" 2>/dev/null
     fi
     
-    # 2. Utilise le cache persistant SS58 s'il existe pour éviter de lancer Python
+    # 2. Lecture cache disque ou calcul Python
     local ss58=""
     if [[ -f "$cache_file" ]]; then
         ss58=$(cat "$cache_file")
     else
-        local pub=$(grep "pub" "$dunikey_file" | cut -d " " -f 2)
+        local pub=$(awk '/pub:/{print $2}' "$dunikey_file")
         ss58=$("$HOME/.zen/Astroport.ONE/tools/g1pub_to_ss58.py" "$pub")
         echo "$ss58" > "$cache_file"
     fi
 
-    # 3. Synchronisation avec (~/.zen/tmp/) pour compatibilité descendante
+    # 3. Mise en mémoire pour les prochains appels
+    printf -v "$var_cache" "%s" "$ss58"
+    
+    # Compatibilité descendante
     if [[ -n "$legacy_name" ]]; then
         echo "$ss58" > "$HOME/.zen/tmp/${legacy_name}"
         ln -sf "$dunikey_file" "$HOME/.zen/tmp/${legacy_name}.dunikey" 2>/dev/null
@@ -804,8 +830,12 @@ export TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
 export YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
 export DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
 
-## Charger les clés coopératives (MJ_APIKEY etc.) depuis le cache NOSTR local
-if [[ -f "${HOME}/.zen/Astroport.ONE/tools/cooperative_config.sh" ]]; then
-    source "${HOME}/.zen/Astroport.ONE/tools/cooperative_config.sh" 2>/dev/null
-    coop_load_env_vars 2>/dev/null
+## Charger les clés coopératives (APIKEY etc.) depuis le cache NOSTR local
+if [ -z "$COOP_CONFIG_LOADED" ]; then
+    _COOP_CFG="${HOME}/.zen/Astroport.ONE/tools/cooperative_config.sh"
+    if [[ -f "$_COOP_CFG" ]]; then
+        source "$_COOP_CFG" 2>/dev/null
+        coop_load_env_vars 2>/dev/null && export COOP_CONFIG_LOADED=1
+    fi
+    unset _COOP_CFG
 fi

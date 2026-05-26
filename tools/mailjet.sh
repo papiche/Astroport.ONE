@@ -379,7 +379,7 @@ if [[ -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRIVATE" && -n "$SENDER_EMAIL" ]]
         TEMPLATE_INFO="<p style=\"font-size:0.75em; color:#aaa; font-family:monospace;\">📄 Template: <code>${TEMPLATE_SRC}</code></p>"
     fi
 
-    FULL_HTML="${IPFS_ONLINE_LINK}<h3>${title}</h3><br><br>${RAW_CONTENT}<br><br><hr><p><a href=\"${uSPOT}/nostr\">${UPLANET}</a> [ /ipns/${pseudo} ]<br />${MESSAGESIGN}</p>${TEMPLATE_INFO}"
+    FULL_HTML="${IPFS_ONLINE_LINK}<h3>${title}</h3><br><br>${RAW_CONTENT}<br><br><hr><p><a href=\"${uSPOT}/g1\">${UPLANET}</a> [ <a href=\"${myLIBRA}/ipns/${pseudo}\">/ipns/${pseudo}</a> ]<br />${MESSAGESIGN}</p>${TEMPLATE_INFO}"
     
     # Fallback en texte brut contenant le lien IPFS
     PLAIN_TEXT="Voir le message sur le réseau IPFS : ${myIPFS}/ipfs/${EMAILZ}\n\nMessage de ${UPLANET}"

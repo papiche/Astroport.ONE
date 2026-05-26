@@ -585,6 +585,7 @@ if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
 fi
 
 ## SEND EMAIL to CAPTAIN with backup information (SECURE - no sensitive data)
+## (NCARD, ZCARD, OC_URL_SATELLITE, OC_URL_CONSTELLATION définis dans tools/my.sh)
 EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
     | sed -e "s~_myIPFS_~${myIPFS}~g" \
           -e "s~_NOSTRIFS_UPLANET_~${NOSTRIFS_UPLANET:-N/A}~g" \
@@ -593,7 +594,11 @@ EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
           -e "s~_PEPPER_~[PROTECTED]~g" \
           -e "s~_uSPOT_~${uSPOT}~g" \
           -e "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" \
-          -e "s~_DEACTIVATION_DATE_~$(date '+%Y-%m-%d %H:%M:%S')~g")
+          -e "s~_DEACTIVATION_DATE_~$(date '+%Y-%m-%d %H:%M:%S')~g" \
+          -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
+          -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
+          -e "s~_NCARD_~${NCARD}~g" \
+          -e "s~_ZCARD_~${ZCARD}~g")
 
 # Send email to CAPTAIN (not to the user)
 ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" --expire 3d \

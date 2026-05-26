@@ -1127,7 +1127,7 @@ step_final_summary() {
     echo -e "${BLUE}🎯 Prochaines étapes:${NC}"
     echo ""
     echo -e "${CYAN}1. Interface principale:${NC}"
-    echo -e "   ${WHITE}~/.zen/Astroport.ONE/tools/dashboard.sh${NC}"
+    echo -e "   ${WHITE}~/.zen/Astroport.ONE/admin/dashboard.sh${NC}"
     echo -e "   Vue d'ensemble et actions rapides quotidiennes"
     echo ""
     echo -e "${CYAN}2. Virements officiels:${NC}"

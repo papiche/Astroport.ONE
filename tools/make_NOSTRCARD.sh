@@ -122,22 +122,44 @@ _alert_captain() {
     [[ ! -x "$_MAILJET" ]] && echo "⚠️  mailjet.sh introuvable — alerte non envoyée" && return
     local _TMPHTML=$(mktemp /tmp/alert_${_MOATS_LOCAL}.XXXXXX.html)
     cat > "$_TMPHTML" <<EOALERT
-<html><body style="font-family:monospace">
-<h2>🚨 MULTIPASS CREATION ERROR</h2>
-<table>
-<tr><td><b>EMAIL</b></td><td>${EMAIL:-???}</td></tr>
-<tr><td><b>Station</b></td><td>${IPFSNODEID:-unknown}</td></tr>
-<tr><td><b>Time</b></td><td>$(date -u)</td></tr>
-<tr><td><b>Error</b></td><td>${_SUBJECT}</td></tr>
-</table>
-<pre style="background:#fee;padding:1em">${_BODY}</pre>
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#fce4ec;color:#1a1a2e}
+.c{max-width:600px;margin:0 auto;background:white}
+.h{background:linear-gradient(135deg,#b71c1c,#e53935);color:white;padding:1.5rem;text-align:center}
+.h .lbl{font-size:.8rem;opacity:.8;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
+.h h1{margin:0;font-size:1.3rem}
+.ct{padding:1.5rem}
+.card{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:1rem;margin:1rem 0;font-size:.9rem}
+.card table{width:100%;border-collapse:collapse}
+.card td{padding:.3rem .5rem;vertical-align:top}
+.card td:first-child{font-weight:bold;color:#555;width:35%}
+.err{background:#fff3cd;border-left:4px solid #e53935;border-radius:4px;padding:1rem;margin:1rem 0;font-family:monospace;font-size:.85rem;white-space:pre-wrap;word-break:break-all}
+.tip{background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:4px;padding:1rem;margin:1rem 0;font-size:.9rem}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
+small{color:#666;font-size:.8rem}
+</style></head>
+<body><div class="c">
+<div class="h"><div class="lbl">👑 Alerte Capitaine</div><h1>🚨 Erreur Création MULTIPASS</h1></div>
+<div class="ct">
+<div class="card"><table>
+<tr><td>Email</td><td><strong>${EMAIL:-???}</strong></td></tr>
+<tr><td>Station</td><td>${IPFSNODEID:-unknown}</td></tr>
+<tr><td>Horodatage</td><td>$(date -u '+%Y-%m-%d %H:%M UTC')</td></tr>
+<tr><td>Erreur</td><td><strong>${_SUBJECT}</strong></td></tr>
+</table></div>
+<div class="err">${_BODY}</div>
+<div class="tip">
 <p>→ Vérifiez le daemon IPFS et les logs de la station.</p>
-</body></html>
+<p>→ Aucun MULTIPASS n'a été créé pour cet utilisateur — aucune action irréversible n'a eu lieu.</p>
+</div>
+<p style="text-align:center;margin-top:1.5rem"><small>Astroport.ONE — support@qo-op.com</small></p>
+</div></div></body></html>
 EOALERT
     "$_MAILJET" --template "$0" --expire 48h \
         "${CAPTAINEMAIL}" \
         $_TMPHTML \
-        "🚨 MULTIPASS ERROR [${IPFSNODEID:0:8}]: ${_SUBJECT}" \
+        "🚨 Erreur MULTIPASS [${IPFSNODEID:0:8}] — ${_SUBJECT}" \
         >/dev/null 2>&1
     rm -f "$_TMPHTML"
     echo "📧 Alerte envoyée à ${CAPTAINEMAIL} (48h)"

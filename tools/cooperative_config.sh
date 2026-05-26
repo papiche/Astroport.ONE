@@ -988,9 +988,18 @@ coop_load_env_vars() {
     # Load cooperative shares
     val=$(echo "$config" | jq -r '.ZENCARD_SATELLITE // empty' 2>/dev/null)
     [[ -n "$val" ]] && export ZENCARD_SATELLITE="$val"
-    
+
     val=$(echo "$config" | jq -r '.ZENCARD_CONSTELLATION // empty' 2>/dev/null)
     [[ -n "$val" ]] && export ZENCARD_CONSTELLATION="$val"
+
+    val=$(echo "$config" | jq -r '.PAF // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export PAF="$val"
+
+    val=$(echo "$config" | jq -r '.NCARD // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export NCARD="$val"
+
+    val=$(echo "$config" | jq -r '.ZCARD // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export ZCARD="$val"
     
     # Load 3x1/3 percentages
     val=$(echo "$config" | jq -r '.TREASURY_PERCENT // empty' 2>/dev/null)

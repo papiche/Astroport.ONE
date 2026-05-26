@@ -517,7 +517,7 @@ else
     # Envoyer le rapport par email au Capitaine
     if [[ -n "$CAPTAINEMAIL" && -s "$REPORT_FILE" ]]; then
         echo "📧 Sending HTML report to Captain: $CAPTAINEMAIL"
-        ${MY_PATH}/../tools/mailjet.sh --template "${TEMPLATE_FILE}" --expire 7d "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $TODATE"
+        ${MY_PATH}/../tools/mailjet.sh --template "${TEMPLATE_FILE}" --expire 7d "$CAPTAINEMAIL" "$REPORT_FILE" "📊 Rapport d'allocation coopérative — $TODATE"
 
         if [[ $? -eq 0 ]]; then
             echo "✅ HTML report sent successfully to Captain"
@@ -556,8 +556,40 @@ else
     echo "   Ce n'est pas une faillite : les fonds alloués le seront dès que possible."
     # Notification au Capitaine (non-bloquante)
     if [[ -n "$CAPTAINEMAIL" ]]; then
-        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "$CAPTAINEMAIL" "" \
-            "🔄 UPlanet Allocation partielle - Retry - $TODATE" 2>/dev/null || true
+        _alloc_tmp=$(mktemp)
+        cat > "$_alloc_tmp" <<ALLOCHTML
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#fff8e1;color:#1a1a2e}
+.c{max-width:600px;margin:0 auto;background:white}
+.h{background:linear-gradient(135deg,#f57f17,#ffca28);color:#1a1a2e;padding:1.5rem;text-align:center}
+.h .lbl{font-size:.8rem;opacity:.7;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
+.h h1{margin:0;font-size:1.3rem}
+.ct{padding:1.5rem}
+.failed{background:#fff3e0;border-left:4px solid #f57f17;border-radius:4px;padding:1rem;margin:1rem 0;font-family:monospace;font-size:.9rem}
+.info{background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:4px;padding:1rem;margin:1rem 0;font-size:.9rem}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
+small{color:#666;font-size:.8rem}
+</style></head>
+<body><div class="c">
+<div class="h"><div class="lbl">👑 Notification Capitaine</div><h1>🔄 Allocation coopérative — réessai prévu</h1></div>
+<div class="ct">
+<p>L'allocation hebdomadaire du <strong>${TODATE}</strong> n'a pas pu être complétée intégralement.</p>
+<div class="failed">
+<p><strong>Allocations échouées :</strong> ${FAILED_LIST}</p>
+</div>
+<div class="info">
+<p>✅ Ce n'est pas une faillite. Les fonds restent dans le wallet Capitaine.</p>
+<p>🔄 Le système retentera automatiquement au prochain cycle hebdomadaire.</p>
+<p>⚠️ Si le problème persiste, vérifiez la connectivité Duniter v2s et le solde du wallet Capitaine Dédié.</p>
+</div>
+<p style="text-align:center;margin-top:1.5rem"><small>Astroport.ONE · ZEN.COOPERATIVE — support@qo-op.com</small></p>
+</div></div></body></html>
+ALLOCHTML
+        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "$CAPTAINEMAIL" "$_alloc_tmp" \
+            "🔄 Allocation coopérative partielle — réessai — $TODATE" 2>/dev/null || true
+        rm -f "$_alloc_tmp"
+        unset _alloc_tmp
     fi
 fi
 

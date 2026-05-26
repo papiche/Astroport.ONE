@@ -91,15 +91,15 @@ for PLAYER in ${PLAYERONE[@]}; do
     ######################################################################################
     ######## COOPERATIVE ZEN CARD MANAGEMENT
     ######################################################################################
-    ## Load OC URLs from cooperative config (or defaults)
-    [[ -z "$OC_URL_SATELLITE" ]] && OC_URL_SATELLITE="https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386"
-    [[ -z "$OC_URL_CONSTELLATION" ]] && OC_URL_CONSTELLATION="https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385"
-    ## Helper: prepare email template with OC URLs injected
+    ## Helper: prepare email template with OC URLs and cost amounts injected
+    ## (NCARD, ZCARD, OC_URL_SATELLITE, OC_URL_CONSTELLATION définis dans tools/my.sh)
     _prepare_email_template() {
         local tpl="$1"
         local tmp_email=$(mktemp)
         sed -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
             -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
+            -e "s~_NCARD_~${NCARD}~g" \
+            -e "s~_ZCARD_~${ZCARD}~g" \
             "$tpl" > "$tmp_email"
         echo "$tmp_email"
     }
@@ -252,9 +252,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             DIFF_DAYS=999  # Force skip du cycle de paiement
         fi
 
-        [[ -z $NCARD ]] && NCARD=1
         Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
-        [[ -z $ZCARD ]] && ZCARD=4
         Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
         # Valeur par défaut pour éviter un crash bc si COINS est vide
         COINS=${COINS:-0}

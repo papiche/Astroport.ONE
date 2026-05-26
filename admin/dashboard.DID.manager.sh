@@ -12,10 +12,11 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+TOOLS_PATH="${MY_PATH}/../tools"
 
-# Source common tools
-[[ -s "${HOME}/.zen/Astroport.ONE/tools/my.sh" ]] \
-    && source "${HOME}/.zen/Astroport.ONE/tools/my.sh"
+# Source my.sh
+[[ -s "${TOOLS_PATH}/my.sh" ]] \
+    && source "${TOOLS_PATH}/my.sh"
 
 ################################################################################
 # Colors for output
@@ -32,11 +33,11 @@ NC='\033[0m' # No Color
 ################################################################################
 # Configuration
 ################################################################################
-NOSTR_GET_EVENTS="${MY_PATH}/nostr_get_events.sh"
-NOSTR_GET_N1="${MY_PATH}/nostr_get_N1.sh"
-DID_MANAGER="${MY_PATH}/did_manager_nostr.sh"
+NOSTR_GET_EVENTS="${TOOLS_PATH}/nostr_get_events.sh"
+NOSTR_GET_N1="${TOOLS_PATH}/nostr_get_N1.sh"
+DID_MANAGER="${TOOLS_PATH}/did_manager_nostr.sh"
 COOPERATIVE_CONFIG="${MY_PATH}/cooperative_config.sh"
-G1CHECK="${MY_PATH}/G1check.sh"
+G1CHECK="${TOOLS_PATH}/G1check.sh"
 DID_EVENT_KIND=30800  # NIP-101 DID events
 TEMP_DIR="${HOME}/.zen/tmp/did_dashboard_$$"
 
@@ -89,7 +90,6 @@ ${YELLOW}COMMANDS:${NC}
     coop-check        Check cooperative wallet balances
     coop-init         Initialize ALL missing wallets and NOSTR keys
     coop-create       Create and publish cooperative DID to Nostr
-    coop-sync         Sync cooperative DIDs from Nostr
     
     ${CYAN}=== UMAP DIDs ===${NC}
     umap-list         List all UMAP DIDs (geographic cells)
@@ -197,8 +197,8 @@ check_dependencies() {
 npub_to_hex() {
     local npub="$1"
     
-    if command -v python3 &> /dev/null && [[ -f "${MY_PATH}/nostr2hex.py" ]]; then
-        python3 "${MY_PATH}/nostr2hex.py" "$npub" 2>/dev/null && return 0
+    if command -v python3 &> /dev/null && [[ -f "${TOOLS_PATH}/nostr2hex.py" ]]; then
+        python3 "${TOOLS_PATH}/nostr2hex.py" "$npub" 2>/dev/null && return 0
     fi
     
     echo "$npub"
@@ -391,15 +391,14 @@ cmd_coop_list() {
     # List cooperative wallets
     local count=0
     for wallet_type in "${COOP_WALLETS[@]}"; do
-        local wallet_file="${HOME}/.zen/game/uplanet.${wallet_type}.dunikey"
-        local pubkey_file="${HOME}/.zen/game/${uplanetname}_${wallet_type}.pub"
-        
-        if [[ -f "$pubkey_file" ]]; then
-            local pubkey=$(cat "$pubkey_file" 2>/dev/null)
+        local dunikey_file=$(get_coop_dunikey_path "$wallet_type")
+
+        if [[ -f "$dunikey_file" ]]; then
+            local pubkey=$(get_coop_g1pub "$wallet_type")
             local balance=$(get_wallet_balance "$pubkey")
-            
+
             count=$((count + 1))
-            
+
             echo -e "  ${YELLOW}$count.${NC} 🏦 ${GREEN}${wallet_type}${NC}"
             echo -e "      G1PUB: ${pubkey:0:16}..."
             echo -e "      Balance: ${CYAN}${balance} Ğ1${NC}"
@@ -442,12 +441,12 @@ cmd_coop_browse() {
     local -a wallet_balances=()
     
     for wallet_type in "${COOP_WALLETS[@]}"; do
-        local pubkey_file="${HOME}/.zen/game/${uplanetname}_${wallet_type}.pub"
-        
-        if [[ -f "$pubkey_file" ]]; then
-            local pubkey=$(cat "$pubkey_file" 2>/dev/null)
+        local dunikey_file=$(get_coop_dunikey_path "$wallet_type")
+
+        if [[ -f "$dunikey_file" ]]; then
+            local pubkey=$(get_coop_g1pub "$wallet_type")
             local balance=$(get_wallet_balance "$pubkey")
-            
+
             wallet_names+=("$wallet_type")
             wallet_pubkeys+=("$pubkey")
             wallet_balances+=("$balance")
@@ -612,12 +611,12 @@ cmd_coop_check() {
     echo -e "  ${CYAN}─────────────────────────────────────────────────────────────────────────${NC}"
     
     for wallet_type in "${COOP_WALLETS[@]}"; do
-        local pubkey_file="${HOME}/.zen/game/${uplanetname}_${wallet_type}.pub"
-        
-        if [[ -f "$pubkey_file" ]]; then
-            local pubkey=$(cat "$pubkey_file" 2>/dev/null)
+        local dunikey_file=$(get_coop_dunikey_path "$wallet_type")
+
+        if [[ -f "$dunikey_file" ]]; then
+            local pubkey=$(get_coop_g1pub "$wallet_type")
             local balance=$(get_wallet_balance "$pubkey")
-            
+
             printf "  %-15s %-45s %15s\n" "$wallet_type" "$pubkey" "${balance} Ğ1"
             
             if [[ "$balance" != "N/A" ]]; then
@@ -643,9 +642,8 @@ cmd_coop_create() {
     
     # Get UPlanet name from my.sh (computed from swarm.key)
     local uplanetname=""
-    if [[ -f "${MY_PATH}/my.sh" ]]; then
-        # Source my.sh to get UPLANETNAME (computed from swarm.key or "0000000000000000000000000000000000000000000000000000000000000000")
-        source "${MY_PATH}/my.sh" 2>/dev/null
+    if [[ -f "${TOOLS_PATH}/my.sh" ]]; then
+        source "${TOOLS_PATH}/my.sh" 2>/dev/null
         uplanetname="$UPLANETNAME"
     fi
     
@@ -800,13 +798,13 @@ get_coop_nostr_path() {
     esac
 }
 
-# Get keygen seed for a wallet type (matches UPLANET.init.sh convention)
+# Get keygen seed for a wallet type (aligned with UPLANET.init.sh convention)
 get_coop_keygen_seed() {
     local wallet_type="$1"
     local uplanetname="$2"
-    
+
     case "$wallet_type" in
-        G1)           echo "${uplanetname}" ;;
+        G1)           echo "${uplanetname}.G1" ;;
         UPLANET)      echo "${uplanetname}" ;;
         SOCIETY)      echo "${uplanetname}.SOCIETY" ;;
         TREASURY)     echo "${uplanetname}.CASH" ;;
@@ -838,27 +836,6 @@ get_coop_cache_var() {
         INTRUSION)    echo "UPLANETNAME_INTRUSION" ;;
         CAPTAIN)      echo "UPLANETNAME_CAPTAIN" ;;
         *)            echo "UPLANETNAME_${wallet_type}" ;;
-    esac
-}
-
-# Get keygen seed for a wallet type (aligned with UPLANET.init.sh)
-get_coop_keygen_seed() {
-    local wallet_type="$1"
-    local uplanetname="$2"
-    
-    case "$wallet_type" in
-        G1)           echo "${uplanetname}.G1" ;;
-        UPLANET)      echo "${uplanetname}" ;;
-        SOCIETY)      echo "${uplanetname}.SOCIETY" ;;
-        TREASURY)     echo "${uplanetname}.TREASURY" ;;
-        RND)          echo "${uplanetname}.RND" ;;
-        ASSETS)       echo "${uplanetname}.ASSETS" ;;
-        IMPOT)        echo "${uplanetname}.IMPOT" ;;
-        CAPITAL)      echo "${uplanetname}.CAPITAL" ;;
-        AMORTISSEMENT) echo "${uplanetname}.AMORTISSEMENT" ;;
-        INTRUSION)    echo "${uplanetname}.INTRUSION" ;;
-        CAPTAIN)      echo "${uplanetname}.${CAPTAINEMAIL:-support@qo-op.com}" ;;
-        *)            echo "${uplanetname}.${wallet_type}" ;;
     esac
 }
 
@@ -909,8 +886,8 @@ create_coop_dunikey() {
     [[ ! -d "$wallet_dir" ]] && mkdir -p "$wallet_dir"
     
     # Use keygen to create dunikey (same as UPLANET.init.sh)
-    if [[ -x "${MY_PATH}/keygen" ]]; then
-        "${MY_PATH}/keygen" -t duniter -o "$dunikey_file" "$seed" "$seed" 2>/dev/null
+    if [[ -x "${TOOLS_PATH}/keygen" ]]; then
+        "${TOOLS_PATH}/keygen" -t duniter -o "$dunikey_file" "$seed" "$seed" 2>/dev/null
         
         if [[ -f "$dunikey_file" ]]; then
             chmod 600 "$dunikey_file"
@@ -930,7 +907,7 @@ create_coop_dunikey() {
             return 1
         fi
     else
-        log_error "keygen tool not found at ${MY_PATH}/keygen"
+        log_error "keygen tool not found at ${TOOLS_PATH}/keygen"
         return 1
     fi
 }
@@ -949,11 +926,11 @@ create_coop_nostr_root_key() {
     
     log_info "Creating cooperative NOSTR root key (uplanet.G1.nostr)..."
     
-    if [[ -x "${MY_PATH}/keygen" ]] && [[ -x "${MY_PATH}/nostr2hex.py" ]]; then
-        local npub=$("${MY_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" 2>/dev/null)
-        local nsec=$("${MY_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" -s 2>/dev/null | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
+    if [[ -x "${TOOLS_PATH}/keygen" ]] && [[ -x "${TOOLS_PATH}/nostr2hex.py" ]]; then
+        local npub=$("${TOOLS_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" 2>/dev/null)
+        local nsec=$("${TOOLS_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" -s 2>/dev/null | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
         local hex=""
-        [[ -n "$npub" ]] && hex=$("${MY_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
+        [[ -n "$npub" ]] && hex=$("${TOOLS_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
         if [[ -n "$npub" ]] && [[ -n "$nsec" ]] && [[ -n "$hex" ]]; then
             echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > "$nostr_key_file"
             chmod 600 "$nostr_key_file"
@@ -1036,16 +1013,16 @@ init_all_coop_infrastructure() {
             ((nostr_existed++))
         else
             # Create NOSTR key using keygen with -k flag and format as NSEC=...; NPUB=...; HEX=...;
-            if [[ -x "${MY_PATH}/keygen" ]]; then
-                local keygen_output=$("${MY_PATH}/keygen" -t nostr -k "$seed" "$seed" 2>/dev/null)
+            if [[ -x "${TOOLS_PATH}/keygen" ]]; then
+                local keygen_output=$("${TOOLS_PATH}/keygen" -t nostr -k "$seed" "$seed" 2>/dev/null)
                 local npub=$(echo "$keygen_output" | grep -E '^npub1' | head -1)
                 local nsec=$(echo "$keygen_output" | grep -E '^nsec1' | head -1)
                 
                 if [[ -n "$npub" ]] && [[ -n "$nsec" ]]; then
                     # Get HEX from npub using nostr_nsec2npub2hex.py or manual conversion
                     local hex=""
-                    if [[ -f "${MY_PATH}/nostr_nsec2npub2hex.py" ]]; then
-                        hex=$(python3 "${MY_PATH}/nostr_nsec2npub2hex.py" "$nsec" 2>/dev/null)
+                    if [[ -f "${TOOLS_PATH}/nostr_nsec2npub2hex.py" ]]; then
+                        hex=$(python3 "${TOOLS_PATH}/nostr_nsec2npub2hex.py" "$nsec" 2>/dev/null)
                     fi
                     
                     # Write formatted output
@@ -1097,8 +1074,8 @@ init_all_coop_infrastructure() {
 cmd_coop_init() {
     # Get UPlanet name from my.sh
     local uplanetname=""
-    if [[ -f "${MY_PATH}/my.sh" ]]; then
-        source "${MY_PATH}/my.sh" 2>/dev/null
+    if [[ -f "${TOOLS_PATH}/my.sh" ]]; then
+        source "${TOOLS_PATH}/my.sh" 2>/dev/null
         uplanetname="$UPLANETNAME"
     fi
     
@@ -1146,16 +1123,16 @@ create_coop_did() {
         local coop_nostr_dir=$(dirname "$nostr_file")
         mkdir -p "$coop_nostr_dir"
         
-        if [[ -x "${MY_PATH}/keygen" ]]; then
-            local keygen_output=$("${MY_PATH}/keygen" -t nostr -k "$seed" "$seed" 2>/dev/null)
+        if [[ -x "${TOOLS_PATH}/keygen" ]]; then
+            local keygen_output=$("${TOOLS_PATH}/keygen" -t nostr -k "$seed" "$seed" 2>/dev/null)
             local gen_npub=$(echo "$keygen_output" | grep -oE 'npub1[a-zA-Z0-9]{58}' | head -1)
             local gen_nsec=$(echo "$keygen_output" | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
             local gen_hex=""
-            if [[ -n "$gen_npub" ]] && [[ -x "${MY_PATH}/nostr2hex.py" ]]; then
-                gen_hex=$("${MY_PATH}/nostr2hex.py" "$gen_npub" 2>/dev/null)
+            if [[ -n "$gen_npub" ]] && [[ -x "${TOOLS_PATH}/nostr2hex.py" ]]; then
+                gen_hex=$("${TOOLS_PATH}/nostr2hex.py" "$gen_npub" 2>/dev/null)
             fi
-            if [[ -z "$gen_hex" ]] && [[ -f "${MY_PATH}/nostr_nsec2npub2hex.py" ]] && [[ -n "$gen_nsec" ]]; then
-                gen_hex=$(python3 "${MY_PATH}/nostr_nsec2npub2hex.py" "$gen_nsec" 2>/dev/null | tail -1)
+            if [[ -z "$gen_hex" ]] && [[ -f "${TOOLS_PATH}/nostr_nsec2npub2hex.py" ]] && [[ -n "$gen_nsec" ]]; then
+                gen_hex=$(python3 "${TOOLS_PATH}/nostr_nsec2npub2hex.py" "$gen_nsec" 2>/dev/null | tail -1)
             fi
             
             if [[ -n "$gen_npub" ]] && [[ -n "$gen_nsec" ]] && [[ -n "$gen_hex" ]]; then
@@ -1170,7 +1147,7 @@ create_coop_did() {
                 return 1
             fi
         else
-            log_error "keygen tool not found at ${MY_PATH}/keygen"
+            log_error "keygen tool not found at ${TOOLS_PATH}/keygen"
             return 1
         fi
     fi
@@ -1187,8 +1164,8 @@ create_coop_did() {
     
     # Get hex pubkey
     if [[ -z "$hex" ]]; then
-        if [[ -x "${MY_PATH}/nostr2hex.py" ]]; then
-            hex=$("${MY_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
+        if [[ -x "${TOOLS_PATH}/nostr2hex.py" ]]; then
+            hex=$("${TOOLS_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
         fi
     fi
     
@@ -1279,10 +1256,10 @@ EOF
     # Publish to Nostr
     log_info "Publishing DID to Nostr relays..."
     
-    if [[ -f "${MY_PATH}/nostr_publish_did.py" ]]; then
+    if [[ -f "${TOOLS_PATH}/nostr_publish_did.py" ]]; then
         local relays="ws://127.0.0.1:7777 wss://relay.copylaradio.com"
         
-        python3 "${MY_PATH}/nostr_publish_did.py" "$nsec" "$did_file" $relays 2>&1
+        python3 "${TOOLS_PATH}/nostr_publish_did.py" "$nsec" "$did_file" $relays 2>&1
         
         if [[ $? -eq 0 ]]; then
             log_success "DID published to Nostr for $wallet_type"
@@ -1987,8 +1964,8 @@ cmd_user_update() {
     echo ""
     
     # Find user
-    local email="$USER_EMAIL"
-    local hex="$USER_HEX"
+    local email="$EMAIL"
+    local hex="$HEX"
     
     if [[ -z "$email" ]] && [[ -z "$hex" ]]; then
         # List available users
@@ -2125,8 +2102,8 @@ cmd_user_update() {
         log_info "Updating DID with type: $update_type"
         
         # Call did_manager_nostr.sh to update
-        if [[ -f "${MY_PATH}/did_manager_nostr.sh" ]]; then
-            bash "${MY_PATH}/did_manager_nostr.sh" update "$email" "$update_type" "$montant_zen" "$montant_g1" "$wot_g1pub"
+        if [[ -f "${TOOLS_PATH}/did_manager_nostr.sh" ]]; then
+            bash "${TOOLS_PATH}/did_manager_nostr.sh" update "$email" "$update_type" "$montant_zen" "$montant_g1" "$wot_g1pub"
             
             if [[ $? -eq 0 ]]; then
                 log_success "DID updated successfully"
@@ -2237,9 +2214,9 @@ update_user_metadata_custom() {
                     nsec=$(grep -oP 'NSEC=\K[^;]+' "$nsec_file" 2>/dev/null | head -1 | tr -d ' ')
                 fi
                 
-                if [[ -n "$nsec" ]] && [[ -f "${MY_PATH}/nostr_publish_did.py" ]]; then
+                if [[ -n "$nsec" ]] && [[ -f "${TOOLS_PATH}/nostr_publish_did.py" ]]; then
                     log_info "Publishing to Nostr..."
-                    python3 "${MY_PATH}/nostr_publish_did.py" "$nsec" "$did_cache" ws://127.0.0.1:7777 wss://relay.copylaradio.com 2>&1
+                    python3 "${TOOLS_PATH}/nostr_publish_did.py" "$nsec" "$did_cache" ws://127.0.0.1:7777 wss://relay.copylaradio.com 2>&1
                     
                     if [[ $? -eq 0 ]]; then
                         log_success "DID published to Nostr"

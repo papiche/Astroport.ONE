@@ -6,10 +6,10 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-
-# Source common tools
-[[ -s "${HOME}/.zen/Astroport.ONE/tools/my.sh" ]] \
-    && source "${HOME}/.zen/Astroport.ONE/tools/my.sh"
+TOOLS_PATH="${MY_PATH}/../tools"
+# Source my.sh
+[[ -s "${TOOLS_PATH}/my.sh" ]] \
+    && source "${TOOLS_PATH}/my.sh"
 
 ################################################################################
 # Colors for output

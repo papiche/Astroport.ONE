@@ -12,9 +12,12 @@ Licensed under AGPL-3.0. Author: Fred (support@qo-op.com).
 
 ### Bare Metal Installation
 ```bash
-./install.sh          # Full install (requires non-root user with sudo)
-./start.sh            # Start all services (ipfs, astroport, g1billet, upassport)
-./stop.sh             # Stop services
+./install.sh                          # Standard : IPFS + NOSTR + G1 (interactif)
+./install.sh "" "" "" nextcloud       # Standard + NextCloud AIO (cloud privé 128Go)
+./install.sh "" "" "" ai-company      # Standard + Stack IA (Ollama, Open WebUI, Qdrant)
+./install.sh "" "" "" dev             # Standard + rnostr (relay NOSTR Rust)
+./start.sh                            # Start all services (ipfs, astroport, g1billet, upassport)
+./stop.sh                             # Stop services
 ```
 
 ### Docker Installation
@@ -109,7 +112,9 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
   - `duniter_getnode.sh` - Dynamic Duniter v2 RPC/squid node discovery
   - `cron_VRFY.sh` - Cron job management
   - `make_NOSTRCARD.sh` - NOSTR Card creation
+- **`admin/monitor/`** - Monitoring et métriques :
   - `heartbox_analysis.sh` - Hardware analysis: CPU/RAM/GPU, Power-Score, services status, Ollama models. Cached in `~/.zen/tmp/$IPFSNODEID/heartbox_analysis.json`
+- **`admin/system/`** - Gestion système P2P :
   - `astrosystemctl.sh` - **CLI Cloud P2P de Puissance** : compare Power-Score local vs swarm, connecte/active des services distants via tunnels IPFS P2P (`list`, `list-remote`, `connect`, `enable`, `disable`, `status`). Symlink : `~/.local/bin/astrosystemctl`
   - `setup_npm_dynamic.sh` - Crée dynamiquement un proxy host NPM pour un tunnel P2P (`SERVICE_NAME PORT` → `service.DOMAIN`)
 - **`RUNTIME/TW/`** - TiddlyWiki templates and management

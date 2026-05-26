@@ -330,6 +330,33 @@ if [[ -z "$1" && "$_PARALLEL" -gt 1 && "${#NOSTR[@]}" -gt 1 ]]; then
     exit $?
 fi
 
+## Helper: envoie un email MULTIPASS depuis un template avec substitutions dynamiques
+_send_player_email() {
+    local _tpl="$1" _subject="$2" _flag="${3:-}"
+    local _tmpf
+    _tmpf=$(mktemp)
+    sed -e "s~_PLAYER_~${PLAYER}~g" \
+        -e "s~_TODATE_~${TODATE}~g" \
+        -e "s~_ZEN_~${ZEN:-0}~g" \
+        -e "s~_COINS_~${COINS:-0}~g" \
+        -e "s~_BIRTHDATE_~${BIRTHDATE:-}~g" \
+        -e "s~_NEXT_PAYMENT_DATE_~${NEXT_PAYMENT_DATE:-}~g" \
+        -e "s~_USPOT_~${uSPOT}~g" \
+        -e "s~_CAPTAINEMAIL_~${CAPTAINEMAIL}~g" \
+        -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
+        -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
+        -e "s~_NCARD_~${NCARD}~g" \
+        -e "s~_ZCARD_~${ZCARD}~g" \
+        -e "s~_DOMAIN_~${DOMAIN:-}~g" \
+        -e "s~_COOKIE_BASENAME_~${COOKIE_BASENAME:-}~g" \
+        "${MY_PATH}/../templates/NOSTR/${_tpl}" > "$_tmpf"
+    ${MY_PATH}/../tools/mailjet.sh \
+        --template "${MY_PATH}/../templates/NOSTR/${_tpl}" \
+        --expire 7d "${PLAYER}" "$_tmpf" "$_subject"
+    rm -f "$_tmpf"
+    [[ -n "$_flag" ]] && echo "${TODATE}" > "$_flag"
+}
+
 ## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
 for PLAYER in "${NOSTR[@]}"; do
 
@@ -433,85 +460,17 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
         # Check if this is a new high balance (first time above 10 G1)
         if [[ $(echo "$ZEN >= 100" | bc -l) -eq 1 && ! -s ~/.zen/game/nostr/${PLAYER}/.balance_10_notified ]]; then
-            balance_celebration="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; background: #fffdf5; }
-    .celebration { color: #e65c00; font-weight: bold; }
-    .details { background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff6f00; }
-    .amount { font-size: 1.5em; color: #e65100; }
-    .cta { background: #e8f5e9; padding: 12px; border-left: 4px solid #43a047; margin: 12px 0; }
-</style></head><body>
-<h2 class='celebration'>🎉 $ZEN Ẑen — votre contenu fait bouger l'essaim !</h2>
-<div class='details'>
-<p><strong>Astronaute :</strong> ${PLAYER}</p>
-<p><strong>Date :</strong> $TODATE</p>
-</div>
-<p>Votre MULTIPASS a franchi le cap des <strong>100 Ẑen</strong>. Chaque like reçu est une contribution réelle à la constellation — merci !</p>
-<p><strong>🚀 La suite naturelle :</strong></p>
-<ul>
-<li>📢 Publiez du contenu géolocalisé : vos posts remontent sur l'UMAP de votre secteur</li>
-<li>🤝 Parrainez un ami — chaque MULTIPASS supplémentaire renforce votre station</li>
-<li>🐉 Candidatez au grade de <strong>Capitaine</strong> pour héberger votre propre constellation</li>
-</ul>
-<div class='cta'>
-<p><strong>💡 1 like = 1 Ẑen.</strong> Votre réseau local est votre capital coopératif.<br>
-Plus vous publiez utile, plus l'essaim vous récompense.</p>
-</div>
-<p style='font-size:0.85em; color:#888'>Astroport · Réseau UPlanet · <a href='${uSPOT}/nostr'>Accéder à votre Nostr</a></p>
-</body></html>"
-
-            # Create temporary file for email content
-            temp_email_file=$(mktemp)
-            echo "$balance_celebration" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "Seuil de 100 Ẑen Atteint - $TODATE"
-            rm -f "$temp_email_file"
-            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_10_notified
-            log "INFO" "Balance celebration email sent to ${PLAYER} for reaching 10 G1"
+            _send_player_email "multipass_balance_100zen.html" \
+                "🎉 100 Ẑen franchis — votre contenu fait bouger l'essaim !" \
+                "${HOME}/.zen/game/nostr/${PLAYER}/.balance_10_notified"
+            log "INFO" "Balance celebration email sent to ${PLAYER} for reaching 100 Ẑen"
         fi
         
         # Check for low balance warning (below 2 G1)
         if [[ $(echo "$COINS < 2" | bc -l) -eq 1 && ! -s ~/.zen/game/nostr/${PLAYER}/.balance_low_warned ]]; then
-            low_balance_warning="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; background: #fffdf5; }
-    .warning { color: #c62828; font-weight: bold; }
-    .details { background-color: #ffebee; padding: 15px; margin: 10px 0; border-left: 4px solid #d32f2f; }
-    .amount { font-size: 1.2em; color: #c62828; }
-    .solutions { background-color: #e8f5e9; padding: 15px; margin: 10px 0; border-left: 4px solid #43a047; }
-    .parrain { background: #fff3e0; padding: 12px; border-left: 4px solid #ff8f00; margin: 10px 0; }
-</style></head><body>
-<h2 class='warning'>⚠️ Solde faible — l'essaim a besoin de vous</h2>
-<div class='details'>
-<p><strong>Astronaute :</strong> ${PLAYER}</p>
-<p><strong>Solde actuel :</strong> <span class='amount'>$ZEN Ẑen</span></p>
-<p><strong>Date :</strong> $TODATE</p>
-<p><strong>Prochaine redevance :</strong> $NEXT_PAYMENT_DATE</p>
-</div>
-<p>Le solde de votre MULTIPASS approche de zéro. Voici comment le recharger :</p>
-<div class='solutions'>
-<h3>💡 Solutions coopératives</h3>
-<ul>
-<li>📢 <strong>Publiez du contenu utile sur Nostr</strong> — chaque like reçu = 1 Ẑen automatique</li>
-<li>🌍 <strong>Géolocalisez vos posts</strong> — ils remontent dans l'UMAP de votre secteur</li>
-<li>🤝 <strong>Parrainez un ami</strong> — invitez-le à créer son MULTIPASS sur votre station</li>
-<li>📥 <strong>Apportez des G1 (Ğ1)</strong> — convertibles en Ẑen via votre Capitaine</li>
-</ul>
-</div>
-<div class='parrain'>
-<h3>🤝 Devenez Co-Bâtisseur (Parrain annuel)</h3>
-<p>Engagez-vous dans la constellation : un parrainage annuel libère votre MULTIPASS de la redevance hebdomadaire et vous donne accès à la gouvernance coopérative.</p>
-<p><strong>👉 Renseignez-vous :</strong> <a href='${uSPOT}/g1' target='_blank'>${uSPOT}/g1</a></p>
-</div>
-<p><strong>🚨 Note :</strong> Si votre solde tombe à 0, votre MULTIPASS sera suspendu. Votre Capitaine peut vous aider à régulariser.</p>
-<p style='font-size:0.85em; color:#888'>Astroport · Réseau UPlanet · <a href='${uSPOT}/nostr'>Découvrez le protocole Nostr</a></p>
-</body></html>"
-
-            # Create temporary file for email content
-            temp_email_file=$(mktemp)
-            echo "$low_balance_warning" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "Solde Faible - $TODATE"
-            rm -f "$temp_email_file"
-            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_low_warned
+            _send_player_email "multipass_low_balance.html" \
+                "⚠️ Solde faible — votre MULTIPASS est en danger" \
+                "${HOME}/.zen/game/nostr/${PLAYER}/.balance_low_warned"
             log "INFO" "Low balance warning email sent to ${PLAYER}"
         fi
     fi
@@ -528,75 +487,17 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         
         # 1 year anniversary
         if [[ $DAYS_OLD -eq 365 && ! -s ~/.zen/game/nostr/${PLAYER}/.anniversary_1year_notified ]]; then
-            anniversary_1year="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; }
-    .celebration { color: #4caf50; font-weight: bold; }
-    .details { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
-    .milestone { background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff9800; }
-</style></head><body>
-<h2 class='celebration'>🎉 Félicitations ! 1 An avec UPlanet</h2>
-<div class='details'>
-<p><strong>MULTIPASS:</strong> ${PLAYER}</p>
-<p><strong>Date de création:</strong> $BIRTHDATE</p>
-<p><strong>Anniversaire:</strong> $TODATE</p>
-<p><strong>Solde actuel:</strong> $ZEN ẐEN </p>
-</div>
-<div class='milestone'>
-<h3>🏆 Votre Parcours UPlanet</h3>
-<p>Depuis 1 an, vous faites partie de l'Internet de confiance !</p>
-<ul>
-<li>✅ Identité numérique décentralisée</li>
-<li>✅ uDRIVE personnel</li>
-<li>✅ IA personnelle</li>
-<li>✅ Réseau social N²</li>
-<li>✅ Économie transparente</li>
-</ul>
-</div>
-<p><strong>🚀 Prochaines étapes :</strong></p>
-<ul>
-<li>Partagez votre expérience avec vos amis</li>
-<li>Devenez Co-Bâtisseur</li>
-<li>Participez à la gouvernance de la coopérative</li>
-</ul>
-<p><strong>💡 Merci</strong> de faire partie de cette révolution numérique !</p>
-</body></html>"
-
-            # Create temporary file for email content
-            temp_email_file=$(mktemp)
-            echo "$anniversary_1year" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "🎉 1 An avec UPlanet - $TODATE"
-            rm -f "$temp_email_file"
-            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.anniversary_1year_notified
+            _send_player_email "multipass_anniversary_1year.html" \
+                "🎂 1 an avec UPlanet — merci !" \
+                "${HOME}/.zen/game/nostr/${PLAYER}/.anniversary_1year_notified"
             log "INFO" "1-year anniversary email sent to ${PLAYER}"
         fi
         
         # 6 months milestone
         if [[ $DAYS_OLD -eq 182 && ! -s ~/.zen/game/nostr/${PLAYER}/.milestone_6months_notified ]]; then
-            milestone_6months="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; }
-    .milestone { color: #ff9800; font-weight: bold; }
-    .details { background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff9800; }
-</style></head><body>
-<h2 class='milestone'>🎯 6 Mois avec UPlanet - Excellent Progrès !</h2>
-<div class='details'>
-<p><strong>MULTIPASS:</strong> ${PLAYER}</p>
-<p><strong>Date de création:</strong> $BIRTHDATE</p>
-<p><strong>Milestone:</strong> $TODATE</p>
-<p><strong>Solde actuel:</strong> $ZEN ẐEN</p>
-</div>
-<p>Félicitations ! Vous utilisez UPlanet depuis 6 mois. Votre engagement dans l'Internet de confiance est remarquable !</p>
-<p><strong>💡 Astuce :</strong> Plus vous partagez le MULTIPASS, plus votre réseau grandit et plus vous gagnez de ẐEN.</p>
-<p><strong>🚀 Considérez :</strong> Devenir Co-Bâtisseur pour accéder aux services illimités et participer à la gouvernance.</p>
-</body></html>"
-
-            # Create temporary file for email content
-            temp_email_file=$(mktemp)
-            echo "$milestone_6months" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "🎯 6 Mois avec UPlanet - $TODATE"
-            rm -f "$temp_email_file"
-            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.milestone_6months_notified
+            _send_player_email "multipass_milestone_6months.html" \
+                "🎯 6 mois avec UPlanet — mi-parcours !" \
+                "${HOME}/.zen/game/nostr/${PLAYER}/.milestone_6months_notified"
             log "INFO" "6-month milestone email sent to ${PLAYER}"
         fi
     fi
@@ -685,6 +586,49 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
         log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
     fi
+
+    ####################################################################
+    ## ZINES QUOTIDIENS J1→J6 (période d'essai MULTIPASS, hors CAPTAIN)
+    if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] && [[ "${CAPTAING1PUB}" != "${G1PUBNOSTR}" ]]; then
+        _ZINE_BIRTHDATE_SEC=$(date -d "${BIRTHDATE}" +%s 2>/dev/null || date +%s)
+        _ZINE_TODAY_SEC=$(date -d "${TODATE}" +%s 2>/dev/null || date +%s)
+        _ZINE_DAY=$(( (_ZINE_TODAY_SEC - _ZINE_BIRTHDATE_SEC) / 86400 ))
+
+        ## Helper : prépare et envoie un Zine si le flag n'existe pas encore
+        _send_zine() {
+            local day="$1" tpl="$2" subject="$3"
+            local flag="${HOME}/.zen/game/nostr/${PLAYER}/.zine_j${day}_sent"
+            [[ -s "$flag" ]] && return 0
+            local tmp_zine
+            tmp_zine=$(mktemp)
+            sed -e "s~_USPOT_~${uSPOT}~g" \
+                -e "s~_MYIPFS_~${myIPFS}~g" \
+                -e "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" \
+                -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
+                -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
+                -e "s~_NCARD_~${NCARD}~g" \
+                -e "s~_ZCARD_~${ZCARD}~g" \
+                "${MY_PATH}/../templates/NOSTR/zine/${tpl}" > "$tmp_zine"
+            ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/zine/${tpl}" --expire 2d \
+                "${PLAYER}" "$tmp_zine" "$subject"
+            rm -f "$tmp_zine"
+            echo "${TODATE}" > "$flag"
+            log "INFO" "Zine J${day} envoyé à ${PLAYER} : ${subject}"
+        }
+
+        case $_ZINE_DAY in
+            1) _send_zine 1 "zine_j1_coracle.html"    "🌐 J1 — Coracle, votre porte NOSTR" ;;
+            2) _send_zine 2 "zine_j2_nextcloud.html"  "☁️ J2 — NextCloud, sortez du GAFAM" ;;
+            3) _send_zine 3 "zine_j3_nostrtube.html"  "🎬 J3 — Nostr Tube & Vocals" ;;
+            4) _send_zine 4 "zine_j4_wotx2.html"      "🕸️ J4 — WoTx2 & MineLife" ;;
+            5) _send_zine 5 "zine_j5_zelkova.html"    "💎 J5 — Zelkova & TrocZen" ;;
+            6) _send_zine 6 "zine_j6_ecosysteme.html" "🌐 J6 — L'écosystème complet" ;;
+        esac
+
+        unset -f _send_zine
+        unset _ZINE_BIRTHDATE_SEC _ZINE_TODAY_SEC _ZINE_DAY
+    fi
+    ####################################################################
 
     ####################################################################
     ## EVERY 7 DAYS NOSTR CARD is PAYING CAPTAIN
@@ -838,29 +782,39 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                                 ####################################################################
 
                                 # Send success email notification
-                                success_message="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; }
-    .success { color: green; font-weight: bold; }
-    .details { background-color: #f0f8f0; padding: 10px; margin: 10px 0; }
-    .amount { font-size: 1.2em; color: #2e7d32; }
-</style></head><body>
-<h2 class='success'>✅ Paiement Hebdomadaire Réussi</h2>
-<div class='details'>
-<p><strong>Joueur:</strong> ${PLAYER}</p>
-<p><strong>Date:</strong> $TODATE</p>
-<p><strong>Montant:</strong> <span class='amount'>${Npaf_ZEN} ẐEN</span></p>
-<p><strong>Solde restant:</strong> $ZEN ẐEN</p>
-<p><strong>Prochain paiement:</strong> $NEXT_PAYMENT_DATE</p>
-</div>
-<p>Votre MULTIPASS est à jour ! Continuez à créer du contenu de qualité pour gagner plus de ẐEN.</p>
-<p><strong>💡 Astuce:</strong> Chaque like sur vos posts = 1 ẐEN automatique dans votre portefeuille.</p>
-</body></html>"
-
-                                # Create temporary file for email content
                                 temp_email_file=$(mktemp)
-                                echo "$success_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "Paiement Réussi - $TODATE"
+                                cat > "$temp_email_file" <<OKHTML
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#e8f5e9;color:#1a2e1a}
+.c{max-width:600px;margin:0 auto;background:white}
+.h{background:linear-gradient(135deg,#2e7d32,#4caf50);color:white;padding:1.5rem;text-align:center}
+.h .lbl{font-size:.8rem;opacity:.8;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
+.h h1{margin:0;font-size:1.3rem}
+.ct{padding:1.5rem}
+.card{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:1rem;margin:1rem 0;font-size:.9rem}
+.card table{width:100%;border-collapse:collapse}
+.card td{padding:.3rem .5rem;vertical-align:top}
+.card td:first-child{font-weight:bold;color:#555;width:50%}
+.tip{background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:4px;padding:1rem;margin:1rem 0;font-size:.9rem}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
+small{color:#666;font-size:.8rem}
+</style></head>
+<body><div class="c">
+<div class="h"><div class="lbl">✅ MULTIPASS actif</div><h1>Redevance hebdomadaire réglée</h1></div>
+<div class="ct">
+<div class="card"><table>
+<tr><td>Montant prélevé</td><td><strong>${Npaf_ZEN} Ẑen</strong></td></tr>
+<tr><td>Solde restant</td><td>${ZEN} Ẑen</td></tr>
+<tr><td>Prochain paiement</td><td>${NEXT_PAYMENT_DATE}</td></tr>
+</table></div>
+<div class="tip">
+<p>💡 Chaque like reçu sur vos posts Coracle = 1 Ẑen automatique dans votre portefeuille.</p>
+</div>
+<p style="text-align:center;margin-top:1.5rem"><small>UPlanet ORIGIN — support@qo-op.com</small></p>
+</div></div></body></html>
+OKHTML
+                                ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "✅ Redevance MULTIPASS réglée — $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Success email sent to ${PLAYER} for payment success"
                             else
@@ -869,28 +823,46 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                                 log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
 
                                 # Send error email via mailjet
-                                error_message="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; }
-    .error { color: red; font-weight: bold; }
-    .details { background-color: #f5f5f5; padding: 10px; margin: 10px 0; }
-</style></head><body>
-<h2 class='error'>❌ Erreur de Paiement MULTIPASS</h2>
-<div class='details'>
-<p><strong>Joueur:</strong> ${PLAYER}</p>
-<p><strong>Date:</strong> $TODATE</p>
-<p><strong>Montant HT:</strong> ${Npaf_ZEN} ẐEN</p>
-<p><strong>Montant TVA:</strong> ${TVA_ZEN} ẐEN</p>
-<p><strong>Statut:</strong> Principal: $([ $payment_success -eq 0 ] && echo "✅" || echo "❌") | TVA: $([ $tva_success -eq 0 ] && echo "✅" || echo "❌")</p>
-<p><strong>Solde:</strong> $ZEN ẐEN</p>
-</div>
-<p>Les deux paiements doivent réussir pour la conformité fiscale.</p>
-</body></html>"
-
-                                # Create temporary file for email content
                                 temp_email_file=$(mktemp)
-                                echo "$error_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
+                                cat > "$temp_email_file" <<ERRHTML
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#fff3e0;color:#1a1a2e}
+.c{max-width:600px;margin:0 auto;background:white}
+.h{background:linear-gradient(135deg,#e65c00,#f9a825);color:white;padding:1.5rem;text-align:center}
+.h .lbl{font-size:.8rem;opacity:.8;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
+.h h1{margin:0;font-size:1.3rem}
+.ct{padding:1.5rem}
+.card{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:1rem;margin:1rem 0;font-size:.9rem}
+.card table{width:100%;border-collapse:collapse}
+.card td{padding:.3rem .5rem;vertical-align:top}
+.card td:first-child{font-weight:bold;color:#555;width:50%}
+.warn{background:#fff3e0;border-left:4px solid #e65c00;border-radius:4px;padding:1rem;margin:1rem 0;font-size:.9rem}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
+small{color:#666;font-size:.8rem}
+</style></head>
+<body><div class="c">
+<div class="h"><div class="lbl">👑 Notification Capitaine</div><h1>⚠️ Échec paiement MULTIPASS</h1></div>
+<div class="ct">
+<div class="card"><table>
+<tr><td>MULTIPASS</td><td><strong>${PLAYER}</strong></td></tr>
+<tr><td>Date</td><td>${TODATE}</td></tr>
+<tr><td>Ancienneté</td><td>${DIFF_DAYS} jours</td></tr>
+<tr><td>Montant HT</td><td>${Npaf_ZEN} Ẑen</td></tr>
+<tr><td>Montant TVA</td><td>${TVA_ZEN} Ẑen</td></tr>
+<tr><td>Solde disponible</td><td>${ZEN} Ẑen</td></tr>
+<tr><td>Paiement principal</td><td>$([ $payment_success -eq 0 ] && echo '✅ OK' || echo '❌ Échec')</td></tr>
+<tr><td>Paiement TVA</td><td>$([ $tva_success -eq 0 ] && echo '✅ OK' || echo '❌ Échec')</td></tr>
+</table></div>
+<div class="warn">
+<p>Le solde est insuffisant pour couvrir la redevance hebdomadaire (${Npaf_ZEN} + ${TVA_ZEN} Ẑen).</p>
+<p>Si la situation n'est pas régularisée au prochain cycle (J+7), le MULTIPASS sera archivé automatiquement.</p>
+<p><em>Les deux transactions (HT + TVA) doivent réussir pour la conformité fiscale coopérative.</em></p>
+</div>
+<p style="text-align:center;margin-top:1.5rem"><small>Astroport.ONE — support@qo-op.com</small></p>
+</div></div></body></html>
+ERRHTML
+                                ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "⚠️ Paiement MULTIPASS échoué — ${PLAYER} — $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Error email sent to ${CAPTAINEMAIL} for payment failure of ${PLAYER}"
                             fi
@@ -901,15 +873,22 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                                 continue
                             fi
 
-                            # Grace period : primo TX différée — wallet non encore activé
-                            # Si G1PRIME absent ET solde == 0, l'utilisateur n'a pas encore reçu
-                            # de virement officiel (oc2uplanet ou UPLANET.official.sh).
-                            # On lui laisse 7 jours supplémentaires avant tout DESTROY.
+                            # Validation OC obligatoire : le MULTIPASS est détruit si l'email
+                            # n'est pas inscrit sur OpenCollective dans les 7 jours.
+                            # G1PRIME est positionné par UPLANET.official.sh lors du traitement OC.
                             if [[ ! -s ~/.zen/game/nostr/${PLAYER}/G1PRIME ]] && \
                                [[ -z "$COINS" || "$COINS" == "0" || "$COINS" == "null" || \
-                                  $(echo "${COINS:-0} <= 0" | bc -l 2>/dev/null) -eq 1 ]]; then
-                                log "INFO" "[GRACE PERIOD] MULTIPASS ${PLAYER} - primo TX différée, wallet en attente d'activation (${DIFF_DAYS} jours)"
-                                log "INFO" "             Pour activer : UPLANET.official.sh -l ${PLAYER} -m 1"
+                                  $(echo "${COINS:-0} <= 0" | bc -l 2>/dev/null) -eq 1 ]] && \
+                               [[ $DIFF_DAYS -le 7 ]]; then
+                                log "INFO" "[OC VALIDATION] MULTIPASS ${PLAYER} - inscription OpenCollective requise (J${DIFF_DAYS}/7)"
+                                log "INFO" "             ➜ https://opencollective.com/monnaie-libre (même email)"
+                                # Rappel J7 : dernier avertissement avant destruction au prochain cycle
+                                if [[ $DIFF_DAYS -eq 7 && ! -s ~/.zen/game/nostr/${PLAYER}/.oc_reminder_sent ]]; then
+                                    _send_player_email "multipass_oc_reminder_j7.html" \
+                                        "⚠️ MULTIPASS : inscription OpenCollective requise — J7" \
+                                        "${HOME}/.zen/game/nostr/${PLAYER}/.oc_reminder_sent"
+                                    log "INFO" "OC reminder email sent to ${PLAYER} (J7 — dernier avertissement avant destruction)"
+                                fi
                                 continue
                             fi
 
@@ -942,7 +921,26 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         echo "U SOCIETY MEMBER "
         UDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY 2>/dev/null)
         UENDDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY.end 2>/dev/null)
-        
+
+        ## Helper: envoie un email U.SOCIETY depuis un template avec substitutions dynamiques
+        _send_usociety_email() {
+            local _tpl="$1" _subject="$2" _flag="${3:-}"
+            local _tmpf
+            _tmpf=$(mktemp)
+            sed -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
+                -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
+                -e "s~_NCARD_~${NCARD}~g" \
+                -e "s~_ZCARD_~${ZCARD}~g" \
+                -e "s~_DIFF_DAYS_~${DIFF_DAYS:-0}~g" \
+                -e "s~_UENDDATE_~${UENDDATE:-}~g" \
+                "${MY_PATH}/../templates/NOSTR/${_tpl}" > "$_tmpf"
+            ${MY_PATH}/../tools/mailjet.sh \
+                --template "${MY_PATH}/../templates/NOSTR/${_tpl}" \
+                --expire 7d "${PLAYER}" "$_tmpf" "$_subject"
+            rm -f "$_tmpf"
+            [[ -n "$_flag" ]] && echo "${TODATE}" > "$_flag"
+        }
+
         if [[ -z "$UDATE" ]]; then
             echo "### U SOCIETY FILE MISSING"
             echo "### REMOVING U SOCIETY STATUS"
@@ -968,47 +966,9 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                     rm ~/.zen/game/players/${PLAYER}/U.SOCIETY.end
                     rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY.end
                     
-                    # Send U.SOCIETY expiration email
-                    usociety_expired="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; }
-    .expired { color: #d32f2f; font-weight: bold; }
-    .details { background-color: #ffebee; padding: 15px; margin: 10px 0; border-left: 4px solid #d32f2f; }
-    .offer { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
-</style></head><body>
-<h2 class='expired'>🏛️ Abonnement U.SOCIETY Expiré</h2>
-<div class='details'>
-<p><strong>Membre:</strong> ${PLAYER}</p>
-<p><strong>Date d'expiration:</strong> $UENDDATE</p>
-<p><strong>Date actuelle:</strong> $TODATE</p>
-</div>
-<p>Votre abonnement U.SOCIETY a expiré. Vous perdez l'accès aux services premium :</p>
-<ul>
-<li>❌ NextCloud (stockage privé)</li>
-<li>❌ PeerTube (vidéos privées)</li>
-<li>❌ Accès SSH aux relais</li>
-<li>❌ Droit de vote sur les décisions</li>
-</ul>
-<div class='offer'>
-<h3>🔄 Renouvelez Maintenant</h3>
-<p><strong>Avantages du renouvellement :</strong></p>
-<ul>
-<li>✅ Tous les services premium restaurés</li>
-<li>✅ Droit de vote maintenu</li>
-<li>✅ Part de propriété des biens réels</li>
-<li>✅ Plus de paiements hebdomadaires</li>
-</ul>
-<p><strong>Prix :</strong> 50€/an (Welcome Offer)</p>
-</div>
-<p><strong>💡 Note :</strong> Votre MULTIPASS de base reste actif.</p>
-</body></html>"
-
-                    # Create temporary file for email content
-                    temp_email_file=$(mktemp)
-                    echo "$usociety_expired" > "$temp_email_file"
-                    ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
-                    rm -f "$temp_email_file"
-                    log "INFO" "U.SOCIETY expiration email sent to ${CAPTAINEMAIL} for ${PLAYER}"
+                    _send_usociety_email "usociety_expired.html" \
+                        "🏛️ Votre parrainage U.SOCIETY a expiré"
+                    log "INFO" "U.SOCIETY expiration email sent to ${PLAYER}"
                 else
                     # Calculer les jours restants
                     DIFF_DAYS=$(( (UENDDATE_SECONDS - TODATE_SECONDS) / 86400 ))
@@ -1023,81 +983,18 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                         echo "### U SOCIETY EXPIRATION WARNING: $DIFF_DAYS days remaining"
                         
                         # Send expiration warning email (only once per warning period)
-                        if [[ $DIFF_DAYS -lt 30 && $DIFF_DAYS -gt 20 && ! -s ~/.zen/game/nostr/${PLAYER}/.usociety_30day_warned ]]; then
-                            usociety_warning_30="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; }
-    .warning { color: #ff9800; font-weight: bold; }
-    .details { background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff9800; }
-    .offer { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
-</style></head><body>
-<h2 class='warning'>⚠️ U.SOCIETY Expire dans $DIFF_DAYS jours</h2>
-<div class='details'>
-<p><strong>Membre:</strong> ${PLAYER}</p>
-<p><strong>Date d'expiration:</strong> $UENDDATE</p>
-<p><strong>Jours restants:</strong> $DIFF_DAYS</p>
-</div>
-<p>Votre ZEN Card U.SOCIETY expire bientôt. Renouvelez maintenant pour éviter l'interruption des services premium.</p>
-<div class='offer'>
-<h3>🔄 Renouvellement Recommandé</h3>
-<p><strong>Services qui expireront :</strong></p>
-<ul>
-<li>❌ NextCloud (stockage privé)</li>
-<li>❌ PeerTube (vidéos privées)</li>
-<li>❌ Accès SSH aux relais</li>
-<li>❌ Droit de vote sur les décisions</li>
-</ul>
-<p><strong>Prix :</strong> 50€/an (Welcome Offer)</p>
-</div>
-<p><strong>💡 Note :</strong> Votre MULTIPASS de base restera actif même après expiration.</p>
-</body></html>"
-
-                            # Create temporary file for email content
-                            temp_email_file=$(mktemp)
-                            echo "$usociety_warning_30" > "$temp_email_file"
-                            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "U.SOCIETY Expire dans $DIFF_DAYS jours"
-                            rm -f "$temp_email_file"
-                            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_30day_warned
+                        if [[ $DIFF_DAYS -gt 20 && ! -s ~/.zen/game/nostr/${PLAYER}/.usociety_30day_warned ]]; then
+                            _send_usociety_email "usociety_renewal.html" \
+                                "🌿 Votre parrainage expire dans $DIFF_DAYS jours" \
+                                "${HOME}/.zen/game/nostr/${PLAYER}/.usociety_30day_warned"
                             log "INFO" "U.SOCIETY 30-day warning email sent to ${PLAYER}"
                         fi
                         
                         # Send final warning if less than 7 days
                         if [[ $DIFF_DAYS -lt 7 && ! -s ~/.zen/game/nostr/${PLAYER}/.usociety_7day_warned ]]; then
-                            usociety_warning_7="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; }
-    .urgent { color: #d32f2f; font-weight: bold; }
-    .details { background-color: #ffebee; padding: 15px; margin: 10px 0; border-left: 4px solid #d32f2f; }
-    .offer { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
-</style></head><body>
-<h2 class='urgent'>🚨 U.SOCIETY Expire dans $DIFF_DAYS jours - DERNIÈRE CHANCE</h2>
-<div class='details'>
-<p><strong>Membre:</strong> ${PLAYER}</p>
-<p><strong>Date d'expiration:</strong> $UENDDATE</p>
-<p><strong>Jours restants:</strong> $DIFF_DAYS</p>
-</div>
-<p><strong>URGENT :</strong> Votre abonnement U.SOCIETY expire dans $DIFF_DAYS jours !</p>
-<div class='offer'>
-<h3>🔄 Renouvelez IMMÉDIATEMENT</h3>
-<p><strong>Prix :</strong> 50€/an (Welcome Offer)</p>
-<p><strong>Avantages :</strong></p>
-<ul>
-<li>✅ NextCloud (stockage privé)</li>
-<li>✅ PeerTube (vidéos privées)</li>
-<li>✅ Accès SSH aux relais</li>
-<li>✅ Droit de vote sur les décisions</li>
-<li>✅ Plus de paiements hebdomadaires</li>
-</ul>
-</div>
-<p><strong>⚠️ Après expiration :</strong> Vous perdrez l'accès aux services premium mais garderez votre MULTIPASS de base.</p>
-</body></html>"
-
-                            # Create temporary file for email content
-                            temp_email_file=$(mktemp)
-                            echo "$usociety_warning_7" > "$temp_email_file"
-                            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "URGENT: U.SOCIETY Expire dans $DIFF_DAYS jours"
-                            rm -f "$temp_email_file"
-                            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_7day_warned
+                            _send_usociety_email "usociety_renewal_urgent.html" \
+                                "🚨 URGENT — Parrainage expire dans $DIFF_DAYS jours" \
+                                "${HOME}/.zen/game/nostr/${PLAYER}/.usociety_7day_warned"
                             log "INFO" "U.SOCIETY 7-day urgent warning email sent to ${PLAYER}"
                         fi
                     fi
@@ -1105,6 +1002,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                 fi
             fi
         fi
+        unset -f _send_usociety_email
     fi
 
   ########################################################################
@@ -1585,49 +1483,10 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                     DOMAIN_NOTIF_FILE="$PLAYER_DIR/.${DOMAIN}_notified"
                     
                     if [[ ! -f "$DOMAIN_NOTIF_FILE" ]]; then
-                        # Create notification email
-                        notification_email="<html><head><meta charset='UTF-8'>
-<style>
-    body { font-family: 'Courier New', monospace; }
-    .info { color: #2196F3; font-weight: bold; }
-    .details { background-color: #E3F2FD; padding: 15px; margin: 10px 0; border-left: 4px solid #2196F3; }
-    .next-steps { background-color: #FFF3E0; padding: 15px; margin: 10px 0; border-left: 4px solid #FF9800; }
-</style></head><body>
-<h2 class='info'>🍪 Nouveau Cookie Détecté - Service Non Disponible</h2>
-<div class='details'>
-<p><strong>MULTIPASS:</strong> ${PLAYER}</p>
-<p><strong>Domaine:</strong> ${DOMAIN}</p>
-<p><strong>Fichier cookie:</strong> ${COOKIE_BASENAME}</p>
-<p><strong>Date:</strong> $TODATE</p>
-</div>
-<p>Votre cookie pour <strong>${DOMAIN}</strong> a été détecté, mais aucun service automatisé n'est disponible pour ce domaine.</p>
-<div class='next-steps'>
-<h3>🚀 Créer un Service Personnalisé</h3>
-<p>Vous pouvez demander la création d'un service automatisé pour ce domaine :</p>
-<ul>
-<li>📧 <strong>Contactez le Capitaine :</strong> ${CAPTAINEMAIL}</li>
-<li>💬 <strong>Décrivez votre besoin :</strong> Quel type de données souhaitez-vous extraire de ${DOMAIN} ?</li>
-<li>📝 <strong>Smart Contract :</strong> Un script personnalisé sera créé et ajouté au code officiel</li>
-<li>🔄 <strong>Automatisation :</strong> Une fois validé, le service s'exécutera automatiquement chaque jour</li>
-</ul>
-</div>
-<p><strong>💡 Services déjà disponibles :</strong></p>
-<ul>
-<li>✅ <strong>YouTube</strong> - Synchronisation automatique des likes</li>
-<li>✅ <strong>Leboncoin</strong> - Recherche d'annonces géolocalisées</li>
-</ul>
-<p><strong>🔧 Extensibilité :</strong> Le système est conçu pour supporter facilement de nouveaux domaines !</p>
-</body></html>"
-                        
-                        # Create temporary file for email content
-                        temp_email_file=$(mktemp)
-                        echo "$notification_email" > "$temp_email_file"
-                        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "🍪 Cookie: ${DOMAIN} - MISSING ASTROBOT PROGRAM"
-                        rm -f "$temp_email_file"
-                        
-                        # Mark notification as sent
-                        echo "$TODATE" > "$DOMAIN_NOTIF_FILE"
-                        
+                        # Send cookie domain notification via template
+                        _send_player_email "multipass_cookie_unknown.html" \
+                            "🍪 Cookie ${DOMAIN} — service non disponible" \
+                            "$DOMAIN_NOTIF_FILE"
                         log "INFO" "✅ Notification email sent to ${PLAYER} for domain ${DOMAIN}"
                         log_metric "DOMAIN_NOTIFICATION_SENT" "1" "${PLAYER}"
                     else
@@ -1647,6 +1506,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
     log_metric "PLAYER_PROCESSING_TIME" "$player_duration" "${PLAYER}"
 
 done
+unset -f _send_player_email
 
 ########################################################################
 ## NETTOYAGE DES COMPTES ROAMING EXPIRÉS (✈️)

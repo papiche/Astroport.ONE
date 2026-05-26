@@ -1,170 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎫 New UPlanet Passport Created</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #f5f5f5;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-        }
-        .email-container {
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-        }
-        .email-header {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: #ffffff;
-            padding: 30px 20px;
-            text-align: center;
-        }
-        .email-header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: bold;
-        }
-        .email-body {
-            padding: 30px 20px;
-            color: #333333;
-        }
-        .info-section {
-            background-color: #e8f4f8;
-            border-left: 4px solid #3498db;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-        .info-section h2 {
-            margin: 0 0 10px 0;
-            color: #3498db;
-            font-size: 18px;
-        }
-        .info-item {
-            margin: 8px 0;
-            display: flex;
-            align-items: flex-start;
-        }
-        .info-label {
-            font-weight: bold;
-            min-width: 140px;
-            color: #555;
-        }
-        .info-value {
-            color: #333;
-            word-break: break-all;
-        }
-        .passport-link {
-            display: inline-block;
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: #ffffff;
-            text-decoration: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-weight: bold;
-            text-align: center;
-        }
-        .passport-link:hover {
-            background: linear-gradient(135deg, #2980b9, #21618c);
-        }
-        .warning-box {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-        .footer {
-            background-color: #f8f9fa;
-            color: #666;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            border-top: 1px solid #e9ecef;
-        }
-        .emoji {
-            font-size: 24px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nouveau MULTIPASS sur votre Astroport</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #e8f5e9; color: #1a2e1a; }
+.container { max-width: 600px; margin: 0 auto; background: white; }
+.header { background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; padding: 1.5rem; text-align: center; }
+.header .label { font-size: 0.8rem; opacity: 0.8; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.4rem; }
+.header h1 { margin: 0; font-size: 1.4rem; }
+.content { padding: 1.5rem; }
+.section { margin: 0.75rem 0; padding: 1rem; border-radius: 8px; }
+.id-card { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-size: 0.9rem; }
+.id-card table { width: 100%; border-collapse: collapse; }
+.id-card td { padding: 0.3rem 0.5rem; vertical-align: top; }
+.id-card td:first-child { font-weight: bold; color: #555; width: 40%; }
+.id-card code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 0.85rem; word-break: break-all; }
+.timeline { background: #e3f2fd; border-left: 4px solid #1565c0; }
+.wot { background: #fff8e1; border-left: 4px solid #f9a825; }
+.auto { background: #e8f5e9; border-left: 4px solid #2e7d32; }
+h2 { font-size: 1rem; margin: 0 0 0.5rem 0; }
+p { line-height: 1.6; margin: 0.4rem 0; font-size: 0.92rem; }
+.btn { display: inline-block; background: #2e7d32; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; margin: 0.5rem 0.25rem; }
+.btn-blue { background: #1565c0; }
+small { color: #666; font-size: 0.8rem; }
+</style>
 </head>
 <body>
-    <div class="email-container">
-        <div class="email-header">
-            <div class="emoji">🎫</div>
-            <h1>New UPlanet Passport Created</h1>
-        </div>
-        
-        <div class="email-body">
-            <p>Hello Captain,</p>
-            
-            <p>A new UPlanet Passport has been successfully created for a member. Here are the details:</p>
-            
-            <div class="info-section">
-                <h2>📋 Passport Details</h2>
-                <div class="info-item">
-                    <span class="info-label">Member UID:</span>
-                    <span class="info-value">_MEMBERUID_</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Public Key:</span>
-                    <span class="info-value">_PUBKEY_</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Creation Date:</span>
-                    <span class="info-value">_DATE_</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">UPlanet:</span>
-                    <span class="info-value">_UPLANET8_</span>
-                </div>
-            </div>
-            
-            <div class="info-section">
-                <h2>💰 Member Details</h2>
-                <div class="info-item">
-                    <span class="info-label">Balance:</span>
-                    <span class="info-value">_AMOUNT_</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Location:</span>
-                    <span class="info-value">_LAT_, _LON_</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">TOTAL ZEN:</span>
-                    <span class="info-value">_TOTAL_ ẐEN</span>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="_UPASSPORT_HTML_" class="passport-link">
-                    🎫 View UPassport HTML
-                </a>
-                <br>
-                <a href="_IPFS_URL_" style="display: inline-block; margin-top: 10px; color: #3498db; text-decoration: none; font-size: 14px;">
-                    📁 Browse IPFS Directory
-                </a>
-            </div>
-            
-            <div class="warning-box">
-                <p style="margin: 0;"><strong>⚠️ Email Authentication Status:</strong></p>
-                <p style="margin: 5px 0 0 0;">_WOT_STATUS_</p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>Astroport.ONE - UPlanet Network</p>
-            <p>Automated notification from the Passport Creation System</p>
-            <p><a href="https://copylaradio.com" style="color: #3498db; text-decoration: none;">copylaradio.com</a></p>
-        </div>
-    </div>
+<div class="container">
+<div class="header">
+  <div class="label">👑 Notification Capitaine</div>
+  <h1>🆕 Nouveau MULTIPASS sur votre Astroport</h1>
+</div>
+<div class="content">
+
+<div class="id-card">
+  <table>
+    <tr><td>Email</td><td><strong>_MEMBERUID_</strong></td></tr>
+    <tr><td>Clef publique</td><td><code>_PUBKEY_</code></td></tr>
+    <tr><td>Date de création</td><td>_DATE_</td></tr>
+    <tr><td>UPlanet</td><td>_UPLANET8_</td></tr>
+    <tr><td>Coordonnées</td><td>_LAT_ / _LON_</td></tr>
+    <tr><td>Solde initial</td><td>_AMOUNT_ Ğ1 · _TOTAL_ Ẑen</td></tr>
+  </table>
+</div>
+
+<div class="section timeline">
+<h2>📅 Ce qui se passe automatiquement</h2>
+<p><strong>J0 :</strong> Email de bienvenue + Zine J1 (Coracle)</p>
+<p><strong>J1→J6 :</strong> Un Zine quotidien présente les services de la constellation</p>
+<p><strong>J7 :</strong> Rappel OpenCollective — inscription obligatoire pour valider le compte</p>
+<p><strong>J14 :</strong> Si pas d'inscription OC → destruction propre (backup IPFS, remboursement Ğ1)</p>
+<p>Aucune action requise de votre part. Le système gère le cycle automatiquement.</p>
+</div>
+
+<div class="section wot">
+<h2>🔐 Statut d'authentification WoT</h2>
+<p>_WOT_STATUS_</p>
+<p><small>La Toile de Confiance (WoTx2) vérifie que l'email fourni correspond à une identité réelle dans le réseau Ğ1. Un statut ❌ signifie que l'utilisateur s'est inscrit directement, sans certification WoT préalable.</small></p>
+</div>
+
+<div class="section auto">
+<h2>📋 Actions disponibles</h2>
+<p>
+  <a href="_UPASSPORT_HTML_" class="btn btn-blue" target="_blank">Voir l'UPassport →</a>
+  <a href="_IPFS_URL_" class="btn" target="_blank">Parcourir IPFS →</a>
+</p>
+</div>
+
+<p style="text-align:center; margin-top:1.5rem"><small>Astroport.ONE / UPlanet — support@qo-op.com</small></p>
+</div>
+</div>
 </body>
 </html>
-

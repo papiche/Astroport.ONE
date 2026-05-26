@@ -8,9 +8,14 @@
 # Focus: Vue d'ensemble économique, statut services, actions rapides
 # Évite les redondances avec captain.sh (embarquement) et zen.sh (transactions)
 ################################################################################
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+SCRIPT_DIR=$MY_PATH
+TOOLS_PATH="${MY_PATH}/../tools"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-. "${SCRIPT_DIR}/my.sh"
+# Source my.sh
+[[ -s "${TOOLS_PATH}/my.sh" ]] \
+    && source "${TOOLS_PATH}/my.sh"
 
 # Forcer la locale numérique pour éviter les problèmes de virgule/point
 export LC_NUMERIC=C
@@ -62,7 +67,7 @@ get_wallet_balance() {
     
     # Refresh cache if requested and pubkey is valid
     if [[ "$auto_refresh" == "true" ]] && [[ -n "$pubkey" ]]; then
-        ${SCRIPT_DIR}/G1check.sh "$pubkey" >/dev/null 2>&1
+        ${TOOLS_PATH}/G1check.sh "$pubkey" >/dev/null 2>&1
     fi
     
     # Get balance from cache
@@ -87,7 +92,7 @@ calculate_zen_balance() {
 
 # Fonction pour récupérer les données de revenu depuis G1revenue.sh
 get_revenue_data() {
-    local revenue_json=$(${SCRIPT_DIR}/G1revenue.sh 2>/dev/null)
+    local revenue_json=$(${TOOLS_PATH}/G1revenue.sh 2>/dev/null)
     
     if [[ -n "$revenue_json" ]] && echo "$revenue_json" | jq empty 2>/dev/null; then
         echo "$revenue_json"
@@ -100,7 +105,7 @@ get_revenue_data() {
 
 # Fonction pour récupérer les données de capital social depuis G1society.sh
 get_society_data() {
-    local society_json=$(${SCRIPT_DIR}/G1society.sh 2>/dev/null)
+    local society_json=$(${TOOLS_PATH}/G1society.sh 2>/dev/null)
     
     if [[ -n "$society_json" ]] && echo "$society_json" | jq empty 2>/dev/null; then
         echo "$society_json"
@@ -497,7 +502,7 @@ restart_all_services() {
     # Astroport
     echo -e "  🚀 Astroport..."
     killall nc 12345.sh 2>/dev/null
-    "${SCRIPT_DIR}/../12345.sh" > ~/.zen/tmp/12345.log & 
+    "${TOOLS_PATH}/../12345.sh" > ~/.zen/tmp/12345.log & 
     sleep 2 && echo -e "    ✅ OK"
     
     # WireGuard (optionnel)
@@ -515,8 +520,8 @@ restart_all_services() {
 
 quick_swarm_discover() {
     echo -e "${CYAN}🔍 Découverte de l'essaim...${NC}"
-    if [[ -x "${SCRIPT_DIR}/../RUNTIME/SWARM.discover.sh" ]]; then
-        "${SCRIPT_DIR}/../RUNTIME/SWARM.discover.sh" | head -20
+    if [[ -x "${TOOLS_PATH}/../RUNTIME/SWARM.discover.sh" ]]; then
+        "${TOOLS_PATH}/../RUNTIME/SWARM.discover.sh" | head -20
     else
         echo -e "${RED}❌ Script SWARM.discover.sh non trouvé${NC}"
     fi
@@ -529,8 +534,8 @@ print_captain_visa() {
     
     if [[ -n "$current_player" ]]; then
         echo -e "${CYAN}🎫 Impression VISA pour $current_player...${NC}"
-        if [[ -x "${SCRIPT_DIR}/VISA.print.sh" ]]; then
-            "${SCRIPT_DIR}/VISA.print.sh" "$current_player"
+        if [[ -x "${TOOLS_PATH}/VISA.print.sh" ]]; then
+            "${TOOLS_PATH}/VISA.print.sh" "$current_player"
         else
             echo -e "${RED}❌ Script VISA.print.sh non trouvé${NC}"
         fi
@@ -550,8 +555,8 @@ print_captain_visa() {
 launch_uplanet_official() {
     echo -e "${CYAN}🏛️  Lancement des virements officiels UPLANET.official.sh...${NC}"
     echo ""
-    if [[ -x "${SCRIPT_DIR}/../UPLANET.official.sh" ]]; then
-        "${SCRIPT_DIR}/../UPLANET.official.sh"
+    if [[ -x "${TOOLS_PATH}/../UPLANET.official.sh" ]]; then
+        "${TOOLS_PATH}/../UPLANET.official.sh"
     else
         echo -e "${RED}❌ Script UPLANET.official.sh non trouvé${NC}"
         read -p "Appuyez sur ENTRÉE pour continuer..."
@@ -561,8 +566,8 @@ launch_uplanet_official() {
 launch_zen_manager() {
     echo -e "${CYAN}💰 Lancement de l'analyse économique zen.sh...${NC}"
     echo ""
-    if [[ -x "${SCRIPT_DIR}/zen.sh" ]]; then
-        "${SCRIPT_DIR}/zen.sh"
+    if [[ -x "${TOOLS_PATH}/zen.sh" ]]; then
+        "${TOOLS_PATH}/zen.sh"
     else
         echo -e "${RED}❌ Script zen.sh non trouvé${NC}"
         read -p "Appuyez sur ENTRÉE pour continuer..."
@@ -595,8 +600,8 @@ change_captain() {
         
         if [[ "$captain_choice" == "0" ]]; then
             echo -e "${CYAN}🆕 Lancement de captain.sh pour nouvel embarquement...${NC}"
-            if [[ -x "${SCRIPT_DIR}/../captain.sh" ]]; then
-                "${SCRIPT_DIR}/../captain.sh"
+            if [[ -x "${TOOLS_PATH}/../captain.sh" ]]; then
+                "${TOOLS_PATH}/../captain.sh"
             else
                 echo -e "${RED}❌ Script captain.sh non trouvé${NC}"
             fi
@@ -610,8 +615,8 @@ change_captain() {
     else
         echo -e "${RED}❌ Aucun capitaine trouvé${NC}"
         echo -e "${CYAN}💡 Lancement de captain.sh pour premier embarquement...${NC}"
-        if [[ -x "${SCRIPT_DIR}/../captain.sh" ]]; then
-            "${SCRIPT_DIR}/../captain.sh"
+        if [[ -x "${TOOLS_PATH}/../captain.sh" ]]; then
+            "${TOOLS_PATH}/../captain.sh"
         else
             echo -e "${RED}❌ Script captain.sh non trouvé${NC}"
         fi
@@ -624,8 +629,8 @@ change_captain() {
 launch_captain_onboarding() {
     echo -e "${CYAN}🆕 Lancement de captain.sh pour nouvel embarquement...${NC}"
     echo ""
-    if [[ -x "${SCRIPT_DIR}/../captain.sh" ]]; then
-        "${SCRIPT_DIR}/../captain.sh"
+    if [[ -x "${TOOLS_PATH}/../captain.sh" ]]; then
+        "${TOOLS_PATH}/../captain.sh"
     else
         echo -e "${RED}❌ Script captain.sh non trouvé${NC}"
         read -p "Appuyez sur ENTRÉE pour continuer..."
@@ -635,8 +640,8 @@ launch_captain_onboarding() {
 launch_uplanet_onboarding() {
     echo -e "${CYAN}🚀 Lancement de l'assistant d'embarquement UPlanet ẐEN...${NC}"
     echo ""
-    if [[ -x "${SCRIPT_DIR}/../uplanet_onboarding.sh" ]]; then
-        "${SCRIPT_DIR}/../uplanet_onboarding.sh"
+    if [[ -x "${TOOLS_PATH}/../uplanet_onboarding.sh" ]]; then
+        "${TOOLS_PATH}/../uplanet_onboarding.sh"
     else
         echo -e "${RED}❌ Script uplanet_onboarding.sh non trouvé${NC}"
         read -p "Appuyez sur ENTRÉE pour continuer..."
@@ -721,8 +726,8 @@ main_loop() {
             # Menu technique (conservé mais simplifié)
             "1") 
                 # Import des fonctions avancées du script original
-                if [[ -f "${SCRIPT_DIR}/heartbox_control.sh" ]]; then
-                    source "${SCRIPT_DIR}/heartbox_control.sh"
+                if [[ -f "${TOOLS_PATH}/../admin/monitor/heartbox_control.sh" ]]; then
+                    source "${TOOLS_PATH}/../admin/monitor/heartbox_control.sh"
                     show_detailed_monitoring
                 else
                     echo -e "${RED}❌ Script heartbox_control.sh non trouvé${NC}"
@@ -732,7 +737,7 @@ main_loop() {
             "2") 
                 echo -e "${CYAN}🛠️  Gestion technique - Fonctionnalités avancées${NC}"
                 echo "Pour l'accès technique complet, utilisez:"
-                echo "  ./heartbox_control.sh"
+                echo "  ./admin/monitor/heartbox_control.sh"
                 echo ""
                 read -p "Appuyez sur ENTRÉE..."
                 ;;
@@ -763,7 +768,7 @@ main_loop() {
 #######################################################################
 
 # Vérification des prérequis
-if [[ ! -f "${SCRIPT_DIR}/my.sh" ]]; then
+if [[ ! -f "${TOOLS_PATH}/my.sh" ]]; then
     echo "❌ Fichier my.sh non trouvé. Exécutez depuis le répertoire Astroport.ONE/tools/"
     exit 1
 fi
