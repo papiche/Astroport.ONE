@@ -149,6 +149,22 @@ done
     && exit 1
 
 mail="$1" # EMAIL DESTINATAIRE
+
+## ── Opt-out : ~/.zen/game/nostr/$mail/.mailjet ──────────────────────────────
+_mailjet_optout="${HOME}/.zen/game/nostr/${mail}/.mailjet"
+if [[ -f "$_mailjet_optout" ]]; then
+    _ch=$(jq -r '.channels[]?' "$_mailjet_optout" 2>/dev/null)
+    if printf '%s\n' "$_ch" | grep -qE '^(email|all)$'; then
+        echo "⛔ ${mail} — opt-out Mailjet actif, envoi annulé"
+        exit 0
+    fi
+fi
+
+## ── Token de désinscription (sha256(mail:UPLANETNAME)[:16]) ─────────────────
+## Même algorithme que UPassport /mailjet (_token_for) pour vérification croisée
+_unsub_token=$(printf "%s:%s" "${mail}" "${UPLANETNAME}" | sha256sum | cut -c1-16)
+_unsub_url="${uSPOT:-http://127.0.0.1:54321}/mailjet?email=${mail}&token=${_unsub_token}"
+
 ############################################## SEARCH in players
 $($MY_PATH/../tools/search_for_this_email_in_players.sh ${mail} | tail -n 1)
 echo "ASTROPORT=$ASTROPORT
@@ -296,7 +312,7 @@ fi
 
 SUBJECT="[UPlanet] ${title}"
 
-MESSAGESIGN="---<br>message sent by <a href='${myIPFS}/ipns/$IPFSNODEID'>$(myHostName)</a> (Station Astroport.ONE)"
+MESSAGESIGN="---<br>message sent by <a href='${myIPFS}/ipns/$IPFSNODEID'>$(myHostName)</a> (Station Astroport.ONE)<br><small style='color:#aaa;'><a href='${_unsub_url}' style='color:#aaa;text-decoration:none;'>Gérer mes préférences de notification</a></small>"
 
 echo "
 ########################################################################
@@ -310,6 +326,12 @@ if [[ -s "$messfile" ]]; then
     RAW_CONTENT=$(iconv -c -f utf-8 -t utf-8 -c "$messfile" | tr -d '\000-\010\013\014\016-\037')
 else
     RAW_CONTENT="$messfile"
+fi
+
+## Substitution du placeholder {{UNSUB_URL}} dans les templates OC2UPlanet/autres
+if [[ "$RAW_CONTENT" == *"{{UNSUB_URL}}"* ]]; then
+    _url_safe="${_unsub_url//&/\\&}"
+    RAW_CONTENT=$(printf '%s' "$RAW_CONTENT" | awk -v u="$_url_safe" '{gsub(/\{\{UNSUB_URL\}\}/, u)} 1')
 fi
 
 # 2. Génération du lien IPFS (Conservé pour Nostr et TiddlyWiki)

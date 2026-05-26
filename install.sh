@@ -911,8 +911,12 @@ elif [[ $_SCORE -gt 10 ]]; then _TIER="⚡ Standard";         _RANK="DRAGON ORIG
 else                             _TIER="🌿 Léger";            _RANK="Nœud Léger";     _MVAL=100;               _PAF_DEFAULT=7
 fi
 
-## ── Benchmark disque (une seule fois à l'install) ───────────────────────────
-## _dd_to_mbps : convertit la sortie dd en Mo/s — gère GB/s, MB/s, kB/s
+## ── Benchmark disque — dd (écriture) + hdparm (lecture réelle) ──────────────
+## Écriture  : dd + fdatasync — force le flush sur disque, fiable sur tous supports
+## Lecture   : hdparm -t --direct — bypasse le page cache, donne le vrai débit I/O
+## Fallback  : dd lecture si hdparm impossible (LVM, container, pas de sudo)
+
+## Convertit sortie dd en Mo/s (GB/s, MB/s, kB/s)
 _dd_to_mbps() {
     local _raw
     _raw=$(echo "$1" | grep -oE '[0-9.]+ [GkM]B/s' | tail -1)
@@ -923,17 +927,56 @@ _dd_to_mbps() {
         *)        echo 0 ;;
     esac
 }
+## Convertit sortie hdparm en Mo/s (MB/sec ou GB/sec)
+_hdparm_to_mbps() {
+    local _raw
+    _raw=$(echo "$1" | grep -oE '[0-9.]+ [GM]B/sec' | tail -1)
+    case "$_raw" in
+        *" GB/sec") printf "%.0f" "$(echo "${_raw% GB/sec} * 1000" | bc 2>/dev/null || echo 0)" ;;
+        *" MB/sec") printf "%.0f" "${_raw% MB/sec}" ;;
+        *)          echo 0 ;;
+    esac
+}
+## Détecte le block device racine (NVMe, SATA/IDE/VirtIO) — vide si LVM/overlay
+_detect_disk_dev() {
+    local _src
+    _src=$(df "$HOME" --output=source 2>/dev/null | tail -1 | xargs)
+    case "$_src" in
+        /dev/nvme*p*) echo "${_src%p*}" ;;
+        /dev/[shv]d[a-z][0-9]*) echo "${_src%%[0-9]*}" ;;
+        /dev/mapper/*|tmpfs|overlay) echo "" ;;
+        *) echo "$_src" ;;
+    esac
+}
+
 _DISK_CACHE="$HOME/.zen/game/disk_bench.cache"
 mkdir -p "$HOME/.zen/game"
-## Relance si le cache est absent OU contient "0 0" (bench échoué précédemment)
-if [[ ! -s "$_DISK_CACHE" ]] || grep -q "^0 0$" "$_DISK_CACHE" 2>/dev/null; then
-    echo "⏱️  Benchmark disque (256 Mo écriture + lecture)..."
+## Relance si absent, valeurs nulles, ou cache > 24h
+_disk_cache_age=$(( $(date +%s) - $(stat -c %Y "$_DISK_CACHE" 2>/dev/null || echo 0) ))
+if [[ ! -s "$_DISK_CACHE" ]] || grep -q "^0 0$" "$_DISK_CACHE" 2>/dev/null || \
+   [[ $_disk_cache_age -gt 86400 ]]; then
+    echo "⏱️  Benchmark disque (dd écriture + hdparm lecture)..."
     _tmp_bench=$(mktemp)
+
     _out=$(LANG=C dd if=/dev/zero of="$_tmp_bench" bs=1M count=256 conv=fdatasync 2>&1)
     _disk_write=$(_dd_to_mbps "$_out")
-    _out=$(LANG=C dd if="$_tmp_bench" of=/dev/null bs=1M 2>&1)
-    _disk_read=$(_dd_to_mbps "$_out")
     rm -f "$_tmp_bench"
+
+    _disk_dev=$(_detect_disk_dev)
+    _disk_read=0
+    if [[ -n "$_disk_dev" ]] && command -v hdparm >/dev/null 2>&1; then
+        _out=$(LANG=C sudo hdparm -t --direct "$_disk_dev" 2>&1)
+        _disk_read=$(_hdparm_to_mbps "$_out")
+    fi
+    ## Fallback dd si hdparm a échoué ou indisponible
+    if [[ "${_disk_read:-0}" -eq 0 ]]; then
+        echo "  (hdparm indisponible — lecture via dd, résultat non comparable)"
+        _tmp_bench=$(mktemp)
+        LANG=C dd if=/dev/zero of="$_tmp_bench" bs=1M count=256 conv=fdatasync >/dev/null 2>&1
+        _out=$(LANG=C dd if="$_tmp_bench" of=/dev/null bs=1M 2>&1)
+        _disk_read=$(_dd_to_mbps "$_out")
+        rm -f "$_tmp_bench"
+    fi
     echo "${_disk_write:-0} ${_disk_read:-0}" > "$_DISK_CACHE"
 fi
 read _disk_write _disk_read < "$_DISK_CACHE" 2>/dev/null
