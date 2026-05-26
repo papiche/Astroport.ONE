@@ -519,7 +519,7 @@ CONTENT_JSON=$(cat <<EOF
     "capital": { "g1pub": "${CAPITAL_PUBKEY:-}", "balance_g1": ${CAPITAL_G1:-0}, "balance_zen": ${CAPITAL_ZEN:-0} },
     "amortissement": { "g1pub": "${AMORT_PUBKEY:-}", "balance_g1": ${AMORT_G1:-0}, "balance_zen": ${AMORT_ZEN:-0} },
     "node": { "g1pub": "${NODE_PUBKEY:-}", "balance_g1": ${NODE_G1:-0}, "balance_zen": ${NODE_ZEN:-0} },
-    "captain_dedicated": { "g1pub": "${CAPTAIN_D_PUBKEY:-}", "balance_g1": ${CAPTAIN_DED_G1:-0}, "balance_zen": ${CAPTAIN_DED_ZEN:-0} }
+    "captain_dedicated": { "g1pub": "${CAPTAIN_DED_PUBKEY:-}", "balance_g1": ${CAPTAIN_DED_G1:-0}, "balance_zen": ${CAPTAIN_DED_ZEN:-0} }
   },
   "revenue": {
     "multipass": { "count": ${MULTIPASS_COUNT:-0}, "rate": ${NCARD:-0}, "total": ${MULTIPASS_REVENUE:-0} },
@@ -682,7 +682,7 @@ if [[ "$DRYRUN" == "true" ]]; then
     exit 0
 fi
 
-log_output "📡 Publishing event to local strfry relay..."
+log_output "📡 Publishing event to relay(s)..."
 
 # Get Captain NSEC and convert to HEX for nostr_send_note.py
 # The .secret.nostr file format: "NSEC=nsec1...; NPUB=npub1..."
@@ -704,43 +704,72 @@ if [[ -z "$CAPTAIN_PRIVKEY_HEX" ]]; then
     exit 1
 fi
 
-# Get local relay URL
+# Relay list: local always first, then public constellation relay for immediate visibility
 myRELAY="ws://127.0.0.1:7777"
+PUBLIC_RELAY="wss://relay.copylaradio.com"
+# Add station's own domain relay if different from copylaradio
+if [[ -n "$myDOMAIN" && "$myDOMAIN" != "copylaradio.com" ]]; then
+    STATION_RELAY="wss://relay.${myDOMAIN}"
+else
+    STATION_RELAY=""
+fi
 
 # Publish using nostr_send_note.py
 if [[ -f "${MY_PATH}/../tools/nostr_send_note.py" ]]; then
     log_output "Using nostr_send_note.py to publish event..."
-    
+
     # Create temp keyfile for nostr_send_note.py
     TMP_KEYFILE=$(mktemp)
     echo "NSEC=$CAPTAIN_NSEC;" > "$TMP_KEYFILE"
 
+    # Publish to local relay (primary — always required)
     python3 "${MY_PATH}/../tools/nostr_send_note.py" \
         --keyfile "$TMP_KEYFILE" \
         --kind 30850 \
         --content "$CONTENT_ESCAPED" \
         --tags "$TAGS_JSON" \
         --relay "$myRELAY" 2>/dev/null
-    
     PUBLISH_STATUS=$?
-    rm "$TMP_KEYFILE"
-    
+
     if [[ $PUBLISH_STATUS -eq 0 ]]; then
-        log_output "✅ Événement publié sur le relay"
+        log_output "✅ Publié sur relay local: $myRELAY"
+
+        # Publish to public constellation relay in background (best-effort, non-bloquant)
+        # Copy keyfile content into a new temp file owned by the subshell to avoid race on rm
+        for _relay in "$PUBLIC_RELAY" "$STATION_RELAY"; do
+            [[ -z "$_relay" ]] && continue
+            [[ "$_relay" == "$myRELAY" ]] && continue
+            _TMP_BG=$(mktemp)
+            echo "NSEC=$CAPTAIN_NSEC;" > "$_TMP_BG"
+            (
+                python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+                    --keyfile "$_TMP_BG" \
+                    --kind 30850 \
+                    --content "$CONTENT_ESCAPED" \
+                    --tags "$TAGS_JSON" \
+                    --relay "$_relay" 2>/dev/null \
+                && log_output "✅ Publié sur relay public: $_relay" \
+                || log_output "⚠️ Relay public inaccessible (non bloquant): $_relay"
+                rm -f "$_TMP_BG"
+            ) &
+        done
+
+        rm -f "$TMP_KEYFILE"
         echo "✅ Rapport de santé économique publié"
         echo "   Statut: $HEALTH_STATUS (Niveau de Résilience: $RESILIENCE_LEVEL)"
         echo "   Bilan: $BILAN Ẑ | Autonomie: $WEEKS_RUNWAY semaine(s)"
         [[ $(echo "$LOVE_TOTAL_ZEN > 0" | bc -l 2>/dev/null) -eq 1 ]] && \
             echo "   ❤️  Love Ledger: ${LOVE_TOTAL_ZEN} Ẑen offerts aux Communs (${LOVE_WEEKS_COUNT} sem.)"
-        echo "   Relay: $myRELAY"
+        echo "   Relay local: $myRELAY | Public: $PUBLIC_RELAY"
     else
+        rm "$TMP_KEYFILE"
         echo "⚠️ nostr_send_note.py failed, trying strfry import..."
-        
+
         # Fallback: create event JSON and import directly to strfry
         MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
         TEMP_EVENT="$HOME/.zen/tmp/${MOATS}_economic_health.json"
         mkdir -p "$HOME/.zen/tmp"
-        
+
         # Build event for strfry import (strfry will sign with --no-verify)
         cat > "$TEMP_EVENT" <<EOF
 {
@@ -751,10 +780,10 @@ if [[ -f "${MY_PATH}/../tools/nostr_send_note.py" ]]; then
   "content": $CONTENT_ESCAPED
 }
 EOF
-        
+
         cd ~/.zen/strfry
         ./strfry import --no-verify < "$TEMP_EVENT" 2>/dev/null
-        
+
         if [[ $? -eq 0 ]]; then
             echo "✅ Economic health report stored locally"
             echo "   (Will be synced via constellation backfill)"
@@ -762,7 +791,7 @@ EOF
             echo "❌ Failed to store event"
             exit 1
         fi
-        
+
         rm -f "$TEMP_EVENT"
     fi
 else

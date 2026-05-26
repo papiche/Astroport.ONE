@@ -95,7 +95,7 @@ _find_skill_refs() {
 
         # Style MineLife: référence via #a → "30500:hex:skill" (filtre client-side)
         local all_k
-        all_k=$(bash "$NOSTR_GET" --kind "$k" --limit "$limit" 2>/dev/null)
+        all_k=$(bash "$NOSTR_GET" --kind "$k" --tag-p "$user_hex" --limit "$limit" 2>/dev/null)
         if [[ -n "$all_k" ]]; then
             local by_a
             by_a=$(printf '%s\n' "$all_k" | jq -c \
@@ -199,9 +199,10 @@ check_dependencies() {
 ################################################################################
 npub_to_hex() {
     local npub="$1"
-    python3 -c "
+    NPUB_ARG="$npub" python3 -c "
+import os
 from nostr.key import PublicKey
-print(PublicKey.from_npub('$npub').hex())
+print(PublicKey.from_npub(os.environ['NPUB_ARG']).hex())
 " 2>/dev/null || echo "$npub"
 }
 
@@ -211,14 +212,22 @@ print(PublicKey.from_npub('$npub').hex())
 find_hex_from_email() {
     local email="$1"
     local player_dir="${HOME}/.zen/game/players"
+    local found_hex="" found_count=0
 
     for dir in "$player_dir"/*/"$email"; do
         if [[ -d "$dir" ]] && [[ -f "$dir/.secret.nostr" ]]; then
             local hex
             hex=$(grep -oP 'HEX=\K[a-f0-9]{64}' "$dir/.secret.nostr" 2>/dev/null)
-            if [[ -n "$hex" ]]; then echo "$hex"; return 0; fi
+            if [[ -n "$hex" ]]; then
+                (( found_count++ ))
+                [[ $found_count -eq 1 ]] && found_hex="$hex"
+            fi
         fi
     done
+    if [[ $found_count -gt 1 ]]; then
+        log_warning "Plusieurs entrées players/ pour: $email — premier résultat utilisé" >&2
+    fi
+    if [[ -n "$found_hex" ]]; then echo "$found_hex"; return 0; fi
 
     # Fallback: ~/.zen/game/nostr/email/.secret.nostr
     local nostr_secret="${HOME}/.zen/game/nostr/${email}/.secret.nostr"
@@ -327,6 +336,10 @@ delete_event_by_id() {
         if [[ -z "$secret_file" ]]; then
             log_error "Fichier .secret.nostr introuvable pour ${user_hex:0:16}…"; return 1
         fi
+        case "$secret_file" in
+            "${HOME}/.zen/game/nostr"/*) ;;
+            *) log_error "Chemin .secret.nostr hors limites: $secret_file"; return 1 ;;
+        esac
         local tags_json="[[\"e\",\"$event_id\"]]"
         local result
         result=$(python3 "$NOSTR_SEND" \
