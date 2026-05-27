@@ -249,7 +249,7 @@ _handle_craft() {
     local tmp_prompt
     tmp_prompt=$(mktemp)
     cat > "$tmp_prompt" <<CRAFTPROMPT
-Tu es un assistant pédagogique WoTx2 UPlanet. Analyse ce tutoriel et identifie les compétences requises.
+Tu es un assistant pédagogique Crafting Mine Life sur UPlanet. Analyse ce tutoriel et identifie les compétences requises.
 Réponds UNIQUEMENT en JSON valide sur une seule ligne (aucun texte autour, aucun markdown) :
 {"name":"Nom en français","icon":"emoji","description":"1 phrase","ingredients":[{"skill":"nom_skill","level":1}],"resource_type":"lien"}
 Règles strictes :
