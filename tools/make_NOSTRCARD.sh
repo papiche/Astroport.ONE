@@ -421,9 +421,7 @@ EOFJSON
     ## Identité NOSTR du NODE (home station) pour le roaming DM sync
     NODE_NOSTR_HEX=""
     if [[ -s ~/.zen/game/secret.nostr ]]; then
-        source ~/.zen/game/secret.nostr
-        NODE_NOSTR_HEX="${HEX:-}"
-        unset NSEC NPUB HEX  # éviter pollution des variables du joueur
+        NODE_NOSTR_HEX=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
     fi
     echo "${IPFSNODEID}:${NODE_NOSTR_HEX}" > "${HOME}/.zen/game/nostr/${EMAIL}/home.station"
     chmod 644 "${HOME}/.zen/game/nostr/${EMAIL}/home.station"

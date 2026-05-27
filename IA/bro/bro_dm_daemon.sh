@@ -1153,7 +1153,7 @@ _SWEEP_PID=$!
 ## nostr_node_intercom.py receive effectue un REQ kind:4 #p:NODE_HEX
 ## avec un timeout de 30s, puis reboucle — chaque DM reçu est écrit dans
 ## la queue en tant que fichier JSON brut, déclenché par inotifywait.
-_NODE_HEX=$(cat "$HOME/.zen/game/secret.nostr" 2>/dev/null | grep '^HEX=' | cut -d= -f2 || true)
+_NODE_HEX=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
 
 _constellation_subscriber_loop() {
     [[ -z "$_NODE_HEX" ]] && _log "WARN: HEX NODE absent — subscriber constellation désactivé" && return

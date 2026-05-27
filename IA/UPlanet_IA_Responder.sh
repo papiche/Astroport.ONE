@@ -433,9 +433,8 @@ _dispatch_comfyui_video_job() {
     ## Charger les clés NODE
     local _node_nsec _node_hex
     if [[ -s "$HOME/.zen/game/secret.nostr" ]]; then
-        source "$HOME/.zen/game/secret.nostr"
-        _node_nsec="${NSEC:-}"; _node_hex="${HEX:-}"
-        unset NSEC NPUB HEX
+        _node_hex=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
+        _node_nsec=$(sed 's/.*NSEC=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
     fi
     [[ -z "$_node_nsec" || -z "$_node_hex" ]] && echo "" && return 1
 
@@ -493,9 +492,7 @@ print(json.dumps({
 }))
 " "$PUBKEY" "$EVENT" "$LAT" "$LON" "$MESSAGE" "${URL:-}" "$KNAME" 2>/dev/null)
             if [[ -n "$_BRO_PAYLOAD" && -s "$HOME/.zen/game/secret.nostr" ]]; then
-                source "$HOME/.zen/game/secret.nostr"
-                _NODE_NSEC="${NSEC:-}"
-                unset NSEC NPUB HEX
+                _NODE_NSEC=$(sed 's/.*NSEC=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
                 python3 "$HOME/.zen/Astroport.ONE/tools/nostr_node_intercom.py" send \
                     --nsec    "$_NODE_NSEC" \
                     --to      "$_HOME_NODE_HEX" \
