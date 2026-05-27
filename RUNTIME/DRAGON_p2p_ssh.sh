@@ -250,9 +250,11 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
         regionhex=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_*_*/REGIONHEX 2>/dev/null))
     fi
     ## Same-uplanet captains (kind 30850, swarm_id = UPLANETG1PUB, station != me) so Captain follows other captains on NOSTR
+    ## Filtre --since 9j : seuls les captaines actifs récemment (cohérent avec le nettoyage des clés SSH ci-après)
     captainhex=()
     if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
-        UPLANET_30850=$("$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" --kind 30850 --limit 300 2>/dev/null)
+        _9d_ago=$(( $(date +%s) - 9 * 86400 ))
+        UPLANET_30850=$("$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" --kind 30850 --limit 300 --since "$_9d_ago" 2>/dev/null)
         if [[ -n "$UPLANET_30850" ]]; then
             while read -r pub; do
                 [[ -n "$pub" ]] && captainhex+=("$pub")
@@ -309,8 +311,15 @@ cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys 2
 ## ADDING SSH KEYS OF CAPTAINS FROM SAME UPLANET (kind 30850 economic-health, swarm_id = UPLANETG1PUB)
 ## Links captains of the same uplanet for P2P SSH (see ECONOMY.broadcast.sh ssh_pub tag and economy.Swarm.html)
 ## Note: UPLANET_30850 peut déjà être rempli par la section NOSTR follow ci-dessus (évite double requête relay)
+## Filtre --since 9j : seules les stations ayant diffusé récemment sont acceptées.
+## Les clés orphelines (station silencieuse > 9j) ne sont plus ré-ajoutées — elles disparaissent
+## naturellement au prochain cycle DRAGON (voir grep -v " uplanet:" ci-dessus).
 if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
-    [[ -z "${UPLANET_30850:-}" ]] && UPLANET_30850=$("$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" --kind 30850 --limit 300 2>/dev/null)
+    _9d_ago=$(( $(date +%s) - 9 * 86400 ))
+    if [[ -z "${UPLANET_30850:-}" ]]; then
+        UPLANET_30850=$("$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" \
+            --kind 30850 --limit 300 --since "$_9d_ago" 2>/dev/null)
+    fi
     if [[ -n "$UPLANET_30850" ]]; then
         echo "$UPLANET_30850" | jq -c --arg sid "$UPLANETG1PUB" --arg me "$IPFSNODEID" '
             select(

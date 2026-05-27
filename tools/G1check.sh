@@ -113,10 +113,11 @@ read_cache() {
 # ── Écriture cache + backup ───────────────────────────────────────────────────
 write_cache() {
     local f="$1" val="$2"
-    echo "$val" > "$f"
+    # Écriture atomique via rename (évite la corruption lors d'accès parallèles xargs -P)
+    echo "$val" > "${f}.tmp" && mv "${f}.tmp" "$f"
     # Backup horodaté (garde 1 seul)
     local bak="${HOME}/.zen/tmp/backup.${G1PUB}.$(date +%s)"
-    echo "$val" > "$bak"
+    echo "$val" > "${bak}.tmp" && mv "${bak}.tmp" "$bak"
     find "${HOME}/.zen/tmp" -maxdepth 1 -name "backup.${G1PUB}.*" \
         | sort -r | tail -n +2 | xargs rm -f 2>/dev/null
 }

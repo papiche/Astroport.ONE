@@ -155,8 +155,10 @@ Environment="OLLAMA_MAX_LOADED_MODELS=2"
 EOF
 
         if [[ "$GPU_VENDOR" == "nvidia" && -n "$GPU_VRAM" && "$GPU_VRAM" -gt 0 ]]; then
-            echo 'Environment="CUDA_VISIBLE_DEVICES=0"' \
-                | sudo tee -a "${OLLAMA_OVERRIDE_DIR}/astroport.conf" > /dev/null
+            if ! grep -q 'CUDA_VISIBLE_DEVICES' "${OLLAMA_OVERRIDE_DIR}/astroport.conf" 2>/dev/null; then
+                echo 'Environment="CUDA_VISIBLE_DEVICES=0"' \
+                    | sudo tee -a "${OLLAMA_OVERRIDE_DIR}/astroport.conf" > /dev/null
+            fi
         fi
 
         sudo systemctl daemon-reload

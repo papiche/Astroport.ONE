@@ -150,14 +150,19 @@ COLLECTION_CONFIG='{
   }
 }'
 
-if ! curl -X PUT "http://localhost:6333/collections/nostr_events" \
+## Vérifier si la collection existe déjà (idempotent — évite HTTP 400 en upgrade)
+_HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+    "http://localhost:6333/collections/nostr_events")
+if [[ "$_HTTP_STATUS" == "200" ]]; then
+    echo "Collection 'nostr_events' déjà existante — ignorée."
+elif ! curl -X PUT "http://localhost:6333/collections/nostr_events" \
      -H "Content-Type: application/json" \
-     -d "$COLLECTION_CONFIG" &> /dev/null; then
+     -d "$COLLECTION_CONFIG" &>/dev/null; then
     echo "Erreur : échec de la création de la collection Qdrant."
     exit 1
+else
+    echo "Collection 'nostr_events' créée avec succès."
 fi
-
-echo "Collection 'nostr_events' créée avec succès."
 
 # Vérification des conteneurs (qdrant + rnostr uniquement)
 if ! $DOCKER_COMPOSE_CMD ps | grep -E "qdrant.*Up|rnostr.*Up" &> /dev/null; then

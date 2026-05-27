@@ -897,14 +897,14 @@ _check_requirements() {
                 echo -e "${RED}❌  Espace insuffisant : ${avail_gb} Go disponibles (20 Go requis pour Dify)${NC}"
                 return 1
             fi
-            ss -tln 2>/dev/null | grep -q ':11434 ' || \
+            ss -tln 2>/dev/null | grep -qE ':11434\b' || \
                 echo -e "${YELLOW}⚠️  Ollama inactif — démarrer d'abord : astrosystemctl local start ollama${NC}" ;;
         open-webui|open_webui|mirofish)
             if command -v bc >/dev/null 2>&1 && [[ $(echo "$avail_gb < 5" | bc 2>/dev/null) -eq 1 ]]; then
                 echo -e "${RED}❌  Espace insuffisant : ${avail_gb} Go disponibles (5 Go requis)${NC}"
                 return 1
             fi
-            ss -tln 2>/dev/null | grep -q ':11434 ' || \
+            ss -tln 2>/dev/null | grep -qE ':11434\b' || \
                 echo -e "${YELLOW}⚠️  Ollama inactif (port 11434) — ${svc} en dépend${NC}" ;;
         orpheus)
             [[ ${score:-0} -lt 41 ]] && \
@@ -1465,6 +1465,55 @@ cmd_local() {
 }
 
 ##############################################################################
+# health — vérification rapide de l'intégrité de la station
+##############################################################################
+cmd_health() {
+    local _ok=0 _fail=0
+
+    _chk() {
+        local label="$1"; shift
+        if eval "$*" >/dev/null 2>&1; then
+            echo "  ✅ ${label}"
+            (( _ok++ )) || true
+        else
+            echo "  ❌ ${label}"
+            (( _fail++ )) || true
+        fi
+    }
+
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  🩺  ASTROPORT HEALTH CHECK                                 ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+
+    ## IPFS daemon accessible
+    _chk "IPFS daemon"       "ipfs id"
+    ## IPFS swarm connecté (≥ 1 pair)
+    _chk "IPFS swarm peers"  "[[ \$(ipfs swarm peers 2>/dev/null | wc -l) -gt 0 ]]"
+    ## NOSTR relay joignable en TCP (strfry ou rnostr)
+    _chk "NOSTR relay :7777" "nc -z -w 3 127.0.0.1 7777"
+    ## UPassport API
+    _chk "UPassport :54321"  "nc -z -w 3 127.0.0.1 54321"
+    ## Station Map API
+    _chk "Station Map :12345" "nc -z -w 3 127.0.0.1 12345"
+    ## Python venv UPassport fonctionnel
+    local _venv="$HOME/.astro/bin/python3"
+    _chk "Python venv ~/.astro" "[[ -x '${_venv}' ]] && '${_venv}' -c 'import fastapi, nacl'"
+    ## Captain wallet existant
+    _chk "Captain wallet" "[[ -f \"\$HOME/.zen/game/players/.current/.player\" ]]"
+    ## Espace disque ≥ 2 Go libres
+    local _avail_kb
+    _avail_kb=$(df --output=avail "$HOME" 2>/dev/null | tail -1 | tr -d ' ')
+    _chk "Disque libre ≥ 2Go" "[[ \${_avail_kb:-0} -gt 2097152 ]]"
+
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    printf  "║  %-58s ║\n" "Résultat : ${_ok} OK  |  ${_fail} KO"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+    [[ $_fail -eq 0 ]]
+}
+
+##############################################################################
 # Main — ignoré si sourcé en mode test (ASTROSYSTEMCTL_TEST=1)
 ##############################################################################
 [[ "${ASTROSYSTEMCTL_TEST:-0}" == "1" ]] && return 0
@@ -1479,6 +1528,7 @@ case "$COMMAND" in
     enable)         cmd_enable      "$@" ;;
     disable)        cmd_disable     "$@" ;;
     status)         cmd_status      "$@" ;;
+    health)         cmd_health      "$@" ;;
     local)          cmd_local       "$@" ;;
     help|--help|-h)
         cat << 'HELP'
@@ -1493,6 +1543,7 @@ Commandes :
   enable   <svc[@node]>     Tunnel persistant (watchdog 20h12)
   disable  <service>        Retire de la surveillance automatique
   status                    Tunnels actifs + persistants + Power-Score
+  health                    Vérification rapide de l'intégrité de la station
   local [list|start|stop|install|uninstall|feed] [service]
                             Panneau de contrôle des services IA locaux
 

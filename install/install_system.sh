@@ -32,22 +32,9 @@ echo "#############################################
 #############################################"
 
 ########################################################################
-# SUDO permissions
+# SUDO permissions — délégué à install_sudoers.sh (idempotent, ré-exécutable à l'upgrade)
 ########################################################################
-## Full sudo for captain (NOPASSWD:ALL)
-echo "$USER ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/captain')
-########################################################################
-## Explicit NOPASSWD for services used by Astroport (ramdisk, systemctl, powerjoular, etc.)
-for bin in fail2ban-client mount umount apt-get apt systemctl ufw docker hdparm powerjoular kill; do
-  binpath=$(which $bin 2>/dev/null)
-  if [[ -n "$binpath" ]] && [[ -x "$binpath" ]]; then
-    echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'"$bin") \
-      && echo "SUDOERS RIGHT SET FOR : $binpath" \
-      || echo "ERROR setting sudoers for $bin"
-  else
-    echo "SKIP (not found or not executable): $bin"
-  fi
-done
+bash "${MY_PATH}/install_sudoers.sh"
 
 ########################################################################
 # DESKTOP SHORTCUTS (Mint, Ubuntu, Debian — Bureau / Desktop)
@@ -120,12 +107,14 @@ EOF
 
 sudo cp -f /tmp/astroport.service /etc/systemd/system/
 sudo sed -i "s/_USER_/$USER/g" /etc/systemd/system/astroport.service
+sudo systemctl daemon-reload 2>/dev/null || true
 
 ########################################################################
 # SSH HARDENING
 ########################################################################
 echo "... Optimizing security into /etc/ssh/sshd_config"
-sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+## Backup une seule fois — ne pas écraser une sauvegarde existante
+[[ ! -f /etc/ssh/sshd_config.bak ]] && sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
 sudo sed -i 's/^.*PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
 sudo sed -i 's/^.*PermitEmptyPasswords .*/PermitEmptyPasswords no/' /etc/ssh/sshd_config

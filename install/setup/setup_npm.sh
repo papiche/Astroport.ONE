@@ -51,6 +51,35 @@ elif echo "$DOMAIN" | grep -qE '\.(local|localhost)$|^127\.|^192\.168\.|^10\.|^1
     SSL_MODE="selfsigned"
 fi
 
+## Test de joignabilité port 80 public — Let's Encrypt exige HTTP-01 (port 80 ouvert)
+## Si la box/routeur ne redirige pas le port 80, le challenge échouera en boucle.
+if [[ "$SSL_MODE" == "letsencrypt" ]]; then
+    echo "# Vérification port 80 public (requis pour Let's Encrypt HTTP-01)..."
+    _PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null \
+                 || curl -s --max-time 5 https://ifconfig.me 2>/dev/null \
+                 || true)
+    _PORT80_OK=false
+    if [[ -n "$_PUBLIC_IP" ]]; then
+        ## Tentative de connexion TCP sur notre IP publique port 80
+        if nc -z -w 5 "$_PUBLIC_IP" 80 2>/dev/null; then
+            _PORT80_OK=true
+        ## Fallback : curl HTTP (supporte le hairpin NAT quand nc échoue)
+        elif curl -sf --max-time 8 "http://${_PUBLIC_IP}/" >/dev/null 2>&1; then
+            _PORT80_OK=true
+        fi
+    fi
+    if [[ "$_PORT80_OK" == "false" ]]; then
+        echo "⚠️  Port 80 non joignable depuis internet (NAT/box/firewall ?)."
+        echo "   Let's Encrypt HTTP-01 requiert le port 80 ouvert publiquement."
+        echo "   → Basculement automatique sur certificats auto-signés."
+        echo "   Pour activer Let's Encrypt : ouvrez le port 80 dans votre box/firewall"
+        echo "   puis relancez : bash ${MY_PATH}/setup_npm.sh"
+        SSL_MODE="selfsigned"
+    else
+        echo "# Port 80 accessible — Let's Encrypt activé."
+    fi
+fi
+
 echo "#############################################"
 echo "## NGINX PROXY MANAGER SETUP"
 echo "## Domain: ${DOMAIN}"

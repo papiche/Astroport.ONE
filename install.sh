@@ -32,7 +32,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "                   Laissez vide pour l'installation standard."
     echo ""
     echo "Profils disponibles :"
-    echo "  (vide)         Standard : IPFS + Nostr strfry + UPassport + Astroport"
+    echo "  (vide)         Standard : IPFS + Nostr strfry + UPassport + Astroport + Qdrant (si score ≥ 11)"
     echo "  nextcloud      Standard + NextCloud AIO (cloud privé 128Go pour ZEN Card)"
     echo "  ai-company  Standard + Stack IA (Ollama + Dify.ai + Open WebUI + Qdrant)"
     echo "                 → install-ai-company.docker.sh + code_assistant"
@@ -44,14 +44,25 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "  INSTALL_COMFYUI=yes|no   → ComfyUI Docker (si GPU détecté)"
     echo "  INSTALL_AI_SERVICES      → Liste des services IA à installer (ex: open-webui,qdrant) (si profil ai-company)"
     echo ""
+    echo "Options supplémentaires :"
+    echo "  -y, --yes        Mode silencieux : accepte toutes les valeurs par défaut."
+    echo "                   Utile pour cron/CI. Peut se placer en 5ème argument."
+    echo ""
     echo "Exemples d'installation silencieuse :"
     echo "  bash install.sh \"\" \"ma-base.org\"                    -> Standard sur ma-base.org"
     echo "  bash install.sh \"\" \"\" \"\" nextcloud               -> Standard + NextCloud"
     echo "  bash install.sh \"\" \"\" \"\" ai-company           -> Standard + Stack IA"
     echo "  bash install.sh \"contact@me.com\" \"\" \"\" dev       -> Dev (rnostr)"
+    echo "  bash install.sh \"\" \"\" \"\" \"\" -y                 -> Upgrade silencieux (cron)"
     echo "================================================================="
     exit 0
 fi
+
+## Mode silencieux : -y / --yes peut apparaître en n'importe quelle position
+_SILENT=false
+for _arg in "$@"; do
+    [[ "$_arg" == "-y" || "$_arg" == "--yes" ]] && _SILENT=true && break
+done
 ########################################################################
 ##################################################################  SUDO
 ##  Lancement "root" interdit...
@@ -77,10 +88,107 @@ export INSTALL_PROFILE="${4:-${INSTALL_PROFILE:-}}"
 export CUSTOM_CAPTAIN_EMAIL="${CUSTOM_CAPTAIN_EMAIL:-${CAPTAIN_EMAIL:-}}"
 export CUSTOM_NODE_DOMAIN="${CUSTOM_NODE_DOMAIN:-${NODE_DOMAIN:-}}"
 export CUSTOM_EMAIL_DOMAIN="${CUSTOM_EMAIL_DOMAIN:-${CAPTAIN_EMAIL_DOMAIN:-}}"
+## Détecter une installation existante via le fichier .player
+_PLAYER_FILE="$HOME/.zen/game/players/.current/.player"
+if [[ -z "$CUSTOM_CAPTAIN_EMAIL" && -f "$_PLAYER_FILE" ]]; then
+    CUSTOM_CAPTAIN_EMAIL=$(cat "$_PLAYER_FILE" | tr -d '[:space:]')
+    export _IS_UPGRADE=true
+fi
+
+########################################################################
+## BACKUP PRÉ-UPGRADE (si installation existante détectée)
+## Chaîne crypto sauvegardée : ~/.zen/game ↔ ~/.ssh ↔ ~/.ipfs/{config,swarm.key}
+## (Ylevel.sh : SSH ed25519 → IPFS PeerID → G1/Duniter — inséparables)
+########################################################################
+if [[ "${_IS_UPGRADE:-false}" == "true" ]]; then
+    _BACKUP_DIR="/tmp/astroport_backups"
+    _BACKUP_FILE="${_BACKUP_DIR}/astroport_$(date +%Y%m%d_%H%M%S).tar.gz"
+    mkdir -p "$_BACKUP_DIR"
+    echo "🗄️  Backup pré-upgrade → ${_BACKUP_FILE}"
+
+    ## Construire la liste des chemins à archiver (existants seulement)
+    _BACKUP_PATHS=()
+    [[ -d "$HOME/.zen/game"           ]] && _BACKUP_PATHS+=("$HOME/.zen/game")
+    [[ -f "$HOME/.zen/Astroport.ONE/.env" ]] && _BACKUP_PATHS+=("$HOME/.zen/Astroport.ONE/.env")
+    [[ -d "$HOME/.ssh"                ]] && _BACKUP_PATHS+=("$HOME/.ssh")
+    [[ -f "$HOME/.ipfs/config"        ]] && _BACKUP_PATHS+=("$HOME/.ipfs/config")
+    [[ -f "$HOME/.ipfs/swarm.key"     ]] && _BACKUP_PATHS+=("$HOME/.ipfs/swarm.key")
+    [[ -d "$HOME/.ipfs/keystore"      ]] && _BACKUP_PATHS+=("$HOME/.ipfs/keystore")
+
+    tar -czf "$_BACKUP_FILE" \
+        --exclude="$HOME/.zen/tmp" \
+        --exclude="$HOME/.zen/UPassport" \
+        --exclude="$HOME/.zen/Astroport.ONE" \
+        "${_BACKUP_PATHS[@]}" \
+        2>/dev/null \
+        && echo "✅ Backup OK — chaîne SSH→IPFS→G1 archivée" \
+        && echo "   Restaurer : tar -xzf $_BACKUP_FILE -C /" \
+        || echo "⚠️  Backup partiel (certains fichiers inaccessibles)"
+
+    ## Purge automatique des backups > 7 jours
+    find "$_BACKUP_DIR" -name "astroport_*.tar.gz" -mtime +7 -delete 2>/dev/null || true
+
+    ## Upgrade : ré-appliquer sudoers et bashrc (nouveaux binaires, nouvelles entrées)
+    echo "🔧 Upgrade — réapplication sudoers + .bashrc..."
+    bash "${MY_PATH}/install/install_sudoers.sh" || true
+    bash "${MY_PATH}/install/install_bashrc.sh"  || true
+fi
+
+########################################################################
+## DÉTECTION CHANGEMENT DE PROFIL → teardown des anciens services
+########################################################################
+_OLD_PROFILE=$(grep "^INSTALL_PROFILE=" "$HOME/.zen/Astroport.ONE/.env" 2>/dev/null \
+    | cut -d= -f2 | tr -d '"' | xargs)
+if [[ -n "$_OLD_PROFILE" && -n "$INSTALL_PROFILE" && \
+      "$_OLD_PROFILE" != "$INSTALL_PROFILE" && \
+      "$_OLD_PROFILE" != "standard" ]]; then
+    echo "🔄 Changement de profil : ${_OLD_PROFILE} → ${INSTALL_PROFILE:-standard}"
+    case "$_OLD_PROFILE" in
+        dev)
+            echo "  ↳ Arrêt rnostr (profil dev obsolète)..."
+            sudo systemctl stop rnostr 2>/dev/null && sudo systemctl disable rnostr 2>/dev/null || true
+            sudo systemctl start strfry 2>/dev/null && sudo systemctl enable strfry 2>/dev/null || true
+            echo "  ✅ strfry réactivé (port 7777)"
+            ;;
+        ai-company)
+            echo "  ↳ Arrêt stack IA Docker (profil ai-company obsolète)..."
+            _COMPOSE="$HOME/.zen/Astroport.ONE/docker/docker-compose.yml"
+            [[ -f "$_COMPOSE" ]] && \
+                docker compose -f "$_COMPOSE" --profile ai down 2>/dev/null || true
+            ;;
+        nextcloud)
+            echo "  ↳ Arrêt NextCloud Docker (profil nextcloud obsolète)..."
+            _COMPOSE="$HOME/.zen/Astroport.ONE/docker/docker-compose.yml"
+            [[ -f "$_COMPOSE" ]] && \
+                docker compose -f "$_COMPOSE" --profile cloud down 2>/dev/null || true
+            ;;
+    esac
+fi
+
+########################################################################
+## Dossier de logs centralisé (toutes les erreurs ici, pas dans ~/.zen/ racine)
+_LOG_DIR="$HOME/.zen/log"
+mkdir -p "$_LOG_DIR"
+_INSTALL_LOG="$_LOG_DIR/install.log"
+_ERROR_LOG="$_LOG_DIR/install.errors.log"
+## Rediriger stderr global vers le log d'install (en plus du terminal)
+exec 2> >(tee -a "$_INSTALL_LOG" >&2)
+echo "=== INSTALL $(date '+%Y-%m-%d %H:%M:%S') ===" >> "$_INSTALL_LOG"
 
 ########################################################################
 echo "## HARDWARE CHECK (détection avant toute question) ##"
-[[ $(df . | awk 'NR==2 {print $4}') -lt 2000000 ]] && echo "Espace disque faible (<2Go)" && exit 1
+_AVAIL_KB=$(df . | awk 'NR==2 {print $4}')
+[[ ${_AVAIL_KB:-0} -lt 2000000 ]] && echo "❌ Espace disque insuffisant (<2Go)" && exit 1
+## Vérification renforcée pour le profil ai-company (Ollama + modèles = 20Go+)
+if [[ "${INSTALL_PROFILE}" == "ai-company" ]]; then
+    _AVAIL_GB=$(( ${_AVAIL_KB:-0} / 1048576 ))
+    if [[ $_AVAIL_GB -lt 20 ]]; then
+        echo "❌ Profil ai-company nécessite ≥ 20 Go libres (disponible : ${_AVAIL_GB} Go)"
+        echo "   (Ollama ≈ 600 Mo + modèles IA ≥ 4 Go + stack Docker ≈ 5 Go)"
+        exit 1
+    fi
+    echo "✅ Espace disque OK pour ai-company : ${_AVAIL_GB} Go disponibles"
+fi
 ########################################################################
 _CPU=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
 _RAM=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
@@ -124,8 +232,9 @@ fi
 _env_upsert() {
     local _k="$1" _v="$2" _f="$3"
     [[ ! -f "$_f" ]] && return 0
+    local _v_esc="${_v//|/\\|}"   # échapper | pour sed
     if grep -q "^${_k}=" "${_f}" 2>/dev/null; then
-        sed -i "s|^${_k}=.*|${_k}=${_v}|" "${_f}"
+        sed -i "s|^${_k}=.*|${_k}=${_v_esc}|" "${_f}"
     else
         echo "${_k}=${_v}" >> "${_f}"
     fi
@@ -138,7 +247,21 @@ _TOTAL_SAVINGS=0
 ########################################################################
 ## EMBARQUEMENT INTERACTIF — affiché si aucun argument CLI fourni
 ########################################################################
-if [[ -z "$CUSTOM_CAPTAIN_EMAIL" && -z "$CUSTOM_NODE_DOMAIN" ]]; then
+if [[ "${_IS_UPGRADE:-false}" == "true" ]]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║            🔄 MISE À JOUR ASTROPORT.ONE                     ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    printf "║  Capitaine : %-48s ║\n" "$CUSTOM_CAPTAIN_EMAIL"
+    printf "║  Matériel  : CPU=%sc  RAM=%sGo  VRAM=%sGo  Score=%s      \n" \
+        "$_CPU" "$_RAM" "$_VRAM" "$_SCORE"
+    printf "║  Tier      : %-48s ║\n" "$_TIER"
+    [[ -n "$_GPU_NAME" ]] && printf "║  GPU       : %-48s ║\n" "${_GPU_NAME} (${_GPU_VENDOR})"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║  Installation existante détectée — mise à jour en cours...  ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+elif [[ -z "$CUSTOM_CAPTAIN_EMAIL" && -z "$CUSTOM_NODE_DOMAIN" && "$_SILENT" == "false" ]]; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
     echo "║            🚀 EMBARQUEMENT ASTROPORT.ONE                    ║"
@@ -160,12 +283,16 @@ fi
 [[ -n "$CUSTOM_EMAIL_DOMAIN" ]]  && echo ">>> Domaine Email   : $CUSTOM_EMAIL_DOMAIN"  || echo ">>> Domaine Email   : Automatique (qo-op.com)"
 
 ## Sélection du profil si non fourni en argument ($4)
-if [[ -z "$INSTALL_PROFILE" ]]; then
+if [[ -z "$INSTALL_PROFILE" && "${_IS_UPGRADE:-false}" != "true" && "$_SILENT" == "false" ]]; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
     echo "║  PROFIL D'INSTALLATION    (Tier : ${_TIER})                 "
     echo "╠══════════════════════════════════════════════════════════════╣"
+    if [[ $_SCORE -gt 10 ]]; then
+    echo "║  (vide)     Standard — IPFS + NOSTR + G1 + Qdrant (recommandé)║"
+    else
     echo "║  (vide)     Standard — IPFS + NOSTR + G1  (recommandé)     ║"
+    fi
     echo "║  nextcloud  Standard + NextCloud AIO  (cloud privé 128Go)  ║"
     if [[ $_SCORE -gt 10 ]]; then
     echo "║  ai-company Standard + Stack IA  (Ollama, Open WebUI, Qdrant)║"
@@ -182,7 +309,7 @@ _env_upsert "INSTALL_PROFILE" "${INSTALL_PROFILE:-standard}" "${HOME}/.zen/Astro
 ########################################################################
 ## NOM DE LA MACHINE
 ########################################################################
-if [[ -z "${CUSTOM_MACHINE_NAME:-}" ]]; then
+if [[ -z "${CUSTOM_MACHINE_NAME:-}" && "$_SILENT" == "false" ]]; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
     echo "║  🖥️  NOM DE VOTRE MACHINE                                    ║"
@@ -239,9 +366,29 @@ sudo apt-get update
 sudo apt install -y git
 mkdir -p ~/.zen/workspace
 cd ~/.zen/workspace
-if [ -d UPlanet ]; then cd UPlanet && git pull && cd ..; else git clone --depth 1 https://github.com/papiche/UPlanet; fi
+if [ -d UPlanet ]; then
+    cd UPlanet
+    _git_stash=$(git stash list 2>/dev/null | wc -l)
+    git stash 2>/dev/null || true
+    git fetch --all && git reset --hard origin/main \
+        && echo "✅ UPlanet mis à jour (git reset --hard)" \
+        || echo "⚠️  UPlanet git reset échoué"
+    [[ $(git stash list 2>/dev/null | wc -l) -gt $_git_stash ]] \
+        && echo "ℹ️  Modifications locales UPlanet mises en stash (git stash pop pour les récupérer)"
+    cd ..
+else git clone --depth 1 https://github.com/papiche/UPlanet; fi
 cd ~/.zen
-if [ -d Astroport.ONE ]; then cd Astroport.ONE && git pull && cd ..; else git clone --depth 1 https://github.com/papiche/Astroport.ONE.git; fi
+if [ -d Astroport.ONE ]; then
+    cd Astroport.ONE
+    _git_stash=$(git stash list 2>/dev/null | wc -l)
+    git stash 2>/dev/null || true
+    git fetch --all && git reset --hard origin/main \
+        && echo "✅ Astroport.ONE mis à jour (git reset --hard)" \
+        || echo "⚠️  Astroport.ONE git reset échoué"
+    [[ $(git stash list 2>/dev/null | wc -l) -gt $_git_stash ]] \
+        && echo "ℹ️  Modifications locales Astroport.ONE mises en stash (git stash pop pour les récupérer)"
+    cd ..
+else git clone --depth 1 https://github.com/papiche/Astroport.ONE.git; fi
 # TODO INSTALL FROM IPFS / IPNS
 
 ## S'assurer que tous les scripts principaux sont exécutables après le clone
@@ -287,7 +434,7 @@ curl net-tools libsodium* miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
 
@@ -298,7 +445,7 @@ for i in python3-venv python3-dev libssl-dev build-essential python3-magic; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
 
@@ -310,7 +457,7 @@ python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
 
@@ -323,7 +470,7 @@ html2text imagemagick libmagic1t64 libimage-exiftool-perl poppler-utils; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
 
@@ -334,7 +481,7 @@ for i in figlet cmatrix cowsay fonts-hack-ttf; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
 
@@ -348,7 +495,7 @@ if [[ $(which X 2>/dev/null) || -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
         if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
             echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
             sudo apt install -y $i;
-            [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
+            [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
         fi
     done
 
@@ -435,7 +582,7 @@ if [[ $(which X 2>/dev/null) || -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
             if [ $(dpkg-query -W -f='${Status}' $p 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
                 echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $p <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
                 sudo apt install -y $p
-                [[ $? != 0 ]] && echo "INSTALL $p FAILED." && echo "INSTALL $p FAILED." >> ~/.zen/install.errors.log
+                [[ $? != 0 ]] && echo "INSTALL $p FAILED." && echo "INSTALL $p FAILED." >> "$_ERROR_LOG"
             fi
         done
         echo ""
@@ -457,13 +604,21 @@ fi
 
 echo "################################## ~/.astro/bin PYTHON ENV"
 cd $HOME
-## Ubuntu 22.04 : 'python' n'existe pas → utiliser python3
+## Auto-réparation : venv cassé après upgrade OS (ex: 22.04→24.04 change le binaire Python)
+if [[ -d ~/.astro ]] && ! ~/.astro/bin/python3 -c "print('ok')" &>/dev/null; then
+    echo "⚠️  Venv Python corrompu (upgrade OS ?) — recréation de ~/.astro..."
+    rm -rf ~/.astro
+fi
 if [[ ! -s ~/.astro/bin/activate ]]; then
     python3 -m venv .astro \
         && echo "✅ Python venv créé : ~/.astro" \
-        || echo "⚠️  Création venv échouée (python3 absent ?)"
+        || { echo "❌ Création venv échouée — python3-venv installé ?"
+             echo "   Réparation manuelle : ~/.zen/Astroport.ONE/admin/system/.astro_venv_restore.sh"
+             exit 1; }
 fi
-[[ -s ~/.astro/bin/activate ]] && . ~/.astro/bin/activate || echo "⚠️  ~/.astro/bin/activate absent — pip install sans venv"
+[[ -s ~/.astro/bin/activate ]] && . ~/.astro/bin/activate \
+    || { echo "❌ ~/.astro/bin/activate absent — correction : ~/.zen/Astroport.ONE/admin/system/.astro_venv_restore.sh"
+         exit 1; }
 cd -
 
 echo "#####################################"
@@ -480,24 +635,23 @@ matplotlib readability-lxml duniterpy cachetools pydantic-settings \
 robohash substrate-interface websocket-client websockets imap_tools \
 fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot; do
         echo ">>> Installation/Mise à jour $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        ~/.astro/bin/pip install -U $i 2>> ~/.zen/install.errors.log
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> ~/.zen/install.errors.log && continue
+        ~/.astro/bin/pip install -U $i 2>> "$_ERROR_LOG"
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> "$_ERROR_LOG" && continue
 done
 ## playwright remplace pyppeteer (abandonné 2022) pour tools/page_screenshot.py
 echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
-~/.astro/bin/pip install -U playwright 2>> ~/.zen/install.errors.log \
+~/.astro/bin/pip install -U playwright 2>> "$_ERROR_LOG" \
     && echo "✅ playwright installé" \
     || echo "⚠️  playwright install FAILED — voir ~/.zen/install.errors.log"
 ## Installe le binaire Chromium de playwright (utilise le Chromium système si présent)
-~/.astro/bin/python -m playwright install chromium 2>> ~/.zen/install.errors.log \
+~/.astro/bin/python -m playwright install chromium 2>> "$_ERROR_LOG" \
     && echo "✅ playwright chromium prêt" \
     || echo "⚠️  playwright chromium install FAILED (page_screenshot.py utilisera /usr/bin/chromium)"
 
 
 ####################################################################
-# MAIN # VÉRIFICATION CLÉ PLAYER POUR SUITE INSTALLATION COMPLETE
-if [[ ! -d ~/.zen/game/players/ ]];
-then
+# MAIN # INSTALLATION / MISE À JOUR ASTROPORT.ONE
+# (idempotent : safe à relancer sur une station existante)
 
 echo "#############################################"
 echo "###### ASTROPORT.ONE ZEN STATION ############"
@@ -513,7 +667,7 @@ echo "#############################################"
 sudo npm install -g tiddlywiki@5.2.3
 [[ $? != 0 ]] \
     && echo "INSTALL tiddlywiki FAILED." \
-    && echo "INSTALL tiddlywiki FAILED." >> ~/.zen/install.errors.log
+    && echo "INSTALL tiddlywiki FAILED." >> "$_ERROR_LOG"
 
 ## ── Vérification Docker, Node.js, NPM, TiddlyWiki ───────────────────────────
 echo "#############################################"
@@ -801,7 +955,31 @@ case "${INSTALL_PROFILE}" in
         [[ -t 0 ]] && read -r -p "  ↵  [Entrée pour continuer] " _
         ;;
     ""|standard)
-        echo "   Profil standard — pas d'installation supplémentaire."
+        echo "   Profil standard."
+        ## Qdrant VectorDB — base vectorielle souveraine de la station
+        ## Légère (~200Mo RAM), utile dès ⚡ Standard pour les embeddings locaux
+        if [[ $_SCORE -gt 10 ]] && command -v docker >/dev/null 2>&1; then
+            if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^qdrant$'; then
+                echo "   ⚡ Score ${_SCORE} ≥ 11 — démarrage Qdrant VectorDB (port 6333)..."
+                docker network inspect dragon-net >/dev/null 2>&1 \
+                    || docker network create dragon-net >/dev/null 2>&1
+                docker run -d \
+                    --name qdrant \
+                    --restart unless-stopped \
+                    --network dragon-net \
+                    -p 127.0.0.1:6333:6333 \
+                    -v qdrant_storage:/qdrant/storage \
+                    qdrant/qdrant:latest \
+                    && echo "✅ Qdrant démarré (http://localhost:6333)" \
+                    || echo "⚠️  Qdrant — erreur de démarrage"
+            else
+                echo "   ✅ Qdrant déjà actif."
+            fi
+        elif [[ $_SCORE -le 10 ]]; then
+            echo "   🌿 Score ${_SCORE} — Qdrant non installé (nécessite ⚡ Standard, score ≥ 11)"
+        else
+            echo "   ⚠️  Docker absent — Qdrant non installé (requis pour Qdrant)"
+        fi
         ;;
     *)
         echo "⚠️  Profil inconnu '${INSTALL_PROFILE}' — installation standard uniquement."
@@ -815,6 +993,11 @@ echo "## DÉTECTION GPU — Installation IA optionnelle ###########"
 ##   INSTALL_OLLAMA=yes    → Ollama installé sans confirmation
 ##   INSTALL_COMFYUI=yes   → ComfyUI installé sans confirmation
 ##   INSTALL_OLLAMA=no     → Ignoré même si GPU présent
+## En mode -y, on répond oui automatiquement si GPU présent.
+if [[ "$_SILENT" == "true" ]]; then
+    export INSTALL_OLLAMA="${INSTALL_OLLAMA:-yes}"
+    export INSTALL_COMFYUI="${INSTALL_COMFYUI:-yes}"
+fi
 ~/.zen/Astroport.ONE/install/install_gpu_ai.sh
 
 ###############################################################
@@ -1404,20 +1587,45 @@ echo "╚═══════════════════════�
 echo ""
 [[ -t 0 ]] && read -r -p "  ↵  [Entrée pour terminer] " _
 
+########################################################################
+## REDÉMARRAGE DES SERVICES (apt upgrade equivalent)
+########################################################################
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║  🔄 REDÉMARRAGE DES SERVICES ASTROPORT                       ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+sudo systemctl daemon-reload 2>/dev/null || true
+
+_svc_restart() {
+    local svc="$1"
+    if systemctl is-enabled --quiet "$svc" 2>/dev/null; then
+        sudo systemctl restart "$svc" 2>/dev/null \
+            && echo "  ✅ $svc redémarré" \
+            || echo "  ⚠️  $svc — erreur redémarrage"
+    fi
+}
+_svc_restart astroport
+_svc_restart upassport
+if [[ "${INSTALL_PROFILE}" == "dev" ]]; then
+    _svc_restart rnostr
 else
-
-echo "============================================="
-echo " MISES À JOUR (APT/PIP) EFFECTUÉES AVEC SUCCÈS"
-echo "============================================="
-echo " INSTALLATION COMPLÈTE IGNORÉE :"
-echo " CAPTAIN already onboard..."
-echo "============================================="
-_CAPTAIN_EMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo "")
-_CAP_SECRET="$HOME/.zen/game/nostr/${_CAPTAIN_EMAIL}/.secret.nostr"
-cat $_CAP_SECRET
-echo "============================================="
-[[ -t 0 ]] && read -r -p "  ↵  [Entrée pour terminer] " _
-# MAIN #
-
+    _svc_restart strfry
 fi
+_svc_restart ipfs
+_svc_restart g1billet
+
+## Mise à jour des images Docker actives (docker pull si running)
+if command -v docker >/dev/null 2>&1; then
+    echo "  🐳 Mise à jour images Docker actives..."
+    _COMPOSE="$HOME/.zen/Astroport.ONE/docker/docker-compose.yml"
+    if [[ -f "$_COMPOSE" ]] && docker ps -q 2>/dev/null | grep -q .; then
+        docker compose -f "$_COMPOSE" pull --quiet 2>/dev/null || true
+        docker compose -f "$_COMPOSE" up -d --remove-orphans 2>/dev/null || true
+        docker image prune -f >/dev/null 2>&1 || true
+        echo "  ✅ Conteneurs mis à jour (images orphelines purgées)"
+    fi
+fi
+
+echo "  ✅ Redémarrage terminé"
+
 }

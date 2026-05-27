@@ -106,7 +106,7 @@ HELP
         echo "  Espace disque  : ${_AVAIL} Go"
         command -v docker >/dev/null && echo "  Docker         : ✅" || echo -e "  Docker         : ${RED}❌ non installé${NC}"
         command -v ollama >/dev/null && echo "  Ollama         : ✅" || echo -e "  Ollama         : ${YELLOW}⚠️  non installé${NC}"
-        ss -tln 2>/dev/null | grep -q ':11434 ' && echo "  Ollama actif   : ✅" || echo -e "  Ollama actif   : ${YELLOW}⚠️  inactif${NC}"
+        ss -tln 2>/dev/null | grep -qE ':11434\b' && echo "  Ollama actif   : ✅" || echo -e "  Ollama actif   : ${YELLOW}⚠️  inactif${NC}"
         echo ""
         [[ ${_SCORE:-0} -ge 41 ]] && echo -e "  ${GREEN}🔥 Brain — stack complète recommandée${NC}" \
         || [[ ${_SCORE:-0} -ge 11 ]] && echo -e "  ${YELLOW}⚡ Standard — open-webui + qdrant OK, éviter gros modèles${NC}" \
@@ -136,6 +136,19 @@ MIROFISH_MODEL=${MIROFISH_MODEL:-gemma3:12b}
 EOF
     source "$INSTALL_DIR/.env"
 fi
+## Upsert des variables manquantes (ajoutées dans une version plus récente du script)
+_ai_env_defaults=(
+    "WEBUI_SECRET_KEY=$(openssl rand -hex 32)"
+    "MIROFISH_MODEL=gemma3:12b"
+)
+for _def in "${_ai_env_defaults[@]}"; do
+    _k="${_def%%=*}"
+    _v="${_def#*=}"
+    if ! grep -q "^${_k}=" "$INSTALL_DIR/.env" 2>/dev/null; then
+        echo "${_k}=${_v}" >> "$INSTALL_DIR/.env"
+        export "${_k}=${_v}"
+    fi
+done
 
 # Injecte les secrets dans le .env du compose principal (créé si absent)
 _DOCKER_ENV="$(dirname "$_ASTRO_COMPOSE")/.env"
@@ -159,7 +172,7 @@ if [[ ${_SCORE:-0} -lt 11 ]]; then
     read -r -p "   Continuer quand même ? [y/N] " _CONFIRM
     [[ "$_CONFIRM" != "y" && "$_CONFIRM" != "Y" ]] && exit 1
 fi
-if ! ss -tln 2>/dev/null | grep -q ':11434 '; then
+if ! ss -tln 2>/dev/null | grep -qE ':11434\b'; then
     echo -e "${YELLOW}⚠️  Ollama inactif sur :11434 — les services IA ne fonctionneront pas sans LLM local.${NC}"
     echo -e "   Démarrez Ollama : ${BOLD}ollama serve &${NC}   ou   ${BOLD}systemctl start ollama${NC}"
 fi
