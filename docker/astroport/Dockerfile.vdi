@@ -41,7 +41,7 @@ RUN apt-get update \
         netcat-traditional \
         nmap \
         npm \
-        ntpdate \
+        ntpsec-ntpdate \
         openssh-client \
         openssl* \
         pv \

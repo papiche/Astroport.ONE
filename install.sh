@@ -300,10 +300,39 @@ if [[ -z "$INSTALL_PROFILE" && "${_IS_UPGRADE:-false}" != "true" && "$_SILENT" =
     echo "║  ai-company ⚠️  Score faible — stack IA déconseillée         ║"
     fi
     echo "║  dev        Standard + rnostr  (relay NOSTR Rust — devs)   ║"
+    _ARCH=$(uname -m)
+    if [[ "$_SCORE" -le 10 && ( "$_ARCH" == "aarch64" || "$_ARCH" == "armv7l" ) ]]; then
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║  sound-spot 🎵 RPi WiFi AP audio (Icecast+Snapcast+BT+ẑen) ║"
+    echo "║             → clone + lance deploy_on_pi.sh, sort d'ici     ║"
+    fi
     echo "╚══════════════════════════════════════════════════════════════╝"
     read -r -p "Profil [standard] : " INSTALL_PROFILE
 fi
 echo ">>> Profil : ${INSTALL_PROFILE:-standard}"
+
+## ── Aiguillage sound-spot (avant toute installation Astroport) ──────────
+if [[ "${INSTALL_PROFILE}" == "sound-spot" ]]; then
+    _SS_DIR="${HOME}/.zen/workspace/sound-spot"
+    echo ""
+    echo "🎵  Profil sound-spot sélectionné — démarrage de l'aiguillage RPi..."
+    mkdir -p "${HOME}/.zen/workspace"
+    if [[ ! -d "$_SS_DIR/.git" ]]; then
+        git clone --depth=1 https://github.com/papiche/sound-spot "$_SS_DIR" \
+            && echo "✅ sound-spot cloné → ${_SS_DIR}" \
+            || { echo "⚠️  Clonage sound-spot échoué (vérifier la connexion Internet)"; exit 1; }
+    else
+        echo "✅ sound-spot déjà présent dans ${_SS_DIR} — mise à jour..."
+        git -C "$_SS_DIR" pull --ff-only 2>/dev/null || true
+    fi
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Lancez maintenant l'installation SoundSpot :"
+    echo "    sudo bash ${_SS_DIR}/deploy_on_pi.sh"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 0
+fi
+
 _env_upsert "INSTALL_PROFILE" "${INSTALL_PROFILE:-standard}" "${HOME}/.zen/Astroport.ONE/.env"
 
 ########################################################################
@@ -1517,7 +1546,7 @@ echo "  Les clés sont sauvegardées dans ~/.zen/demo/"
 echo ""
 echo "  ┌───────────────────────────────────────────────────────────┐"
 echo "  │ X. Ouvrez MineLife dans votre navigateur :                │"
-echo "  │    http://127.0.0.1:54321/UPlanet/earth/minelife.html     │"
+echo "  │    http://127.0.0.1:54321/earth/minelife.html             │"
 echo "  │    Changez d'identité dans nos2x pour simuler la WoTx2    │"
 echo "  └───────────────────────────────────────────────────────────┘"
 echo ""
@@ -1562,9 +1591,9 @@ _VDO_ID="${_CAPTAIN_NPUB:0:12}"
 [[ -z "$_VDO_ID" ]] && _VDO_ID="uplanet"
 
 _VDO_ROOM="uplanet_${_VDO_ID}"
-_VDO_HOST="https://vdo.ninja/?room=${_VDO_ROOM}&push=captain&record=1"
-_VDO_VIEW="https://vdo.ninja/?room=${_VDO_ROOM}&view"
-_VDO_FORM="https://vdo.ninja/?room=uplanet_formation&view"
+_VDO_HOST="https://vdo.copylaradio.com/?room=${_VDO_ROOM}&push=captain&record=1"
+_VDO_VIEW="https://vdo.copylaradio.com/?room=${_VDO_ROOM}&view"
+_VDO_FORM="https://vdo.copylaradio.com/?room=uplanet_formation&view"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"

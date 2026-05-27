@@ -12,7 +12,7 @@ RUN apt-get update \
         # Core tools
         bash git zip make cmake sudo cron curl wget ca-certificates \
         # Network & security
-        openssh-client fail2ban iptables ufw dnsutils ntpdate net-tools \
+        openssh-client fail2ban iptables ufw dnsutils ntpsec-ntpdate net-tools \
         netcat-traditional nmap socat \
         # IPFS & data
         jq bc file gawk parallel inotify-tools ncdu pv \
