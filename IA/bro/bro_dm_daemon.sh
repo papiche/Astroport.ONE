@@ -69,8 +69,13 @@ mkdir -p "$_BRO_SLOTS_DIR"
 IA_LOG="$HOME/.zen/tmp/IA.log"
 _log() { echo "[$(date '+%H:%M:%S')] [bro_dm] $*" | tee -a "$LOG_FILE" -a "$IA_LOG"; }
 
-## Wrapper sécurisé : NSEC passé via stdin, jamais en argument (invisible dans ps aux)
-_send_dm() { printf '%s\n' "$NODE_NSEC" | python3 "$SECURE_DM" --nsec-stdin "$@" 2>/dev/null; }
+## Wrapper sécurisé : NSEC passé via stdin, jamais en argument (invisible dans ps aux).
+## Utilise NIP-04 si l'expéditeur a écrit en NIP-04 (_DM_ENC="nip04"), NIP-44 sinon.
+_send_dm() {
+    local _flag=""
+    [[ "${_DM_ENC:-nip44}" == "nip04" ]] && _flag="--nip04"
+    printf '%s\n' "$NODE_NSEC" | python3 "$SECURE_DM" --nsec-stdin ${_flag} "$@" 2>/dev/null
+}
 
 ## ── Alerte email capitaine (rate-limitée à 1/24h) ────────────────────
 _ALERT_LOCK="$HOME/.zen/flashmem/bro_dm_alert.lock"
@@ -1012,9 +1017,10 @@ _process_event() {
     fi
 
     local channel sender payload
-    channel=$(jq -r '.channel // "plain"' <<< "$decoded" 2>/dev/null)
-    sender=$(  jq -r '.sender  // ""'     <<< "$decoded" 2>/dev/null)
-    payload=$( jq -c '.payload // {}'     <<< "$decoded" 2>/dev/null)
+    channel=$(  jq -r '.channel // "plain"' <<< "$decoded" 2>/dev/null)
+    sender=$(   jq -r '.sender  // ""'      <<< "$decoded" 2>/dev/null)
+    payload=$(  jq -c '.payload // {}'      <<< "$decoded" 2>/dev/null)
+    _DM_ENC=$(  jq -r '.enc     // "nip44"' <<< "$decoded" 2>/dev/null)
 
     [[ -z "$sender" ]] && return
 

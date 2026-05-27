@@ -326,9 +326,30 @@ class SecureNostrWebSocketClient:
                 pass
         self.connected = False
 
-def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: str, 
-                              relay_url: str = DEFAULT_RELAY, gift_wrap: bool = False,
-                              metadata_protection: bool = False) -> bool:
+def nip04_encrypt(message: str, sender_private_key: str, recipient_public_key: str) -> str:
+    """Chiffrement NIP-04 (AES-256-CBC). Universellement supporté par les extensions NIP-07."""
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.primitives import padding as sym_padding
+    from cryptography.hazmat.backends import default_backend
+    import base64
+
+    shared = derive_shared_secret(sender_private_key, recipient_public_key)
+    key = shared[1:33]          # x-coordinate secp256k1 (32 bytes AES-256)
+    iv  = os.urandom(16)
+
+    padder   = sym_padding.PKCS7(128).padder()
+    padded   = padder.update(message.encode('utf-8')) + padder.finalize()
+    cipher   = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    enc      = cipher.encryptor()
+    ct       = enc.update(padded) + enc.finalize()
+
+    return base64.b64encode(ct).decode() + "?iv=" + base64.b64encode(iv).decode()
+
+
+def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: str,
+                               relay_url: str = DEFAULT_RELAY, gift_wrap: bool = False,
+                               metadata_protection: bool = False,
+                               use_nip04: bool = False) -> bool:
     """
     Send a secure encrypted direct message to a NOSTR user with enhanced security.
     
@@ -354,10 +375,10 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
             protected_message = add_metadata_protection(message, priv_key_obj.public_key.hex(), recipient_hex)
             print("🔒 Metadata protection enabled")
         
-        # Encrypt the message using NIP-44 v2 (enhanced security - replaces deprecated NIP-04)
-        # NIP-44 uses ChaCha20-Poly1305 with HKDF, providing better security than NIP-04's AES-256-CBC
-        encrypted_content = nip44_encrypt(protected_message, priv_key_obj.hex(), recipient_hex)
-        print("🔐 Message encrypted with NIP-44 v2 (ChaCha20-Poly1305) - Compatible with strfry")
+        if use_nip04:
+            encrypted_content = nip04_encrypt(protected_message, priv_key_obj.hex(), recipient_hex)
+        else:
+            encrypted_content = nip44_encrypt(protected_message, priv_key_obj.hex(), recipient_hex)
         
         # Create the base event
         tags = [["p", recipient_hex]]
@@ -457,6 +478,8 @@ def main():
                        help="Enable all security features (gift-wrap + metadata-protection)")
     parser.add_argument("--nsec-stdin", action="store_true",
                        help="Read NSEC from first line of stdin (avoids cmdline exposure)")
+    parser.add_argument("--nip04", action="store_true",
+                       help="Répondre en NIP-04 (AES-256-CBC) — requis pour les clients navigateur (NIP-07)")
 
     args = parser.parse_args()
 
@@ -494,7 +517,8 @@ def main():
         args.message,
         args.relay_url,
         gift_wrap=args.gift_wrap,
-        metadata_protection=args.metadata_protection
+        metadata_protection=args.metadata_protection,
+        use_nip04=args.nip04,
     )
     
     sys.exit(0 if success else 1)

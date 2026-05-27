@@ -398,7 +398,9 @@ def cmd_decrypt(args):
         if "event" in ev:
             ev = ev["event"]
         sender_hex = ev.get("pubkey", "")
-        decrypted = _decrypt_content(ev["content"], priv_hex, sender_hex)
+        raw_content = ev.get("content", "")
+        enc = "nip04" if "?iv=" in raw_content else "nip44"
+        decrypted = _decrypt_content(raw_content, priv_hex, sender_hex)
         try:
             envelope = json.loads(decrypted)
         except (json.JSONDecodeError, ValueError):
@@ -408,6 +410,7 @@ def cmd_decrypt(args):
             "payload":  envelope.get("payload", {}),
             "sender":   sender_hex,
             "event_id": ev.get("id", ""),
+            "enc":      enc,
         }))
     except Exception:
         sys.exit(1)
