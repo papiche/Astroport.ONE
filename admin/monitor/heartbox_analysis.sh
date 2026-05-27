@@ -804,7 +804,7 @@ export_json() {
             "usage_percent": "$(df -h / | tail -1 | awk '{print $5}')"
         },
         "cpu_temp": $cpu_temp,
-        "gpu": {"name": "$(echo "$gpu_name" | sed 's/"/\\"/g')", "vendor": "$gpu_vendor", "vram_gb": $vram_gb, "detected": $gpu_detected}
+        "gpu": {"name": "$(echo "${gpu_name:-}" | sed 's/"/\\"/g')", "vendor": "${gpu_vendor:-none}", "vram_gb": ${vram_gb:-0}, "detected": ${gpu_detected:-false}}
     },
     "caches": {
         "swarm": $(if [[ -d ~/.zen/tmp/swarm ]]; then echo "{\"size\": \"$(du -sh ~/.zen/tmp/swarm 2>/dev/null | cut -f1)\", \"nodes_count\": $(find ~/.zen/tmp/swarm -maxdepth 1 -type d -name "12D*" | wc -l), \"files_count\": $(find ~/.zen/tmp/swarm -type f | wc -l), \"status\": \"active\"}"; else echo "{\"status\": \"not_found\"}"; fi),
