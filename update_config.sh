@@ -5,7 +5,7 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 # Met à jour la configuration pour les utilisateurs existants d'Astroport.ONE
-# vers la nouvelle architecture UPlanet ẐEN
+# vers la nouvelle architecture UPlanet ẐEN -- NEED FULL REVIEW --
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"

@@ -8,12 +8,13 @@ Documentation suivant la méthode **Diataxis** (quatre modes : Tutoriel · Guide
 
 ## Tutoriel — De la panne au correctif en une session
 
-> **Objectif** : Tu n'as jamais utilisé ces outils. À la fin tu auras signalé un vrai bug, analysé sa cause avec une IA, proposé un correctif et livré un commit documenté.
+> **Objectif** : Tu n'as jamais utilisé ces outils. À la fin tu auras signalé un vrai bug, analysé sa cause avec une IA,
+ proposé un correctif et livré un commit documenté.
 
 ### Prérequis
 
 - Station Astroport tournant localement (`./start.sh` dans `Astroport.ONE/`)
-- Ollama installé avec le modèle `deepseek-coder-v2:dagbs` (ou `--ai claude` avec clé API)
+- Ollama joignable avec le modèle `deepseek-coder-v2:dagbs` (ou `--ai claude` avec clé API)
 - Un repo Git avec des issues ouvertes (GitHub ou Gitea)
 
 ---

@@ -2,7 +2,6 @@
 
 # =============================================
 # Gestionnaire de politiques de redémarrage Docker
-# Auteur : Le Chat (Mistral AI)
 # Description : Ce script permet de lister et modifier les politiques de redémarrage des conteneurs Docker.
 # =============================================
 

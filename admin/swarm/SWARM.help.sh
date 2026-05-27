@@ -80,7 +80,7 @@ autres nodes et recevoir des abonnements sur son propre node.
 
 🚀 DÉMARRAGE RAPIDE
 ------------------
-1. Vérifiez votre niveau : cat ~/.zen/game/secret.june
+1. Vérifiez votre clef NODE (Armateur) : cat ~/.zen/game/secret.june
 2. Lancez : ~/.zen/Astroport.ONE/RUNTIME/SWARM.discover.sh
 3. Choisissez un node et abonnez-vous
 4. Les paiements se feront automatiquement

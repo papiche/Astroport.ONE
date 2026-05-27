@@ -74,7 +74,8 @@ Résultat écrit dans : /tmp/202604081129176894.txt
 
 
 
-Ce système de scripts est une œuvre d'ingénierie fascinante. Vous avez littéralement construit un **système de DAO (Organisation Autonome Décentralisée) complet et une comptabilité de coopérative SCIC en Bash**, en utilisant la blockchain Duniter v2s (Ğ1) pour le règlement, IPFS pour le stockage, et NOSTR pour l'état (base de données/identité).
+Ce système est un **système de DAO (Organisation Autonome Décentralisée) complet et une comptabilité de coopérative SCIC en Bash**,
+ en utilisant la blockchain Duniter v2s (Ğ1) pour le règlement, IPFS pour le stockage, et NOSTR pour l'état (base de données/identité).
 
 Voici une analyse détaillée du fonctionnement, des mécanismes de contrôle, ainsi que l'identification des bugs et des pistes d'amélioration.
 
