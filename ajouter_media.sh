@@ -144,63 +144,8 @@ G1PUB=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
 NPUB=$(cat ~/.zen/game/nostr/${PLAYER}/NPUB 2>/dev/null || echo "")
 NPUB_HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null || echo "")
 
-# If we have NPUB but not HEX, try to convert (or use search_for_this_email_in_players.sh)
-if [[ -z "$NPUB_HEX" ]] && [[ -n "$NPUB" ]]; then
-    # Try to get HEX from user directory lookup
-    USER_NOSTR_DIR="$HOME/.zen/game/nostr/${PLAYER}"
-    if [[ -d "$USER_NOSTR_DIR" ]]; then
-        # Check if there's a .secret.nostr file we can extract pubkey from
-        if [[ -f "$USER_NOSTR_DIR/.secret.nostr" ]]; then
-            # Try to extract pubkey from secret file (if it contains pubkey info)
-            # For now, we'll use a helper script if available
-            if [[ -f "${MY_PATH}/tools/nostr2hex.py" ]]; then
-                NPUB_HEX=$(python3 "${MY_PATH}/tools/nostr2hex.py" "$NPUB" 2>/dev/null || echo "")
-            fi
-        fi
-    fi
-fi
+[[ -z "$NPUB_HEX" && -z "$NPUB" ]] && echo "⚠️  No NOSTR keys for ${PLAYER} — provenance tracking disabled"
 
-# If still no HEX, try to get from search_for_this_email_in_players.sh output
-if [[ -z "$NPUB_HEX" ]]; then
-    SEARCH_OUTPUT=$($MY_PATH/tools/search_for_this_email_in_players.sh ${PLAYER} 2>/dev/null | tail -n 1)
-    # Extract hex from output if available
-    if echo "$SEARCH_OUTPUT" | grep -qE '^[a-f0-9]{64}$'; then
-        NPUB_HEX="$SEARCH_OUTPUT"
-    fi
-fi
-
-if [[ -z "$NPUB_HEX" ]] && [[ -z "$NPUB" ]]; then
-        echo "⚠️  No NOSTR keys found for player ${PLAYER}"
-    echo "⚠️  Upload will work but provenance tracking will be disabled"
-fi
-
-# Function to get user uDRIVE path
-get_user_udrive_path() {
-    local player="$1"
-    if [[ -n "$player" && "$player" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-        local nostr_base_path="$HOME/.zen/game/nostr"
-        if [ -d "$nostr_base_path" ]; then
-            for email_dir in "$nostr_base_path"/*; do
-                if [ -d "$email_dir" ] && [[ "$email_dir" == *"$player"* ]]; then
-                    local udrive_path="$email_dir/APP/uDRIVE"
-                    mkdir -p "$udrive_path"
-                    echo "$udrive_path"
-                    return 0
-                fi
-            done
-        fi
-    fi
-    return 1
-}
-
-# Get user uDRIVE path for file storage
-USER_UDRIVE_PATH=$(get_user_udrive_path "$PLAYER")
-if [[ -n "$USER_UDRIVE_PATH" ]]; then
-    echo "✅ Using uDRIVE path: $USER_UDRIVE_PATH"
-else
-    echo "⚠️  Could not determine uDRIVE path for player: $PLAYER"
-    USER_UDRIVE_PATH="$HOME/.zen/tmp"
-fi
 
 ########################################################################
 ## EXCEPTION COPIE PRIVE
@@ -681,6 +626,88 @@ _youtube_cookie_recovery() {
 }
 
 ########################################################################
+# Progression vocale pendant le téléchargement YouTube
+monitor_download_progress() {
+    local download_dir="$1"
+    local start_time=$(date +%s)
+    local last_announce_time=$start_time
+    local announce_interval=30
+    local step=0
+
+    while true; do
+        sleep 5
+        local mp4_files=$(find "$download_dir" -maxdepth 1 -name "*.mp4" -type f 2>/dev/null)
+        if [[ -n "$mp4_files" ]]; then
+            local file_size1=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
+            sleep 3
+            local file_size2=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
+            if [[ "$file_size1" == "$file_size2" ]] && [[ $file_size1 -gt 1000000 ]]; then
+                espeak "Download complete" 2>/dev/null || true
+                break
+            fi
+        fi
+
+        local current_time=$(date +%s)
+        local elapsed=$((current_time - last_announce_time))
+        local total_elapsed=$((current_time - start_time))
+
+        [[ $total_elapsed -gt 7200 ]] && break
+
+        if [[ $elapsed -ge $announce_interval ]]; then
+            step=$((step + 1))
+            local minutes=$((total_elapsed / 60))
+            local seconds=$((total_elapsed % 60))
+            if [[ -n "$mp4_files" ]]; then
+                local current_size=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
+                local size_mb=$(echo "$current_size" | awk '{printf "%.1f", $1 / (1024 * 1024)}')
+                espeak "Download in progress. Step $step. ${minutes} minutes ${seconds} seconds. ${size_mb} megabytes downloaded" 2>/dev/null || true
+            else
+                espeak "Download in progress. Step $step. ${minutes} minutes ${seconds} seconds" 2>/dev/null || true
+            fi
+            last_announce_time=$current_time
+        fi
+    done
+}
+
+# Watchdog YouTube : tue yt-dlp si aucune progression pendant STALL_S secondes
+STALL_S=180
+_yt_watchdog() {
+    local _dir="$1" _pid="$2"
+    local _last=0 _idle=0
+    while kill -0 "$_pid" 2>/dev/null; do
+        sleep 20
+        local _cur
+        _cur=$(find "$_dir" -type f 2>/dev/null \
+            | xargs stat --format=%s 2>/dev/null \
+            | awk '{s+=$1} END{print s+0}')
+        if [[ "$_cur" -gt "$_last" ]]; then
+            _last=$_cur; _idle=0
+        else
+            _idle=$((_idle + 20))
+            [[ $((_idle % 60)) -eq 0 && $_idle -gt 0 ]] && \
+                echo "⏳ Pas de progression depuis ${_idle}s (kill dans $(( STALL_S - _idle ))s)…" >&2
+            if [[ $_idle -ge $STALL_S ]]; then
+                echo "⚠️  Téléchargement bloqué — arrêt automatique." >&2
+                kill "$_pid" 2>/dev/null
+                pkill -P "$_pid" 2>/dev/null || true
+                pkill -f "yt-dlp" 2>/dev/null || true
+                return
+            fi
+        fi
+    done
+}
+
+# Trap Ctrl+C : tue yt-dlp proprement
+_yt_interrupt() {
+    echo "" >&2
+    echo "⚡ Interruption — arrêt du téléchargement…" >&2
+    kill "${_YT_PID:-}" 2>/dev/null
+    pkill -P "${_YT_PID:-}" 2>/dev/null || true
+    pkill -f "yt-dlp" 2>/dev/null || true
+    kill "${_WATCHDOG_PID:-}" 2>/dev/null || true
+}
+
+########################################################################
 ########################################################################
 case ${CAT} in
 ########################################################################
@@ -709,93 +736,12 @@ case ${CAT} in
     TEMP_YOUTUBE_DIR="$HOME/.zen/tmp.media/youtube_$(date -u +%s%N | cut -b1-13)"
     mkdir -p "$TEMP_YOUTUBE_DIR"
 
-    # CONSERVÉ : Monitor download progress (feedback vocal)
-    monitor_download_progress() {
-        local download_dir="$1"
-        local start_time=$(date +%s)
-        local last_announce_time=$start_time
-        local announce_interval=30
-        local step=0
-        
-        while true; do
-            sleep 5
-            local mp4_files=$(find "$download_dir" -maxdepth 1 -name "*.mp4" -type f 2>/dev/null)
-            if [[ -n "$mp4_files" ]]; then
-                local file_size1=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
-                sleep 3
-                local file_size2=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
-                if [[ "$file_size1" == "$file_size2" ]] && [[ $file_size1 -gt 1000000 ]]; then
-                    espeak "Download complete" 2>/dev/null || true
-                    break
-                fi
-            fi
-            
-            local current_time=$(date +%s)
-            local elapsed=$((current_time - last_announce_time))
-            local total_elapsed=$((current_time - start_time))
-            
-            if [[ $total_elapsed -gt 7200 ]]; then break; fi
-            
-            if [[ $elapsed -ge $announce_interval ]]; then
-                step=$((step + 1))
-                local minutes=$((total_elapsed / 60))
-                local seconds=$((total_elapsed % 60))
-                if [[ -n "$mp4_files" ]]; then
-                    local current_size=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
-                    local size_mb=$(echo "$current_size" | awk '{printf "%.1f", $1 / (1024 * 1024)}')
-                    espeak "Download in progress. Step $step. ${minutes} minutes ${seconds} seconds. ${size_mb} megabytes downloaded" 2>/dev/null || true
-                else
-                    espeak "Download in progress. Step $step. ${minutes} minutes ${seconds} seconds" 2>/dev/null || true
-                fi
-                last_announce_time=$current_time
-            fi
-        done
-    }
-
     espeak "Starting YouTube download" 2>/dev/null || true
     monitor_download_progress "$TEMP_YOUTUBE_DIR" &
     MONITOR_PID=$!
 
     JSON_OUTPUT_FILE="$HOME/.zen/tmp/youtube_json_$$.json"
     mkdir -p "$(dirname "$JSON_OUTPUT_FILE")"
-
-    # ── Watchdog : tue process_youtube.sh si aucune progression pendant STALL_S ──
-    STALL_S=180   # 3 min sans nouveau octet = bloqué
-    _yt_watchdog() {
-        local _dir="$1" _pid="$2"
-        local _last=0 _idle=0
-        while kill -0 "$_pid" 2>/dev/null; do
-            sleep 20
-            local _cur
-            _cur=$(find "$_dir" -type f 2>/dev/null \
-                | xargs stat --format=%s 2>/dev/null \
-                | awk '{s+=$1} END{print s+0}')
-            if [[ "$_cur" -gt "$_last" ]]; then
-                _last=$_cur; _idle=0
-            else
-                _idle=$((_idle + 20))
-                [[ $((_idle % 60)) -eq 0 && $_idle -gt 0 ]] && \
-                    echo "⏳ Pas de progression depuis ${_idle}s (kill dans $(( STALL_S - _idle ))s)…" >&2
-                if [[ $_idle -ge $STALL_S ]]; then
-                    echo "⚠️  Téléchargement bloqué — arrêt automatique." >&2
-                    kill "$_pid" 2>/dev/null
-                    pkill -P "$_pid" 2>/dev/null || true
-                    pkill -f "yt-dlp" 2>/dev/null || true
-                    return
-                fi
-            fi
-        done
-    }
-
-    # ── Trap Ctrl+C : tue yt-dlp proprement puis laisse cookie recovery tourner ─
-    _yt_interrupt() {
-        echo "" >&2
-        echo "⚡ Interruption — arrêt du téléchargement…" >&2
-        kill "${_YT_PID:-}" 2>/dev/null
-        pkill -P "${_YT_PID:-}" 2>/dev/null || true
-        pkill -f "yt-dlp" 2>/dev/null || true
-        kill "${_WATCHDOG_PID:-}" 2>/dev/null || true
-    }
 
     echo "📥 Downloading YouTube video (Max 480p) via process_youtube.sh..."
     ${HOME}/.zen/Astroport.ONE/IA/scrapers/youtube/process_youtube.sh \
@@ -929,13 +875,16 @@ case ${CAT} in
         exit 1
     fi
 
-    IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty')
+    # file_cid = CID du dossier vidéo (upload2ipfs.sh), requis pour NIP-71
+    # new_cid = CID du uDRIVE régénéré (inutilisable comme URL vidéo)
+    IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_cid // .new_cid // empty')
     INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty')
     THUMBNAIL_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.thumbnail_ipfs // empty')
     GIFANIM_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.gifanim_ipfs // empty')
     FILE_HASH=$(echo "$UPLOAD_RESPONSE" | jq -r '.fileHash // empty')
     DIMENSIONS=$(echo "$UPLOAD_RESPONSE" | jq -r '.dimensions // empty')
     UPLOAD_CHAIN=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload_chain // empty')
+    FILE_SIZE=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_size // .fileSize // 0')
 
     echo "✅ Video uploaded to IPFS! CID: $IPFS_CID"
     espeak "Video uploaded successfully" 2>/dev/null || true
@@ -957,26 +906,58 @@ case ${CAT} in
         fi
     fi
 
-    # Renouveler l'auth NIP-42 (TTL 5 min, download peut dépasser ça)
-    echo "🔐 Refreshing NIP-42 authentication..."
-    send_nip42_auth
+    # Publication NOSTR directe via publish_nostr_video.sh (NIP-71)
+    # On évite /webcam qui perd le nom de fichier quand uDRIVE vide Videos/
+    echo "📹 Publishing video via publish_nostr_video.sh (NIP-71)..."
+    YT_PUBLISH_SCRIPT="${MY_PATH}/tools/publish_nostr_video.sh"
+    [[ ! -f "$YT_PUBLISH_SCRIPT" ]] && YT_PUBLISH_SCRIPT="${HOME}/.zen/Astroport.ONE/tools/publish_nostr_video.sh"
+    SECRET_FILE_YT="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
 
-    # API PUBLISH (NIP-71)
-    echo "📹 Publishing video via /webcam endpoint..."
-    PUBLISH_DATA="player=${PLAYER}&ipfs_cid=${IPFS_CID}&thumbnail_ipfs=${THUMBNAIL_CID}&gifanim_ipfs=${GIFANIM_CID}&info_cid=${INFO_CID}&file_hash=${FILE_HASH}&mime_type=video/mp4&upload_chain=${UPLOAD_CHAIN}&duration=${DURATION}&video_dimensions=${DIMENSIONS}&title=${VIDEO_TITLE}&description=${VIDEO_DESC}&publish_nostr=true&npub=${NPUB}&youtube_url=${YTURL}"
-    
-    PUBLISH_RESPONSE=$(curl -s -X POST "${API_URL}/webcam" -H "Content-Type: application/x-www-form-urlencoded" -d "$PUBLISH_DATA")
-    
-    if echo "$PUBLISH_RESPONSE" | grep -q "success\|✅"; then
-        echo "✅ Video published successfully!"
-        espeak "YouTube video published"
+    if [[ ! -f "$YT_PUBLISH_SCRIPT" || ! -f "$SECRET_FILE_YT" ]]; then
+        echo "❌ publish_nostr_video.sh ou clé secrète introuvable"
+        espeak "Publish script not found"
     else
-        echo "❌ Publication échouée. Réponse: $PUBLISH_RESPONSE"
-        espeak "YouTube video publication failed"
-        command -v zenity &>/dev/null && \
-            zenity --error --width 640 --title="Erreur publication YouTube" \
-            --text="❌ Publication échouée\n\n$(echo "$PUBLISH_RESPONSE" | head -5)" \
-            2>/dev/null || true
+        YT_FILE_SIZE=0
+        [[ -f "$FILE_PATH_DOWNLOADED" ]] && YT_FILE_SIZE=$(stat -c%s "$FILE_PATH_DOWNLOADED" 2>/dev/null || echo 0)
+
+        declare -a YT_PUBLISH_CMD=("$YT_PUBLISH_SCRIPT"
+            --nsec "$SECRET_FILE_YT"
+            --ipfs-cid "$IPFS_CID"
+            --filename "$FILENAME"
+            --title "$VIDEO_TITLE"
+            --duration "$DURATION"
+            --source-type "youtube"
+            --channel "$PLAYER"
+            --json)
+        [[ -n "$VIDEO_DESC" ]]    && YT_PUBLISH_CMD+=(--description "$VIDEO_DESC")
+        [[ -n "$THUMBNAIL_CID" ]] && YT_PUBLISH_CMD+=(--thumbnail-cid "$THUMBNAIL_CID")
+        [[ -n "$GIFANIM_CID" ]]   && YT_PUBLISH_CMD+=(--gifanim-cid "$GIFANIM_CID")
+        [[ -n "$INFO_CID" ]]      && YT_PUBLISH_CMD+=(--info-cid "$INFO_CID")
+        [[ -n "$FILE_HASH" ]]     && YT_PUBLISH_CMD+=(--file-hash "$FILE_HASH")
+        [[ -n "$UPLOAD_CHAIN" ]]  && YT_PUBLISH_CMD+=(--upload-chain "$UPLOAD_CHAIN")
+        [[ -n "$DIMENSIONS" ]]    && YT_PUBLISH_CMD+=(--dimensions "$DIMENSIONS")
+        [[ "$YT_FILE_SIZE" -gt 0 ]] && YT_PUBLISH_CMD+=(--file-size "$YT_FILE_SIZE")
+
+        YT_PUBLISH_OUTPUT=$(bash "${YT_PUBLISH_CMD[@]}" 2>&1)
+        YT_PUBLISH_EXIT=$?
+        NOSTR_EVENT_ID=$(echo "$YT_PUBLISH_OUTPUT" | jq -r '.event_id // empty' 2>/dev/null || true)
+
+        if [[ $YT_PUBLISH_EXIT -eq 0 && -n "$NOSTR_EVENT_ID" ]]; then
+            echo "✅ Vidéo publiée sur NOSTR! Event: ${NOSTR_EVENT_ID:0:16}..."
+            espeak "YouTube video published"
+        elif [[ $YT_PUBLISH_EXIT -eq 0 ]]; then
+            echo "⚠️  Upload OK mais event_id absent"
+            echo "$YT_PUBLISH_OUTPUT"
+            espeak "YouTube video uploaded but event ID missing"
+        else
+            echo "❌ Publication NOSTR échouée (code: $YT_PUBLISH_EXIT):"
+            echo "$YT_PUBLISH_OUTPUT"
+            espeak "YouTube video publication failed"
+            command -v zenity &>/dev/null && \
+                zenity --error --width 640 --title="Erreur publication YouTube" \
+                --text="❌ Publication échouée (code $YT_PUBLISH_EXIT)\n\n$(echo "$YT_PUBLISH_OUTPUT" | tail -5)" \
+                2>/dev/null || true
+        fi
     fi
 
     # Cleanup
@@ -1135,20 +1116,25 @@ ${URL:+Source: $URL
             exit 1
         fi
         
-        IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty')
+        IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_cid // .new_cid // empty')
         INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty')
         FILE_HASH=$(echo "$UPLOAD_RESPONSE" | jq -r '.fileHash // empty')
 
         echo "✅ MP3 uploaded to IPFS! CID: $IPFS_CID"
 
-        # 3. Publication NOSTR via /vocals (Phase 2 du workflow Audio - Section 3.3 et 7.3.3)
+        # 3. Publication NOSTR via /vocals (Phase 2 du workflow Audio)
         echo "🎤 Publishing audio via /vocals endpoint (NIP-A0)..."
         PUBLISH_DATA="player=${PLAYER}&ipfs_cid=${IPFS_CID}&info_cid=${INFO_CID}&file_hash=${FILE_HASH}&mime_type=audio/mp3&file_name=${FILENAME}&duration=${DURATION}&title=${AUDIO_TITLE}&description=Source YouTube: ${URL}&npub=${NPUB}&publish_nostr=true&encrypted=false"
-        
+
         VOCALS_RESPONSE=$(curl -s -X POST "${API_URL}/vocals" -H "Content-Type: application/x-www-form-urlencoded" -d "$PUBLISH_DATA")
-        
-        echo "✅ MP3 published successfully!"
-        espeak "Ready. MP3 file processed and published"
+
+        if echo "$VOCALS_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+            echo "✅ MP3 publié sur NOSTR!"
+            espeak "Ready. MP3 file processed and published"
+        else
+            echo "⚠️  /vocals response: $VOCALS_RESPONSE"
+            espeak "MP3 upload done but publication uncertain"
+        fi
         
         # Nettoyage
         rm -rf "$TEMP_MP3_DIR"
