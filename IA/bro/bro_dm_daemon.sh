@@ -148,6 +148,12 @@ fi
 _RELAYS=("wss://relay.copylaradio.com")
 [[ -n "${myRELAY:-}" ]] && _RELAYS+=("$myRELAY")
 
+## Relay de la constellation accessible depuis tous les navigateurs roaming.
+## Utilisé en tant que canal inter-station quand myRELAY=ws://127.0.0.1:7777
+## (relay local non joignable depuis l'extérieur).
+_CONSTELLATION_RELAY="wss://relay.copylaradio.com"
+[[ -n "${myLIBRA:-}" ]] && _CONSTELLATION_RELAY="wss://relay.${myLIBRA#*://ipfs.}"
+
 ## ── PID guard ────────────────────────────────────────────────────────
 echo $$ > "$PID_FILE"
 ## Nettoyer les slots de l'instance précédente (PID mort)
@@ -155,7 +161,7 @@ rm -f "$_BRO_SLOTS_DIR"/slot*.pid 2>/dev/null
 _BRO_CLEAN_STOP=false
 _SWEEP_PID=""
 trap '_BRO_CLEAN_STOP=true' INT TERM
-trap 'wait; kill "${_SWEEP_PID:-}" 2>/dev/null; rm -f "$PID_FILE" "$_BRO_SLOTS_DIR"/slot*.pid; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
+trap 'wait; kill "${_SWEEP_PID:-}" "${_CONSTELLATION_SUB_PID:-}" 2>/dev/null; rm -f "$PID_FILE" "$_BRO_SLOTS_DIR"/slot*.pid; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
 
 _log "🚀 Daemon DM NODE démarré (PID $$, max ${_BRO_MAX_JOBS} jobs) — queue: $QUEUE_DIR"
 
@@ -1137,6 +1143,51 @@ _sweep_loop() {
 }
 _sweep_loop &
 _SWEEP_PID=$!
+
+## ── Subscriber constellation relay ──────────────────────────────────
+## Quand myRELAY=ws://127.0.0.1:7777 (non joignable depuis l'extérieur),
+## les navigateurs en roaming envoient les DMs kind 4 via le relay de la
+## constellation (_CONSTELLATION_RELAY). Ce subscriber les intercepte et
+## les enfile dans la queue locale pour traitement identique aux DMs locaux.
+##
+## nostr_node_intercom.py receive effectue un REQ kind:4 #p:NODE_HEX
+## avec un timeout de 30s, puis reboucle — chaque DM reçu est écrit dans
+## la queue en tant que fichier JSON brut, déclenché par inotifywait.
+_NODE_HEX=$(cat "$HOME/.zen/game/secret.nostr" 2>/dev/null | grep '^HEX=' | cut -d= -f2 || true)
+
+_constellation_subscriber_loop() {
+    [[ -z "$_NODE_HEX" ]] && _log "WARN: HEX NODE absent — subscriber constellation désactivé" && return
+    local _relay="$_CONSTELLATION_RELAY"
+
+    ## Ne pas démarrer si le relay local EST le relay constellation (éviter double traitement)
+    if [[ "${myRELAY:-}" == "$_relay" ]]; then
+        _log "ℹ️  myRELAY == constellation relay — subscriber constellation non démarré (filter/4.sh suffit)"
+        return
+    fi
+
+    _log "🌐 Subscriber constellation démarré → $_relay (NODE ${_NODE_HEX:0:12}…)"
+    while [[ "$_BRO_CLEAN_STOP" != true ]]; do
+        ## nostr_node_intercom.py receive — timeout 30s, lit UN DM puis exit
+        ## On boucle pour maintenir un abonnement permanent
+        local _raw_event
+        _raw_event=$(NOSTR_NSEC="$NODE_NSEC" python3 "$INTERCOM" receive \
+            --pubkey   "$_NODE_HEX" \
+            --relay    "$_relay" \
+            --timeout  30 \
+            2>/dev/null)
+        if [[ -n "$_raw_event" ]]; then
+            local _dst
+            _dst="$QUEUE_DIR/constellation_$(date +%s%N).json"
+            printf '%s\n' "$_raw_event" > "$_dst"
+            _log "🌐 DM constellation reçu → queue: $(basename "$_dst")"
+        fi
+        ## Pause courte si le relay a renvoyé EOSE ou timeout (évite busy-loop)
+        [[ -z "$_raw_event" ]] && sleep 2
+    done
+    _log "🌐 Subscriber constellation arrêté"
+}
+_constellation_subscriber_loop &
+_CONSTELLATION_SUB_PID=$!
 
 ## ── Boucle inotifywait avec fallback polling ─────────────────────────
 _inotify_ok=false

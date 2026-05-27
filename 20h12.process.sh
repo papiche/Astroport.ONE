@@ -40,7 +40,6 @@ find "$LOG_DIR" -name "20h12_*.log" -mtime +7 -delete 2>/dev/null || true
 LOG_FILE="$LOG_DIR/20h12_$(date +%Y%m%d).log"
 touch "$LOG_FILE"
 # Rediriger TOUT l'output (stdout + stderr) vers le log permanent daté
-# Le redirect cron (> /tmp/20h12.log) est court-circuité à partir d'ici
 exec >> "$LOG_FILE" 2>&1
 ########################################################################
 
@@ -48,13 +47,6 @@ echo "20H12 (♥‿‿♥) 🌐 /ipns/$IPFSNODEID 🤓 $CAPTAINEMAIL $(hostname 
 # espeak "Ding" > /dev/null 2>&1
 
 ########################################################################
-########################################################################
-#####################  UPGRADING ZONE ::: CAN BE REMOVED AFTER 24 HOUR
-## DONE pip install cachetools pydantic-settings robohash substrate-interface ## used by UPassport/
-########################################################################
-########################################################################
-########################################################################
-
 ########################################################################
 ## POWER CONSUMPTION - 24/7 PowerJoular (systemd powerjoular.service)
 ########################################################################
@@ -105,22 +97,6 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
         && exit 1
 done
 
-echo "=== SWARM INTRUDERS ==========================================" >> $LOG_FILE
-cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> $LOG_FILE
-cat "$HOME/.zen/game/firewall_candidates.txt" >> $LOG_FILE
-
-#### COPY LOGS - before erase
-echo "=== YOUTUBE / IA SCRAPERS ===============bro_dm_daemon.log==============" >> $LOG_FILE
-cat $HOME/.zen/tmp/IA.log 2>/dev/null >> $LOG_FILE
-cat $HOME/.zen/tmp/*_sync_*.log 2>/dev/null >> $LOG_FILE
-cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
-
-echo "=== NOSTR / CONSTELLATION ERRORS =============================" >> $LOG_FILE
-cat $HOME/.zen/tmp/nostr*.log 2>/dev/null >> $LOG_FILE
-cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
-
-echo "=== SYSTEM/INSTALL ERRORS ====================================" >> $LOG_FILE
-cat $HOME/.zen/install.errors.log 2>/dev/null >> $LOG_FILE
 
 ########################################################################
 ## AUDIT ~/.local/bin — inventaire et réparation des symlinks du Capitaine
@@ -160,20 +136,32 @@ mkdir -p "$(dirname "$ASTRO_PROFILE")"
 # N'afficher que les lignes BROKEN/FIXED dans le log principal
 grep -E "BROKEN|FIXED|TOTAL" "$ASTRO_PROFILE" | tail -20 >> "$LOG_FILE" 2>/dev/null || true
 
+echo "=== SWARM INTRUDERS ==========================================" >> $LOG_FILE
+cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> $LOG_FILE
+cat "$HOME/.zen/game/firewall_candidates.txt" >> $LOG_FILE
+
+#### COPY LOGS - before erase
+echo "=== YOUTUBE / IA SCRAPERS ===============bro_dm_daemon.log==============" >> $LOG_FILE
+cat $HOME/.zen/tmp/IA.log 2>/dev/null >> $LOG_FILE
+cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
+
+echo "=== NOSTR / CONSTELLATION ERRORS =============================" >> $LOG_FILE
+cat $HOME/.zen/tmp/nostr*.log 2>/dev/null >> $LOG_FILE
+cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
+
+echo "=== SYSTEM/INSTALL ERRORS ====================================" >> $LOG_FILE
+cat $HOME/.zen/install.errors.log 2>/dev/null >> $LOG_FILE
+
 ########################################################################
 # show Ustats.sh cache of the day
 echo "TODAY UPlanet landings"
-# ls ~/.zen/tmp/ZONE_* 2>/dev/null # API v1 deprecated
-ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2
+ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2 cache files
 ########################################################################
-## NETTOYAGE TMP : On garde les dossiers de cache vitaux
+## NETTOYAGE TMP : On garde les dossiers de cache vitaux "flashmem" !! 
 # On ne supprime que les fichiers/dossiers qui ne sont pas dans l'exclusion
-find "$HOME/.zen/tmp/" -mindepth 1 -maxdepth 1 ! -name "swarm" ! -name "coucou" ! -name "$IPFSNODEID" -exec rm -rf {} +
+find "$HOME/.zen/tmp/" -mindepth 1 -maxdepth 1 ! -name "swarm" ! -name "flashmem" ! -name "coucou" ! -name "$IPFSNODEID" -exec rm -rf {} +
 ## NETTOYAGE tmp.media (disque) : fichiers médias lourds de plus de 24h
 [[ -d "$HOME/.zen/tmp.media" ]] && find "$HOME/.zen/tmp.media" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null || true
-
-## STOPPING ASTROPORT
-sudo systemctl stop astroport
 
 ########################################################################
 ## UPDATE G1BILLET code # 33101

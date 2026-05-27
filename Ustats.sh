@@ -353,6 +353,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
             swarm_data=$(jq -c '{
                 ipfsnodeid,
                 hostname,
+                IPCity,
                 captain,
                 captainHEX,
                 STATION_LAT,
