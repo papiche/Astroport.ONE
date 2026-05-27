@@ -2,7 +2,7 @@
 """
 skill_flashmem.py — Mémoire pré-prompt partagée par skill
 
-Stockée dans ~/.zen/tmp/flashmem/skills/<skill>.md
+Stockée dans ~/.zen/flashmem/skills/<skill>.md
 Commune à tous les utilisateurs du node (base de connaissance collective).
 Gérée (préservée) par 20h12.process.sh.
 
@@ -24,7 +24,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-FLASHMEM_BASE = Path.home() / ".zen" / "tmp" / "flashmem" / "skills"
+FLASHMEM_BASE = Path.home() / ".zen" / "flashmem" / "skills"
 MAX_LINES = 100  # Limite par skill
 
 

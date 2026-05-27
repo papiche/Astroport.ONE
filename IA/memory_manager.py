@@ -52,7 +52,7 @@ VECTOR_SIZE    = 768
 REVE_THRESHOLD = 150
 REVE_KEEP      = 80
 
-FLASHMEM_BASE  = os.path.expanduser("~/.zen/tmp/flashmem")
+FLASHMEM_BASE  = os.path.expanduser("~/.zen/flashmem")
 SKILLS_DIR     = os.path.join(FLASHMEM_BASE, "skills")
 GEO_DIR        = os.path.join(FLASHMEM_BASE, "uplanet_memory")
 

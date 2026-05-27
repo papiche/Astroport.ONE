@@ -22,12 +22,12 @@
 MY_PATH="$(dirname "$(realpath "$0")")"
 . "$MY_PATH/../tools/my.sh" 2>/dev/null || true
 
-SKILLS_DIR="$HOME/.zen/tmp/flashmem/skills"
+SKILLS_DIR="$HOME/.zen/flashmem/skills"
 STRFRY="$HOME/.zen/strfry/strfry"
 INTERCOM="$MY_PATH/../tools/nostr_node_intercom.py"
 MEMORY_MGR="$MY_PATH/memory_manager.py"
-CONFLICT_LOG="$HOME/.zen/tmp/flashmem/skill_conflicts.log"
-SYNC_STATE="$HOME/.zen/tmp/flashmem/skill_sync_state.json"
+CONFLICT_LOG="$HOME/.zen/flashmem/skill_conflicts.log"
+SYNC_STATE="$HOME/.zen/flashmem/skill_sync_state.json"
 
 mkdir -p "$SKILLS_DIR"
 

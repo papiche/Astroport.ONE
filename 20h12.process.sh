@@ -157,9 +157,9 @@ cat $HOME/.zen/install.errors.log 2>/dev/null >> $LOG_FILE
 echo "TODAY UPlanet landings"
 ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2 cache files
 ########################################################################
-## NETTOYAGE TMP : On garde les dossiers de cache vitaux "flashmem" !! 
+## NETTOYAGE TMP : On garde les dossiers de cache vitaux !! 
 # On ne supprime que les fichiers/dossiers qui ne sont pas dans l'exclusion
-find "$HOME/.zen/tmp/" -mindepth 1 -maxdepth 1 ! -name "swarm" ! -name "flashmem" ! -name "coucou" ! -name "$IPFSNODEID" -exec rm -rf {} +
+find "$HOME/.zen/tmp/" -mindepth 1 -maxdepth 1 ! -name "swarm" ! -name "coucou" ! -name "$IPFSNODEID" -exec rm -rf {} +
 ## NETTOYAGE tmp.media (disque) : fichiers médias lourds de plus de 24h
 [[ -d "$HOME/.zen/tmp.media" ]] && find "$HOME/.zen/tmp.media" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 

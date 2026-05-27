@@ -38,7 +38,7 @@ MAILJET="${HOME}/.zen/Astroport.ONE/tools/mailjet.sh"
 BRO_SYNC="$MY_PATH/nextcloud_bro_sync.sh"
 
 mkdir -p "$QUEUE_DIR"
-mkdir -p "$HOME/.zen/tmp/flashmem"
+mkdir -p "$HOME/.zen/flashmem"
 
 ## ── Sémaphore : jobs parallèles dynamiques selon RAM + GPU ─────────────
 ## Base: RAM_GiB / 4 (4 GiB par job Ollama), min 1 max 8.
@@ -73,7 +73,7 @@ _log() { echo "[$(date '+%H:%M:%S')] [bro_dm] $*" | tee -a "$LOG_FILE" -a "$IA_L
 _send_dm() { printf '%s\n' "$NODE_NSEC" | python3 "$SECURE_DM" --nsec-stdin "$@" 2>/dev/null; }
 
 ## ── Alerte email capitaine (rate-limitée à 1/24h) ────────────────────
-_ALERT_LOCK="$HOME/.zen/tmp/flashmem/bro_dm_alert.lock"
+_ALERT_LOCK="$HOME/.zen/flashmem/bro_dm_alert.lock"
 _alert_captain() {
     local msg="$1"
     [[ -z "${CAPTAINEMAIL:-}" ]] && return
@@ -313,7 +313,7 @@ _sender_email() { bro_resolve_email "$1"; }
 _check_slot_access() { bro_check_slot_access "$@"; }
 
 ## ── Canal "plain" #rec:<skill> : contribution à la mémoire partagée ───────
-## Syntaxe : "#rec:devops Je maîtrise nginx" → ~/.zen/tmp/flashmem/skills/devops.md
+## Syntaxe : "#rec:devops Je maîtrise nginx" → ~/.zen/flashmem/skills/devops.md
 _handle_rec_skill() {
     local sender="$1" skill="$2" content="$3"
     [[ -z "$skill" || -z "$content" ]] && return
@@ -455,7 +455,7 @@ _handle_mem() {
         return
     fi
 
-    local user_dir="$HOME/.zen/tmp/flashmem/$email"
+    local user_dir="$HOME/.zen/flashmem/$email"
     local reply
 
     if [[ "$slot" == "0" ]]; then
@@ -529,7 +529,7 @@ _handle_reset() {
         return
     fi
 
-    local user_dir="$HOME/.zen/tmp/flashmem/$email"
+    local user_dir="$HOME/.zen/flashmem/$email"
     local reply
     if [[ "$slot" == "0" ]]; then
         rm -f "$user_dir"/slot*.json 2>/dev/null
@@ -897,7 +897,7 @@ _handle_udrive() {
 ## Présente les capacités BRO du node et sa clé de contact.
 _send_welcome_messages() {
     local WELCOMED_FILE="$HOME/.zen/flashmem/bro_dm_welcomed.txt"
-    mkdir -p "$HOME/.zen/tmp/flashmem"
+    mkdir -p "$HOME/.zen/flashmem"
     touch "$WELCOMED_FILE" 2>/dev/null
 
     local WELCOME_MSG

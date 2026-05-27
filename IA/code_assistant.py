@@ -75,7 +75,7 @@ except ImportError:
 # ─────────────────────────────────────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────────
-KV_DIR        = Path.home() / ".zen" / "tmp" / "flashmem" / "code_assistant"
+KV_DIR        = Path.home() / ".zen" / "flashmem" / "code_assistant"
 LOG_FILE      = Path.home() / ".zen" / "tmp" / "IA.log"
 QDRANT_COL    = "code_assistant"
 DEFAULT_MODEL = "gemma3:latest"

@@ -6,8 +6,8 @@
 set -e
 
 # Configuration
-OUTPUT_DIR="$HOME/.zen/tmp/flashmem/umarket_global"
-LOG_FILE="$HOME/.zen/tmp/flashmem/umarket_aggregator.log"
+OUTPUT_DIR="$HOME/.zen/flashmem/umarket_global"
+LOG_FILE="$HOME/.zen/flashmem/umarket_aggregator.log"
 MAX_AGE_HOURS=168  # 7 days
 VERBOSE=false
 LOCAL_ONLY=false
@@ -34,7 +34,7 @@ USAGE:
     ./_uMARKET.aggregate.sh [OPTIONS]
 
 OPTIONS:
-    --output DIR     Output directory (default: /home/fred/.zen/tmp/flashmem/umarket_global)
+    --output DIR     Output directory (default: /home/fred/.zen/flashmem/umarket_global)
     --max-age HOURS  Maximum age of advertisements in hours (default: 168)
     --local-only     Only process local data
     --swarm-only     Only process swarm data

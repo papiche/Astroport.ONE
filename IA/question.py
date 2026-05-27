@@ -3,7 +3,7 @@
 question.py — Orchestrateur IA Ollama avec mémoire multi-source
 
 Sources de contexte (priorité décroissante, toutes cumulables) :
-  1. Flashmem skill  --skill devops   → ~/.zen/tmp/flashmem/skills/devops.md
+  1. Flashmem skill  --skill devops   → ~/.zen/flashmem/skills/devops.md
   2. Qdrant RAG      --skill devops   → collection wotx2_resources (sémantique)
   3. Slot user       --user-id email --slot N  → ~/.zen/flashmem/<email>/slotN.json
   4. UMAP memory     --lat --lon      → ~/.zen/flashmem/uplanet_memory/<coord>.json
@@ -41,7 +41,7 @@ MY_DIR = os.path.dirname(os.path.abspath(__file__))
 def load_skill_context(skill: str, question: str = "") -> str:
     """
     Charge le contexte skill depuis :
-    1. Flashmem partagé (~/.zen/tmp/flashmem/skills/<skill>.md)
+    1. Flashmem partagé (~/.zen/flashmem/skills/<skill>.md)
     2. Qdrant RAG (collection wotx2_resources)
     """
     parts = []

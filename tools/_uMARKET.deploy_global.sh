@@ -8,7 +8,7 @@ set -e
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CRON_JOB_NAME="global_umarket_aggregation"
-LOG_FILE="$HOME/.zen/tmp/flashmem/global_umarket_deploy.log"
+LOG_FILE="$HOME/.zen/flashmem/global_umarket_deploy.log"
 
 # Colors for output
 RED='\033[0;31m'
@@ -80,7 +80,6 @@ check_dependencies() {
 
 # Create system directories
 create_directories() {
-    mkdir -p /tmp/flashmem
     mkdir -p ~/.zen/tmp/umarket_global
     mkdir -p ~/.zen/logs
     
@@ -104,9 +103,9 @@ set -e
 
 # Configuration
 SCRIPT_DIR="$HOME/.zen/Astroport.ONE/tools"
-LOG_FILE="$HOME/.zen/tmp/flashmem/global_umarket.log"
-OUTPUT_DIR="$HOME/.zen/tmp/flashmem/umarket_global"
-LOCK_FILE="$HOME/.zen/tmp/flashmem/global_umarket.lock"
+LOG_FILE="$HOME/.zen/flashmem/global_umarket.log"
+OUTPUT_DIR="$HOME/.zen/flashmem/umarket_global"
+LOCK_FILE="$HOME/.zen/flashmem/global_umarket.lock"
 
 # Prevent multiple instances
 if [[ -f "$LOCK_FILE" ]]; then
@@ -210,10 +209,10 @@ check_status() {
     fi
     
     # Check recent logs
-    if [[ -f "$HOME/.zen/tmp/flashmem/global_umarket.log" ]]; then
+    if [[ -f "$HOME/.zen/flashmem/global_umarket.log" ]]; then
         echo ""
         echo "📋 Recent log entries:"
-        tail -n 5 "$HOME/.zen/tmp/flashmem/global_umarket.log" 2>/dev/null || echo "No recent logs"
+        tail -n 5 "$HOME/.zen/flashmem/global_umarket.log" 2>/dev/null || echo "No recent logs"
     fi
     
     # Check system health
@@ -236,7 +235,7 @@ run_test() {
     fi
     
     # Run test aggregation
-    local test_output="$HOME/.zen/tmp/flashmem/test_global_umarket"
+    local test_output="$HOME/.zen/flashmem/test_global_umarket"
     local cid=$("$SCRIPT_DIR/_uMARKET.aggregate.sh" --output "$test_output" --verbose)
     
     if [[ -n "$cid" ]]; then

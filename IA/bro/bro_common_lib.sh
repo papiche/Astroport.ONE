@@ -42,7 +42,7 @@ BRO_NOSTR2HEX="${_BRO_ASTRO_TOOLS}/nostr2hex.py"
 BRO_SECURE_DM="${_BRO_ASTRO_TOOLS}/nostr_send_secure_dm.py"
 BRO_INTERCOM="${_BRO_ASTRO_TOOLS}/nostr_node_intercom.py"
 BRO_MAILJET="${_BRO_ASTRO_TOOLS}/mailjet.sh"
-_BRO_ALERT_LOCK="$HOME/.zen/tmp/flashmem/bro_alert.lock"
+_BRO_ALERT_LOCK="$HOME/.zen/flashmem/bro_alert.lock"
 
 # ── Relay public constellation UPlanet ──────────────────────────────
 # myRELAY peut valoir ws://127.0.0.1:7777 (non-routable depuis l'extérieur).
@@ -88,7 +88,7 @@ bro_alert_captain() {
 <p>Log : <code>${BRO_LOG_FILE}</code></p>
 <hr><p style="color:#888;font-size:0.85em;">Alerte rate-limitée 24h.</p>
 EOF
-    mkdir -p "$HOME/.zen/tmp/flashmem"
+    mkdir -p "$HOME/.zen/flashmem"
     touch "$_BRO_ALERT_LOCK"
     (
         bash "$BRO_MAILJET" --template "bro_alert" --expire 48h \
