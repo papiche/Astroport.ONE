@@ -581,7 +581,7 @@ _handle_vocals() {
     [[ ! -x "$_PUBLISH_SCRIPT" ]] && \
         _log "WARN: ✈️ vocals: publish_nostr_vocal.sh introuvable" && return
 
-    local _KIND="${_KIND:-1222}"
+    _KIND="${_KIND:-1222}"
     [[ "$_KIND" != "1244" ]] && _KIND="1222"
 
     local -a _CMD=(
@@ -687,7 +687,7 @@ _handle_zen_like() {
 
     ## Garde: ne traiter que les montants > 0 (redondant mais défensif)
     local _zen_num
-    _zen_num=$(python3 -c "print(1 if float('${_ZEN_AMOUNT}') > 0 else 0)" 2>/dev/null)
+    _zen_num=$(python3 -c "print(1 if float('${_ZEN_AMOUNT:-0}') > 0 else 0)" 2>/dev/null)
     [[ "$_zen_num" != "1" ]] && \
         _log "WARN: ✈️ zen_like: ZEN_AMOUNT=0 ignoré" && return
 
@@ -699,8 +699,8 @@ _handle_zen_like() {
 
     local _AMOUNT
     _AMOUNT=$(python3 -c "
-v = float('${_ZEN_AMOUNT}') * 0.1
-print(f'0{v:.2f}' if v < 1 else f'{v:.2f}')
+v = float('${_ZEN_AMOUNT:-0}') * 0.1
+print(f'{v:.2f}')
 " 2>/dev/null)
     [[ -z "$_AMOUNT" ]] && _log "WARN: ✈️ zen_like: calcul G1 échoué" && return
 
@@ -763,9 +763,15 @@ _GPU_LOCK="$HOME/.zen/tmp/comfyui_brain.lock"
 ##           reply_node_hex, reply_pubkey, job_id
 _handle_comfyui_job() {
     local payload="$1" sender="$2"
+    
+    # 1. DÉCLARATION EXPLICITE (Fix pour ShellCheck et scope local)
+    local _EMAIL _PROMPT _MODE _SOURCE_URL _REPLY_NODE_HEX _REPLY_PUBKEY _JOB_ID
+    
     _payload_get "$payload" email prompt mode source_url reply_node_hex reply_pubkey job_id
+    
     [[ -z "$_PROMPT" ]] && \
         _log "WARN: ✈️ comfyui_job: payload incomplet (prompt manquant)" && return
+    
     _log "🎬 comfyui_job: mode=${_MODE:-t2v} job=${_JOB_ID:-?} de ${sender:0:12}... (${_EMAIL:-?})"
 
     ## Acquérir le verrou GPU exclusif (bloque jusqu'à 5 min max)
@@ -829,6 +835,7 @@ print(json.dumps({
 ## Payload : job_id, email, result_url, status, reply_pubkey, mode
 _handle_comfyui_result() {
     local payload="$1"
+    local _JOB_ID _EMAIL _RESULT_URL _STATUS _REPLY_PUBKEY _MODE
     _payload_get "$payload" job_id email result_url status reply_pubkey mode
     _log "🎬 comfyui_result: job=${_JOB_ID:-?} status=${_STATUS:-?} email=${_EMAIL:-?}"
 
@@ -868,27 +875,26 @@ _handle_comfyui_result() {
 ## ── Canal "udrive" : sync fichier depuis IPFS → APP/uDRIVE ───────────
 _handle_udrive() {
     local payload="$1"
+    local _EMAIL _CID _FILENAME _FILETYPE _DEST_DIR _UDRIVE _TMP_FILE
     _payload_get "$payload" email cid filename filetype
-    local _S_EMAIL="$_EMAIL" _S_CID="$_CID" _S_FILE="$_FILENAME" _S_TYPE="${_FILETYPE:-file}"
 
-    [[ -z "$_S_EMAIL" || -z "$_S_CID" || -z "$_S_FILE" ]] && return
+    [[ -z "$_EMAIL" || -z "$_CID" || -z "$_FILENAME" ]] && return
 
-    bro_user_is_local "$_S_EMAIL" || { _log "WARN: ✈️ sync ignoré: $_S_EMAIL non hébergé ou en roaming"; return; }
+    bro_user_is_local "$_EMAIL" || { _log "WARN: ✈️ sync ignoré: $_EMAIL non hébergé ou en roaming"; return; }
 
-    local _DEST_DIR
-    _DEST_DIR=$(bro_udrive_type_dir "$_S_TYPE")
-    local _UDRIVE
-    _UDRIVE=$(bro_udrive_path "$_S_EMAIL" "$_DEST_DIR") || return
+    _DEST_DIR=$(bro_udrive_type_dir "${_FILETYPE:-file}")
+    _UDRIVE=$(bro_udrive_path "$_EMAIL" "$_DEST_DIR") || return
 
-    local _TMP_FILE
     _TMP_FILE=$(mktemp -p "${HOME}/.zen/tmp" "udrive_XXXXXX")
-    if timeout 30 ipfs get "/ipfs/${_S_CID}" -o "$_TMP_FILE" 2>/dev/null; then
-        mv "$_TMP_FILE" "${_UDRIVE}/${_S_FILE}"
+    if timeout 30 ipfs get "/ipfs/${_CID}" -o "$_TMP_FILE" 2>/dev/null; then
+        mv "$_TMP_FILE" "${_UDRIVE}/${_FILENAME}"
         touch "$(dirname "$_UDRIVE")/"
-        _log "✈️ sync OK: $_S_EMAIL ← $_S_FILE (${_S_CID:0:12}...) dans $_DEST_DIR/"
+        _log "✈️ sync OK: $_EMAIL ← $_FILENAME (${_CID:0:12}...) dans $_DEST_DIR/"
     else
         rm -f "$_TMP_FILE"
-        _log "WARN: ✈️ sync ÉCHEC ipfs get pour $_S_FILE (${_S_CID:0:12}...)"
+        _log "WARN: ✈️ sync ÉCHEC ipfs get pour $_FILENAME (${_CID:0:12}...)"
+        _alert_captain "$(printf "uDRIVE sync échoué pour %s\nFichier : %s\nCID     : %s\nDest    : %s" \
+            "$_EMAIL" "$_FILENAME" "$_CID" "$_UDRIVE")"
     fi
 }
 
@@ -975,7 +981,8 @@ _process_event_async() {
             _sfile="$_BRO_SLOTS_DIR/slot${_slot}.pid"
             ## Création atomique via noclobber
             if (set -C; echo "$_my_pid" > "$_sfile") 2>/dev/null; then
-                _process_event "$fname"
+                _process_event "$fname" \
+                    || _alert_captain "Erreur traitement DM — $(basename "$fname")"
                 rm -f "$_sfile"
                 return
             fi
@@ -1000,7 +1007,8 @@ _process_event() {
 
     if [[ -z "$decoded" ]]; then
         _log "WARN: déchiffrement échoué pour $(basename "$event_file")"
-        return
+        _alert_captain "Déchiffrement DM échoué — $(basename "$event_file")\nVérifiez NODE_NSEC et le relay."
+        return 1
     fi
 
     local channel sender payload
