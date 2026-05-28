@@ -12,7 +12,7 @@
 À la fin de ce tutoriel :
 
 - ✅ Une identité NOSTR (`nsec` / `npub`) générée de façon déterministe
-- ✅ Un portefeuille Ğ1 dédié à votre activité UPlanet
+- ✅ Un portefeuille Ẑen dédié à votre activité UPlanet
 - ✅ Un espace de stockage personnel IPFS (uDRIVE — 10 Go)
 - ✅ Un QR code MULTIPASS sécurisé par SSSS (2-sur-3)
 - ✅ Votre **Kin Maya Tzolkin** dans votre DID (si vous renseignez votre date de naissance)
@@ -32,7 +32,7 @@ Ou depuis l'interface UPlanet, cliquez sur **✨ MULTIPASS** dans le menu de nav
 
 Vous arrivez sur la page **🌐️ MULTIPASS DISCO Respawn**.
 
-> 💡 Si vous venez depuis la barre UPlanet Header (🔑 Accès → ✨ Créer un MULTIPASS), votre identifiant G1v1 et mot de passe sont pré-remplis dans les champs cachés — votre portefeuille Ğ1 éventuel sera versé au collectif (crowdfunding coopératif).
+> 💡 Si vous venez depuis la barre UPlanet Header (🔑 Accès → ✨ Créer un MULTIPASS), votre identifiant G1v1 et mot de passe sont pré-remplis dans les champs cachés — votre portefeuille Ẑen éventuel sera versé au collectif (crowdfunding coopératif).
 
 ---
 
@@ -102,7 +102,7 @@ Le serveur lance la génération de votre MULTIPASS — comptez **30 à 90 secon
 **Ce qui se passe en coulisse :**
 
 1. `g1.sh` reçoit email, coordonnées, salt/pepper (générés aléatoirement si vides) et données natales
-2. `make_NOSTRCARD.sh` génère les clés NOSTR (NSEC/NPUB), le portefeuille Ğ1 jumeau, l'espace IPNS (uDRIVE), le document DID et les QR codes SSSS
+2. `make_NOSTRCARD.sh` génère les clés NOSTR (NSEC/NPUB), le portefeuille Ẑen jumeau, l'espace IPNS (uDRIVE), le document DID et les QR codes SSSS
 3. Si une date de naissance est fournie, `kin.sh` calcule le Kin Maya et le badge est inclus dans le DID (kind 30800)
 4. Le résultat est renvoyé comme page HTML (ZenCard / NOSTR Zine)
 
@@ -116,7 +116,7 @@ Elle contient :
 - 🎴 Votre **ZenCard** avec QR code(s) SSSS
 - 👤 Votre profil NOSTR (nom, avatar, npub)
 - 🌀 Votre **Kin Maya** (si date de naissance fournie)
-- 💳 L'adresse de votre portefeuille Ğ1
+- 💳 L'adresse de votre portefeuille Ẑen
 
 **Actions possibles :**
 - **Ouvrir** — ouvre dans un nouvel onglet pour imprimer ou sauvegarder
@@ -211,7 +211,7 @@ Sur votre station, votre MULTIPASS génère les fichiers suivants :
 ├── .secret.nostr          # NSEC + NPUB + HEX (chmod 600)
 ├── .multipass.json        # Données complètes MULTIPASS
 ├── .ssss.player.key       # Clé SSSS chiffrée (part M)
-├── G1PUBNOSTR             # Adresse portefeuille Ğ1 (SS58)
+├── G1PUBNOSTR             # Adresse portefeuille Ẑen (SS58)
 ├── HEX                    # Clé publique NOSTR en hexadécimal
 ├── NPUB                   # Clé publique NOSTR (bech32)
 ├── LANG                   # Langue de l'interface

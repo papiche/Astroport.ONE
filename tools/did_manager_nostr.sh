@@ -162,6 +162,17 @@ create_initial_did() {
     local language=$(cat "${user_dir}/LANG" 2>/dev/null || echo "fr")
     local youser=${email}
 
+    # GPS chiffré avec UPLANETNAME (partagé constellation, lisible par toutes les stations)
+    local gps_encrypted=""
+    if [[ -n "$latitude" && -n "$longitude" && -n "$UPLANETNAME" ]]; then
+        local _gps_crypt="${MY_PATH}/gps_crypt.sh"
+        if [[ -f "$_gps_crypt" ]]; then
+            # shellcheck source=/dev/null
+            source "$_gps_crypt"
+            gps_encrypted=$(gps_encrypt "LAT=${latitude}; LON=${longitude};" 2>/dev/null)
+        fi
+    fi
+
     # Date de naissance réelle (fichier BIRTHDATE écrit par make_NOSTRCARD.sh depuis le formulaire)
     local birthdate=$(cat "${user_dir}/BIRTHDATE" 2>/dev/null)
 
@@ -216,8 +227,7 @@ create_initial_did() {
         -e "s|_MY_IPFS_|$(escape_sed "${my_ipfs}")|g" \
         -e "s|_USPOT_|$(escape_sed "${uspot}")|g" \
         -e "s|_UPLANET_G1PUB_8_|$(escape_sed "${uplanet_g1pub_8}")|g" \
-        -e "s|_LATITUDE_|$(escape_sed "${latitude}")|g" \
-        -e "s|_LONGITUDE_|$(escape_sed "${longitude}")|g" \
+        -e "s|_GPS_ENCRYPTED_|$(escape_sed "${gps_encrypted}")|g" \
         -e "s|_LANGUAGE_|$(escape_sed "${language}")|g" \
         -e "s|_YOUSER_|$(escape_sed "${youser}")|g" \
         -e "s|_BIRTHDATE_|$(escape_sed "${birthdate}")|g" \
@@ -600,7 +610,24 @@ update_did_document() {
     
     [[ -n "$quota" ]] && jq_cmd="$jq_cmd | .metadata.storageQuota = \"$quota\""
     [[ -n "$services" ]] && jq_cmd="$jq_cmd | .metadata.services = \"$services\""
-    
+
+    # Badge MayaKin — recalculé depuis BIRTHDATE à chaque update
+    # Garantit la cohérence même si BIRTHDATE a été ajouté après la création initiale du DID
+    local _birthdate_for_kin
+    _birthdate_for_kin=$(cat "$HOME/.zen/game/nostr/${email}/BIRTHDATE" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$_birthdate_for_kin" && "$_birthdate_for_kin" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ \
+          && -f "${MY_PATH}/kin.sh" ]]; then
+        source "${MY_PATH}/kin.sh"
+        local _kin_badge
+        _kin_badge=$(maya_kin_json "$_birthdate_for_kin" 2>/dev/null)
+        if [[ -n "$_kin_badge" ]]; then
+            # Remplacer l'éventuel badge MayaKin existant et ajouter le nouveau
+            jq_cmd="$jq_cmd | .metadata.badges = ((.metadata.badges // []) \
+                | map(select(.type != \"MayaKin\")) + [${_kin_badge}])"
+            echo -e "${GREEN}✅ Badge MayaKin inclus dans l'update DID : Kin $(echo "$_kin_badge" | jq -r '.kin')${NC}"
+        fi
+    fi
+
     if [[ "$montant_zen" != "0" ]]; then
         jq_cmd="$jq_cmd | .metadata.lastPayment = {
             \"amount_zen\": \"$montant_zen\",

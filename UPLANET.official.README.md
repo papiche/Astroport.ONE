@@ -4,6 +4,8 @@
 
 Ce script gère les virements officiels de l'écosystème UPlanet ẐEN selon la [Constitution de l'Écosystème](./LEGAL.md) et implémente techniquement le [Code de la Route](./RUNTIME/ZEN.ECONOMY.readme.md).
 
+> **cette documentation est normalement conforme (comme toutes les autres) mais reste à vérifier et mettre à jour par rapport à l'évolution de fonctionnement du code décris**
+
 ## 🏗️ **Niveaux de Station UPlanet**
 
 ### **🔴 Niveau X (Station Standard)**
@@ -243,7 +245,7 @@ Le système respecte les usages de la **Web of Trust DRAGON** :
 - **Référence** : `UPLANET:${UPLANETG1PUB:0:8}:NODEINIT:${IPFSNODEID}`
 - **Justification** : Initialisation du nœud par l'écosystème UPlanet
 
-#### **🔄 Validation WoT DRAGON (.2nd)**
+#### **🔄 Validation WoT DRAGON (.2nd)** (en option)
 - **Source** : Compte forgeron du Capitaine (`CAPTAINEMAIL`)
 - **Destination** : Wallet NODE (même adresse)
 - **Montant** : 0.01Ğ1 (transaction de validation)
@@ -302,7 +304,7 @@ Le script fonctionne avec **tous les niveaux de station** :
 Le script nécessite que les portefeuilles suivants soient configurés :
 
 #### **Portefeuilles Principaux**
-- `UPLANETNAME_G1` → `~/.zen/game/uplanet.G1.dunikey` (Réserve Ğ1)
+- `UPLANETNAME_G1` → `~/.zen/game/uplanet.G1.dunikey` (Réserve Ğ1/Ẑen)
 - `UPLANETNAME` → `~/.zen/game/uplanet.dunikey` (Compte d'exploitation)
 - `UPLANETNAME_SOCIETY` → `~/.zen/game/uplanet.SOCIETY.dunikey` (Capital social)
 
@@ -425,7 +427,7 @@ Email du sociétaire: jane.smith@example.com
 ✅ R&D trouvé: QrStUv45...
 ✅ Assets trouvé: WxYz67...
 
-💰 Montant disponible dans SOCIETY: 5.0 Ğ1 (50 Ẑen)
+💰 Montant disponible dans SOCIETY: 5.0 Ğ1 (40 Ẑen)
 Montant à transférer en Ẑen (ou 'max' pour tout transférer): max
 Type de sociétaire (satellite/constellation): satellite
 
@@ -433,13 +435,7 @@ Type de sociétaire (satellite/constellation): satellite
 📤 Étape 1: Transfert SOCIETY → ZEN Card jane.smith@example.com
 ✅ Transaction confirmée - Solde: 5.0 Ğ1
 📤 Étape 2: Répartition 3x1/3 depuis ZEN Card
-  📤 Treasury (1/3): 16.66 Ẑen
-  ✅ Transaction confirmée
-  📤 R&D (1/3): 16.66 Ẑen
-  ✅ Transaction confirmée
-  📤 Assets (1/3): 16.68 Ẑen
-  ✅ Transaction confirmée
-🎉 Transfert de récupération terminé avec succès!
+...
 ```
 
 ### **Scénario 4 : Mode Dépannage - Réparation Partielle 3x1/3**
@@ -452,7 +448,7 @@ Type de sociétaire (satellite/constellation): satellite
 Email du sociétaire: jane.smith@example.com
 ✅ ZEN Card trouvée: AbCdEf12...
 
-💰 Solde de la ZEN Card: 3.33 Ğ1 (33.3 Ẑen)
+💰 Solde de la ZEN Card: 3.33 Ğ1 (23.3 Ẑen)
 
 📋 Sélectionnez le portefeuille de destination:
 1. TREASURY (CASH)
@@ -468,7 +464,7 @@ Type de sociétaire (satellite/constellation): satellite
 🚀 Lancement du transfert ZEN Card → TREASURY...
 ✅ Transaction confirmée - Solde: 1.67 Ğ1
 🎉 Transfert de récupération 3x1/3 terminé avec succès!
-✅ Nouveau solde ZEN Card: 1.67 Ğ1 (16.7 Ẑen)
+✅ Nouveau solde ZEN Card: 1.67 Ğ1 (6.7 Ẑen)
 
 # On peut maintenant refaire le transfert vers ASSETS
 ./UPLANET.official.sh --recovery-3x13

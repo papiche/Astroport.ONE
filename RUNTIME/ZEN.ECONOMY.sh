@@ -1109,6 +1109,19 @@ if [[ -x "${MY_PATH}/ECONOMY.broadcast.sh" ]]; then
 fi
 
 #######################################################################
+# KIN NEWS — Correspondances Oracle Dreamspell (hebdomadaire)
+# Détecte quatuors / paires occultes / paires analogues / conseils
+# de tonalité et envoie un email HTML à chaque membre (opt-out géré).
+#######################################################################
+if [[ -x "${MY_PATH}/KIN.news.sh" ]]; then
+    log_output "🌀 KIN news — envoi des correspondances Oracle Dreamspell..."
+    "${MY_PATH}/KIN.news.sh" 2>&1 | while IFS= read -r _kn_line; do
+        log_output "$_kn_line"
+    done
+    log_output "✅ KIN news terminé"
+fi
+
+#######################################################################
 # Marquer le paiement hebdomadaire comme complété
 # Format : YEAR-Wxx:RESILIENCEn:NODEn:CPTn
 # Le bénévolat (LOVE) paie toujours la différence — pas de GAME OVER

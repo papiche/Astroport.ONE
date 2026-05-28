@@ -89,8 +89,7 @@
     "tokenTypes": [],
     "uplanet": "_UPLANET_G1PUB_8_",
     "coordinates": {
-      "latitude": "_LATITUDE_",
-      "longitude": "_LONGITUDE_"
+      "encrypted": "_GPS_ENCRYPTED_"
     },
     "language": "_LANGUAGE_",
     "youser": "_YOUSER_",

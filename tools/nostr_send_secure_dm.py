@@ -456,12 +456,20 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
             client.close()
 
 def main():
+    # Pre-process --nsec-stdin before argparse to avoid positional arg offset:
+    # argparse would greedily assign recipient_hex to sender_nsec (optional),
+    # shifting all subsequent positionals and breaking validation.
+    if '--nsec-stdin' in sys.argv:
+        _nsec_preread = sys.stdin.readline().strip()
+        sys.argv.remove('--nsec-stdin')
+        sys.argv.insert(1, _nsec_preread)
+
     parser = argparse.ArgumentParser(
         description="Send secure encrypted direct messages via NOSTR (NIP-44 enhanced)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
-    
+
     parser.add_argument("sender_nsec", nargs="?", default=None,
                        help="NSEC private key of the sender (or use --nsec-stdin)")
     parser.add_argument("recipient_hex", help="Hex public key of the recipient")
