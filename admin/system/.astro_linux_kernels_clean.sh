@@ -2,6 +2,14 @@
 
 set -euo pipefail
 
+# Ce script gère les kernels Debian/Ubuntu (linux-image-*, linux-headers-*).
+# Sur Arch Linux / SteamOS les kernels sont gérés par pacman — script non applicable.
+if command -v pacman >/dev/null 2>&1; then
+    echo "ℹ️  .astro_linux_kernels_clean.sh : Arch Linux détecté — script Debian uniquement, ignoré."
+    echo "   Pour nettoyer les anciens kernels sur Arch : sudo pacman -Rns linux-lts (ou autre)"
+    exit 0
+fi
+
 show_help() {
 cat << EOF
 Usage:

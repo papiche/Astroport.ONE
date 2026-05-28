@@ -32,8 +32,10 @@ else
     REMOTE_PORT_IPV4_VPN="${SWARM_REMOTE_PORT_IPV4_VPN:-22}"
     REMOTE_PORT_IPV6_VPN="${SWARM_REMOTE_PORT_IPV6_VPN:-22}"
 fi
-# On détecte l'IP du bridge docker (généralement 172.17.0.1)
-DOCKER_BRIDGE_IP=$(ip addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
+# Détection IP bridge Docker : docker0 absent si seul Docker Compose crée br-xxxx
+DOCKER_BRIDGE_IP=$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}' 2>/dev/null \
+    || ip addr show docker0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' \
+    || echo "172.17.0.1")
 # Double tunnel : 
 # 1. Pour l'hôte (RooCode, Python local) sur 127.0.0.1
 # 2. Pour Docker (LiteLLM, Dify AI) sur l'IP du bridge

@@ -414,7 +414,9 @@ NODE_ID="${IPFSNODEID}"
 PROTO="${CHANNEL}"
 NATIVE_PORT="${LPORT_PREF}"
 ALT_PORT="${SERVICE_ALT}"
-DOCKER_IP=\$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || true)
+DOCKER_IP=\$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}' 2>/dev/null \
+    || ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" \
+    || echo "172.17.0.1")
 
 # --- Logique de choix du port ---
 # Ports < 1024 nécessitent root pour bind : forcer ALT_PORT systématiquement

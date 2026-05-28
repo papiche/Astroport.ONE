@@ -77,6 +77,7 @@ StartLimitIntervalSec=300
 StartLimitBurst=3
 TimeoutStopSec=120
 KillSignal=SIGINT
+LimitNOFILE=100000
 Environment=IPFS_FD_MAX=100000
 # Utilisation de PubSub pour la constellation
 ExecStart=$(which ipfs) daemon --migrate --enable-pubsub-experiment --enable-namesys-pubsub

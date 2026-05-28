@@ -1,7 +1,14 @@
 #!/bin/bash
 
 # Vérification des dépendances
-command -v curl >/dev/null 2>&1 || { echo "curl n'est pas installé. Installation..."; sudo apt install curl; }
+command -v curl >/dev/null 2>&1 || {
+    echo "curl n'est pas installé. Installation..."
+    if command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --noconfirm --needed curl
+    else
+        sudo apt install -y curl
+    fi
+}
 command -v sudo >/dev/null 2>&1 || { echo "sudo n'est pas disponible. Exécution impossible."; exit 1; }
 
 # Chemin absolu du script
@@ -33,8 +40,12 @@ if [[ ! -e "$HOME/.local/bin/yt-dlp" ]]; then
     fi
 fi
 
-# Installation pour www-data
-if [[ -f "$HOME/.local/bin/yt-dlp" && ! -f "/usr/local/bin/yt-dlp" ]]; then
+# Installation pour www-data (/usr/local/bin)
+# Sur SteamOS, /usr/local est effacé à chaque mise à jour Valve → on n'y écrit pas
+_IS_STEAMOS=0
+grep -q "SteamOS" /etc/os-release 2>/dev/null && _IS_STEAMOS=1
+
+if [[ "$_IS_STEAMOS" -eq 0 && -f "$HOME/.local/bin/yt-dlp" && ! -f "/usr/local/bin/yt-dlp" ]]; then
     sudo mkdir -p /usr/local/bin
     sudo cp "$HOME/.local/bin/yt-dlp" /usr/local/bin/yt-dlp
     sudo chmod +x /usr/local/bin/yt-dlp

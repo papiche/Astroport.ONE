@@ -75,7 +75,11 @@ MODE=$(echo "${1:-STATUS}" | tr '[:lower:]' '[:upper:]')
 # Vérification des prérequis
 ########################################################################
 if ! which ufw &>/dev/null; then
-    echo "❌ UFW non installé. Installez-le : sudo apt-get install ufw"
+    if command -v pacman >/dev/null 2>&1; then
+        echo "❌ UFW non installé. Installez-le : sudo pacman -S ufw"
+    else
+        echo "❌ UFW non installé. Installez-le : sudo apt-get install ufw"
+    fi
     exit 1
 fi
 
@@ -92,6 +96,11 @@ fire_on() {
         sudo sed -i 's/^IPV6=no/IPV6=yes/' /etc/default/ufw
         ## Autoriser le Forwarding (Routage) pour le rôle HUB VPN WireGuard
         sudo sed -i 's/^DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
+    fi
+
+    ## Sur Arch/SteamOS, le service UFW n'est pas activé par défaut — le démarrer d'abord
+    if ! systemctl is-active --quiet ufw 2>/dev/null; then
+        sudo systemctl enable --now ufw 2>/dev/null || true
     fi
 
     ## Réinitialisation propre (évite les doublons)

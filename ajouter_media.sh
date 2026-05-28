@@ -11,6 +11,19 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
+# SteamOS/Arch: yt-dlp is in ~/.local/bin (not /usr/local/bin which is wiped on Valve updates)
+export PATH="$HOME/.local/bin:$PATH"
+
+# _detox: portable filename sanitizer — uses detox if available, iconv+sed fallback for Arch/SteamOS
+_detox() {
+    if command -v detox >/dev/null 2>&1; then
+        detox --inline
+    else
+        iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null \
+            | sed 's/[^a-zA-Z0-9._-]/_/g; s/_\+/_/g; s/^_//; s/_$//'
+    fi
+}
+
 # REMOVE GtkDialog errors for zenity
 shopt -s expand_aliases
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
@@ -43,7 +56,8 @@ notify_user() {
     # Method 4: espeak (if available and user explicitly enables audio)
     # Only used if ENABLE_AUDIO_NOTIFICATIONS=yes environment variable is set
     if command -v espeak &> /dev/null && [[ "${ENABLE_AUDIO_NOTIFICATIONS:-}" == "yes" ]]; then
-        /usr/bin/espeak "$message" >/dev/null 2>&1 || true
+        (command -v espeak >/dev/null 2>&1 && espeak "$message" \
+            || command -v espeak-ng >/dev/null 2>&1 && espeak-ng "$message") >/dev/null 2>&1 || true
     fi
 }
 
@@ -54,7 +68,7 @@ alias espeak='notify_user'
 
 ## CHECK IF IPFS DAEMON IS RUNNING
 floop=0
-while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
+while ! ss -tln 2>/dev/null | grep -q ':5001 '; do
     sleep 1
     ((floop++)) && [ $floop -gt 5 ] \
         && echo "ERROR. IPFS daemon not running on port 5001" \
@@ -70,7 +84,11 @@ start=`date +%s`
 ########################################################################
 # Check dependencies
 [[ $(which ipfs) == "" ]] && echo "ERREUR! Installez ipfs" && exit 1
-[[ $(which zenity) == "" ]] && echo "ERREUR! Installez zenity" && echo "sudo apt install zenity" && exit 1
+if [[ $(which zenity) == "" ]]; then
+    echo "ERREUR! Installez zenity"
+    command -v pacman >/dev/null 2>&1 && echo "sudo pacman -S zenity" || echo "sudo apt install zenity"
+    exit 1
+fi
 [[ $(which curl) == "" ]] && echo "ERREUR! Installez curl" && exit 1
 [[ $(which jq) == "" ]] && echo "ERREUR! Installez jq" && exit 1
 
@@ -294,7 +312,7 @@ ask_tmdb_metadata() {
             [[ -z "$PLAYER" ]] && SERIES_NAME=$(zenity --entry --width 400 --title "Nom de la série" --text "Nom de la série" --entry-text="$FILE_TITLE")
             [[ -z "$SERIES_NAME" ]] && SERIES_NAME="$FILE_TITLE"
         fi
-        SERIES_NAME=$(echo "${SERIES_NAME}" | detox --inline)
+        SERIES_NAME=$(echo "${SERIES_NAME}" | _detox)
 
         local ep_default="$FILE_TITLE"
         if [[ "$SCRAPE_TMDB" == "yes" ]]; then
@@ -306,7 +324,7 @@ ask_tmdb_metadata() {
         ep_clean=$(echo "$ep_default" | sed 's/_/ /g;s/  */ /g;s/^ *//;s/ *$//')
         [[ -z "$PLAYER" ]] && EPISODE_NAME=$(zenity --entry --width 400 --title "Titre de l'épisode" --text "Titre de l'épisode" --entry-text="$ep_clean") || EPISODE_NAME="$ep_clean"
         [[ -z "$EPISODE_NAME" ]] && EPISODE_NAME="$ep_clean"
-        EPISODE_NAME_FOR_FILENAME=$(echo "${EPISODE_NAME}" | detox --inline)
+        EPISODE_NAME_FOR_FILENAME=$(echo "${EPISODE_NAME}" | _detox)
         EPISODE_NAME_FOR_PUBLICATION="$EPISODE_NAME"
         TITLE="$EPISODE_NAME_FOR_FILENAME"
         TITLE_FOR_PUBLICATION="$EPISODE_NAME_FOR_PUBLICATION"
@@ -322,7 +340,7 @@ ask_tmdb_metadata() {
         title_clean=$(echo "$TITLE" | sed 's/_/ /g;s/  */ /g;s/^ *//;s/ *$//')
         [[ -z "$PLAYER" ]] && TITLE=$(zenity --entry --width 300 --title "Titre" --text "Titre de la vidéo" --entry-text="$title_clean") || TITLE="$title_clean"
         [[ -z "$TITLE" ]] && exit 1
-        TITLE_FOR_FILENAME=$(echo "${TITLE}" | detox --inline)
+        TITLE_FOR_FILENAME=$(echo "${TITLE}" | _detox)
         TITLE_FOR_PUBLICATION="$TITLE"
     fi
 
@@ -1001,7 +1019,7 @@ case ${CAT} in
         [ ! $2 ] && TITLE=$(zenity --entry --width 480 --title "Titre" --text "Quel nom donner à ce fichier ? " --entry-text="${CTITLE}") || TITLE="$CTITLE"
         [[ "$TITLE" == "" ]] && echo "NO TITLE" && exit 1
 
-        FILE_NAME="$(echo "${TITLE}" | detox --inline).pdf"
+        FILE_NAME="$(echo "${TITLE}" | _detox).pdf"
         
         # Rename temp file (upload2ipfs.sh will handle uDRIVE storage)
         FILE_TO_UPLOAD="$HOME/.zen/tmp/$FILE_NAME"
@@ -1185,7 +1203,7 @@ ${URL:+Source: $URL
             TITLE=$(zenity --entry --width 600 --title "Titre" \
                 --text "Titre de cette vidéo" --entry-text="${FILE_TITLE}")
             [[ -z "$TITLE" ]] && exit 1
-            TITLE=$(echo "${TITLE}" | detox --inline)
+            TITLE=$(echo "${TITLE}" | _detox)
             TITLE_FOR_PUBLICATION="$TITLE"
             TITLE_FOR_FILENAME="$TITLE"
             [ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 \

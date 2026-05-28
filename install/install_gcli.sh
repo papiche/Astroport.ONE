@@ -100,7 +100,8 @@ CURRENT_INSTALLED=$(get_current_installed_version)
 log "Version actuelle installée : $CURRENT_INSTALLED"
 
 # 1. Nettoyage .deb (si présent, on le vire car on passe en local bin)
-if dpkg -l g1cli 2>/dev/null | grep -q "^ii"; then
+# Sur Arch/pacman, g1cli n'a jamais été installé en .deb — bloc ignoré
+if command -v dpkg >/dev/null 2>&1 && dpkg -l g1cli 2>/dev/null | grep -q "^ii"; then
     log "Migration : Suppression de l'ancien paquet .deb..."
     sudo apt remove g1cli 2>/dev/null
     [[ -L "$GCLI_BIN" ]] && rm -f "$GCLI_BIN"

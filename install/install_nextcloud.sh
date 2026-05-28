@@ -51,7 +51,8 @@ if [[ ! -f "$_ASTRO_COMPOSE" ]]; then
     echo "   → Vérifiez que Astroport.ONE est bien cloné"
 else
     echo "⏳ Démarrage NextCloud AIO (peut prendre 2-3 minutes)..."
-    sg docker -c "docker compose -f '$_ASTRO_COMPOSE' --profile cloud up -d" 2>&1
+    (sg docker -c "docker compose -f '$_ASTRO_COMPOSE' --profile cloud up -d" 2>/dev/null \
+        || sudo docker compose -f "$_ASTRO_COMPOSE" --profile cloud up -d) 2>&1
     _nc_exit=$?
     if [[ $_nc_exit -eq 0 ]]; then
         NEXTCLOUD_ACTIVE=true

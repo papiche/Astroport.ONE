@@ -1,11 +1,30 @@
 #!/bin/bash
 ########################################################################
 # Astroport.ONE Complete Uninstaller
-# Version: 0.4
+# Version: 0.5 (Support Arch Linux / SteamOS)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 {
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. Utilisez un simple utilisateur du groupe \"sudo\" SVP" && exit 1
+
+# Détection gestionnaire de paquets
+PKG_MANAGER="apt"
+command -v pacman >/dev/null 2>&1 && PKG_MANAGER="pacman"
+
+# Sur SteamOS, déverrouiller avant toute opération système
+if [[ "$PKG_MANAGER" == "pacman" ]] && grep -q "SteamOS" /etc/os-release 2>/dev/null; then
+    echo "🎮 SteamOS détecté — déverrouillage système de fichiers pour désinstallation..."
+    sudo steamos-readonly disable
+fi
+
+# Fonction de suppression de paquet (agnostique)
+remove_pkg() {
+    if [[ "$PKG_MANAGER" == "pacman" ]]; then
+        sudo pacman -Rns --noconfirm "$@" 2>/dev/null || true
+    else
+        sudo apt-get remove -y "$@" 2>/dev/null || true
+    fi
+}
 
 echo "========================================"
 echo "ASTROPORT.ONE COMPLETE UNINSTALLER"
@@ -120,16 +139,18 @@ echo "REMOVING CRON JOBS"
 
 echo "Removing cron jobs from crontab..."
 crontab -l > /tmp/mycron 2>/dev/null || touch /tmp/mycron
-# Remove any lines containing these patterns
-awk -i inplace -v rmv="20h12.process.sh" '!index($0,rmv)' /tmp/mycron
-awk -i inplace -v rmv="cron_MINUTE" '!index($0,rmv)' /tmp/mycron
-awk -i inplace -v rmv="ipfs repo gc" '!index($0,rmv)' /tmp/mycron
-awk -i inplace -v rmv="ASTROPORT" '!index($0,rmv)' /tmp/mycron
-awk -i inplace -v rmv="Astroport" '!index($0,rmv)' /tmp/mycron
-# Supprimer les lignes d'environnement injectées par cron_VRFY.sh (SHELL=, USER=, PATH= astro)
-awk -i inplace -v rmv="SHELL=/bin/bash" '!index($0,rmv)' /tmp/mycron
-awk -i inplace -v rmv="USER=$USER" '!index($0,rmv)' /tmp/mycron
-awk -i inplace -v rmv=".astro/bin:" '!index($0,rmv)' /tmp/mycron
+# POSIX-compatible: filter all Astroport patterns in a single pass (no awk -i inplace)
+_CUR_USER="$USER"
+awk -v usr="$_CUR_USER" '
+    !index($0,"20h12.process.sh") &&
+    !index($0,"cron_MINUTE") &&
+    !index($0,"ipfs repo gc") &&
+    !index($0,"ASTROPORT") &&
+    !index($0,"Astroport") &&
+    !index($0,"SHELL=/bin/bash") &&
+    !index($0,"USER=" usr) &&
+    !index($0,".astro/bin:")
+' /tmp/mycron > /tmp/mycron.tmp && mv /tmp/mycron.tmp /tmp/mycron
 crontab /tmp/mycron
 rm -f /tmp/mycron
 
@@ -239,15 +260,20 @@ if [[ $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]]; then
     sudo sed -i '/duniter\.localhost/d' /etc/hosts
 fi
 
-# Restore ImageMagick policy if it was modified
-if [[ -f /etc/ImageMagick-6/policy.xml.backup ]]; then
-    echo "Restoring ImageMagick policy..."
-    sudo cp /etc/ImageMagick-6/policy.xml.backup /etc/ImageMagick-6/policy.xml
-elif [[ -f /etc/ImageMagick-6/policy.xml ]]; then
-    # Fallback : re-insérer la restriction PDF si le backup n'existe pas
-    echo "Re-adding ImageMagick PDF restriction (no backup found)..."
-    sudo sed -i 's|<policymap>|<policymap>\n  <policy domain="coder" rights="none" pattern="PDF"/>|' \
-        /etc/ImageMagick-6/policy.xml 2>/dev/null || true
+# Restore ImageMagick policy if it was modified (v6 Debian ou v7 Arch)
+_IM_POLICY=""
+for _d in /etc/ImageMagick-6 /etc/ImageMagick-7 /etc/ImageMagick; do
+    [[ -f "$_d/policy.xml" || -f "$_d/policy.xml.backup" ]] && _IM_POLICY="$_d/policy.xml" && break
+done
+if [[ -n "$_IM_POLICY" ]]; then
+    if [[ -f "${_IM_POLICY}.backup" ]]; then
+        echo "Restoring ImageMagick policy..."
+        sudo cp "${_IM_POLICY}.backup" "$_IM_POLICY"
+    elif [[ -f "$_IM_POLICY" ]]; then
+        echo "Re-adding ImageMagick PDF restriction (no backup found)..."
+        sudo sed -i 's|<policymap>|<policymap>\n  <policy domain="coder" rights="none" pattern="PDF"/>|' \
+            "$_IM_POLICY" 2>/dev/null || true
+    fi
 fi
 
 # Nettoyer la configuration custom de prometheus-node-exporter
@@ -256,6 +282,8 @@ if [[ -f /etc/default/prometheus-node-exporter ]]; then
     sudo sed -i '/astroport.*textfile\|textfile.*astroport\|^ARGS=.*textfile/d' \
         /etc/default/prometheus-node-exporter 2>/dev/null || true
 fi
+# Arch : supprimer le drop-in systemd prometheus
+sudo rm -f /etc/systemd/system/prometheus-node-exporter.service.d/astroport-textfile.conf 2>/dev/null || true
 # Supprimer le fichier .prom créé par le collector
 sudo rm -f /var/lib/prometheus/node-exporter/astroport_heartbox.prom 2>/dev/null || true
 
@@ -332,26 +360,32 @@ if [[ $remove_apt == "y" ]]; then
     read -p "Are you absolutely sure? Type 'REMOVE' to confirm: " final_confirm
     
     if [[ $final_confirm == "REMOVE" ]]; then
-        echo "Removing APT packages..."
+        echo "Removing packages..."
         # Core Astroport packages that are likely safe to remove
-        sudo apt-get remove -y tldr ssss multitail netcat-traditional ncdu miller inotify-tools mosquitto fail2ban brother_ql 2>/dev/null
-        
+        remove_pkg tldr ssss multitail netcat-traditional ncdu miller inotify-tools mosquitto fail2ban brother_ql
+
         # ASCII art tools
-        sudo apt-get remove -y figlet cmatrix cowsay fonts-hack-ttf 2>/dev/null
-        
+        remove_pkg figlet cmatrix cowsay fonts-hack-ttf
+
         # Printer related (if no printer)
         read -p "Remove printer drivers? (y/n): " remove_printer
         if [[ $remove_printer == "y" ]]; then
-            sudo apt-get remove -y ttf-mscorefonts-installer printer-driver-all cups 2>/dev/null
+            remove_pkg ttf-mscorefonts-installer printer-driver-all cups
         fi
-        
+
         # Optional: Docker (be very careful)
         read -p "Remove Docker? This will affect ALL containers! (y/n): " remove_docker
         if [[ $remove_docker == "y" ]]; then
-            sudo apt-get remove -y docker.io docker-compose 2>/dev/null
+            if [[ "$PKG_MANAGER" == "pacman" ]]; then
+                remove_pkg docker docker-compose
+            else
+                remove_pkg docker.io docker-compose
+            fi
         fi
-        
-        sudo apt-get autoremove -y
+
+        if [[ "$PKG_MANAGER" == "apt" ]]; then
+            sudo apt-get autoremove -y
+        fi
     fi
 fi
 
@@ -503,5 +537,15 @@ echo "REBOOT RECOMMENDED to ensure all changes take effect."
 echo ""
 echo "To completely finish removal, run:"
 echo "rm -rf ~/.zen.todelete"
+
+########################################################################
+## REVERROUILLAGE STEAMOS (si applicable)
+########################################################################
+if [[ "$PKG_MANAGER" == "pacman" ]] && grep -q "SteamOS" /etc/os-release 2>/dev/null; then
+    echo ""
+    echo "🎮 SteamOS — Reverrouillage du système de fichiers..."
+    sudo steamos-readonly enable 2>/dev/null || true
+    echo "✅ Système de fichiers reverrouillé."
+fi
 
 }

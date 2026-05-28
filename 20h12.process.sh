@@ -76,7 +76,7 @@ echo "PATH=$PATH"
 ########################################################################
 ## IPFS DAEMON STATUS
 LOWMODE=$(sudo systemctl status ipfs | grep "preset: disabled") ## IPFS DISABLED - START ONLY FOR SYNC -
-[[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]] && LOWMODE="NO 5001" ## IPFS IS STOPPED
+! ss -tln 2>/dev/null | grep -q ':5001 ' && LOWMODE="NO 5001" ## IPFS IS STOPPED
 [[ ! $isLAN || ${zipit} != "" ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 
 ########################################################################
@@ -89,7 +89,7 @@ ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
     && sleep 60
 
 floop=0
-while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
+while ! ss -tln 2>/dev/null | grep -q ':5001 '; do
     sleep 10
     ((floop++)) && [ $floop -gt 36 ] \
         && echo "ERROR. IPFS daemon not restarting" \

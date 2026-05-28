@@ -79,9 +79,8 @@ crontab -l > /tmp/mycron 2>/dev/null || touch /tmp/mycron
 
 CRON_EXISTS=$(grep -F "$CRON_JOB_NAME" /tmp/mycron)
 
-awk -i inplace -v rmv="SHELL=" '!index($0,rmv)' /tmp/mycron
-awk -i inplace -v rmv="USER=" '!index($0,rmv)' /tmp/mycron
-awk -i inplace -v rmv="PATH=" '!index($0,rmv)' /tmp/mycron
+awk '!index($0,"SHELL=") && !index($0,"USER=") && !index($0,"PATH=")' \
+    /tmp/mycron > /tmp/mycron.tmp && mv /tmp/mycron.tmp /tmp/mycron
 
 grep -v "$CRON_JOB_NAME" /tmp/mycron > /tmp/mycron.clean
 mv /tmp/mycron.clean /tmp/mycron

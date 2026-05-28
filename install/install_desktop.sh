@@ -24,9 +24,32 @@ _SILENT="${_SILENT:-false}"
 _ERROR_LOG="${_ERROR_LOG:-$HOME/.zen/log/install.errors.log}"
 mkdir -p "$(dirname "$_ERROR_LOG")"
 
+## ── Détection gestionnaire de paquets ────────────────────────────────
+_PKG_MGR="apt"; command -v pacman >/dev/null 2>&1 && _PKG_MGR="pacman"
+
 ## ── Helpers ───────────────────────────────────────────────────────────
-_installed() { dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"; }
+_installed() {
+    if [[ "$_PKG_MGR" == "pacman" ]]; then
+        pacman -Qs "^${1}$" >/dev/null 2>&1 && echo 1 || echo 0
+    else
+        dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"
+    fi
+}
 _mark() { [[ "$(_installed "$1")" -gt 0 ]] && echo "✅" || echo "❌"; }
+_desk_install_pkg() {
+    local pkg="$1"
+    if [[ "$_PKG_MGR" == "pacman" ]]; then
+        case "$pkg" in
+            libreoffice-l10n-fr) pkg="libreoffice-fresh-fr" ;;
+            libreoffice)         pkg="libreoffice-fresh" ;;
+            x11-utils)           pkg="xorg-xdpyinfo" ;;
+        esac
+        sudo pacman -S --noconfirm --needed "$pkg" 2>/dev/null \
+            || echo "⚠️  pacman: $pkg non disponible" >&2
+    else
+        sudo apt install -y "$pkg"
+    fi
+}
 
 ## ── Définition des packs ─────────────────────────────────────────────
 PACK1_PKGS=(gimp inkscape krita scribus)
@@ -54,7 +77,7 @@ echo "#############################################"
 for _i in x11-utils xclip zenity; do
     if [[ "$(_installed "$_i")" -eq 0 ]]; then
         echo ">>> Installation $_i..."
-        sudo apt install -y "$_i" \
+        _desk_install_pkg "$_i" \
             || { echo "INSTALL $_i FAILED." | tee -a "$_ERROR_LOG"; }
     fi
 done
@@ -140,7 +163,7 @@ if [[ "${#_PKGS[@]}" -gt 0 ]]; then
     for _p in "${_PKGS[@]}"; do
         if [[ "$(_installed "$_p")" -eq 0 ]]; then
             echo "    ❌ → installing $_p..."
-            sudo apt install -y "$_p" \
+            _desk_install_pkg "$_p" \
                 && echo "    ✅ $_p installé" \
                 || { echo "INSTALL $_p FAILED." | tee -a "$_ERROR_LOG"; }
         else

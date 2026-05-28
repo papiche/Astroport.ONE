@@ -230,11 +230,24 @@ _env_set_once() {
     grep -q "^${_k}=" "${_f}" 2>/dev/null || echo "${_k}=${_v}" >> "${_f}"
 }
 
-## URLs spécifiques au domaine — TOUJOURS mises à jour
-_env_upsert "myASTROPORT" "https://astroport.${SETUP_DOMAIN}"   "${ENVFILE}"
-_env_upsert "myIPFS"      "https://ipfs.${SETUP_DOMAIN}"        "${ENVFILE}"
-_env_upsert "myRELAY"     "wss://relay.${SETUP_DOMAIN}"         "${ENVFILE}"
-_env_upsert "uSPOT"       "https://u.${SETUP_DOMAIN}"           "${ENVFILE}"
+## _env_upsert_unless_local KEY VALUE FILE — met à jour sauf si la valeur courante est en 127.0.0.1
+## Préserve les configurations locales définies manuellement par l'utilisateur
+_env_upsert_unless_local() {
+    local _k="$1" _v="$2" _f="$3"
+    local _cur
+    _cur=$(grep "^${_k}=" "${_f}" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
+    if [[ "$_cur" == *"127.0.0.1"* || "$_cur" == *"localhost"* ]]; then
+        echo "ℹ️  ${_k} conservé en mode local : ${_cur}"
+        return 0
+    fi
+    _env_upsert "${_k}" "${_v}" "${_f}"
+}
+
+## URLs spécifiques au domaine — mises à jour sauf si l'utilisateur a choisi le mode local (127.0.0.1)
+_env_upsert_unless_local "myASTROPORT" "https://astroport.${SETUP_DOMAIN}"   "${ENVFILE}"
+_env_upsert_unless_local "myIPFS"      "https://ipfs.${SETUP_DOMAIN}"        "${ENVFILE}"
+_env_upsert_unless_local "myRELAY"     "wss://relay.${SETUP_DOMAIN}"         "${ENVFILE}"
+_env_upsert_unless_local "uSPOT"       "https://u.${SETUP_DOMAIN}"           "${ENVFILE}"
 
 ## Valeurs économiques — écrites une seule fois, l'utilisateur peut les modifier ensuite
 _env_set_once "MACHINE_VALUE_ZEN"          "500"  "${ENVFILE}"

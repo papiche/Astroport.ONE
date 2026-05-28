@@ -3,7 +3,14 @@
 # SYSPREP ASTROPORT.ONE - Préparation d'une Golden Image
 # Ce script efface toutes les identités, clés crypto et logs.
 # À LANCER JUSTE AVANT D'ÉTEINDRE ET CLONER LA CARTE SD !
+# DEBIAN/UBUNTU/RASPBERRY PI OS uniquement.
 ########################################################################
+
+# Ce script utilise apt-get et des chemins Debian — non applicable sur Arch.
+if command -v pacman >/dev/null 2>&1; then
+    echo "ℹ️  astroport_img_prepare.sh : Arch Linux détecté — script Debian/RPi uniquement, ignoré."
+    exit 0
+fi
 
 echo "⚠️ ATTENTION : Ce script va DÉTRUIRE l'identité de ce nœud."
 echo "Il est conçu uniquement pour préparer une image (ISO/IMG) distribuable."

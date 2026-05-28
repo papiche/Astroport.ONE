@@ -27,7 +27,13 @@ echo "[install_powerjoular][$(timestamp)] Checking Ada compiler dependencies..."
 if ! command -v gnat >/dev/null 2>&1 || ! command -v gprbuild >/dev/null 2>&1; then
     echo "[install_powerjoular][$(timestamp)] Installing GNAT and GPRBuild..." >&2
     
-    if command -v apt-get >/dev/null 2>&1; then
+    if command -v pacman >/dev/null 2>&1; then
+        # Arch Linux / SteamOS — gcc-ada dans community, gprbuild en AUR
+        sudo pacman -S --noconfirm --needed gcc-ada 2>/dev/null || true
+        command -v yay >/dev/null 2>&1 \
+            && yay -S --noconfirm --needed gprbuild 2>/dev/null \
+            || echo "[install_powerjoular] ⚠️  gprbuild non disponible (yay requis)" >&2
+    elif command -v apt-get >/dev/null 2>&1; then
         # Debian/Ubuntu/Raspberry Pi OS
         sudo apt-get update
         sudo apt-get install -y gnat gprbuild

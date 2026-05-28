@@ -17,12 +17,24 @@ FLUTTER_DIR="${FLUTTER_HOME:-$HOME/.flutter}"
 echo "[install_flutter][$(timestamp)] Installing Flutter SDK to $FLUTTER_DIR" >&2
 
 ## Prerequisites: git, curl, unzip, xz-utils (cmake/clang already in install.sh)
-for pkg in unzip xz-utils clang cmake ninja-build pkg-config libgtk-3-dev; do
-    if ! dpkg -s "$pkg" &>/dev/null; then
-        echo "[install_flutter][$(timestamp)] Installing dependency: $pkg" >&2
-        sudo apt-get install -y "$pkg" 2>/dev/null || true
+_flutter_PKG_MGR="apt"; command -v pacman >/dev/null 2>&1 && _flutter_PKG_MGR="pacman"
+_flutter_install_dep() {
+    local deb_pkg="$1" arch_pkg="${2:-$1}"
+    if [[ "$_flutter_PKG_MGR" == "pacman" ]]; then
+        pacman -Qs "^${arch_pkg}$" >/dev/null 2>&1 \
+            || sudo pacman -S --noconfirm --needed "$arch_pkg" 2>/dev/null || true
+    else
+        dpkg -s "$deb_pkg" &>/dev/null \
+            || sudo apt-get install -y "$deb_pkg" 2>/dev/null || true
     fi
-done
+}
+_flutter_install_dep unzip      unzip
+_flutter_install_dep xz-utils   xz
+_flutter_install_dep clang      clang
+_flutter_install_dep cmake      cmake
+_flutter_install_dep ninja-build ninja
+_flutter_install_dep pkg-config  pkgconf
+_flutter_install_dep libgtk-3-dev gtk3
 
 ## Already installed?
 if [[ -x "$FLUTTER_DIR/bin/flutter" ]]; then

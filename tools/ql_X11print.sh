@@ -8,8 +8,14 @@ if [[ ! $(which brother_ql_create) ]]; then
     if [[ ! -z $LP ]]; then
         echo "######### $LP PRINTER ##############"
         ## PRINT & FONTS
-        sudo apt update
-        sudo apt install pip ttf-mscorefonts-installer printer-driver-all cups -y
+        if command -v pacman >/dev/null 2>&1; then
+            sudo pacman -S --noconfirm --needed cups 2>/dev/null || true
+            command -v yay >/dev/null 2>&1 \
+                && yay -S --noconfirm --needed ttf-ms-fonts python-pip 2>/dev/null || true
+        else
+            sudo apt update
+            sudo apt install -y pip ttf-mscorefonts-installer printer-driver-all cups
+        fi
 
         ### PYTHON ENV
         cd $HOME

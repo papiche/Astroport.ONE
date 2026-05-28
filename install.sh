@@ -68,10 +68,25 @@ done
 ##  Lancement "root" interdit...
 ########################################################################
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. " && exit 1
-[[ ! $(groups | grep -w sudo) ]] \
-    && echo "AUCUN GROUPE sudo — corrigez puis relancez :" \
+[[ ! $(groups | grep -w sudo) && ! $(groups | grep -w wheel) ]] \
+    && echo "AUCUN GROUPE sudo/wheel — corrigez puis relancez :" \
     && echo "  su - root -c \"usermod -aG sudo $USER\"" \
+    && echo "  (Arch/SteamOS : usermod -aG wheel $USER)" \
     && exit 1
+
+########################################################################
+## STEAMOS : vérification du mode Bureau (Gaming Mode incompatible)
+########################################################################
+if grep -q "SteamOS" /etc/os-release 2>/dev/null; then
+    # GAMESCOPE_EMBEDDED est défini quand on est dans la session Gaming (gamescope)
+    if [[ -n "${GAMESCOPE_EMBEDDED:-}" ]] || pgrep -x "gamescope-session" >/dev/null 2>&1; then
+        echo "⛔ SteamOS GAMING MODE détecté !"
+        echo "   Astroport.ONE doit être installé depuis le MODE BUREAU."
+        echo "   → Appuyez sur [Steam] → Basculer vers le Bureau"
+        echo "   → Ouvrez Konsole et relancez ce script."
+        exit 1
+    fi
+fi
 
 ################################################################## PARAMÈTRES
 ## $1 = Email Capitaine (ou "" pour auto)
@@ -386,13 +401,115 @@ fi
 
 [[ -t 0 ]] && read -r -p $'\n  ↵  Paramètres confirmés — Entrée pour démarrer l\'installation... ' _
 
+########################################################################
+echo "## DÉTECTION OS & GESTIONNAIRE DE PAQUETS ##"
+########################################################################
+PKG_MANAGER="apt"
+if command -v pacman >/dev/null 2>&1; then
+    PKG_MANAGER="pacman"
+    # SteamOS : déverrouiller le système de fichiers immutable avant toute installation
+    if grep -q "SteamOS" /etc/os-release 2>/dev/null; then
+        echo "🎮 SteamOS détecté — déverrouillage système de fichiers (steamos-readonly disable)..."
+        sudo steamos-readonly disable
+        echo "  Initialisation des clés pacman (peut prendre un instant)..."
+        sudo pacman-key --init 2>/dev/null || true
+        sudo pacman-key --populate archlinux holo 2>/dev/null || true
+    fi
+    echo "🐧 Arch Linux / SteamOS — mise à jour base de données pacman..."
+    sudo pacman -Sy --noconfirm
+
+    # Installer yay (AUR helper) si absent — nécessaire pour ssss et autres paquets AUR
+    if ! command -v yay >/dev/null 2>&1; then
+        echo ">>> Installation de yay (AUR helper)..."
+        _yay_tmp=$(mktemp -d)
+        git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$_yay_tmp/yay-bin" 2>/dev/null \
+            && (cd "$_yay_tmp/yay-bin" && makepkg -si --noconfirm 2>/dev/null) \
+            && echo "✅ yay installé" \
+            || echo "⚠️  yay install échoué — paquets AUR non disponibles"
+        rm -rf "$_yay_tmp"
+    fi
+else
+    echo "🐧 Debian/Ubuntu/Mint — mise à jour apt..."
+    sudo apt-get update -y
+fi
+
+# Installe un paquet (agnostique apt/pacman, avec mapping Debian→Arch)
+install_pkg() {
+    local pkg="$1"
+    if [[ "$PKG_MANAGER" == "pacman" ]]; then
+        # Correspondances Arch Linux pour les noms de paquets Debian
+        case "$pkg" in
+            wireguard)               pkg="wireguard-tools" ;;
+            openssh-server)          pkg="openssh" ;;
+            netcat-traditional)      pkg="gnu-netcat" ;;
+            libsodium*)              pkg="libsodium" ;;
+            libcurl4-openssl-dev)    return 0 ;;  # inclus dans curl
+            libgpgme-dev)            pkg="gpgme" ;;
+            libffi-dev)              pkg="libffi" ;;
+            cron)                    pkg="cronie" ;;
+            iputils-ping)            pkg="iputils" ;;
+            python3-venv|python3-dev) return 0 ;;  # inclus dans python sur Arch
+            build-essential)         pkg="base-devel" ;;
+            libssl-dev)              pkg="openssl" ;;
+            python3-magic)           pkg="python-magic" ;;
+            pipx)                    pkg="python-pipx" ;;
+            python3-pip)             pkg="python-pip" ;;
+            python3-setuptools)      pkg="python-setuptools" ;;
+            python3-base58)          return 0 ;;  # installé via pip dans le venv
+            python3-wheel)           pkg="python-wheel" ;;
+            python3-dotenv)          pkg="python-dotenv" ;;
+            python3-gpg)             pkg="python-gpg" ;;
+            python3-jwcrypto)        return 0 ;;  # installé via pip
+            python3-brotli)          pkg="python-brotli" ;;
+            python3-aiohttp)         pkg="python-aiohttp" ;;
+            python3-prometheus-client) pkg="python-prometheus_client" ;;
+            python3-tk)              pkg="tk" ;;
+            cargo)                   pkg="rust" ;;
+            geoip-bin)               pkg="geoip" ;;
+            bind9-dnsutils)          pkg="bind" ;;
+            ntpsec-ntpdate)          pkg="ntp" ;;
+            espeak)                  pkg="espeak-ng" ;;
+            mp3info)                 command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed mp3info 2>/dev/null; return 0 ;;
+            musl-dev)                pkg="musl" ;;
+            libmagic1t64)            return 0 ;;  # inclus dans file
+            libimage-exiftool-perl)  pkg="perl-image-exiftool" ;;
+            poppler-utils)           pkg="poppler" ;;
+            fonts-hack-ttf)          pkg="ttf-hack" ;;
+            basez)                   return 0 ;;  # base64 inclus dans coreutils
+            markdown)                pkg="discount" ;;
+            ssss)                    command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed ssss 2>/dev/null; return 0 ;;
+            ttf-mscorefonts-installer) command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed ttf-ms-fonts 2>/dev/null; return 0 ;;
+            printer-driver-all)      return 0 ;;  # pas d'équivalent universel sur Arch
+            prometheus-node-exporter) command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed prometheus-node-exporter 2>/dev/null; return 0 ;;
+            x11-utils)               pkg="xorg-xdpyinfo" ;;
+            ocrmypdf)                command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed ocrmypdf 2>/dev/null; return 0 ;;
+            detox)                   command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed detox 2>/dev/null; return 0 ;;
+            httrack)                 command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed httrack 2>/dev/null; return 0 ;;
+        esac
+        sudo pacman -S --noconfirm --needed "$pkg" 2>/dev/null \
+            || echo "⚠️  pacman: $pkg non disponible" >&2
+    else
+        sudo apt-get install -y "$pkg" 2>/dev/null \
+            || echo "⚠️  apt: $pkg non disponible" >&2
+    fi
+}
+
+# Vérifie si un paquet est installé (agnostique apt/pacman)
+is_installed() {
+    local pkg="$1"
+    if [[ "$PKG_MANAGER" == "pacman" ]]; then
+        pacman -Qs "^${pkg}$" >/dev/null 2>&1
+    else
+        dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "ok installed"
+    fi
+}
+
 #### GIT CLONE ###############################################################
 echo "#############################################"
 echo "=== CODE CLONING TO '~/.zen/Astroport.ONE' ==="
 echo "#############################################"
 echo "UPDATING SYSTEM REPOSITORY"
-sudo apt-get update
-sudo apt install -y git
+install_pkg git
 mkdir -p ~/.zen/workspace
 cd ~/.zen/workspace
 if [ -d UPlanet ]; then
@@ -443,16 +560,13 @@ echo "✅ Scripts rendus exécutables"
 
 
 ####################################################################
-# MISES À JOUR GLOBALES (APT & PIP) 
+# MISES À JOUR GLOBALES (PKG_MANAGER & PIP)
 # -> S'exécute TOUJOURS, même si une installation est déjà présente
 ####################################################################
 echo "#############################################"
-echo "###### MISE A JOUR DU SYSTEME (APT/PIP) #####"
+echo "###### MISE A JOUR DU SYSTEME (PKG/PIP) #####"
 echo "#############################################"
-
-# Mise à jour générale des paquets existants
-sudo apt-get update -y
-# sudo apt-get upgrade -y ## run at the beginning could need reboot !!
+# La mise à jour (apt update / pacman -Sy) a déjà été faite dans le bloc de détection OS ci-dessus
 
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
@@ -460,9 +574,9 @@ echo "#############################################"
 for i in zip ssss dos2unix make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs \
 parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools \
 curl net-tools libsodium* miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev htop cron psmisc iputils-ping; do
-    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    if ! is_installed "$i"; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        sudo apt install -y $i
+        install_pkg "$i"
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
@@ -471,9 +585,9 @@ echo "#############################################"
 echo "####### INSTALL PYTHON BUILD DEPENDENCIES ###"
 echo "#############################################"
 for i in python3-venv python3-dev libssl-dev build-essential python3-magic; do
-    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    if ! is_installed "$i"; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        sudo apt install -y $i
+        install_pkg "$i"
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
@@ -483,9 +597,9 @@ echo "####### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
 for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg \
 python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk; do
-    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    if ! is_installed "$i"; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        sudo apt install -y $i
+        install_pkg "$i"
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
@@ -496,9 +610,9 @@ echo "#############################################"
 for i in qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg \
 geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack \
 html2text imagemagick libmagic1t64 libimage-exiftool-perl poppler-utils; do
-    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    if ! is_installed "$i"; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        sudo apt install -y $i
+        install_pkg "$i"
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
@@ -507,9 +621,9 @@ echo "#############################################"
 echo "######### INSTALL ASCII ART TOOLS ###########"
 echo "#############################################"
 for i in figlet cmatrix cowsay fonts-hack-ttf; do
-    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    if ! is_installed "$i"; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        sudo apt install -y $i
+        install_pkg "$i"
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
     fi
 done
@@ -521,9 +635,9 @@ if [[ $(which X 2>/dev/null) || -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
     
     # 1. Outils systèmes de base pour l'environnement graphique
     for i in x11-utils xclip zenity; do
-        if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+        if ! is_installed "$i"; then
             echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-            sudo apt install -y $i;
+            install_pkg "$i"
             [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
         fi
     done
@@ -608,9 +722,9 @@ if [[ $(which X 2>/dev/null) || -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
     if [[ -n "$_PKGS" ]]; then
         echo ">>> Préparation de l'installation des logiciels :$_PKGS"
         for p in $_PKGS; do
-            if [ $(dpkg-query -W -f='${Status}' $p 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+            if ! is_installed "$p"; then
                 echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $p <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-                sudo apt install -y $p
+                install_pkg "$p"
                 [[ $? != 0 ]] && echo "INSTALL $p FAILED." && echo "INSTALL $p FAILED." >> "$_ERROR_LOG"
             fi
         done
@@ -654,8 +768,8 @@ echo "#####################################"
 echo "## PYTHON TOOLS & CRYPTO LIB ##"
 echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
-pipx install duniterpy --include-deps ## keeps old v1 dep (soon deprecated)
 ## add monero & bitcoin compatible keys
+## duniterpy : installé uniquement dans le venv ~/.astro (pas de double via pipx)
 for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama \
 requests geohash beautifulsoup4 browser-cookie3 cryptography jwcrypto secp256k1 \
 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt \
@@ -703,9 +817,9 @@ echo "#############################################"
 echo "######### VERIFICATION DOCKER & NODE   ######"
 echo "#############################################"
 DOCKER_OK=false; NPM_OK=false; TW_OK=false; DOCKER_COMPOSE_OK=false; DENO_OK=false
-## Utiliser sg docker pour éviter de nécessiter newgrp (groupe activé sans nouveau shell interactif)
-sg docker -c "docker --version" 2>/dev/null && DOCKER_OK=true || echo "⚠️  Docker non disponible"
-sg docker -c "docker compose version" 2>/dev/null && DOCKER_COMPOSE_OK=true || echo "⚠️  Docker Compose non disponible"
+## sg docker active le groupe sans newgrp ; fallback sudo si sg échoue (CI, groupe fraîchement ajouté)
+(sg docker -c "docker --version" 2>/dev/null || sudo docker --version 2>/dev/null) && DOCKER_OK=true || echo "⚠️  Docker non disponible"
+(sg docker -c "docker compose version" 2>/dev/null || sudo docker compose version 2>/dev/null) && DOCKER_COMPOSE_OK=true || echo "⚠️  Docker Compose non disponible"
 node --version 2>/dev/null && NPM_OK=true || echo "⚠️  Node.js non disponible"
 npm --version 2>/dev/null || echo "⚠️  NPM non disponible"
 tiddlywiki --version 2>/dev/null && TW_OK=true || echo "⚠️  TiddlyWiki non accessible (PATH?)"
@@ -717,18 +831,23 @@ echo "  Docker    : $($DOCKER_OK && echo '✅' || echo '❌')  | Compose : $($DO
 echo "  Node.js   : $($NPM_OK && echo '✅' || echo '❌')  | TW      : $($TW_OK && echo '✅' || echo '❌')  | Deno : $($DENO_OK && echo '✅' || echo '❌')"
 echo ""
 echo "  DOCKER STATUS:"
-sg docker -c "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'" 2>/dev/null | head -10 || echo "  (aucun conteneur)"
+(sg docker -c "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'" 2>/dev/null \
+    || sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>/dev/null) | head -10 || echo "  (aucun conteneur)"
 echo "#############################################"
 
-## Correct PDF restrictions for imagemagick
+## Correct PDF restrictions for imagemagick (v6 Debian ou v7 Arch)
 echo "######### IMAGEMAGICK PDF ############"
-if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
+_IM_POLICY=""
+for _d in /etc/ImageMagick-6 /etc/ImageMagick-7 /etc/ImageMagick; do
+    [[ -f "$_d/policy.xml" ]] && _IM_POLICY="$_d/policy.xml" && break
+done
+if [[ -n "$_IM_POLICY" ]] && grep -q "PDF" "$_IM_POLICY" 2>/dev/null; then
     ## Backup AVANT modification (pour restauration par uninstall.sh)
-    [[ ! -f /etc/ImageMagick-6/policy.xml.backup ]] \
-        && sudo cp /etc/ImageMagick-6/policy.xml /etc/ImageMagick-6/policy.xml.backup \
-        && echo "Backup ImageMagick policy.xml → policy.xml.backup"
-    cat /etc/ImageMagick-6/policy.xml | grep -Ev PDF > /tmp/policy.xml
-    sudo cp /tmp/policy.xml /etc/ImageMagick-6/policy.xml
+    [[ ! -f "${_IM_POLICY}.backup" ]] \
+        && sudo cp "$_IM_POLICY" "${_IM_POLICY}.backup" \
+        && echo "Backup ImageMagick policy.xml → ${_IM_POLICY}.backup"
+    grep -Ev "PDF" "$_IM_POLICY" > /tmp/policy.xml
+    sudo cp /tmp/policy.xml "$_IM_POLICY"
 fi
 
 echo "#############################################"
@@ -738,7 +857,9 @@ if [[ ! -z $LP ]]; then
 echo "######### $LP PRINTER ##############"
 ########### QRCODE : ZENCARD / G1BILLET : PRINTER ##############
     ## PRINT & FONTS
-    sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
+    install_pkg ttf-mscorefonts-installer
+    install_pkg printer-driver-all
+    install_pkg cups
     ~/.astro/bin/pip install brother_ql
     # pipx install brother_ql
     sudo cupsctl --remote-admin
@@ -757,7 +878,20 @@ echo "INSTALL UPASSPORT : http://localhost:54321"
 ## NIP-101 strfry NOSTR relay
 echo "######### NIP-101 strfry NOSTR relay ##############"
 echo "INSTALL NOSTR RELAY : wss://localhost:7777"
-bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_strfry.sh)
+# Sur Arch : utiliser le script local (déjà Arch-compatible) pour éviter de télécharger
+# la version GitHub qui est Debian-only. Sur Debian : comportement original (wget).
+_NIP101_LOCAL="$HOME/.zen/workspace/NIP-101/install_strfry.sh"
+if [[ "$PKG_MANAGER" == "pacman" ]]; then
+    if [[ ! -f "$_NIP101_LOCAL" ]]; then
+        mkdir -p "$HOME/.zen/workspace"
+        git clone --depth 1 https://github.com/papiche/NIP-101.git "$HOME/.zen/workspace/NIP-101" 2>/dev/null \
+            || echo "⚠️  NIP-101 clone échoué"
+    fi
+    [[ -f "$_NIP101_LOCAL" ]] && bash "$_NIP101_LOCAL" \
+        || echo "⚠️  install_strfry.sh introuvable — strfry non installé"
+else
+    bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_strfry.sh)
+fi
 
 ## g1cli (gcli) — Duniter v2s CLI client (compiled from source, branche nostr)
 echo "######### g1cli Duniter v2 Client ##############"
@@ -794,7 +928,7 @@ echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"
 ## prometheus-node-exporter seul : léger, expose /metrics sur :9100
 ## Prometheus serveur complet : installé uniquement avec le profil ai-company
 echo "## INSTALL prometheus-node-exporter (heartbox metrics export) ##########"
-sudo apt-get install -y prometheus-node-exporter 2>/dev/null \
+install_pkg prometheus-node-exporter \
     && echo "✅ prometheus-node-exporter actif sur :9100" \
     || echo "⚠️  prometheus-node-exporter non disponible"
 
@@ -1071,7 +1205,8 @@ elif [[ -f "$_DUNITER_DC" ]] && command -v docker >/dev/null 2>&1; then
     fi
     if [[ "${_dun_choice}" == "y" || "${_dun_choice}" == "Y" ]]; then
         echo "⏳ Démarrage mirroir Duniter v2s..."
-        sg docker -c "docker compose -f '$_DUNITER_DC' up -d" 2>/dev/null \
+        (sg docker -c "docker compose -f '$_DUNITER_DC' up -d" 2>/dev/null \
+            || sudo docker compose -f "$_DUNITER_DC" up -d) \
             && _DUNITER_ACTIVE=true \
             && echo "✅ Duniter v2s mirroir G1 démarré (RPC: 127.0.0.1:9944, P2P: :30333)" \
             || echo "⚠️  Duniter v2s — erreur de démarrage (voir: docker compose -f $_DUNITER_DC logs)"
@@ -1656,5 +1791,22 @@ if command -v docker >/dev/null 2>&1; then
 fi
 
 echo "  ✅ Redémarrage terminé"
+
+########################################################################
+## REVERROUILLAGE STEAMOS (si applicable)
+########################################################################
+if grep -q "SteamOS" /etc/os-release 2>/dev/null; then
+    echo ""
+    echo "🎮 SteamOS — Reverrouillage du système de fichiers en lecture seule..."
+    sudo steamos-readonly enable 2>/dev/null || true
+    echo "✅ Système de fichiers reverrouillé."
+    echo ""
+    echo "⚠️  IMPORTANT — SteamOS & mises à jour Valve :"
+    echo "   Lors d'une mise à jour majeure de SteamOS par Valve, les paquets"
+    echo "   système (Docker, UFW, IPFS) peuvent être effacés de /usr."
+    echo "   → ~/.zen/, ~/.ipfs/, ~/.astro/ (données & identité) sont préservés dans /home."
+    echo "   → Si Astroport ne démarre plus après une MAJ Valve, relancez simplement :"
+    echo "       bash ~/.zen/Astroport.ONE/install.sh"
+fi
 
 }

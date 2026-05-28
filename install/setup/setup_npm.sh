@@ -54,29 +54,40 @@ fi
 ## Test de joignabilité port 80 public — Let's Encrypt exige HTTP-01 (port 80 ouvert)
 ## Si la box/routeur ne redirige pas le port 80, le challenge échouera en boucle.
 if [[ "$SSL_MODE" == "letsencrypt" ]]; then
-    echo "# Vérification port 80 public (requis pour Let's Encrypt HTTP-01)..."
-    _PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null \
-                 || curl -s --max-time 5 https://ifconfig.me 2>/dev/null \
-                 || true)
-    _PORT80_OK=false
-    if [[ -n "$_PUBLIC_IP" ]]; then
-        ## Tentative de connexion TCP sur notre IP publique port 80
-        if nc -z -w 5 "$_PUBLIC_IP" 80 2>/dev/null; then
-            _PORT80_OK=true
-        ## Fallback : curl HTTP (supporte le hairpin NAT quand nc échoue)
-        elif curl -sf --max-time 8 "http://${_PUBLIC_IP}/" >/dev/null 2>&1; then
-            _PORT80_OK=true
-        fi
-    fi
-    if [[ "$_PORT80_OK" == "false" ]]; then
-        echo "⚠️  Port 80 non joignable depuis internet (NAT/box/firewall ?)."
-        echo "   Let's Encrypt HTTP-01 requiert le port 80 ouvert publiquement."
-        echo "   → Basculement automatique sur certificats auto-signés."
-        echo "   Pour activer Let's Encrypt : ouvrez le port 80 dans votre box/firewall"
-        echo "   puis relancez : bash ${MY_PATH}/setup_npm.sh"
-        SSL_MODE="selfsigned"
+    ## Override manuel : ASTRO_FORCE_LETSENCRYPT=1 contourne le test (Hairpin NAT connu)
+    if [[ "${ASTRO_FORCE_LETSENCRYPT:-}" == "1" ]]; then
+        echo "# Let's Encrypt forcé via ASTRO_FORCE_LETSENCRYPT=1 (Hairpin NAT contourné)"
     else
-        echo "# Port 80 accessible — Let's Encrypt activé."
+        echo "# Vérification port 80 public (requis pour Let's Encrypt HTTP-01)..."
+        _PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null \
+                     || curl -s --max-time 5 https://ifconfig.me 2>/dev/null \
+                     || true)
+        _PORT80_OK=false
+        if [[ -n "$_PUBLIC_IP" ]]; then
+            ## 1. Connexion TCP directe
+            if nc -z -w 5 "$_PUBLIC_IP" 80 2>/dev/null; then
+                _PORT80_OK=true
+            ## 2. curl HTTP (parfois suffit quand nc échoue sur Hairpin NAT)
+            elif curl -sf --max-time 8 "http://${_PUBLIC_IP}/" >/dev/null 2>&1; then
+                _PORT80_OK=true
+            ## 3. Vérificateur externe (nc/curl vers sa propre IP échoue systématiquement
+            ##    sur les routeurs sans loopback NAT — seul un service tiers peut confirmer)
+            else
+                _EXT_CHECK=$(curl -sf --max-time 10 \
+                    "https://portchecker.co/check-api?ip=${_PUBLIC_IP}&port=80" 2>/dev/null || true)
+                echo "$_EXT_CHECK" | grep -qi '"open"' && _PORT80_OK=true
+            fi
+        fi
+        if [[ "$_PORT80_OK" == "false" ]]; then
+            echo "⚠️  Port 80 non joignable depuis internet (NAT/box/firewall ?)."
+            echo "   Let's Encrypt HTTP-01 requiert le port 80 ouvert publiquement."
+            echo "   → Basculement automatique sur certificats auto-signés."
+            echo "   Pour forcer Let's Encrypt (si Hairpin NAT) : export ASTRO_FORCE_LETSENCRYPT=1"
+            echo "   puis relancez : bash ${MY_PATH}/setup_npm.sh"
+            SSL_MODE="selfsigned"
+        else
+            echo "# Port 80 accessible — Let's Encrypt activé."
+        fi
     fi
 fi
 

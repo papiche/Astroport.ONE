@@ -19,10 +19,29 @@ echo "######### PROMETHEUS EXPORTERS ##############"
 ########################################################################
 # 1. Install prometheus + node_exporter
 ########################################################################
+_PKG_MGR="apt"; command -v pacman >/dev/null 2>&1 && _PKG_MGR="pacman"
+_prom_is_installed() {
+    if [[ "$_PKG_MGR" == "pacman" ]]; then
+        pacman -Qs "^${1}$" >/dev/null 2>&1
+    else
+        dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "ok installed"
+    fi
+}
+_prom_install_pkg() {
+    if [[ "$_PKG_MGR" == "pacman" ]]; then
+        # prometheus et prometheus-node-exporter sont dans AUR sur Arch
+        command -v yay >/dev/null 2>&1 \
+            && yay -S --noconfirm --needed "$1" 2>/dev/null \
+            || sudo pacman -S --noconfirm --needed "$1" 2>/dev/null \
+            || echo "⚠️  $1 non disponible" >&2
+    else
+        sudo apt-get install -y "$1"
+    fi
+}
 for pkg in prometheus prometheus-node-exporter; do
-    if [ $(dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    if ! _prom_is_installed "$pkg"; then
         echo ">>> Installation $pkg <<<"
-        sudo apt-get install -y "$pkg"
+        _prom_install_pkg "$pkg"
     fi
 done
 
@@ -35,10 +54,22 @@ sudo chown prometheus:prometheus "${TEXTFILE_DIR}" 2>/dev/null \
 
 ########################################################################
 # 3. Enable textfile collector in node_exporter
-#    Debian/Ubuntu stores args in /etc/default/prometheus-node-exporter
+#    Debian/Ubuntu : /etc/default/prometheus-node-exporter
+#    Arch Linux    : systemd drop-in (pas de /etc/default/ idiomatique)
 ########################################################################
 NODE_EXPORTER_DEFAULT="/etc/default/prometheus-node-exporter"
-if [[ -f "$NODE_EXPORTER_DEFAULT" ]]; then
+if [[ "$_PKG_MGR" == "pacman" ]]; then
+    # Arch : injecter l'argument via un drop-in systemd
+    _DROPIN_DIR="/etc/systemd/system/prometheus-node-exporter.service.d"
+    _DROPIN="$_DROPIN_DIR/astroport-textfile.conf"
+    if [[ ! -f "$_DROPIN" ]] || ! grep -q "textfile.directory" "$_DROPIN" 2>/dev/null; then
+        echo "Activation du textfile collector (systemd drop-in Arch)..."
+        sudo mkdir -p "$_DROPIN_DIR"
+        printf '[Service]\nEnvironment="ARGS=--collector.textfile.directory=%s"\n' \
+            "${TEXTFILE_DIR}" | sudo tee "$_DROPIN" > /dev/null
+        sudo systemctl daemon-reload
+    fi
+elif [[ -f "$NODE_EXPORTER_DEFAULT" ]]; then
     if ! grep -q "textfile.directory" "$NODE_EXPORTER_DEFAULT" 2>/dev/null; then
         echo "Activation du textfile collector..."
         echo "ARGS=\"--collector.textfile.directory=${TEXTFILE_DIR}\"" \

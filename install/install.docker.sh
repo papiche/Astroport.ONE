@@ -1,11 +1,25 @@
 #!/bin/bash
 
 # =============================================================================
-# UNIVERSEL DOCKER INSTALLER (Debian, Ubuntu, Mint)
+# UNIVERSEL DOCKER INSTALLER (Debian, Ubuntu, Mint, Arch Linux, SteamOS)
 # Architectures : amd64 (x86_64) & arm64 (aarch64)
 # =============================================================================
 
 set -e
+
+# --- 0. DÉTECTION ARCH LINUX / STEAMOS ---
+if command -v pacman >/dev/null 2>&1; then
+    echo -e "\033[0;36m--- Installation de Docker sur Arch Linux / SteamOS ---\033[0m"
+    sudo pacman -S --noconfirm --needed docker docker-compose
+    sudo systemctl enable --now docker
+    sudo usermod -aG docker "$USER"
+    echo -e "\033[0;32m✅ Docker installé via pacman.\033[0m"
+    echo "  Version Docker  : $(docker --version 2>/dev/null || echo 'non détecté')"
+    echo "  Version Compose : $(docker compose version 2>/dev/null || echo 'non détecté')"
+    echo -e "ℹ️  L'utilisateur '$USER' a été ajouté au groupe docker."
+    echo -e "   Les permissions seront effectives à la prochaine session."
+    exit 0
+fi
 
 # --- 1. NETTOYAGE CRITIQUE DES ERREURS APT ---
 echo -e "\033[0;36m--- Nettoyage du système ---\033[0m"
