@@ -17,8 +17,14 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 > Guides pas-à-pas pour apprendre en faisant. Destinés aux débutants.
 > → [Voir le README complet du quadrant](tutorials/README.md)
 
+### 🚀 Par où commencer ?
+
+**→ [🎟️ Créer son MULTIPASS UPlanet](tutorials/MULTIPASS_INSCRIPTION.md)**
+Rejoindre l'écosystème en 5 à 10 minutes : identité NOSTR, portefeuille Ğ1, uDRIVE 10 Go, Kin Maya. Premier tutoriel recommandé pour tout nouvel utilisateur.
+
 | Fichier | Sujet |
 |---------|-------|
+| [MULTIPASS_INSCRIPTION.md](tutorials/MULTIPASS_INSCRIPTION.md) | **🎟️ Créer son MULTIPASS** — identité NOSTR, portefeuille Ğ1, Kin Maya (5–10 min) |
 | [install_baremetal.md](tutorials/install_baremetal.md) | Installer sur Linux (Debian/Ubuntu/Mint) — métal nu |
 | [install_docker.md](tutorials/install_docker.md) | Installer avec Docker — profils standard, cloud, ai |
 | [setup_learning_hub.md](tutorials/setup_learning_hub.md) | Transformer sa station en hub d'apprentissage IA (Nextcloud + Qdrant + BRO) |
