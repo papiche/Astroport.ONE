@@ -407,25 +407,24 @@ echo "## DÉTECTION OS & GESTIONNAIRE DE PAQUETS ##"
 PKG_MANAGER="apt"
 if command -v pacman >/dev/null 2>&1; then
     PKG_MANAGER="pacman"
-    # SteamOS : déverrouiller le système de fichiers immutable avant toute installation
     if grep -q "SteamOS" /etc/os-release 2>/dev/null; then
-        echo "🎮 SteamOS détecté — déverrouillage système de fichiers (steamos-readonly disable)..."
+        echo "🎮 SteamOS détecté — déverrouillage système de fichiers..."
         sudo steamos-readonly disable
-        echo "  Initialisation des clés pacman (peut prendre un instant)..."
         sudo pacman-key --init 2>/dev/null || true
         sudo pacman-key --populate archlinux holo 2>/dev/null || true
     fi
-    echo "🐧 Arch Linux / SteamOS — mise à jour base de données pacman..."
-    sudo pacman -Sy --noconfirm
+    # -Syu obligatoire sur Arch : -Sy seul = partial upgrade = casse système garantie
+    echo "🐧 Arch Linux / SteamOS — mise à jour complète (Syu)..."
+    sudo pacman -Syu --noconfirm
 
-    # Installer yay (AUR helper) si absent — nécessaire pour ssss et autres paquets AUR
     if ! command -v yay >/dev/null 2>&1; then
         echo ">>> Installation de yay (AUR helper)..."
+        sudo pacman -S --noconfirm --needed git base-devel
         _yay_tmp=$(mktemp -d)
-        git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$_yay_tmp/yay-bin" 2>/dev/null \
-            && (cd "$_yay_tmp/yay-bin" && makepkg -si --noconfirm 2>/dev/null) \
+        git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$_yay_tmp/yay-bin" \
+            && (cd "$_yay_tmp/yay-bin" && makepkg -si --noconfirm) \
             && echo "✅ yay installé" \
-            || echo "⚠️  yay install échoué — paquets AUR non disponibles"
+            || echo "⚠️  yay install échoué — paquets AUR non disponibles" >&2
         rm -rf "$_yay_tmp"
     fi
 else
@@ -433,74 +432,100 @@ else
     sudo apt-get update -y
 fi
 
-# Installe un paquet (agnostique apt/pacman, avec mapping Debian→Arch)
-install_pkg() {
+# Traduit un nom de paquet Debian → Arch (retourne IGNORE ou AUR:nom si nécessaire)
+translate_pkg_name() {
     local pkg="$1"
     if [[ "$PKG_MANAGER" == "pacman" ]]; then
-        # Correspondances Arch Linux pour les noms de paquets Debian
         case "$pkg" in
-            wireguard)               pkg="wireguard-tools" ;;
-            openssh-server)          pkg="openssh" ;;
-            netcat-traditional)      pkg="gnu-netcat" ;;
-            libsodium*)              pkg="libsodium" ;;
-            libcurl4-openssl-dev)    return 0 ;;  # inclus dans curl
-            libgpgme-dev)            pkg="gpgme" ;;
-            libffi-dev)              pkg="libffi" ;;
-            cron)                    pkg="cronie" ;;
-            iputils-ping)            pkg="iputils" ;;
-            python3-venv|python3-dev) return 0 ;;  # inclus dans python sur Arch
-            build-essential)         pkg="base-devel" ;;
-            libssl-dev)              pkg="openssl" ;;
-            python3-magic)           pkg="python-magic" ;;
-            pipx)                    pkg="python-pipx" ;;
-            python3-pip)             pkg="python-pip" ;;
-            python3-setuptools)      pkg="python-setuptools" ;;
-            python3-base58)          return 0 ;;  # installé via pip dans le venv
-            python3-wheel)           pkg="python-wheel" ;;
-            python3-dotenv)          pkg="python-dotenv" ;;
-            python3-gpg)             pkg="python-gpg" ;;
-            python3-jwcrypto)        return 0 ;;  # installé via pip
-            python3-brotli)          pkg="python-brotli" ;;
-            python3-aiohttp)         pkg="python-aiohttp" ;;
-            python3-prometheus-client) pkg="python-prometheus_client" ;;
-            python3-tk)              pkg="tk" ;;
-            cargo)                   pkg="rust" ;;
-            geoip-bin)               pkg="geoip" ;;
-            bind9-dnsutils)          pkg="bind" ;;
-            ntpsec-ntpdate)          pkg="ntp" ;;
-            espeak)                  pkg="espeak-ng" ;;
-            mp3info)                 command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed mp3info 2>/dev/null; return 0 ;;
-            musl-dev)                pkg="musl" ;;
-            libmagic1t64)            return 0 ;;  # inclus dans file
-            libimage-exiftool-perl)  pkg="perl-image-exiftool" ;;
-            poppler-utils)           pkg="poppler" ;;
-            fonts-hack-ttf)          pkg="ttf-hack" ;;
-            basez)                   return 0 ;;  # base64 inclus dans coreutils
-            markdown)                pkg="discount" ;;
-            ssss)                    command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed ssss 2>/dev/null; return 0 ;;
-            ttf-mscorefonts-installer) command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed ttf-ms-fonts 2>/dev/null; return 0 ;;
-            printer-driver-all)      return 0 ;;  # pas d'équivalent universel sur Arch
-            prometheus-node-exporter) command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed prometheus-node-exporter 2>/dev/null; return 0 ;;
-            x11-utils)               pkg="xorg-xdpyinfo" ;;
-            ocrmypdf)                command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed ocrmypdf 2>/dev/null; return 0 ;;
-            detox)                   command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed detox 2>/dev/null; return 0 ;;
-            httrack)                 command -v yay >/dev/null 2>&1 && yay -S --noconfirm --needed httrack 2>/dev/null; return 0 ;;
+            wireguard)                 echo "wireguard-tools" ;;
+            openssh-server)            echo "openssh" ;;
+            netcat-traditional)        echo "gnu-netcat" ;;
+            libsodium*)                echo "libsodium" ;;
+            libcurl4-openssl-dev)      echo "IGNORE" ;;   # inclus dans curl
+            libgpgme-dev)              echo "gpgme" ;;
+            libffi-dev)                echo "libffi" ;;
+            cron)                      echo "cronie" ;;
+            iputils-ping)              echo "iputils" ;;
+            python3-venv|python3-dev)  echo "IGNORE" ;;   # inclus dans python
+            build-essential)           echo "base-devel" ;;
+            libssl-dev)                echo "openssl" ;;
+            python3-magic)             echo "python-magic" ;;
+            pipx)                      echo "python-pipx" ;;
+            python3-pip)               echo "python-pip" ;;
+            python3-setuptools)        echo "python-setuptools" ;;
+            python3-base58)            echo "IGNORE" ;;   # via pip dans le venv
+            python3-wheel)             echo "python-wheel" ;;
+            python3-dotenv)            echo "python-dotenv" ;;
+            python3-gpg)               echo "python-gpg" ;;
+            python3-jwcrypto)          echo "IGNORE" ;;   # via pip
+            python3-brotli)            echo "python-brotli" ;;
+            python3-aiohttp)           echo "python-aiohttp" ;;
+            python3-prometheus-client) echo "python-prometheus_client" ;;
+            python3-tk)                echo "tk" ;;
+            cargo)                     echo "rust" ;;
+            geoip-bin)                 echo "geoip" ;;
+            bind9-dnsutils)            echo "bind" ;;
+            ntpsec-ntpdate)            echo "ntp" ;;
+            espeak)                    echo "espeak-ng" ;;
+            musl-dev)                  echo "musl" ;;
+            libmagic1t64)              echo "IGNORE" ;;   # inclus dans file
+            libimage-exiftool-perl)    echo "perl-image-exiftool" ;;
+            poppler-utils)             echo "poppler" ;;
+            fonts-hack-ttf)            echo "ttf-hack" ;;
+            basez)                     echo "IGNORE" ;;   # base64 dans coreutils
+            markdown)                  echo "discount" ;;
+            x11-utils)                 echo "xorg-xdpyinfo" ;;
+            printer-driver-all)        echo "IGNORE" ;;
+            # Paquets AUR — préfixe pour les traiter séparément
+            mp3info)                   echo "AUR:mp3info" ;;
+            ssss)                      echo "AUR:ssss" ;;
+            ttf-mscorefonts-installer) echo "AUR:ttf-ms-fonts" ;;
+            prometheus-node-exporter)  echo "AUR:prometheus-node-exporter" ;;
+            ocrmypdf)                  echo "AUR:ocrmypdf" ;;
+            detox)                     echo "AUR:detox" ;;
+            httrack)                   echo "AUR:httrack" ;;
+            *)                         echo "$pkg" ;;
         esac
-        sudo pacman -S --noconfirm --needed "$pkg" 2>/dev/null \
-            || echo "⚠️  pacman: $pkg non disponible" >&2
     else
-        sudo apt-get install -y "$pkg" 2>/dev/null \
-            || echo "⚠️  apt: $pkg non disponible" >&2
+        # Debian : normaliser libsodium* (glob invalide pour dpkg-query)
+        case "$pkg" in
+            libsodium*) echo "libsodium-dev" ;;
+            *)          echo "$pkg" ;;
+        esac
     fi
 }
 
-# Vérifie si un paquet est installé (agnostique apt/pacman)
+# Vérifie si un paquet est installé — traduit d'abord le nom (idempotence Arch garantie)
 is_installed() {
-    local pkg="$1"
+    local pkg
+    pkg=$(translate_pkg_name "$1")
+    [[ "$pkg" == "IGNORE" ]] && return 0
+    [[ "$pkg" == AUR:* ]] && pkg="${pkg#AUR:}"
     if [[ "$PKG_MANAGER" == "pacman" ]]; then
         pacman -Qs "^${pkg}$" >/dev/null 2>&1
     else
         dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "ok installed"
+    fi
+}
+
+# Installe un paquet individuel (pour les appels ponctuels : git, cups, etc.)
+install_pkg() {
+    local pkg
+    pkg=$(translate_pkg_name "$1")
+    [[ "$pkg" == "IGNORE" ]] && return 0
+    if [[ "$pkg" == AUR:* ]]; then
+        pkg="${pkg#AUR:}"
+        if ! command -v yay >/dev/null 2>&1; then
+            echo "⚠️  yay absent — paquet AUR '$pkg' ignoré" >&2; return 1
+        fi
+        yay -S --noconfirm --needed "$pkg" \
+            || { echo "⚠️  yay: '$pkg' échoué" >&2; return 1; }
+    elif [[ "$PKG_MANAGER" == "pacman" ]]; then
+        sudo pacman -S --noconfirm --needed "$pkg" \
+            || { echo "⚠️  pacman: '$pkg' non disponible" >&2; return 1; }
+    else
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$pkg" \
+            || { echo "⚠️  apt: '$pkg' non disponible" >&2; return 1; }
     fi
 }
 
@@ -514,25 +539,26 @@ mkdir -p ~/.zen/workspace
 cd ~/.zen/workspace
 if [ -d UPlanet ]; then
     cd UPlanet
-    _git_stash=$(git stash list 2>/dev/null | wc -l)
-    git stash 2>/dev/null || true
+    # Stash uniquement si des modifications non committées existent (évite la fuite de stash en cron)
+    if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+        git stash push -m "install.sh auto-stash $(date +%Y%m%d-%H%M)" 2>/dev/null \
+            && echo "ℹ️  Modifications locales UPlanet stashées (git stash pop pour les récupérer)"
+    fi
     git fetch --all && git reset --hard origin/main \
         && echo "✅ UPlanet mis à jour (git reset --hard)" \
         || echo "⚠️  UPlanet git reset échoué"
-    [[ $(git stash list 2>/dev/null | wc -l) -gt $_git_stash ]] \
-        && echo "ℹ️  Modifications locales UPlanet mises en stash (git stash pop pour les récupérer)"
     cd ..
 else git clone --depth 1 https://github.com/papiche/UPlanet; fi
 cd ~/.zen
 if [ -d Astroport.ONE ]; then
     cd Astroport.ONE
-    _git_stash=$(git stash list 2>/dev/null | wc -l)
-    git stash 2>/dev/null || true
+    if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+        git stash push -m "install.sh auto-stash $(date +%Y%m%d-%H%M)" 2>/dev/null \
+            && echo "ℹ️  Modifications locales Astroport.ONE stashées (git stash pop pour les récupérer)"
+    fi
     git fetch --all && git reset --hard origin/main \
         && echo "✅ Astroport.ONE mis à jour (git reset --hard)" \
         || echo "⚠️  Astroport.ONE git reset échoué"
-    [[ $(git stash list 2>/dev/null | wc -l) -gt $_git_stash ]] \
-        && echo "ℹ️  Modifications locales Astroport.ONE mises en stash (git stash pop pour les récupérer)"
     cd ..
 else git clone --depth 1 https://github.com/papiche/Astroport.ONE.git; fi
 # TODO INSTALL FROM IPFS / IPNS
@@ -560,73 +586,71 @@ echo "✅ Scripts rendus exécutables"
 
 
 ####################################################################
-# MISES À JOUR GLOBALES (PKG_MANAGER & PIP)
-# -> S'exécute TOUJOURS, même si une installation est déjà présente
+# INSTALLATION EN LOT — traduit + vérifie + installe en 2 appels max
+# (1 appel pacman/apt pour les dépôts officiels, 1 appel yay pour AUR)
 ####################################################################
 echo "#############################################"
-echo "###### MISE A JOUR DU SYSTEME (PKG/PIP) #####"
+echo "######### INSTALL SYSTEM PACKAGES (batch) ###"
 echo "#############################################"
-# La mise à jour (apt update / pacman -Sy) a déjà été faite dans le bloc de détection OS ci-dessus
 
-echo "#############################################"
-echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
-echo "#############################################"
-for i in zip ssss dos2unix make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs \
-parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools \
-curl net-tools libsodium* miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev htop cron psmisc iputils-ping; do
-    if ! is_installed "$i"; then
-        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        install_pkg "$i"
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
+_ALL_PKGS=(
+    # Outils système
+    zip ssss dos2unix make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs
+    parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools
+    curl net-tools "libsodium*" miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev htop cron psmisc iputils-ping
+    # Python build
+    python3-venv python3-dev libssl-dev build-essential python3-magic
+    # Python libs
+    pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg
+    python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk
+    # Multimédia & données
+    qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg
+    geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack
+    html2text imagemagick libmagic1t64 libimage-exiftool-perl poppler-utils
+    # ASCII art
+    figlet cmatrix cowsay fonts-hack-ttf
+)
+
+_STD_MISSING=()
+_AUR_MISSING=()
+
+for _raw in "${_ALL_PKGS[@]}"; do
+    _t=$(translate_pkg_name "$_raw")
+    [[ "$_t" == "IGNORE" ]] && continue
+    if [[ "$_t" == AUR:* ]]; then
+        _aur="${_t#AUR:}"
+        pacman -Qs "^${_aur}$" >/dev/null 2>&1 || _AUR_MISSING+=("$_aur")
+    else
+        if [[ "$PKG_MANAGER" == "pacman" ]]; then
+            pacman -Qs "^${_t}$" >/dev/null 2>&1 || _STD_MISSING+=("$_t")
+        else
+            dpkg-query -W -f='${Status}' "$_t" 2>/dev/null | grep -q "ok installed" || _STD_MISSING+=("$_t")
+        fi
     fi
 done
 
-echo "#############################################"
-echo "####### INSTALL PYTHON BUILD DEPENDENCIES ###"
-echo "#############################################"
-for i in python3-venv python3-dev libssl-dev build-essential python3-magic; do
-    if ! is_installed "$i"; then
-        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        install_pkg "$i"
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
+if [[ ${#_STD_MISSING[@]} -gt 0 ]]; then
+    echo ">>> ${#_STD_MISSING[@]} paquets manquants : ${_STD_MISSING[*]}"
+    if [[ "$PKG_MANAGER" == "pacman" ]]; then
+        sudo pacman -S --noconfirm --needed "${_STD_MISSING[@]}" \
+            || echo "⚠️  pacman batch: certains paquets ont échoué" >> "$_ERROR_LOG"
+    else
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${_STD_MISSING[@]}" \
+            || echo "⚠️  apt batch: certains paquets ont échoué" >> "$_ERROR_LOG"
     fi
-done
+else
+    echo ">>> Tous les paquets standards déjà installés ✅"
+fi
 
-echo "#############################################"
-echo "####### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
-echo "#############################################"
-for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg \
-python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk; do
-    if ! is_installed "$i"; then
-        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        install_pkg "$i"
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
+if [[ ${#_AUR_MISSING[@]} -gt 0 && "$PKG_MANAGER" == "pacman" ]]; then
+    if command -v yay >/dev/null 2>&1; then
+        echo ">>> AUR — ${#_AUR_MISSING[@]} paquets manquants : ${_AUR_MISSING[*]}"
+        yay -S --noconfirm --needed "${_AUR_MISSING[@]}" \
+            || echo "⚠️  yay batch AUR: certains paquets ont échoué" >> "$_ERROR_LOG"
+    else
+        echo "⚠️  yay absent — paquets AUR ignorés : ${_AUR_MISSING[*]}" >> "$_ERROR_LOG"
     fi
-done
-
-echo "#############################################"
-echo "##### INSTALL MULTIMEDIA & DATA TOOLS  ######"
-echo "#############################################"
-for i in qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg \
-geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack \
-html2text imagemagick libmagic1t64 libimage-exiftool-perl poppler-utils; do
-    if ! is_installed "$i"; then
-        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        install_pkg "$i"
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
-    fi
-done
-
-echo "#############################################"
-echo "######### INSTALL ASCII ART TOOLS ###########"
-echo "#############################################"
-for i in figlet cmatrix cowsay fonts-hack-ttf; do
-    if ! is_installed "$i"; then
-        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        install_pkg "$i"
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> "$_ERROR_LOG" && continue
-    fi
-done
+fi
 
 if [[ $(which X 2>/dev/null) || -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
     echo "#############################################"
@@ -770,17 +794,18 @@ echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 ## add monero & bitcoin compatible keys
 ## duniterpy : installé uniquement dans le venv ~/.astro (pas de double via pipx)
-for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama \
-requests geohash beautifulsoup4 browser-cookie3 cryptography jwcrypto secp256k1 \
-gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt \
-aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 \
-matplotlib readability-lxml duniterpy cachetools pydantic-settings \
-robohash substrate-interface websocket-client websockets imap_tools \
-fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot; do
-        echo ">>> Installation/Mise à jour $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        ~/.astro/bin/pip install -U $i 2>> "$_ERROR_LOG"
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> "$_ERROR_LOG" && continue
-done
+# Installation en lot — pip résout l'arbre de dépendances en une seule passe
+~/.astro/bin/pip install -U \
+    pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama \
+    requests geohash beautifulsoup4 browser-cookie3 cryptography jwcrypto secp256k1 \
+    gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt \
+    aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 \
+    matplotlib readability-lxml duniterpy cachetools pydantic-settings \
+    robohash substrate-interface websocket-client websockets imap_tools \
+    fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot \
+    2>> "$_ERROR_LOG" \
+    && echo "✅ Paquets Python installés/mis à jour" \
+    || echo "⚠️  pip batch: certains paquets ont échoué — voir $_ERROR_LOG"
 ## playwright remplace pyppeteer (abandonné 2022) pour tools/page_screenshot.py
 echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
 ~/.astro/bin/pip install -U playwright 2>> "$_ERROR_LOG" \
@@ -807,10 +832,13 @@ echo "#############################################"
 echo "######### INSTALL TIDDLYWIKI ############"
 echo "#############################################"
 ##########################################################
-sudo npm install -g tiddlywiki@5.2.3
-[[ $? != 0 ]] \
-    && echo "INSTALL tiddlywiki FAILED." \
-    && echo "INSTALL tiddlywiki FAILED." >> "$_ERROR_LOG"
+# Installation sans sudo : npm installe dans ~/.local/bin (déjà dans PATH)
+# sudo npm -g crée des dossiers root dans ~/.npm et casse les futures commandes npm utilisateur
+mkdir -p "$HOME/.local/lib/node_modules"
+npm config set prefix "$HOME/.local"
+npm install -g tiddlywiki@5.2.3 \
+    && echo "✅ TiddlyWiki installé dans ~/.local/bin" \
+    || { echo "INSTALL tiddlywiki FAILED." && echo "INSTALL tiddlywiki FAILED." >> "$_ERROR_LOG"; }
 
 ## ── Vérification Docker, Node.js, NPM, TiddlyWiki ───────────────────────────
 echo "#############################################"
@@ -1303,7 +1331,7 @@ _disk_cache_age=$(( $(date +%s) - $(stat -c %Y "$_DISK_CACHE" 2>/dev/null || ech
 if [[ ! -s "$_DISK_CACHE" ]] || grep -q "^0 0$" "$_DISK_CACHE" 2>/dev/null || \
    [[ $_disk_cache_age -gt 86400 ]]; then
     echo "⏱️  Benchmark disque (dd écriture + hdparm lecture)..."
-    _tmp_bench=$(mktemp)
+    _tmp_bench=$(mktemp -p "$HOME")
 
     _out=$(LANG=C dd if=/dev/zero of="$_tmp_bench" bs=1M count=256 conv=fdatasync 2>&1)
     _disk_write=$(_dd_to_mbps "$_out")
@@ -1318,7 +1346,7 @@ if [[ ! -s "$_DISK_CACHE" ]] || grep -q "^0 0$" "$_DISK_CACHE" 2>/dev/null || \
     ## Fallback dd si hdparm a échoué ou indisponible
     if [[ "${_disk_read:-0}" -eq 0 ]]; then
         echo "  (hdparm indisponible — lecture via dd, résultat non comparable)"
-        _tmp_bench=$(mktemp)
+        _tmp_bench=$(mktemp -p "$HOME")
         LANG=C dd if=/dev/zero of="$_tmp_bench" bs=1M count=256 conv=fdatasync >/dev/null 2>&1
         _out=$(LANG=C dd if="$_tmp_bench" of=/dev/null bs=1M 2>&1)
         _disk_read=$(_dd_to_mbps "$_out")

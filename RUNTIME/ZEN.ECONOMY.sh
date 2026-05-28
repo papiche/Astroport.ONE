@@ -275,15 +275,41 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
 
         # ── Reprise atomique : détecter les étapes déjà payées cette semaine ──────
         # Si le script a été interrompu après un paiement réussi, on ne repaie pas.
+        # Les marqueurs PENDING: (claim en cours d'une autre instance) sont nettoyés
+        # automatiquement si plus vieux de 1h (run écrasé ou machine redémarrée).
         if [[ -f "$NODE_PAID_MARKER" ]]; then
-            log_output "🔒 NODE déjà payé cette semaine (W${CURRENT_WEEK}) — skip double-paiement"
-            NODE_PAID=1
-            NODE_PAYMENT_SOURCE=$(cut -d: -f2 "$NODE_PAID_MARKER" 2>/dev/null || echo "PREV")
+            _node_marker_content=$(cat "$NODE_PAID_MARKER" 2>/dev/null)
+            if [[ "$_node_marker_content" == PENDING:* ]]; then
+                _node_ts="${_node_marker_content#PENDING:}"
+                if [[ "$_node_ts" =~ ^[0-9]+$ ]] && (( $(date +%s) - _node_ts > 3600 )); then
+                    log_output "⚠️  Stale PENDING NODE marker (>1h) — clearing for retry"
+                    rm -f "$NODE_PAID_MARKER"
+                else
+                    log_output "🔒 NODE payment claim actif (autre processus) — skip"
+                    NODE_PAID=1
+                fi
+            else
+                log_output "🔒 NODE déjà payé cette semaine (W${CURRENT_WEEK}) — skip double-paiement"
+                NODE_PAID=1
+                NODE_PAYMENT_SOURCE=$(echo "$_node_marker_content" | cut -d: -f2 || echo "PREV")
+            fi
         fi
         if [[ -f "$CAPTAIN_PAID_MARKER" ]]; then
-            log_output "🔒 CAPTAIN déjà payé cette semaine (W${CURRENT_WEEK}) — skip double-paiement"
-            CAPTAIN_PAID=1
-            CAPTAIN_PAYMENT_SOURCE=$(cut -d: -f2 "$CAPTAIN_PAID_MARKER" 2>/dev/null || echo "PREV")
+            _cpt_marker_content=$(cat "$CAPTAIN_PAID_MARKER" 2>/dev/null)
+            if [[ "$_cpt_marker_content" == PENDING:* ]]; then
+                _cpt_ts="${_cpt_marker_content#PENDING:}"
+                if [[ "$_cpt_ts" =~ ^[0-9]+$ ]] && (( $(date +%s) - _cpt_ts > 3600 )); then
+                    log_output "⚠️  Stale PENDING CAPTAIN marker (>1h) — clearing for retry"
+                    rm -f "$CAPTAIN_PAID_MARKER"
+                else
+                    log_output "🔒 CAPTAIN payment claim actif (autre processus) — skip"
+                    CAPTAIN_PAID=1
+                fi
+            else
+                log_output "🔒 CAPTAIN déjà payé cette semaine (W${CURRENT_WEEK}) — skip double-paiement"
+                CAPTAIN_PAID=1
+                CAPTAIN_PAYMENT_SOURCE=$(echo "$_cpt_marker_content" | cut -d: -f2 || echo "PREV")
+            fi
         fi
         
         # Calculate remuneration amounts
@@ -297,14 +323,19 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
         log_output "📦 NODE PAYMENT (1x PAF = $WEEKLYPAF Ẑen)"
         
         # On vérifie si le compte de COLLECTE (CAPTAIN_DED_ZEN) peut payer
-        if [[ $(echo "$CAPTAIN_DED_ZEN >= $WEEKLYPAF" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:INCOME>NODE" 2>/dev/null
-            if [[ $? -eq 0 ]]; then
-                log_output "✅ REVENUS payent NODE PAF: $WEEKLYPAF Ẑen"
-                NODE_PAID=1
-                NODE_PAYMENT_SOURCE="REVENUS"
-                CAPTAIN_DED_ZEN=$(echo "scale=1; $CAPTAIN_DED_ZEN - $WEEKLYPAF" | bc)
-                echo "$(date +%Y%m%d%H%M%S):INCOME" > "$NODE_PAID_MARKER"
+        # Claim atomique AVANT le paiement : empêche les doubles paiements concurrents
+        if [[ $NODE_PAID -eq 0 ]] && [[ $(echo "$CAPTAIN_DED_ZEN >= $WEEKLYPAF" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
+            if ( set -o noclobber; echo "PENDING:$(date +%s)" > "$NODE_PAID_MARKER" ) 2>/dev/null; then
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:INCOME>NODE" 2>/dev/null
+                if [[ $? -eq 0 ]]; then
+                    log_output "✅ REVENUS payent NODE PAF: $WEEKLYPAF Ẑen"
+                    NODE_PAID=1
+                    NODE_PAYMENT_SOURCE="REVENUS"
+                    CAPTAIN_DED_ZEN=$(echo "scale=1; $CAPTAIN_DED_ZEN - $WEEKLYPAF" | bc)
+                    echo "$(date +%Y%m%d%H%M%S):INCOME" > "$NODE_PAID_MARKER"
+                else
+                    rm -f "$NODE_PAID_MARKER"
+                fi
             fi
         fi
 
@@ -320,16 +351,21 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
         log_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         log_output "👨‍✈️ CAPTAIN PAYMENT (2x PAF = $CAPTAIN_REMUNERATION Ẑen)"
         
-        if [[ $NODE_PAID -eq 1 ]]; then
+        if [[ $NODE_PAID -eq 1 ]] && [[ $CAPTAIN_PAID -eq 0 ]]; then
             # Tenter de payer le Capitaine depuis le RESTE des revenus
+            # Claim atomique AVANT le paiement : empêche les doubles paiements concurrents
             if [[ $(echo "$CAPTAIN_DED_ZEN >= $CAPTAIN_REMUNERATION" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
-                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:INCOME>CPT" 2>/dev/null
-                if [[ $? -eq 0 ]]; then
-                    log_output "✅ REVENUS payent Capitaine: $CAPTAIN_REMUNERATION Ẑen"
-                    CAPTAIN_PAID=1
-                    CAPTAIN_PAYMENT_SOURCE="REVENUS"
-                    CAPTAIN_DED_ZEN=$(echo "scale=1; $CAPTAIN_DED_ZEN - $CAPTAIN_REMUNERATION" | bc)
-                    echo "$(date +%Y%m%d%H%M%S):INCOME" > "$CAPTAIN_PAID_MARKER"
+                if ( set -o noclobber; echo "PENDING:$(date +%s)" > "$CAPTAIN_PAID_MARKER" ) 2>/dev/null; then
+                    ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:INCOME>CPT" 2>/dev/null
+                    if [[ $? -eq 0 ]]; then
+                        log_output "✅ REVENUS payent Capitaine: $CAPTAIN_REMUNERATION Ẑen"
+                        CAPTAIN_PAID=1
+                        CAPTAIN_PAYMENT_SOURCE="REVENUS"
+                        CAPTAIN_DED_ZEN=$(echo "scale=1; $CAPTAIN_DED_ZEN - $CAPTAIN_REMUNERATION" | bc)
+                        echo "$(date +%Y%m%d%H%M%S):INCOME" > "$CAPTAIN_PAID_MARKER"
+                    else
+                        rm -f "$CAPTAIN_PAID_MARKER"
+                    fi
                 fi
             fi
         fi

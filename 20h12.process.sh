@@ -31,6 +31,10 @@ fi
 . "${MY_PATH}/tools/my.sh"
 start=`date +%s`
 
+# Wrap everything in main() so bash loads the full function into memory
+# before any git pull can modify this file mid-execution (git pull suicide prevention).
+main() {
+
 ########################################################################
 ## LOGS PERMANENTS - Rotation 7 jours dans ~/.zen/log/
 ########################################################################
@@ -600,4 +604,5 @@ fi
 
 # espeak "TOTAL DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1 &
 
-exit 0
+} # end main()
+main "$@"

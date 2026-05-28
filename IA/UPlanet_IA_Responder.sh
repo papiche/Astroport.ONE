@@ -746,11 +746,17 @@ format_plantnet_json_to_text() {
     local success=$(echo "$plantnet_json" | jq -r '.success // false' 2>/dev/null)
     
     if [[ "$success" == "true" ]]; then
-        local scientific_name=$(echo "$plantnet_json" | jq -r '.best_match.scientific_name // ""' 2>/dev/null)
-        local common_names=$(echo "$plantnet_json" | jq -r '.best_match.common_names // []' 2>/dev/null)
-        local confidence=$(echo "$plantnet_json" | jq -r '.best_match.confidence // 0' 2>/dev/null)
-        local confidence_pct=$(echo "$plantnet_json" | jq -r '.best_match.confidence_pct // 0' 2>/dev/null)
-        local wikipedia_url=$(echo "$plantnet_json" | jq -r '.best_match.wikipedia_url // ""' 2>/dev/null)
+        # Single jq pass for 5 scalar fields (avoids 5 × subprocess forks)
+        local scientific_name common_names confidence confidence_pct wikipedia_url
+        IFS=$'\t' read -r scientific_name common_names confidence confidence_pct wikipedia_url < <(
+            echo "$plantnet_json" | jq -r '[
+                .best_match.scientific_name // "",
+                (.best_match.common_names // [] | tojson),
+                (.best_match.confidence // 0 | tostring),
+                (.best_match.confidence_pct // 0 | tostring),
+                .best_match.wikipedia_url // ""
+            ] | @tsv' 2>/dev/null
+        )
         local alternatives=$(echo "$plantnet_json" | jq -r '.alternatives // []' 2>/dev/null)
         
         # Format common names
