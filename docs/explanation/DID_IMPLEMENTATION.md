@@ -97,6 +97,18 @@ Les documents DID sont publiés comme **événements Nostr kind 30800** (Paramet
 
 La **ZEN Card** est la manifestation concrète de ce DID. Elle n'est pas juste un "compte", mais un **titre de propriété** sur un espace numérique (stockage, services) au sein d'un Astroport.
 
+#### Badge Kin Maya dans le DID
+
+Quand la date de naissance est renseignée lors de l'inscription MULTIPASS, `did_manager_nostr.sh` appelle `kin.sh` pour calculer le **Kin Tzolkin** (algorithme Dreamspell, cycle 260 jours) et l'inclut dans les badges du document DID kind 30800 :
+
+```json
+{"type":"MayaKin","kin":42,"glyph":"Ik","tone":"Magnétique","color":"Blanc","action":"Unifier","power":"Unification","essence":"Présence"}
+```
+
+- Seul le numéro Kin (1–260) est public — la date de naissance reste dans `~/.zen/game/nostr/<email>/BIRTHDATE` (fichier local non publié sur IPFS)
+- `BIRTHDATE` (YYYY-MM-DD, non caché) ≠ `.birthdate` (caché, date d'inscription = facturation)
+- Implémentation : `tools/kin.sh` (sourceable ou CLI) + `earth/kin-data.js` (JS partagé) + `earth/kin.js` (widget UPH)
+
 ### 2.2. UCAN : La Gestion des Droits de Location et d'Accès (MULTIPASS)
 
 Le standard UCAN (User-Controlled Authorization Network) décrit un système de permissions délégables. Notre **MULTIPASS** est l'implémentation vivante de ce concept, transformé en un mécanisme de "location" de services et de délégation de droits.

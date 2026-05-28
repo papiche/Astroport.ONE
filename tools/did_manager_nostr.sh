@@ -162,13 +162,12 @@ create_initial_did() {
     local language=$(cat "${user_dir}/LANG" 2>/dev/null || echo "fr")
     local youser=${email}
 
-    # Birthdate: use stored date or fall back to profile creation date
+    # Date de naissance réelle (fichier BIRTHDATE écrit par make_NOSTRCARD.sh depuis le formulaire)
     local birthdate=$(cat "${user_dir}/BIRTHDATE" 2>/dev/null)
-    [[ -z "$birthdate" ]] && birthdate=$(echo "$current_date" | cut -dT -f1)
 
-    # Calculate Maya Kin badge from birthdate ----------------------------------------------------------
+    # Calcul du Kin Maya uniquement si la date de naissance est connue
     local badges_json=""
-    if [[ -f "${MY_PATH}/kin.sh" ]]; then
+    if [[ -n "$birthdate" && -f "${MY_PATH}/kin.sh" ]]; then
         source "${MY_PATH}/kin.sh"
         local kin_badge=$(maya_kin_json "$birthdate" 2>/dev/null)
         [[ -n "$kin_badge" ]] && badges_json="$kin_badge"
@@ -462,6 +461,11 @@ update_did_document() {
         "ASSETS_CONTRIBUTION")
             contract_status="cooperative_assets_contributor"
             ;;
+        "MULTIPASS_CREDIT")
+            # Crédit d'usage (1/3 de la cotisation satellitaire/constellation → MULTIPASS)
+            # Ne modifie pas le contractStatus : le membre conserve son statut coopératif
+            contract_status=""
+            ;;
         "WOT_MEMBER")
             if [[ -n "$wot_g1pub" ]]; then
                 wot_metadata="{
@@ -554,7 +558,7 @@ update_did_document() {
     # Determine token type based on update type
     local new_token_type=""
     case "$update_type" in
-        "MULTIPASS")
+        "MULTIPASS"|"MULTIPASS_CREDIT")
             new_token_type="ZENCOIN"  # Usage tokens
             ;;
         "SOCIETAIRE_SATELLITE"|"SOCIETAIRE_CONSTELLATION"|"INFRASTRUCTURE"|"CAPTAIN")

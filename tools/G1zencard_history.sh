@@ -43,15 +43,21 @@ if [[ -z "$ZENCARD_EMAIL" ]]; then
     exit 1
 fi
 
-# Get ZEN Card G1 public key
+# Get ZEN Card G1 public key (SS58 / Duniter v2 format, starts with "g1")
+# Priority: .g1pub (SS58) > secret.dunikey pub: (auto-converti si v1) > swarm
+# ensure_g1ss58() est fourni par my.sh (sourcé ci-dessus)
 ZENCARD_G1PUB=""
-if [[ -f "$HOME/.zen/game/players/${ZENCARD_EMAIL}/secret.dunikey" ]]; then
-    ZENCARD_G1PUB=$(cat "$HOME/.zen/game/players/${ZENCARD_EMAIL}/secret.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-elif [[ -f "$HOME/.zen/game/players/${ZENCARD_EMAIL}/.g1pub" ]]; then
-    ZENCARD_G1PUB=$(cat "$HOME/.zen/game/players/${ZENCARD_EMAIL}/.g1pub")
-else
-    # Search in swarm memory
-    ZENCARD_G1PUB=$(cat "$HOME/.zen/tmp/swarm/*/TW/${ZENCARD_EMAIL}/_g1pub" 2>/dev/null | head -n 1)
+if [[ -f "$HOME/.zen/game/players/${ZENCARD_EMAIL}/.g1pub" ]]; then
+    ZENCARD_G1PUB=$(cat "$HOME/.zen/game/players/${ZENCARD_EMAIL}/.g1pub" | tr -d '[:space:]')
+fi
+if [[ -z "$ZENCARD_G1PUB" ]] && [[ -f "$HOME/.zen/game/players/${ZENCARD_EMAIL}/secret.dunikey" ]]; then
+    _raw=$(grep "^pub:" "$HOME/.zen/game/players/${ZENCARD_EMAIL}/secret.dunikey" | awk '{print $2}')
+    ZENCARD_G1PUB=$(ensure_g1ss58 "$_raw")
+    [[ "$_raw" != g1* ]] && [[ -n "$ZENCARD_G1PUB" ]] && log "Conversion v1→SS58 : $_raw → $ZENCARD_G1PUB"
+fi
+if [[ -z "$ZENCARD_G1PUB" ]]; then
+    _raw=$(cat "$HOME/.zen/tmp/swarm/*/TW/${ZENCARD_EMAIL}/_g1pub" 2>/dev/null | head -n 1 | tr -d '[:space:]')
+    ZENCARD_G1PUB=$(ensure_g1ss58 "$_raw")
 fi
 
 if [[ -z "$ZENCARD_G1PUB" ]]; then
@@ -97,10 +103,10 @@ CUTOFF_YEAR=$((CURRENT_YEAR - FILTER_YEARS + 1))
 # Always analyze 3 years of history
 # Satellite transfers older than 1 year are invalidated from valid balance
 JQ_STDERR=$(mktemp)
-RESULT=$(echo "$HISTORY_JSON" | jq --arg society_g1 "$SOCIETY_G1PUB" --arg cutoff_year "$CUTOFF_YEAR" --arg zencard_email "$ZENCARD_EMAIL" --arg current_year "$CURRENT_YEAR" '
+RESULT=$(echo "$HISTORY_JSON" | jq --arg society_g1 "$SOCIETY_G1PUB" --arg cutoff_year "$CUTOFF_YEAR" --arg zencard_email "$ZENCARD_EMAIL" --arg current_year "$CURRENT_YEAR" --arg zencard_g1pub "$ZENCARD_G1PUB" '
 {
     zencard_email: $zencard_email,
-    zencard_g1pub: (.pubkey // ""),
+    zencard_g1pub: (if ($zencard_g1pub | length) > 0 then $zencard_g1pub else (.pubkey // "") end),
     filter_years: 3,
     cutoff_year: ($cutoff_year | tonumber),
     current_year: ($current_year | tonumber),

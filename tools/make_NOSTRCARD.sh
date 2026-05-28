@@ -88,6 +88,11 @@ ZLON=$(makecoord "$4")
 ### Accept DISCO seed
 SALT="$5"
 PEPPER="$6"
+BIRTH_DATETIME="$7"
+BIRTH_PLACE="$8"
+BIRTH_WEIGHT="$9"
+CONCEPTION_DATETIME="${10}"
+CONCEPTION_PLACE="${11}"
 
 YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${EMAIL})
 echo "🎫 MULTIPASS Creation for $EMAIL"
@@ -271,6 +276,20 @@ EOFNOSTR
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
     [[ -s ${IMAGE} ]] && cp ${IMAGE} ${HOME}/.zen/game/nostr/${EMAIL}/picture.png 2>/dev/null
     [[ "${IMAGE}" =~ ^[a-z]{2}$ ]] && LANG="${IMAGE}" || LANG="fr" ## Contains IMAGE or Navigator language
+
+    ## Données de naissance/conception (privées, transmises par /g1nostr)
+    if [[ -n "${BIRTH_DATETIME}" ]]; then
+        echo "${BIRTH_DATETIME}" > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_datetime"
+        # Extraire YYYY-MM-DD pour kin.sh et did_manager_nostr.sh (qui lit BIRTHDATE)
+        _birth_date="${BIRTH_DATETIME%%T*}"
+        [[ "${_birth_date}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
+            && echo "${_birth_date}" > "${HOME}/.zen/game/nostr/${EMAIL}/BIRTHDATE"
+        unset _birth_date
+    fi
+    [[ -n "${BIRTH_PLACE}" ]]         && echo "${BIRTH_PLACE}"         > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_place"
+    [[ -n "${BIRTH_WEIGHT}" ]]        && echo "${BIRTH_WEIGHT}"        > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_weight"
+    [[ -n "${CONCEPTION_DATETIME}" ]] && echo "${CONCEPTION_DATETIME}" > "${HOME}/.zen/game/nostr/${EMAIL}/.conception_datetime"
+    [[ -n "${CONCEPTION_PLACE}" ]]    && echo "${CONCEPTION_PLACE}"    > "${HOME}/.zen/game/nostr/${EMAIL}/.conception_place"
 
     ##########################################################################
     ## Public metadata (safe for IPFS publishing)

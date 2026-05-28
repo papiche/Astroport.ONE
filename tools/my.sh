@@ -552,9 +552,12 @@ CESIUMIPFS="https://cesium.copylaradio.com"  ## DNSLink /ipns/cesium.copylaradio
 ## GCHANGE HACK (bof)
 HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 
-[[ -s $HOME/.zen/Astroport.ONE/.env ]] && source $HOME/.zen/Astroport.ONE/.env
-if [ -s "$HOME/.astro/bin/activate" ]; then
-    source $HOME/.astro/bin/activate
+##################################### ENV + VENV
+[[ -s "$HOME/.zen/Astroport.ONE/.env" ]] && source "$HOME/.zen/Astroport.ONE/.env"
+ASTRO_VENV="$HOME/.astro"
+# activer seulement si pas déjà dans ce venv
+if [ -s "$ASTRO_VENV/bin/activate" ] && [ "$VIRTUAL_ENV" != "$ASTRO_VENV" ]; then
+    source "$ASTRO_VENV/bin/activate"
 fi
 ## DETECT WIREGUARD VPN (Special Cases & Fallback Optimization)
 myWG_IP=$(ip -4 addr show wg0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n 1)
@@ -700,8 +703,8 @@ CAPTAINZENCARDG1PUB=$(cat $HOME/.zen/game/players/.current/.g1pub 2>/dev/null) #
 # Lire CAPTAINEMAIL depuis .current/.player — conserver la valeur exportée comme fallback
 _captainemail_from_current=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null)
 [[ -n "$_captainemail_from_current" ]] \
-    && CAPTAINEMAIL="$_captainemail_from_current" \
-    || CAPTAINEMAIL="${CAPTAINEMAIL:-}"
+    && export CAPTAINEMAIL="$_captainemail_from_current" \
+    || export CAPTAINEMAIL="${CAPTAINEMAIL:-}"
 unset _captainemail_from_current
 export CAPTAINHEX=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/HEX 2>/dev/null) ## PLAYER ONE HEX
 export CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null) ## PLAYER ONE MULTIPASS G1PUBNOSTR
@@ -768,6 +771,21 @@ init_and_cache_wallet() {
 
     echo "$ss58"
 }
+
+# ensure_g1ss58 <pubkey>
+# Convertit une clé Duniter v1 base58 en SS58 si nécessaire.
+# Passe-plat si la clé commence déjà par "g1" (format SS58).
+# Retourne vide si la conversion échoue.
+ensure_g1ss58() {
+    local key="${1:-}"
+    [[ -z "$key" ]] && return
+    if [[ "$key" == g1* ]]; then
+        echo "$key"
+    else
+        python3 "$HOME/.zen/Astroport.ONE/tools/g1pub_to_ss58.py" "$key" 2>/dev/null
+    fi
+}
+export -f ensure_g1ss58
 
 ## Application immédiate sur tous les portefeuilles de l'écosystème UPLANET :
 ## Cela garantit que tous les .dunikey existent physiquement sur le disque pour PAYforSURE.sh etc.
