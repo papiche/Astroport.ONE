@@ -942,7 +942,7 @@ case ${CAT} in
 
         declare -a YT_PUBLISH_CMD=("$YT_PUBLISH_SCRIPT"
             --nsec "$SECRET_FILE_YT"
-            --ipfs-cid "$IPFS_CID"
+            --ipfs-cid "${IPFS_CID:-$CIDIRECT}"
             --filename "$FILENAME"
             --title "$VIDEO_TITLE"
             --duration "$DURATION"
