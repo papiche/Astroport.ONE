@@ -1043,20 +1043,13 @@ if [ $NOSTR_EXIT_CODE -eq 0 ]; then
         fi
         
         # Publish kind 1985 tag events for each genre (NIP-32 Labeling)
-        # Always log to stderr (even in JSON mode) for debugging
-        echo "🔍 DEBUG: Checking genres for kind 1985 publication: GENRES_JSON='$GENRES_JSON'" >&2
-        echo "🔍 DEBUG: GENRES_JSON length: ${#GENRES_JSON}, empty check: $([ -z "$GENRES_JSON" ] && echo "empty" || echo "not empty")" >&2
-        echo "🔍 DEBUG: GENRES_JSON comparison: !=[] check: $([ "$GENRES_JSON" != "[]" ] && echo "not empty array" || echo "empty array")" >&2
-        echo "🔍 DEBUG: GENRES_JSON comparison: !=null check: $([ "$GENRES_JSON" != "null" ] && echo "not null" || echo "null")" >&2
         log_info "Checking genres for kind 1985 publication: GENRES_JSON='$GENRES_JSON'"
         
         if [ -n "$GENRES_JSON" ] && [ "$GENRES_JSON" != "[]" ] && [ "$GENRES_JSON" != "null" ]; then
             # Validate JSON format before processing
             if ! echo "$GENRES_JSON" | jq -e '.' >/dev/null 2>&1; then
-                echo "⚠️  DEBUG: Invalid JSON format for genres, skipping kind 1985 publication: $GENRES_JSON" >&2
                 log_warning "Invalid JSON format for genres, skipping kind 1985 publication: $GENRES_JSON"
             else
-                echo "✅ DEBUG: Publishing kind 1985 tag events for genres: $GENRES_JSON" >&2
                 log_info "Publishing kind 1985 tag events for genres: $GENRES_JSON"
                 
                 # Parse genres array
@@ -1077,15 +1070,11 @@ if [ $NOSTR_EXIT_CODE -eq 0 ]; then
                         # Skip if normalization resulted in empty string
                         [[ -z "$NORMALIZED_GENRE" ]] && continue
                         
-                        echo "🔍 DEBUG: Publishing tag event for genre: $NORMALIZED_GENRE (from: $genre)" >&2
                         log_info "Publishing tag event for genre: $NORMALIZED_GENRE (from: $genre)"
-                        
+
                         # Build tags for kind 1985 (NIP-32 format)
-                        # Format: ["L", "ugc"], ["l", "<tag_value>", "ugc"], ["e", "<video_event_id>", "<relay_url>"], ["k", "<video_kind>"]
                         TAG_EVENT_TAGS="[[\"L\",\"ugc\"],[\"l\",\"${NORMALIZED_GENRE}\",\"ugc\"],[\"e\",\"${EVENT_ID}\",\"${FIRST_RELAY}\"],[\"k\",\"${VIDEO_KIND}\"]]"
-                        echo "🔍 DEBUG: TAG_EVENT_TAGS: $TAG_EVENT_TAGS" >&2
-                        echo "🔍 DEBUG: EVENT_ID: $EVENT_ID, FIRST_RELAY: $FIRST_RELAY, VIDEO_KIND: $VIDEO_KIND" >&2
-                        
+
                         # Publish kind 1985 event using nostr_send_note.py
                         TAG_EVENT_OUTPUT=$($PYTHON_CMD "$NOSTR_SCRIPT" \
                             --keyfile "$KEYFILE" \
@@ -1094,44 +1083,33 @@ if [ $NOSTR_EXIT_CODE -eq 0 ]; then
                             --tags "$TAG_EVENT_TAGS" \
                             --kind 1985 \
                             --json 2>&1)
-                        
+
                         TAG_EVENT_EXIT_CODE=$?
-                        echo "🔍 DEBUG: TAG_EVENT_OUTPUT: $TAG_EVENT_OUTPUT" >&2
-                        echo "🔍 DEBUG: TAG_EVENT_EXIT_CODE: $TAG_EVENT_EXIT_CODE" >&2
-                        
+
                         if [ $TAG_EVENT_EXIT_CODE -eq 0 ]; then
                             TAG_EVENT_ID=$(echo "$TAG_EVENT_OUTPUT" | jq -r '.event_id // empty' 2>/dev/null || echo "")
                             if [ -n "$TAG_EVENT_ID" ]; then
-                                echo "✅ DEBUG: Tag event published for genre '$NORMALIZED_GENRE': ${TAG_EVENT_ID:0:16}..." >&2
                                 log_success "Tag event published for genre '$NORMALIZED_GENRE': ${TAG_EVENT_ID:0:16}..."
                                 GENRE_COUNT=$((GENRE_COUNT + 1))
                             else
-                                echo "⚠️  DEBUG: Tag event published for genre '$NORMALIZED_GENRE' but could not extract event ID" >&2
                                 log_warning "Tag event published for genre '$NORMALIZED_GENRE' but could not extract event ID"
                             fi
                         else
-                            echo "⚠️  DEBUG: Failed to publish tag event for genre '$NORMALIZED_GENRE' (non-critical): $TAG_EVENT_OUTPUT" >&2
                             log_warning "Failed to publish tag event for genre '$NORMALIZED_GENRE' (non-critical): $TAG_EVENT_OUTPUT"
                         fi
                     done < <(echo "$GENRES_JSON" | jq -r '.[]' 2>/dev/null)
-                    
+
                     if [ $GENRE_COUNT -gt 0 ]; then
-                        echo "✅ DEBUG: Published $GENRE_COUNT genre tag event(s)" >&2
                         log_success "Published $GENRE_COUNT genre tag event(s)"
                     else
-                        echo "⚠️  DEBUG: No genre tag events were published (GENRE_COUNT=0)" >&2
                         log_warning "No genre tag events were published (GENRE_COUNT=0)"
                     fi
                 else
-                    echo "⚠️  DEBUG: jq not available, skipping genre tag publication" >&2
                     log_warning "jq not available, skipping genre tag publication"
                 fi
             fi
         else
-            echo "⚠️  DEBUG: Genres not provided or empty, skipping kind 1985 publication" >&2
-            echo "🔍 DEBUG: GENRES_JSON value: '$GENRES_JSON'" >&2
             log_warning "Genres not provided or empty, skipping kind 1985 publication"
-            log_info "GENRES_JSON value: '$GENRES_JSON'"
         fi
         
         if [ "$JSON_OUTPUT" = "true" ]; then
