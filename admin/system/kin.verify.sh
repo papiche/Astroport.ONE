@@ -70,9 +70,14 @@ if [[ ! -f "$KIN_SH" ]]; then
 fi
 source "$KIN_SH"
 
-# Chiffrement/déchiffrement GPS (partagé avec KIN.news.sh et did_manager_nostr.sh)
-GPS_CRYPT_SH="${MY_PATH}/../../tools/gps_crypt.sh"
-[[ -f "$GPS_CRYPT_SH" ]] && source "$GPS_CRYPT_SH"
+# Bibliothèque Oracle Dreamspell partagée (tables, HTML, GPS, haversine)
+KIN_ORACLE_SH="${MY_PATH}/../../tools/kin_oracle.sh"
+if [[ ! -f "$KIN_ORACLE_SH" ]]; then
+    echo "❌ kin_oracle.sh introuvable : ${KIN_ORACLE_SH}" >&2
+    exit 1
+fi
+# shellcheck source=/dev/null
+source "$KIN_ORACLE_SH"
 
 DID_MANAGER="${MY_PATH}/../../tools/did_manager_nostr.sh"
 
@@ -121,73 +126,6 @@ _pause() {
 }
 
 # ---------------------------------------------------------------------------
-# Dreamspell — tables globales (partagées par audit_swarm et match_mode)
-# ---------------------------------------------------------------------------
-declare -a _DS_SEALS=(Imix Ik Akbal Kan Chicchan Cimi Manik Lamat Muluc Oc
-                      Chuen Eb Ben Ix Men Cib Caban Etznab Cauac Ahau)
-declare -a _DS_COLORS=(Rouge Blanc Bleu Jaune Vert)
-declare -a _DS_TONES=(Magnétique Lunaire Électrique "Auto-existante" Harmonique
-                      Rythmique Résonnante Galactique Solaire Planétaire
-                      Spectrale Cristal Cosmique)
-# Palette des 5 couleurs Dreamspell (border hex, background hex, emoji)
-declare -A _DS_COLOR_HEX=([Rouge]="#dc2626" [Blanc]="#6b7280" [Bleu]="#2563eb" [Jaune]="#d97706" [Vert]="#16a34a")
-declare -A _DS_COLOR_BG=( [Rouge]="#fef2f2" [Blanc]="#f9fafb" [Bleu]="#eff6ff" [Jaune]="#fffbeb" [Vert]="#f0fdf4")
-declare -A _DS_COLOR_EMO=([Rouge]="🔴" [Blanc]="⬜" [Bleu]="🔵" [Jaune]="🟡" [Vert]="🟢")
-# Emojis des 20 sceaux
-declare -a _DS_SEAL_EMO=(🐊 💨 🌙 🌱 🐍 ☠️ 🤚 ⭐ 🌊 🐕 🐒 🧑 🌿 🔮 🦅 🛡️ 🌍 ⚡ ⛈️ ☀️)
-
-# ---------------------------------------------------------------------------
-# Kin oracle helpers — arithmétique pure, aucun état externe
-# ---------------------------------------------------------------------------
-_kin_seal()  { echo $(( ($1-1) % 20 )); }
-_kin_tone()  { echo $(( ($1-1) % 13 + 1 )); }
-_kin_color() { echo $(( ($1-1) / 13 % 5 )); }
-
-# Kin analogue : même tonalité, sceau décalé de ±10.
-# Formule CRT (gcd(13,20)=1) : inv(13,20)=17  inv(20,13)=2
-# raw = (s_ana*221 + (t-1)*40) % 260  → Kana = raw+1
-_kin_analog() {
-    local k=$1
-    local s=$(( (k-1) % 20 ))
-    local tm1=$(( (k-1) % 13 ))        # t - 1
-    local s_ana=$(( (s + 10) % 20 ))
-    local raw=$(( (s_ana * 221 + tm1 * 40) % 260 ))
-    echo $(( raw + 1 ))
-}
-
-_kin_label() {
-    local s t c
-    s=$(_kin_seal "$1"); t=$(_kin_tone "$1"); c=$(_kin_color "$1")
-    echo "Kin${1}(${_DS_COLORS[$c]} ${_DS_SEALS[$s]} T${t})"
-}
-
-# ---------------------------------------------------------------------------
-# _kin_member_card <kin> <email1> [email2 ...]
-# Génère une carte HTML colorée pour un Kin (utilisée dans match_mode).
-# ---------------------------------------------------------------------------
-_kin_member_card() {
-    local k=$1; shift
-    local s t c
-    s=$(_kin_seal "$k"); t=$(_kin_tone "$k"); c=$(_kin_color "$k")
-    local color="${_DS_COLORS[$c]}" seal="${_DS_SEALS[$s]}" tone="${_DS_TONES[$((t-1))]}"
-    local hex="${_DS_COLOR_HEX[$color]:-#6366f1}"
-    local bg="${_DS_COLOR_BG[$color]:-#f5f3ff}"
-    local emo="${_DS_COLOR_EMO[$color]:-🌀}"
-    local seal_emo="${_DS_SEAL_EMO[$s]:-✦}"
-    for _email in "$@"; do
-        [[ -z "$_email" ]] && continue
-        printf '<div class="member" style="border-left-color:%s;background:%s">' "$hex" "$bg"
-        printf '<div class="member-icon">%s</div>' "$seal_emo"
-        printf '<div class="member-info">'
-        printf '<div class="member-kin" style="color:%s">KIN %s</div>' "$hex" "$k"
-        printf '<div class="member-name">%s %s %s</div>' "$emo" "$color" "$seal"
-        printf '<div class="member-tone">Tonalité %s · T%s</div>' "$tone" "$t"
-        printf '<div class="member-email">%s</div>' "$_email"
-        printf '</div></div>\n'
-    done
-}
-
-# ---------------------------------------------------------------------------
 # _propose_mailjet_group <type_groupe> <email1> [email2 ...]
 # Globals lus : _MATCH_GROUP_HTML  _MATCH_TONE_NUM  _MATCH_TONE_NAME
 # ---------------------------------------------------------------------------
@@ -229,15 +167,19 @@ _propose_mailjet_group() {
     _date=$(LC_ALL=fr_FR.UTF-8 date -u '+%-d %B %Y' 2>/dev/null || date -u '+%Y-%m-%d')
 
     if [[ -f "$_tmpl" ]]; then
-        local _html_safe
-        _html_safe="${_MATCH_GROUP_HTML//&/\&amp;}"
-        sed \
-            -e "s|_GROUP_TYPE_|${group_type}|g" \
-            -e "s|_TONE_NUM_|${_MATCH_TONE_NUM:-}|g" \
-            -e "s|_TONE_NAME_|${_MATCH_TONE_NAME:-}|g" \
-            -e "s|_KIN_ENTRIES_|${_html_safe}|g" \
-            -e "s|_DATE_|${_date}|g" \
+        local _entriesfile
+        _entriesfile=$(mktemp /tmp/kin_entries_XXXXXX.html)
+        printf '%s' "$_MATCH_GROUP_HTML" > "$_entriesfile"
+        awk -v gtype="$group_type" \
+            -v tnum="${_MATCH_TONE_NUM:-}" \
+            -v tname="${_MATCH_TONE_NAME:-}" \
+            -v datestr="$_date" \
+            -v efile="$_entriesfile" \
+            '/_KIN_ENTRIES_/ { while ((getline line < efile) > 0) print line; next }
+             { gsub(/_GROUP_TYPE_/, gtype); gsub(/_TONE_NUM_/, tnum);
+               gsub(/_TONE_NAME_/, tname); gsub(/_DATE_/, datestr); print }' \
             "$_tmpl" > "$_tmpfile"
+        rm -f "$_entriesfile"
     else
         # Fallback minimaliste si le template est absent
         {
@@ -726,7 +668,6 @@ match_mode() {
 
     # ── Collecte des profils Kin depuis le relay ──────────────────────────
     declare -A kin_emails=()    # kin_number → "email1 email2 …"
-    declare -A email_gps=()     # email → "LAT=x; LON=y;" (depuis DID chiffré ou texte clair)
 
     echo "  📡 Collecte des profils Kin Maya depuis relay local..."
     local total_profiles=0
@@ -756,6 +697,12 @@ match_mode() {
                 email_gps["$_email"]="LAT=${GPS_LAT_PARSED}; LON=${GPS_LON_PARSED};"
             fi
         fi
+        # Extraire URL profil IPNS depuis serviceEndpoint #ipns-storage
+        local _ipns_url
+        _ipns_url=$(echo "$_cnt" | jq -r '
+            .service // [] | map(select(.id | endswith("#ipns-storage"))) | first.serviceEndpoint // ""
+        ' 2>/dev/null)
+        [[ -n "$_ipns_url" ]] && email_nostrns["$_email"]="$_ipns_url"
     done < <(cd "${strfry_dir}" && ./strfry scan '{"kinds":[30800]}' 2>/dev/null)
 
     printf "  📊 %d profil(s) avec Kin Maya analysés (%d Kin distincts)\n" \
@@ -830,6 +777,7 @@ match_mode() {
             _MATCH_GROUP_HTML+=$(_kin_member_card "$_q" "${_qemails[@]}")
             for _e in "${_qemails[@]}"; do [[ -n "$_e" ]] && _ems+=("$_e"); done
         done
+        _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $ana $occ $occ_ana)
         _propose_mailjet_group "Quatuor Oracle" "${_ems[@]}"
     done
     [[ $quartet_count -eq 0 ]] && echo "  ℹ️  Aucun quatuor complet dans le swarm"
@@ -863,6 +811,7 @@ match_mode() {
         read -ra _k_ems <<< "${kin_emails[$kin]:-}"
         read -ra _o_ems <<< "${kin_emails[$occ]:-}"
         _MATCH_GROUP_HTML=$(_kin_member_card "$kin" "${_k_ems[@]}")$(_kin_member_card "$occ" "${_o_ems[@]}")
+        _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $occ)
         local -a _ems=("${_k_ems[@]}" "${_o_ems[@]}")
         _propose_mailjet_group "Paire Occulte" "${_ems[@]}"
     done
@@ -897,6 +846,7 @@ match_mode() {
         read -ra _k_ems <<< "${kin_emails[$kin]:-}"
         read -ra _a_ems <<< "${kin_emails[$ana]:-}"
         _MATCH_GROUP_HTML=$(_kin_member_card "$kin" "${_k_ems[@]}")$(_kin_member_card "$ana" "${_a_ems[@]}")
+        _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $ana)
         local -a _ems=("${_k_ems[@]}" "${_a_ems[@]}")
         _propose_mailjet_group "Paire Analogue" "${_ems[@]}"
     done
@@ -938,6 +888,7 @@ match_mode() {
             _MATCH_GROUP_HTML+=$(_kin_member_card "$_k" "${_mem_ems[@]}")
             for _e in "${_mem_ems[@]}"; do [[ -n "$_e" ]] && _ems+=("$_e"); done
         done
+        _MATCH_GROUP_HTML+=$(_kin_meeting_block "tone-${t}")
         _propose_mailjet_group "Conseil Tonalité ${t} — ${tname}" "${_ems[@]}"
     done
     [[ $council_count -eq 0 ]] && echo "  ℹ️  Aucun conseil (< 2 membres par tonalité)"

@@ -19,112 +19,17 @@ MY_PATH="$(cd "$MY_PATH" && pwd)"
 
 . "${MY_PATH}/../tools/my.sh"
 
-# Chiffrement/déchiffrement GPS (partagé avec kin.verify.sh et did_manager_nostr.sh)
+# Bibliothèque Oracle Dreamspell partagée (tables, HTML, GPS, haversine)
 # shellcheck source=/dev/null
-[[ -f "${MY_PATH}/../tools/gps_crypt.sh" ]] && source "${MY_PATH}/../tools/gps_crypt.sh"
+source "${MY_PATH}/../tools/kin_oracle.sh"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Constantes Dreamspell
-# ─────────────────────────────────────────────────────────────────────────────
-declare -a _DS_SEALS=(Imix Ik Akbal Kan Chicchan Cimi Manik Lamat Muluc Oc
-                      Chuen Eb Ben Ix Men Cib Caban Etznab Cauac Ahau)
-declare -a _DS_COLORS=(Rouge Blanc Bleu Jaune Vert)
-declare -a _DS_TONES=(Magnétique Lunaire Électrique "Auto-existante" Harmonique
-                      Rythmique Résonnante Galactique Solaire Planétaire
-                      Spectrale Cristal Cosmique)
-declare -A _DS_COLOR_HEX=([Rouge]="#dc2626" [Blanc]="#6b7280" [Bleu]="#2563eb"
-                           [Jaune]="#d97706" [Vert]="#16a34a")
-declare -A _DS_COLOR_BG=(  [Rouge]="#fef2f2" [Blanc]="#f9fafb" [Bleu]="#eff6ff"
-                           [Jaune]="#fffbeb" [Vert]="#f0fdf4")
-declare -A _DS_COLOR_EMO=( [Rouge]="🔴" [Blanc]="⬜" [Bleu]="🔵"
-                           [Jaune]="🟡" [Vert]="🟢")
-declare -a _DS_SEAL_EMO=(🐊 💨 🌙 🌱 🐍 ☠️ 🤚 ⭐ 🌊 🐕
-                          🐒 🧑 🌿 🔮 🦅 🛡️ 🌍 ⚡ ⛈️ ☀️)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Helpers Oracle
-# ─────────────────────────────────────────────────────────────────────────────
-_kin_seal()  { echo $(( ($1 - 1) % 20 )); }
-_kin_tone()  { echo $(( ($1 - 1) % 13 + 1 )); }
-_kin_color() { echo $(( ($1 - 1) / 13 % 5 )); }
-
-_kin_analog() {
-    local k=$1
-    local s=$(( (k - 1) % 20 ))
-    local tm1=$(( (k - 1) % 13 ))
-    local s_ana=$(( (s + 10) % 20 ))
-    local raw=$(( (s_ana * 221 + tm1 * 40) % 260 ))
-    echo $(( raw + 1 ))
-}
-
-_kin_label() {
-    local s t c
-    s=$(_kin_seal "$1"); t=$(_kin_tone "$1"); c=$(_kin_color "$1")
-    echo "Kin${1}(${_DS_COLORS[$c]} ${_DS_SEALS[$s]} T${t})"
-}
-
-# Génère le bloc HTML d'une carte membre (une carte par email)
-_kin_member_card() {
-    local k=$1; shift
-    local s t c
-    s=$(_kin_seal "$k"); t=$(_kin_tone "$k"); c=$(_kin_color "$k")
-    local color="${_DS_COLORS[$c]}" seal="${_DS_SEALS[$s]}" tone="${_DS_TONES[$((t-1))]}"
-    local hex="${_DS_COLOR_HEX[$color]:-#6366f1}"
-    local bg="${_DS_COLOR_BG[$color]:-#f5f3ff}"
-    local emo="${_DS_COLOR_EMO[$color]:-🌀}"
-    local seal_emo="${_DS_SEAL_EMO[$s]:-✦}"
-    for _email in "$@"; do
-        [[ -z "$_email" ]] && continue
-        printf '<div class="member" style="border-left-color:%s;background:%s">' "$hex" "$bg"
-        printf '<div class="member-icon">%s</div>' "$seal_emo"
-        printf '<div class="member-info">'
-        printf '<div class="member-kin" style="color:%s">KIN %s</div>' "$hex" "$k"
-        printf '<div class="member-name">%s %s %s</div>' "$emo" "$color" "$seal"
-        printf '<div class="member-tone">Tonalité %s · T%s</div>' "$tone" "$t"
-        printf '<div class="member-email">%s</div>' "$_email"
-        printf '</div></div>\n'
-    done
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# GPS — filtre haversine + map email→GPS (remplie lors du scan relay)
+# GPS — variables de filtre (fonctions dans kin_oracle.sh)
 # ─────────────────────────────────────────────────────────────────────────────
 GPS_LAT=""
 GPS_LON=""
 GPS_RADIUS=""
 FORCE=false
-declare -A email_gps=()  # email → "LAT=x; LON=y;" (extrait du DID relay)
-
-_haversine_km() {
-    awk -v lat1="$1" -v lon1="$2" -v lat2="$3" -v lon2="$4" 'BEGIN {
-        pi = 3.14159265358979323846
-        dlat = (lat2 - lat1) * pi / 180
-        dlon = (lon2 - lon1) * pi / 180
-        a = sin(dlat/2)^2 + cos(lat1*pi/180) * cos(lat2*pi/180) * sin(dlon/2)^2
-        c = 2 * atan2(sqrt(a), sqrt(1-a))
-        print 6371 * c
-    }'
-}
-
-# Retourne 0 si l'email est dans le rayon GPS (ou si pas de filtre actif).
-# Priorité : GPS extrait du DID relay → fichier local → exclus si inconnu.
-_email_in_radius() {
-    local _em="$1"
-    [[ -z "$GPS_LAT" ]] && return 0
-    local _gps="${email_gps[$_em]:-}"
-    if [[ -z "$_gps" ]]; then
-        # Fallback : fichier GPS local (MULTIPASS hébergés sur cette station)
-        local _gps_file="${HOME}/.zen/game/nostr/${_em}/GPS"
-        [[ -f "$_gps_file" ]] && _gps=$(cat "$_gps_file")
-    fi
-    [[ -z "$_gps" ]] && return 1
-    local _lat _lon
-    _lat=$(echo "$_gps" | grep -oP '(?<=LAT=)[^;]+' | tr -d ' ')
-    _lon=$(echo "$_gps" | grep -oP '(?<=LON=)[^;]+' | tr -d ' ')
-    [[ -z "$_lat" || -z "$_lon" ]] && return 1
-    local _dist; _dist=$(_haversine_km "$GPS_LAT" "$GPS_LON" "$_lat" "$_lon")
-    awk -v d="$_dist" -v r="$GPS_RADIUS" 'BEGIN { exit (d <= r) ? 0 : 1 }'
-}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Parse arguments
@@ -213,7 +118,7 @@ echo "========================================================================"
 # Collecte des profils Kin Maya et GPS depuis le relay local (kind 30800)
 # ─────────────────────────────────────────────────────────────────────────────
 echo "  📡 Scan kind 30800..."
-declare -A kin_emails=()  # kin_number → "email1 email2 …"
+declare -A kin_emails=()    # kin_number → "email1 email2 …"
 total_profiles=0
 
 while IFS= read -r _evt; do
@@ -236,6 +141,11 @@ while IFS= read -r _evt; do
             email_gps["$_email"]="LAT=${GPS_LAT_PARSED}; LON=${GPS_LON_PARSED};"
         fi
     fi
+    # Extraire URL profil IPNS depuis serviceEndpoint #ipns-storage
+    _ipns_url=$(echo "$_cnt" | jq -r '
+        .service // [] | map(select(.id | endswith("#ipns-storage"))) | first.serviceEndpoint // ""
+    ' 2>/dev/null)
+    [[ -n "$_ipns_url" ]] && email_nostrns["$_email"]="$_ipns_url"
     # Filtre GPS si actif (utilise email_gps[] rempli juste au-dessus)
     _email_in_radius "$_email" || continue
     # Déduplique
@@ -365,6 +275,7 @@ for kin in "${!kin_emails[@]}"; do
         _MATCH_GROUP_HTML+=$(_kin_member_card "$_q" "${_qemails[@]}")
         for _e in "${_qemails[@]}"; do [[ -n "$_e" ]] && _ems+=("$_e"); done
     done
+    _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $ana $occ $occ_ana)
     _send_group "Quatuor Oracle" "${_ems[@]}"
 done
 [[ $quartet_count -eq 0 ]] && echo "  ℹ️  Aucun quatuor complet"
@@ -391,6 +302,7 @@ for kin in "${!kin_emails[@]}"; do
     read -ra _k_ems <<< "${kin_emails[$kin]:-}"
     read -ra _o_ems <<< "${kin_emails[$occ]:-}"
     _MATCH_GROUP_HTML=$(_kin_member_card "$kin" "${_k_ems[@]}")$(_kin_member_card "$occ" "${_o_ems[@]}")
+    _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $occ)
     _send_group "Paire Occulte" "${_k_ems[@]}" "${_o_ems[@]}"
 done
 [[ $occult_count -eq 0 ]] && echo "  ℹ️  Aucune paire occulte isolée"
@@ -417,6 +329,7 @@ for kin in "${!kin_emails[@]}"; do
     read -ra _k_ems <<< "${kin_emails[$kin]:-}"
     read -ra _a_ems <<< "${kin_emails[$ana]:-}"
     _MATCH_GROUP_HTML=$(_kin_member_card "$kin" "${_k_ems[@]}")$(_kin_member_card "$ana" "${_a_ems[@]}")
+    _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $ana)
     _send_group "Paire Analogue" "${_k_ems[@]}" "${_a_ems[@]}"
 done
 [[ $analog_count -eq 0 ]] && echo "  ℹ️  Aucune paire analogue isolée"
@@ -454,6 +367,7 @@ for (( t=1; t<=13; t++ )); do
         _MATCH_GROUP_HTML+=$(_kin_member_card "$_k" "${_mem_ems[@]}")
         for _e in "${_mem_ems[@]}"; do [[ -n "$_e" ]] && _ems+=("$_e"); done
     done
+    _MATCH_GROUP_HTML+=$(_kin_meeting_block "tone-${t}")
     _send_group "Conseil Tonalité ${t} — ${tname}" "${_ems[@]}"
 done
 [[ $council_count -eq 0 ]] && echo "  ℹ️  Aucun conseil (< 2 membres par tonalité)"
