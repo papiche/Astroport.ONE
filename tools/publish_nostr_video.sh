@@ -111,6 +111,7 @@ SOURCE_TYPE=""
 JSON_OUTPUT=false
 AUTO_MODE=false
 AUTO_FILE=""
+CIDIRECT=""
 NOSTR_SCRIPT="${HOME}/.zen/Astroport.ONE/tools/nostr_send_note.py"
 
 # Colors for output
@@ -203,6 +204,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --ipfs-cid)
             IPFS_CID="$2"
+            shift 2
+            ;;
+        --cidirect)
+            CIDIRECT="$2"
             shift 2
             ;;
         --filename)
@@ -334,9 +339,10 @@ if [ "$AUTO_MODE" = "true" ]; then
     UPLOAD_DATA=$(cat "$AUTO_FILE")
     
     # Extract fields (only if not already provided via command line)
-    [ -z "$IPFS_CID" ] && IPFS_CID=$(echo "$UPLOAD_DATA" | jq -r '.cid // empty')
-    [ -z "$FILENAME" ] && FILENAME=$(echo "$UPLOAD_DATA" | jq -r '.fileName // empty')
-    [ -z "$FILE_HASH" ] && FILE_HASH=$(echo "$UPLOAD_DATA" | jq -r '.fileHash // empty')
+    [ -z "$IPFS_CID" ]   && IPFS_CID=$(echo "$UPLOAD_DATA" | jq -r '.cid // empty')
+    [ -z "$CIDIRECT" ]   && CIDIRECT=$(echo "$UPLOAD_DATA" | jq -r '.cidirect // empty')
+    [ -z "$FILENAME" ]   && FILENAME=$(echo "$UPLOAD_DATA" | jq -r '.fileName // empty')
+    [ -z "$FILE_HASH" ]  && FILE_HASH=$(echo "$UPLOAD_DATA" | jq -r '.fileHash // empty')
     # Extract MIME type: check if it's still the default value, then try multiple JSON paths
     if [ "$MIME_TYPE" = "video/webm" ] || [ -z "$MIME_TYPE" ]; then
         # Try multiple JSON paths in order of preference
@@ -566,10 +572,20 @@ else
     log_info "Video kind: 21 (regular video, >60s)"
 fi
 
-# Build IPFS URL
-# Encode the filename for URL safety
+# Build IPFS media URL — NIP-71 requires a full HTTPS URL.
+# CIDIRECT = direct-file CID from `ipfs add -wq` (line 1) → /ipfs/CIDIRECT
+# IPFS_CID = wrapper-dir CID (line 2)                      → /ipfs/CID/filename (fallback)
+# new_cid  = uDRIVE root CID (generate_ipfs_structure.sh)  → NEVER used here
+IPFS_GATEWAY="${myLIBRA:-https://ipfs.copylaradio.com}"
 ENCODED_FILENAME=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$FILENAME")
-IPFS_URL="/ipfs/${IPFS_CID}/${ENCODED_FILENAME}"
+if [ -n "$CIDIRECT" ]; then
+    IPFS_URL="${IPFS_GATEWAY}/ipfs/${CIDIRECT}"
+elif [ -n "$IPFS_CID" ]; then
+    IPFS_URL="${IPFS_GATEWAY}/ipfs/${IPFS_CID}/${ENCODED_FILENAME}"
+else
+    log_error "No IPFS CID available (neither cidirect nor file_cid)"
+    exit 1
+fi
 log_info "IPFS URL: $IPFS_URL"
 
 # Build video content (compatible with /webcam)
@@ -640,9 +656,9 @@ if [ -n "$FILE_HASH" ]; then
     log_info "Added file hash to imeta: ${FILE_HASH:0:16}..."
 fi
 
-# Add thumbnail image in imeta
+# Add thumbnail image in imeta (full HTTPS URL per NIP-71)
 if [ -n "$THUMBNAIL_CID" ]; then
-    IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"image /ipfs/${THUMBNAIL_CID}\""
+    IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"image ${IPFS_GATEWAY}/ipfs/${THUMBNAIL_CID}\""
 fi
 
 # Calculate and add bitrate (NIP-71 recommended) - bits per second
@@ -798,22 +814,22 @@ TAGS="${TAGS},
     [\"longitude\", \"${LONGITUDE}\"]"
 log_info "Added location: ${LATITUDE}, ${LONGITUDE} (geohash: ${GEOHASH})"
 
-# Add thumbnail if available
+# Add thumbnail if available (full HTTPS URL per NIP-71)
 if [ -n "$THUMBNAIL_CID" ]; then
-    THUMBNAIL_URL="/ipfs/${THUMBNAIL_CID}"
+    THUMBNAIL_URL="${IPFS_GATEWAY}/ipfs/${THUMBNAIL_CID}"
     TAGS="${TAGS},
     [\"r\", \"${THUMBNAIL_URL}\", \"Thumbnail\"],
     [\"image\", \"${THUMBNAIL_URL}\"],
     [\"thumbnail_ipfs\", \"${THUMBNAIL_CID}\"]"
-    log_info "Added thumbnail: ${THUMBNAIL_CID}"
+    log_info "Added thumbnail: ${THUMBNAIL_URL}"
 fi
 
-# Add animated GIF if available
+# Add animated GIF if available (full HTTPS URL)
 if [ -n "$GIFANIM_CID" ]; then
-    GIFANIM_URL="/ipfs/${GIFANIM_CID}"
+    GIFANIM_URL="${IPFS_GATEWAY}/ipfs/${GIFANIM_CID}"
     TAGS="${TAGS},
     [\"gifanim_ipfs\", \"${GIFANIM_CID}\"]"
-    log_info "Added animated GIF: ${GIFANIM_CID}"
+    log_info "Added animated GIF: ${GIFANIM_URL}"
 fi
 
 # Add info.json CID if available (UPlanet extension: CID only, clients construct URL)

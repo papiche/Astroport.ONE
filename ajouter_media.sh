@@ -893,9 +893,11 @@ case ${CAT} in
         exit 1
     fi
 
-    # file_cid = CID du dossier vidéo (upload2ipfs.sh), requis pour NIP-71
-    # new_cid = CID du uDRIVE régénéré (inutilisable comme URL vidéo)
-    IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_cid // .new_cid // empty')
+    # cidirect = CID direct du fichier (ipfs add -wq ligne 1) → URL propre /ipfs/CIDIRECT
+    # file_cid = CID du dossier wrapper (ipfs add -wq ligne 2) → fallback /ipfs/CID/filename
+    # new_cid  = CID du uDRIVE entier (generate_ipfs_structure.sh) → NE PAS utiliser comme URL média
+    CIDIRECT=$(echo "$UPLOAD_RESPONSE" | jq -r '.cidirect // empty')
+    IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_cid // empty')
     INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty')
     THUMBNAIL_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.thumbnail_ipfs // empty')
     GIFANIM_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.gifanim_ipfs // empty')
@@ -904,7 +906,7 @@ case ${CAT} in
     UPLOAD_CHAIN=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload_chain // empty')
     FILE_SIZE=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_size // .fileSize // 0')
 
-    echo "✅ Video uploaded to IPFS! CID: $IPFS_CID"
+    echo "✅ Video uploaded to IPFS! CID: ${CIDIRECT:-$IPFS_CID}"
     espeak "Video uploaded successfully" 2>/dev/null || true
 
     # User Input & Description
@@ -947,6 +949,7 @@ case ${CAT} in
             --source-type "youtube"
             --channel "$PLAYER"
             --json)
+        [[ -n "$CIDIRECT" ]]      && YT_PUBLISH_CMD+=(--cidirect "$CIDIRECT")
         [[ -n "$VIDEO_DESC" ]]    && YT_PUBLISH_CMD+=(--description "$VIDEO_DESC")
         [[ -n "$THUMBNAIL_CID" ]] && YT_PUBLISH_CMD+=(--thumbnail-cid "$THUMBNAIL_CID")
         [[ -n "$GIFANIM_CID" ]]   && YT_PUBLISH_CMD+=(--gifanim-cid "$GIFANIM_CID")
@@ -1046,14 +1049,24 @@ case ${CAT} in
             exit 1
         fi
 
-        PDF_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty')
-        echo "✅ PDF uploadé sur IPFS! CID: $PDF_CID"
+        # cidirect = CID direct du fichier (ipfs add -wq) → URL propre sans chemin relatif
+        # file_cid = CID du dossier wrapper → fallback avec filename
+        # new_cid  = CID uDRIVE entier → NE PAS utiliser ici
+        PDF_CIDIRECT=$(echo "$UPLOAD_RESPONSE" | jq -r '.cidirect // empty')
+        PDF_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_cid // empty')
+        echo "✅ PDF uploadé sur IPFS! CID: ${PDF_CIDIRECT:-$PDF_CID}"
 
-        # Publication NOSTR (kind 1 note avec lien IPFS)
-        if [[ -n "$PDF_CID" && -n "$NPUB_HEX" ]]; then
+        # Publication NOSTR (kind 1 note avec lien IPFS direct)
+        if [[ -n "${PDF_CIDIRECT:-$PDF_CID}" && -n "$NPUB_HEX" ]]; then
             NOSTR_SEND_SCRIPT="${MY_PATH}/tools/nostr_send_note.py"
             SECRET_NOSTR_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
-            PDF_IPFS_URL="https://ipfs.copylaradio.com/ipfs/${PDF_CID}"
+            # URL directe vers le fichier PDF (cidirect = CID stable du contenu)
+            if [[ -n "$PDF_CIDIRECT" ]]; then
+                PDF_IPFS_URL="${myIPFS:-https://ipfs.copylaradio.com}/ipfs/${PDF_CIDIRECT}"
+            else
+                PDF_FILENAME_ENC=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$FILENAME" 2>/dev/null || echo "$FILENAME")
+                PDF_IPFS_URL="${myIPFS:-https://ipfs.copylaradio.com}/ipfs/${PDF_CID}/${PDF_FILENAME_ENC}"
+            fi
             PDF_NOTE="${TITLE}
 ${URL:+Source: $URL
 }${PDF_IPFS_URL}"
@@ -1134,9 +1147,13 @@ ${URL:+Source: $URL
             exit 1
         fi
         
-        IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_cid // .new_cid // empty')
+        # cidirect = CID direct du fichier ; file_cid = wrapper ; new_cid = uDRIVE (ne pas utiliser)
+        CIDIRECT_MP3=$(echo "$UPLOAD_RESPONSE" | jq -r '.cidirect // empty')
+        IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_cid // empty')
         INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty')
         FILE_HASH=$(echo "$UPLOAD_RESPONSE" | jq -r '.fileHash // empty')
+        # Pour les endpoints aval, on passe cidirect si disponible
+        [[ -n "$CIDIRECT_MP3" ]] && IPFS_CID="$CIDIRECT_MP3"
 
         echo "✅ MP3 uploaded to IPFS! CID: $IPFS_CID"
 
