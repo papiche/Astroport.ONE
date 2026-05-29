@@ -65,7 +65,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
     # --------------------------------------------------------
 
     if [[ -s ~/.zen/game/id_ssh.pub ]]; then
-        echo "****** __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫̲͡ ̲̲̲͡͡π̲̲͡͡ ̲̲͡▫̲̲͡͡ ̲|̡̡̡ ̡ ̴̡ı̴̡̡ ̡͌l̡̡̡̡.___ ******* ${IPFSNODEID}"
+        echo "─=≡Σ((( つ◕ل͜◕)つ ${IPFSNODEID}"
         echo "Astroport SSH Key Transmutation Already Done/"
         
         # Vérification de cohérence

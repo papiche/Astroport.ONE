@@ -258,6 +258,7 @@ _propose_mailjet_group() {
         echo "    📤 Envoi à ${_dest}…"
         "$_mj" "${_dest}" "${_tmpfile}" "${_subject}" 2>&1 | tail -3
     done
+    sleep 1
     rm -f "$_tmpfile"
 }
 
