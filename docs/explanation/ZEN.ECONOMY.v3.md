@@ -81,7 +81,7 @@ La **PAF** est le levier de pilotage principal de la station. Ajuster son montan
 Pour chaque **contribution d'un Parrain/Contributeur** (ZEN Card Satellite ou Constellation) :
 
 **Règle du Reliquat au Capitaine (Ẑen Atomique) :**
-La répartition 33/33/33/1 s'effectue en unités entières de Ẑen (pièce de 10 cts Euro).
+La répartition 33/33/33/1 s'effectue en unités entières de Ẑen.
 - Les trois parts (MultiPass, R&D, Assets) sont calculées par division entière **floor**.
 - Le **Capitaine** encaisse le 1% théorique **augmenté de tout le reliquat** restant après le retrait des 3 parts de 33%.
 *Exemple : Sur 50 Ẑ, les parts sont de 16 Ẑ (32%), et le Capitaine reçoit 2 Ẑ (4%).*
@@ -96,7 +96,7 @@ La répartition 33/33/33/1 s'effectue en unités entières de Ẑen (pièce de 1
 ### Modèle de fonctionnement (résumé)
 
 - **Coûts opérationnels** : payés par la **Trésorerie Coopérative** (`UPLANETNAME_CASH`).
-- **Collecte des redevances** : portefeuille d'exploitation **CAPTAIN_DEDICATED** ; TVA (20 %) → `UPLANETNAME_IMPOT`.
+- **Collecte des redevances** : portefeuille d'exploitation **CAPTAIN_DEDICATED** ; TVA (par défaut à 0 %) → `UPLANETNAME_IMPOT`.
 - **Allocation hebdomadaire depuis CAPTAIN_DEDICATED** : provision IS (15–25 %) → surplus net réparti 33,33 % CASH / 33,33 % RnD / 33,34 % ASSETS.
 - **Contribution Parrain (ZEN Card officielle)** : 33 % MULTIPASS contributeur / 33 % RnD / 33 % ASSETS / 1 % Capitaine.
 
