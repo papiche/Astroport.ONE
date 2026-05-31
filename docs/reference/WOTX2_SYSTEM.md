@@ -62,10 +62,11 @@ Attester valide pour PERMIT_SKILL_Xn ?
 
 ## Bootstrap Capitaine
 
-À la fin de `install.sh`, `oracle_init_captain_wotx2.sh` :
-1. Crée les Kind 30500 des compétences capitaines prédéfinies
-2. Propose au capitaine ses compétences initiales
-3. Oriente vers `minelife.html`
+À la fin de `install.sh` :
+1. `emit_skill.sh` publie Kind 30503 x1 pour les compétences détectées (`bash`, `linux-admin`, `ipfs`, `nostr`, `astroport-install`)
+2. Un lien `install_craft.html?session_cid=QmXxx` est affiché — le capitaine y joint ses preuves et co-signe ses skills
+3. `oracle_init_captain_wotx2.sh` crée les Kind 30500 des compétences capitaines (seeds Oracle)
+4. La progression continue dans `minelife.html` (explorer, crafts, formation)
 
 ---
 
@@ -73,8 +74,42 @@ Attester valide pour PERMIT_SKILL_Xn ?
 
 | Interface | Fichier | Description |
 |-----------|---------|-------------|
+| **MyCraft** | `earth/install_craft.html` | Activation des compétences post-installation — joindre preuve + émettre Kind 30503/30504 |
+| **Skills** | `earth/skills.html` | Nuage de tags animé (p5.js) — 4 vues (global / MULTIPASS / Oracle Nœud / Oracle Constellation), switch source API↔Relay, sélecteur constellation |
 | **MineLife** | `earth/minelife.html` | Dashboard principal — crafting + formation + BRO |
 | **TrocZen** | Flutter app | Mobile P2P — Règle A/B, synthèse, WoTx2 offline |
+
+### Modules JS partagés (WoTx2)
+
+| Module | Fichier | API publique |
+|--------|---------|-------------|
+| **SkillCloud** | `earth/skills.js` | `SkillCloud.init(opts)` — widget p5.js Kind 30503/30504, 4 vues, découverte oracle via tag `l permit_type` |
+| **RelaySelector** | `earth/relay.js` | `RelaySelector.init(opts)`, `isLocal(ws)`, `toApiBase(ws)` — peuple `<select>` depuis constellation (myRELAY + SWARM) |
+
+### Architecture duale skills.html (source switch)
+
+```
+Mode "API + Relay" (défaut, relay local) :
+  Oracle pubkeys  ← GET /api/skill/oracles  (UPassport)
+  Médias Kind 30504 ← GET /api/skill/media/{skill}  (UPassport)
+  Bulles Kind 30503 ← WebSocket relay  (SkillCloud widget)
+
+Mode "Relay seul" (relay distant ou hors ligne) :
+  Oracle pubkeys  ← découverte relay (tag ["l","PERMIT_SKILL_Xn","permit_type"])
+  Médias Kind 30504 ← WebSocket relay (même relay sélectionné)
+  Bulles Kind 30503 ← WebSocket relay  (SkillCloud widget)
+```
+
+### Oracles WoTx2
+
+| Clé | Fichier | Rôle |
+|-----|---------|------|
+| Oracle Nœud | `~/.zen/game/secret.nostr` | Clé NOSTR locale du nœud (chaque station) |
+| Oracle Constellation | `~/.zen/game/uplanet.G1.nostr` | Clé du 1er bootstrap IPFS — partagée par la constellation |
+
+Les événements oracle Kind 30503 portent le tag `["l", "PERMIT_SKILL_Xn", "permit_type"]`.  
+Endpoint API : `GET /api/skill/oracles` → `{ "node": "hex64...", "constellation": "hex64..." }`.  
+En mode relay seul, les pubkeys oracle sont découvertes depuis ce tag (sans API).
 
 ---
 
@@ -137,13 +172,133 @@ Le nom du sous-dossier est la valeur du tag `t` dans le Kind 30504 généré.
 
 ---
 
+## Objets & Ressources (Kind 30505 / 1505)
+
+WoTx² modélise non seulement les **compétences** (Kind 30503) mais aussi les **objets physiques et logiques** que les MULTIPASS possèdent ou partagent.
+
+### Quatre régimes de quantité
+
+| `quantity_type` | Modèle | Exemples |
+|----------------|--------|---------|
+| `discrete` | Stock comptable (qty±) | Câbles XLR, composants, filtres |
+| `capacity` | Slots simultanés (dur seule mute) | Cabane (8 places), studio (2 postes) |
+| `durability` | Objet unique (qty=1, dur mute) | RPi, vélo, table de mixage |
+| `infinite` | Communs immatériels (immuable) | Documentation, recette, partition |
+
+### Cycle de vie d'un objet
+
+```
+Kind 30505 (état courant)     ←── remplace le précédent à chaque mutation
+Kind 1505  (journal append)   ←── chaque delta : acquisition / usure / maintenance
+Kind 1500  (log de session)   ←── chaque exécution de craft en temps réel
+```
+
+La `durability` (0–100) est gouvernée par trois drivers : usure par usage, dégradation passive, et bonus d'attention (un bien utilisé régulièrement se dégrade moins vite qu'un bien abandonné).
+
+> Spec complète : **[KIND_30505_OBJECTS.md](KIND_30505_OBJECTS.md)**
+
+---
+
+## Médiation & Justice (Kind 1984 / 30506 / 1506)
+
+Quand un MULTIPASS utilise un objet partagé sans le niveau WoT requis, ou lorsqu'un désaccord survient, le protocole de médiation WoT-based est déclenché.
+
+### Déclenchement
+
+Un Kind 1984 avec `["report-type", "friction"]` active le pipeline :
+
+```
+Kind 1984 (friction)
+  └► relay 1984.sh → justice_cases.log + N1Mediation.sh (async)
+       └► Kind 30506 créé (status=N1_ouvert, signé oracle)
+            ├► N1 notifié (contacts communs via amisOfAmis.txt)
+            │    └► Kind 1506 (vote_amiable) publiés par médiateurs
+            ├► [résolution] 30506 → status=N1_résolu + Kind 7 réparation
+            └► [escalade]   30506 → status=N2_ouvert + panel 5 membres N2
+```
+
+### Seuils
+
+| Montant (ẐEN) | Circuit | Quorum |
+|--------------|---------|--------|
+| ≤ 10 ẐEN | N1 amiable (cercle direct Kind 3) | Majorité contacts communs |
+| > 10 ẐEN | N2 arbitrage formel (amisOfAmis.txt) | 5 membres titrés |
+| > 50 ẐEN | Vote constellation élargi | Assemblée constellation |
+
+### Status du dossier
+
+| Valeur | Signification |
+|--------|---------------|
+| `N1_ouvert` | Médiation amiable en cours |
+| `N1_résolu` | Résolution amiable atteinte |
+| `N2_ouvert` | Escalade vers arbitrage formel |
+| `N2_résolu` | Verdict formel rendu |
+| `classé` | Dossier clos sans suite |
+
+> Spec complète : **[KIND_30506_JUSTICE.md](KIND_30506_JUSTICE.md)**  
+> NIP extension : **[nostr-nips/56-friction-mediation-extension.md](../../nostr-nips/56-friction-mediation-extension.md)**
+
+---
+
+## Filtre de domaines (skills.html)
+
+L'interface `skills.html` propose un filtre par domaine pour éviter la saturation visuelle du nuage de compétences. Le filtre est **client-side** (aucun aller-retour relay).
+
+### API publique SkillCloud (ajouts)
+
+```javascript
+cloud.setDomainFilter(['linux', 'docker', 'python']); // n'afficher que ces skills
+cloud.getDomainFilter();                               // → ['linux', 'docker', 'python'] | null
+```
+
+### Domaines prédéfinis (DOMAIN_SKILLS)
+
+| Chip | Exemples de skills inclus |
+|------|--------------------------|
+| Numérique | linux, docker, nostr, ipfs, python, rust… |
+| Artisanat | menuiserie, soudure, céramique, lutherie… |
+| Nature | permaculture, apiculture, semences, botanique… |
+| Culture | musique, chant, photographie, danse, théâtre… |
+| Habitat | maçonnerie, charpente, isolation, cob, adobe… |
+| Agriculture | maraîchage, élevage, viticulture, fromage… |
+| Santé | phytothérapie, premiers-secours, yoga, nutrition… |
+
+Cliquer sur un chip filtre instantanément les bulles p5.js. Cliquer sur « Tous » remet `_domainSkillSet = null`.
+
+---
+
+## Données de démo (6 personas)
+
+Le script `tools/demo_wotx2_seed.sh` génère un jeu complet de données NOSTR pour 6 personas couvrant 6 domaines :
+
+| Persona | Domaine | Skills clés | Objets |
+|---------|---------|------------|--------|
+| **toto** | Numérique / son | sound-spot, linux, bash, ipfs | RPi Zero 2W, BT Speaker |
+| **coucou** | Numérique | nostr, python, git, docker | Câbles XLR, Documentation |
+| **jean** | Transport / mobilité | permis-conduire-vehicule (x1), mécanique | Voiture partagée |
+| **marie** | Nature / agriculture | permaculture, apiculture, semences, maraîchage | Ruche, Jardin semences, Guide permaculture |
+| **ali** | Culture / son | musique, chant, son, sound-spot | Table de mixage, Studio mobile |
+| **sophie** | Santé | phytothérapie, premiers-secours, yoga, nutrition | Herbier, Tisanes |
+
+Les 6 personas partagent des objets, co-signent des crafts et s'attestent mutuellement, couvrant l'ensemble des fonctionnalités WoTx² (crafting social, médiation, progression).
+
+---
+
 ## Références
 
-- **[NOSTR_EVENTS_REFERENCE.md](NOSTR_EVENTS_REFERENCE.md)** — Spec complète Kind 30500–30504
+- **[NOSTR_EVENTS_REFERENCE.md](NOSTR_EVENTS_REFERENCE.md)** — Table exhaustive kinds UPlanet
+- **[KIND_30505_OBJECTS.md](KIND_30505_OBJECTS.md)** — Spec objets : quantity model, quorum, repairability, lifecycle
+- **[KIND_30506_JUSTICE.md](KIND_30506_JUSTICE.md)** — Spec médiation : dossier, actes, assurance mutualiste
 - **[how-to/MINELIFE.md](../how-to/MINELIFE.md)** — Utiliser l'interface
+- **[how-to/REPORT_FRICTION.md](../how-to/REPORT_FRICTION.md)** — Déclarer une friction et suivre la médiation
 - **[how-to/KNOWLEDGE_EMBEDDINGS.md](../how-to/KNOWLEDGE_EMBEDDINGS.md)** — Indexer les ressources
 - **[explanation/minelife_wikipedia_wot.md](../explanation/minelife_wikipedia_wot.md)** — Philosophie WoT
+- **[explanation/WOTX2_MEDIATION.md](../explanation/WOTX2_MEDIATION.md)** — Philosophie de l'assurance mutualiste WoT
+- **[tutorials/WOTX2_DEMO_SCENARIO.md](../tutorials/WOTX2_DEMO_SCENARIO.md)** — Scénario de démo complet (6 personas)
 - `Astroport.ONE/tools/oracle_init_captain_wotx2.sh` — Bootstrap capitaines
 - `Astroport.ONE/RUNTIME/ORACLE.refresh.sh` — Oracle quotidien
+- `Astroport.ONE/tools/demo_wotx2_seed.sh` — Seed 6 personas (toto/coucou/jean/marie/ali/sophie)
+- `Astroport.ONE/admin/dashboard.JUSTICE.manager.sh` — CLI admin médiation
 - `TrocZen/docs/WOTX2_SYSTEM.md` — Architecture P2P TrocZen v3.6
 - `nostr-nips/42-oracle-permits-extension.md` — Spec NOSTR permits
+- `nostr-nips/56-friction-mediation-extension.md` — Spec NIP extension médiation WoT

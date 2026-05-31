@@ -1,3 +1,10 @@
+> **⚠️ DOCUMENT OBSOLÈTE — v1**
+> Ce document décrit une version antérieure du modèle économique ZEN.
+> **Version actuelle : [`docs/explanation/ZEN.ECONOMY.v3.md`](../explanation/ZEN.ECONOMY.v3.md)**
+> **Script de référence : [`RUNTIME/ZEN.ECONOMY.sh`](../../RUNTIME/ZEN.ECONOMY.sh)**
+
+---
+
 # **Modèle Économique Circulaire G1FabLab - Règle des 3 Tiers**
 
 ## **Partie I : Le Manifeste (Le "Pourquoi")**

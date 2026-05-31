@@ -787,10 +787,10 @@ if [[ -f "${MY_PATH}/../tools/nostr_send_note.py" ]]; then
 EOF
 
         cd ~/.zen/strfry
-        ./strfry import --no-verify < "$TEMP_EVENT" 2>/dev/null
+        ./strfry import < "$TEMP_EVENT" 2>/dev/null
 
         if [[ $? -eq 0 ]]; then
-            echo "✅ Economic health report stored locally"
+            echo "✅ Economic health report stored on local relay"
             echo "   (Will be synced via constellation backfill)"
         else
             echo "❌ Failed to store event"
@@ -805,7 +805,7 @@ else
 fi
 
 # Save last broadcast info
-echo "$GENERATED_AT" > "$HOME/.zen/tmp/last_economy_broadcast.txt"
+echo "$GENERATED_AT" > "$HOME/.zen/last_economy_broadcast.txt"
 
 log_output "📊 ECONOMY.broadcast.sh completed"
 exit 0

@@ -52,6 +52,11 @@ Les événements NOSTR sont la **source de vérité** pour tout le système UPla
 | **30502** | Permit Attestation | **Oracle** | Attestation multi-signature | NIP-101 |
 | **30503** | Permit Credential | **Oracle** | Credential W3C | NIP-101 |
 | **30504** | Training Resource | **WoTx2** | Ressource de formation liée à un skill | NIP-101 |
+| **30505** | Object / Resource | **WoTx2** | Objet physique ou logique (crafting) — état courant (replaceable) | NIP-101 |
+| **30506** | Dossier de médiation | **Justice** | Cas de friction entre 2 MULTIPASS — état courant (replaceable) | NIP-101 |
+| **1500**  | Craft Execution Log | **WoTx2** | Log session de craft : durée réelle, opérateurs, consommations | NIP-101 |
+| **1505**  | Object Transaction | **WoTx2** | Delta qty/durability sur un Kind 30505 (journal append-only) | NIP-101 |
+| **1506**  | Acte de médiation    | **Justice** | Vote/escalade/résolution sur un dossier 30506 (journal append-only) | NIP-101 |
 | **30800** | DID Document | **Identité** | Document d'identité W3C | NIP-101 |
 | **30850** | Economic Health | **Économie** | Rapport santé économique | NIP-101 |
 | **30900** | Crowdfunding | **Crowdfunding** | Métadonnées crowdfunding | NIP-101 |
@@ -678,13 +683,17 @@ Vérification environnementale effectuée.
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  CORE:     0, 1, 3, 5, 6, 7                                                  │
-│  MEDIA:    21, 22, 1063, 1111                                                │
+│  MEDIA:    21, 22, 1063, 1111, 1222, 1244                                    │
 │  CONTENT:  30023, 30024                                                      │
 │  IDENTITY: 30800                                                             │
 │  ORACLE:   30500, 30501, 30502, 30503                                        │
+│  WOTX2:    30504, 30505, 1505, 1500                                          │
+│  JUSTICE:  30506, 1506, 1984                                                 │
 │  ORE:      30312, 30313                                                      │
-│  ECONOMY:  30850                                                             │
+│  ECONOMY:  30850, 9735 (zaps)                                                │
 │  CF:       30904                                                             │
+│  P2P:      30303, 30078                                                      │
+│  AUTH:     22242                                                             │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -716,6 +725,22 @@ Vérification environnementale effectuée.
 |--------|--------|-------------|
 | `ORACLE.refresh.sh` | 30500-30503 | Validation permits |
 | `oracle_api.sh` | 30500-30503 | API Oracle |
+
+### WoTx² — Compétences & Objets
+| Script | Events | Description |
+|--------|--------|-------------|
+| `emit_skill.sh` | 30503 | Émet Kind 30503 (compétence auto-attestée) |
+| `emit_object.sh` | 30505 | Publie Kind 30505 (objet/ressource physique ou logique) |
+| `oracle_init_captain_wotx2.sh` | 30500, 30503 | Bootstrap capitaines (seeds Oracle) |
+| `admin/dashboard.WOTX2.manager.sh` | 30503-30506 | Dashboard admin WoTx² complet |
+| `tools/demo_wotx2_seed.sh` | 30503, 30505, 30500 | Données de démo (6 personas) |
+
+### Justice & Médiation
+| Script | Events | Description |
+|--------|--------|-------------|
+| `NIP-101/filter/1984.sh` | 1984 | Détection friction → log justice_cases.log |
+| `ASTROBOT/N1Mediation.sh` | 30506, 1506 | Oracle : création dossier + notification N1 |
+| `admin/dashboard.JUSTICE.manager.sh` | 30506, 1506, 1984 | Dashboard admin médiation |
 
 ### Contenu
 | Script | Events | Description |

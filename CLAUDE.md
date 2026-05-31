@@ -112,6 +112,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
   - `duniter_getnode.sh` - Dynamic Duniter v2 RPC/squid node discovery
   - `cron_VRFY.sh` - Cron job management
   - `make_NOSTRCARD.sh` - NOSTR Card creation
+  - `emit_skill.sh SKILL [LEVEL] [CID] [ICON] [DESC]` - Publie Kind 30503 (compétence WoTx², auto-attestée)
+  - `emit_object.sh TITLE [TYPE] [KEY=VAL…]` - Publie Kind 30505 (objet/ressource physique ou logique)
 - **`admin/monitor/`** - Monitoring et métriques :
   - `heartbox_analysis.sh` - Hardware analysis: CPU/RAM/GPU, Power-Score, services status, Ollama models. Cached in `~/.zen/tmp/$IPFSNODEID/heartbox_analysis.json`
 - **`admin/system/`** - Gestion système P2P :

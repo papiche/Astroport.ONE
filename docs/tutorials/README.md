@@ -24,6 +24,7 @@ Destinés aux nouveaux arrivants — aucune connaissance préalable du projet re
 | [BASH_BEST_PRACTICES.md](BASH_BEST_PRACTICES.md) | Contributeur Bash | Scripts conformes aux standards du projet |
 | [install_baremetal.md](install_baremetal.md) | Administrateur système Linux | Station Astroport installée sur métal nu (Debian/Ubuntu/Mint) |
 | [install_docker.md](install_docker.md) | Administrateur Docker | Station Astroport déployée via Docker (profils standard, cloud, ai) |
+| [WOTX2_DEMO_SCENARIO.md](WOTX2_DEMO_SCENARIO.md) | Développeur / Démonstration | Scénario complet WoTx² — 6 personas, crafting social, médiation, assurance mutualiste |
 
 ## À créer
 

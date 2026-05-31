@@ -747,6 +747,15 @@ case ${CAT} in
     [ ! $2 ] && [[ $YTURL == "" ]] && YTURL=$(zenity --entry --width 420 --title "Lien ou identifiant à copier" --text "Indiquez le lien (URL) ou l'ID de la vidéo" --entry-text="")
     [[ $YTURL == "" ]] && echo "URL EMPTY " && exit 1
 
+    # Normalisation : URL Google Search contenant un ID YouTube dans le fragment
+    # Ex: https://www.google.com/search?...#fpstate=ive&vld=cid:...,vid:VIDEO_ID,...
+    if [[ "$YTURL" =~ google\.com/ ]] && [[ "$YTURL" =~ vid:([a-zA-Z0-9_-]{11}) ]]; then
+        YT_VID_ID="${BASH_REMATCH[1]}"
+        echo "🔗 URL Google détectée — extraction ID YouTube : $YT_VID_ID"
+        YTURL="https://www.youtube.com/watch?v=${YT_VID_ID}"
+        echo "✅ URL normalisée : $YTURL"
+    fi
+
     echo "VIDEO $YTURL"
     echo "Processing URL: $YTURL"
 

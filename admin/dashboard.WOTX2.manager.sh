@@ -35,16 +35,27 @@ declare -A KIND_LABEL=(
     [21]="Vidéo formation — Grimoire (NIP-71 long)"
     [22]="Vidéo craft — Grimoire (NIP-71 short)"
     [1311]="Message chat LIVE (NIP-53)"
+    [1505]="Delta qty/durabilité objet (journal append-only)"
+    [1506]="Acte de médiation (journal justice append-only)"
+    [1984]="Signalement NIP-56 (friction/abus)"
+    [9735]="Zap receipt (paiement Lightning/NOSTR)"
+    [30078]="App-specific data (config, préférences)"
+    [30303]="Custom kind UPlanet"
     [30311]="Session LIVE (NIP-53)"
     [30500]="Savoir-faire — Permit (WoTx2 auto-déclaré)"
     [30501]="Demande d'attestation (WoTx2)"
     [30502]="Attestation pair — Adoubement (WoTx2 Règle B)"
     [30503]="Certification WoTx2 (Règle A ou B)"
     [30504]="Ressource Formation (video/link/PDF)"
+    [30505]="Objet/Ressource physique ou logique (WoTx2)"
+    [30506]="Dossier de médiation WoTx² (NIP-33)"
+    [30904]="Campagne crowdfunding (NIP-75)"
 )
 
-WOTX2_KINDS="30500 30501 30502 30503 30504 22 21 30311 1311 7"
+WOTX2_KINDS="30500 30501 30502 30503 30504 30505 22 21 30311 1311 7"
 SKILL_KINDS="30500 30501 30502 30503 30504"
+OBJECT_KINDS="30505 1505"
+JUSTICE_KINDS="30506 1506 1984"
 MEDIA_KINDS="22 21"
 LIVE_KINDS="30311 1311"
 
@@ -391,7 +402,38 @@ cmd_stats() {
 
     echo ""
     echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────${NC}"
-    echo -e "  Total : ${GREEN}$total_all${NC} événements WoTx2"
+    echo -e "  Total skills/crafts/médias : ${GREEN}$total_all${NC} événements WoTx2"
+    echo ""
+
+    # Section Objets & Ressources
+    echo -e "${YELLOW}Objets & Ressources (Kind 30505/1505) :${NC}"
+    local total_obj=0
+    for kind in $OBJECT_KINDS; do
+        local count
+        count=$(bash "$NOSTR_GET" --kind "$kind" --limit "$limit" --output count 2>/dev/null)
+        count=${count:-0}; total_obj=$((total_obj + count))
+        local label="${KIND_LABEL[$kind]:-?}"
+        local color="$YELLOW"; [[ "$count" -gt 0 ]] && color="$GREEN"
+        printf "  ${color}%-8s${NC} %-6s  %s\n" "Kind $kind" "[$count]" "$label"
+    done
+    echo -e "  Sous-total : ${GREEN}$total_obj${NC}"
+    echo ""
+
+    # Section Justice
+    echo -e "${YELLOW}Médiation & Justice (Kind 30506/1506/1984) :${NC}"
+    local total_jst=0
+    for kind in $JUSTICE_KINDS; do
+        local count
+        count=$(bash "$NOSTR_GET" --kind "$kind" --limit "$limit" --output count 2>/dev/null)
+        count=${count:-0}; total_jst=$((total_jst + count))
+        local label="${KIND_LABEL[$kind]:-?}"
+        local color="$YELLOW"; [[ "$count" -gt 0 ]] && color="$RED"
+        printf "  ${color}%-8s${NC} %-6s  %s\n" "Kind $kind" "[$count]" "$label"
+    done
+    echo -e "  Sous-total : ${RED}$total_jst${NC}"
+    echo ""
+    echo -e "${CYAN}──────────────────────────────────────────────────────────────────────────${NC}"
+    echo -e "  Total toutes catégories : ${GREEN}$((total_all + total_obj + total_jst))${NC} événements"
     echo ""
 
     # Breakdown par MULTIPASS local
@@ -1907,6 +1949,14 @@ main() {
         export-skill)   cmd_export_skill ;;
         delete-skill)   cmd_delete_skill ;;
         demo)           cmd_demo ;;
+        list-objects)
+            log_info "Objets Kind 30505 — voir dashboard.JUSTICE.manager.sh pour le détail"
+            bash "$NOSTR_GET" --kind 30505 --limit "${LIMIT:-100}" 2>/dev/null \
+                | jq -r '"\(.created_at | todate)  \(.pubkey[0:12])…  \(.tags[]? | select(.[0]=="d") | .[1])  \(.tags[]? | select(.[0]=="title") | .[1] // "")"' 2>/dev/null \
+                | sort -r | head -50 ;;
+        justice)
+            log_info "Délégation vers dashboard.JUSTICE.manager.sh stats"
+            exec bash "${MY_PATH}/dashboard.JUSTICE.manager.sh" stats ;;
         -h|--help)      usage ;;
         *)              log_error "Commande inconnue: $COMMAND"; usage ;;
     esac

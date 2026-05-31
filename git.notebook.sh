@@ -59,11 +59,16 @@ Options:
   --project-dir DIR       Dossier destination du projet Git
   --notebook-json FILE    Sauter l'extraction, utiliser un JSON déjà produit
   --non-interactive       Pas de prompts — valeurs par défaut partout
+  --headed                Lancer Playwright en mode visible (debug)
+  --verbose               Afficher la sortie complète de Playwright
   -h, --help              Afficher l'aide
 
 EOF
   exit 0
 }
+
+NB_HEADED=false
+NB_VERBOSE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -73,6 +78,8 @@ while [[ $# -gt 0 ]]; do
     --project-dir)     PROJECT_DIR="$2";      shift 2 ;;
     --notebook-json)   NOTEBOOK_JSON="$2"; SKIP_EXTRACT=true; shift 2 ;;
     --non-interactive) NON_INTERACTIVE=true;  shift ;;
+    --headed)          NB_HEADED=true;        shift ;;
+    --verbose)         NB_VERBOSE=true;       shift ;;
     -h|--help)         usage ;;
     *) fail "Argument inconnu : $1" ;;
   esac
@@ -183,6 +190,10 @@ fi
 header "Étape 1 — Extraction du notebook"
 
 TMPDIR_EXTRACT="$(mktemp -d)"
+# Répertoire permanent pour conserver le JSON brut après extraction
+NB_CACHE_DIR="${HOME}/.zen/tmp/notebooklm_cache"
+mkdir -p "$NB_CACHE_DIR"
+# Nettoyage du tmpdir seulement si le JSON a bien été copié dans le cache
 trap 'rm -rf "$TMPDIR_EXTRACT"' EXIT
 
 if [[ "$SKIP_EXTRACT" == true ]]; then
@@ -194,8 +205,12 @@ else
     --url "$NB_URL"
     --json
     --file "$TMPDIR_EXTRACT"
-    --quiet
   )
+
+  # --verbose supprime --quiet (affiche les logs Playwright)
+  [[ "$NB_VERBOSE" == false ]] && EXTRACT_ARGS+=(--quiet)
+  # --headed : navigateur visible pour debug
+  [[ "$NB_HEADED"  == true  ]] && EXTRACT_ARGS+=(--headed)
 
   if [[ -n "$NB_COOKIE_FILE" ]]; then
     EXTRACT_ARGS+=(--cookie-file "$NB_COOKIE_FILE")
@@ -203,11 +218,27 @@ else
     EXTRACT_ARGS+=(--cookie "$NB_COOKIE")
   fi
 
-  python3 "$EXTRACTOR" "${EXTRACT_ARGS[@]}" || \
-    fail "Extraction échouée. Vérifiez vos cookies ou relancez avec --headed."
+  if [[ "$NB_VERBOSE" == true ]]; then
+    step "Lancement de Playwright${NB_HEADED:+ (headed)}… (mode verbeux)"
+    python3 "$EXTRACTOR" "${EXTRACT_ARGS[@]}"
+    _rc=$?
+  else
+    python3 "$EXTRACTOR" "${EXTRACT_ARGS[@]}"
+    _rc=$?
+  fi
+
+  [[ $_rc -ne 0 ]] && fail "Extraction échouée. Relancez avec --verbose ou --headed pour diagnostiquer."
 
   NOTEBOOK_JSON="$TMPDIR_EXTRACT/notebook.json"
-  ok "Notebook extrait → $NOTEBOOK_JSON"
+
+  # Copier dans le cache permanent pour post-analyse
+  if [[ -f "$NOTEBOOK_JSON" ]]; then
+    _NB_ID_TMP="$(python3 -c "import json; d=json.load(open('$NOTEBOOK_JSON')); print(d['meta'].get('notebook_id','unknown'))" 2>/dev/null || echo "unknown")"
+    _CACHE_FILE="$NB_CACHE_DIR/${_NB_ID_TMP}_$(date +%Y%m%dT%H%M%S).json"
+    cp "$NOTEBOOK_JSON" "$_CACHE_FILE"
+    ok "Notebook extrait → $NOTEBOOK_JSON"
+    echo -e "   ${C_DIM}Copie conservée : $_CACHE_FILE${C_RESET}"
+  fi
 fi
 
 [[ -f "$NOTEBOOK_JSON" ]] || fail "Fichier JSON introuvable : $NOTEBOOK_JSON"
@@ -258,6 +289,136 @@ if [[ -n "$SOURCE_TITLES" ]]; then
     [[ -n "$src" ]] && echo -e "     ${C_DIM}•${C_RESET} $src"
   done <<< "$SOURCE_TITLES"
 fi
+
+# ─── Étape 2bis : Revue tour par tour du contenu extrait ─────────────────────
+header "Étape 2bis — Revue du contenu extrait"
+
+_show_notebook_review() {
+  local json="$1"
+
+  # Sources avec URLs
+  echo -e "\n${C_BOLD}📎 SOURCES (${NB_SOURCE_COUNT})${C_RESET}"
+  if [[ "$NB_SOURCE_COUNT" -gt 0 ]]; then
+    python3 - "$json" <<'PYEOF'
+import json, sys
+d = json.load(open(sys.argv[1]))
+for i, s in enumerate(d['notebook']['sources'], 1):
+    url   = s.get('url') or ''
+    title = s.get('title') or url[:80] or '(sans titre)'
+    stype = s.get('type', '')
+    icon  = {'pdf':'📄','web':'🌐','youtube':'▶️','gdrive':'📂','unknown':'📎'}.get(stype,'📎')
+    print(f"  {i:2}. {icon} {title[:80]}")
+    if url and url != title:
+        print(f"       {url[:100]}")
+PYEOF
+  else
+    echo -e "   ${C_DIM}(aucune source extraite)${C_RESET}"
+  fi
+
+  # Notes
+  echo -e "\n${C_BOLD}📝 NOTES (${NB_NOTE_COUNT})${C_RESET}"
+  if [[ "$NB_NOTE_COUNT" -gt 0 ]]; then
+    python3 - "$json" <<'PYEOF'
+import json, sys
+d = json.load(open(sys.argv[1]))
+for i, n in enumerate(d['notebook']['notes'][:5], 1):
+    content = n.get('content','')
+    print(f"  {i}. {content[:150].replace(chr(10),' ')}{'…' if len(content)>150 else ''}")
+PYEOF
+    [[ "$NB_NOTE_COUNT" -gt 5 ]] && echo -e "   ${C_DIM}… et $((NB_NOTE_COUNT - 5)) notes supplémentaires${C_RESET}"
+  else
+    echo -e "   ${C_DIM}(aucune note extraite)${C_RESET}"
+  fi
+
+  # Chat (derniers tours)
+  echo -e "\n${C_BOLD}💬 CONVERSATION (${NB_CHAT_COUNT} tours)${C_RESET}"
+  if [[ "$NB_CHAT_COUNT" -gt 0 ]]; then
+    python3 - "$json" <<'PYEOF'
+import json, sys
+d = json.load(open(sys.argv[1]))
+history = d['notebook']['chat_history']
+# Afficher les 6 derniers tours max
+for turn in history[-6:]:
+    role = turn.get('role','?')
+    icon = '👤' if role == 'user' else '🤖'
+    content = turn.get('content','')
+    print(f"  {icon} {content[:200].replace(chr(10),' ')}{'…' if len(content)>200 else ''}")
+PYEOF
+    [[ "$NB_CHAT_COUNT" -gt 6 ]] && echo -e "   ${C_DIM}(${NB_CHAT_COUNT} tours au total — les 6 derniers affichés)${C_RESET}"
+  else
+    echo -e "   ${C_DIM}(aucun historique de conversation)${C_RESET}"
+  fi
+
+  # API data brute — résumé des endpoints capturés
+  echo -e "\n${C_BOLD}🔌 API (${NB_API_COUNT} appels capturés)${C_RESET}"
+  python3 - "$json" <<'PYEOF'
+import json, sys
+d = json.load(open(sys.argv[1]))
+urls = {r.get('url','')[:80] for r in d.get('api_data',[])}
+for u in sorted(urls)[:8]:
+    print(f"  • {u}")
+PYEOF
+}
+
+_show_notebook_review "$NOTEBOOK_JSON"
+
+echo ""
+echo -e "${C_BOLD}─────────────────────────────────────────────────${C_RESET}"
+echo -e "   ${C_BOLD}Que souhaitez-vous faire ?${C_RESET}"
+echo -e "   ${C_YELLOW}1.${C_RESET} ✅ Continuer — créer le projet Git"
+echo -e "   ${C_YELLOW}2.${C_RESET} 💾 Sauvegarder le digest et ${C_BOLD}arrêter${C_RESET} (sans créer le projet)"
+echo -e "   ${C_YELLOW}3.${C_RESET} 🔄 Re-extraire le notebook (données incomplètes ?)"
+echo -e "   ${C_YELLOW}4.${C_RESET} 📝 Ajouter un contexte manuellement puis continuer"
+echo -e "   ${C_YELLOW}0.${C_RESET} 🚪 Annuler"
+echo ""
+
+_REVIEW_CHOICE="1"
+if ! $NON_INTERACTIVE; then
+  read -r -p "   > " _REVIEW_CHOICE
+  _REVIEW_CHOICE="${_REVIEW_CHOICE:-1}"
+fi
+
+case "$_REVIEW_CHOICE" in
+  0)
+    warn "Annulé."
+    exit 0
+    ;;
+  2)
+    _DIGEST_FILE="$(pwd)/notebook_digest_${NB_ID:-unknown}.json"
+    cp "$NOTEBOOK_JSON" "$_DIGEST_FILE"
+    ok "Digest sauvegardé : $_DIGEST_FILE"
+    echo -e "   ${C_DIM}Relancez avec --notebook-json $_DIGEST_FILE pour créer le projet sans re-extraire.${C_RESET}"
+    exit 0
+    ;;
+  3)
+    warn "Re-extraction demandée — relancez le script."
+    exit 0
+    ;;
+  4)
+    echo ""
+    ask "Contexte supplémentaire (liens, notes, objectifs) :"
+    echo -e "   ${C_DIM}Entrez le texte (plusieurs lignes OK, terminez par une ligne vide) :${C_RESET}"
+    _EXTRA_CONTEXT=""
+    while IFS= read -r _line; do
+      [[ -z "$_line" ]] && break
+      _EXTRA_CONTEXT+="$_line"$'\n'
+    done
+    if [[ -n "$_EXTRA_CONTEXT" ]]; then
+      # Injecter le contexte dans le JSON
+      python3 - "$NOTEBOOK_JSON" "$_EXTRA_CONTEXT" <<'PYEOF'
+import json, sys
+d = json.load(open(sys.argv[1]))
+d['notebook']['manual_context'] = sys.argv[2]
+json.dump(d, open(sys.argv[1],'w'), ensure_ascii=False, indent=2)
+print("✅ Contexte injecté dans le JSON")
+PYEOF
+      ok "Contexte ajouté au notebook JSON"
+    fi
+    ;;
+  *)
+    # 1 ou autre → continuer
+    ;;
+esac
 
 # ─── Étape 3 : Contexte technique (questions interactives) ────────────────────
 header "Étape 3 — Contexte technique du projet"

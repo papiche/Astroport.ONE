@@ -25,6 +25,7 @@ Rejoindre l'écosystème en 5 à 10 minutes : identité NOSTR, portefeuille Ğ1,
 | Fichier | Sujet |
 |---------|-------|
 | [MULTIPASS_INSCRIPTION.md](tutorials/MULTIPASS_INSCRIPTION.md) | **🎟️ Créer son MULTIPASS** — identité NOSTR, portefeuille Ğ1, Kin Maya (5–10 min) |
+| [WOTX2_DEMO_SCENARIO.md](tutorials/WOTX2_DEMO_SCENARIO.md) | **Scénario WoTx² complet** — 6 personas, crafting social, médiation, assurance mutualiste |
 | [install_baremetal.md](tutorials/install_baremetal.md) | Installer sur Linux (Debian/Ubuntu/Mint) — métal nu |
 | [install_docker.md](tutorials/install_docker.md) | Installer avec Docker — profils standard, cloud, ai |
 | [setup_learning_hub.md](tutorials/setup_learning_hub.md) | Transformer sa station en hub d'apprentissage IA (Nextcloud + Qdrant + BRO) |
@@ -53,6 +54,7 @@ Rejoindre l'écosystème en 5 à 10 minutes : identité NOSTR, portefeuille Ğ1,
 | [COLLABORATIVE_COMMONS_SYSTEM.md](how-to/COLLABORATIVE_COMMONS_SYSTEM.md) | Co-rédiger et valider des documents communs territoriaux |
 | [PLANTNET_SYSTEM.md](how-to/PLANTNET_SYSTEM.md) | Cataloguer la biodiversité et ressources locales |
 | [MINELIFE.md](how-to/MINELIFE.md) | Crafting décentralisé des compétences WoTx2 (interface Minecraft) |
+| [REPORT_FRICTION.md](how-to/REPORT_FRICTION.md) | Déclarer une friction WoTx² et suivre la médiation N1/N2 |
 | [CODEBASE_EMBEDDINGS.md](how-to/CODEBASE_EMBEDDINGS.md) | Mémoire vectorielle du code (Qdrant + nomic-embed-text + snapshot IPFS) |
 | [KNOWLEDGE_EMBEDDINGS.md](how-to/KNOWLEDGE_EMBEDDINGS.md) | Mémoire vectorielle des connaissances WoTx2 (.md/.pdf depuis Kind 30504, uDRIVE, Nextcloud) |
 | [GRIMOIRE_LIVE.md](how-to/GRIMOIRE_LIVE.md) | Vidéo WoTx2 : génération automatique + live streaming (vdo.ninja, NIP-53) |
@@ -80,7 +82,9 @@ Rejoindre l'écosystème en 5 à 10 minutes : identité NOSTR, portefeuille Ğ1,
 | [ZEN.INTRUSION.POLICY.md](reference/ZEN.INTRUSION.POLICY.md) | Politique de gestion des fonds externes — architecture portefeuilles |
 | [ROAMING_UDRIVE_SYNC.md](reference/ROAMING_UDRIVE_SYNC.md) | Protocole de synchronisation uDRIVE inter-stations |
 | [JOURNAUX_N2_NOSTRCARD.md](reference/JOURNAUX_N2_NOSTRCARD.md) | Journaux N² générés automatiquement par MULTIPASS |
-| [WOTX2_SYSTEM.md](reference/WOTX2_SYSTEM.md) | Toiles de confiance duales Oracle + P2P |
+| [WOTX2_SYSTEM.md](reference/WOTX2_SYSTEM.md) | Toiles de confiance duales Oracle + P2P, objets partagés, médiation, 6 personas |
+| [KIND_30505_OBJECTS.md](reference/KIND_30505_OBJECTS.md) | Spec objets WoTx² — quantity model, durability, quorum, crafting social |
+| [KIND_30506_JUSTICE.md](reference/KIND_30506_JUSTICE.md) | Spec médiation WoTx² — dossier 30506, actes 1506, assurance mutualiste |
 | [UPlanet_FILE_CONTRACT.md](reference/UPlanet_FILE_CONTRACT.md) | Protocole de gestion décentralisée des fichiers IPFS+NOSTR |
 | [UPlanet_CROWDFUNDING_CONTRACT.md](reference/UPlanet_CROWDFUNDING_CONTRACT.md) | Protocole de financement participatif décentralisé |
 | [upassport_api_endpoints.md](reference/upassport_api_endpoints.md) | Endpoints UPassport (port 54321) — routers FastAPI, route /qr |
@@ -109,6 +113,7 @@ Rejoindre l'écosystème en 5 à 10 minutes : identité NOSTR, portefeuille Ğ1,
 | [minelife_wikipedia_wot.md](explanation/minelife_wikipedia_wot.md) | MineLife comme Wikipédia décentralisé — WoT relativiste, Capitaine bibliothécaire, effet constellation |
 | [ANALYTICS.md](explanation/ANALYTICS.md) | Analytics décentralisé — Kind 10600 + NIP-44, zéro fuite vers les GAFAM |
 | [ASYNC_TASKS_NOSTR.md](explanation/ASYNC_TASKS_NOSTR.md) | Tâches asynchrones inter-NODE via DMs NOSTR — le "RabbitMQ Web3" |
+| [WOTX2_MEDIATION.md](explanation/WOTX2_MEDIATION.md) | Assurance mutualiste WoT — pourquoi la médiation pair-à-pair remplace l'assurance centralisée |
 
 ---
 

@@ -47,9 +47,9 @@ Installez l'extension **Get cookies.txt LOCALLY** (Chrome/Firefox).
 http://127.0.0.1:54321/cookie.html
 ```
 
-Le cookie est chiffré avec votre clef G1 (natools), stocké sur IPFS, et référencé
-dans un événement NOSTR kind 31903. À la prochaine utilisation, le script le
-récupère automatiquement.
+Le cookie est chiffré avec votre clef G1 (natools), stocké sur IPFS, et le manifest
+de référence (domaine → CID) est publié dans un événement NOSTR kind 31903 (Cookie Vault).
+À la prochaine utilisation, le script le récupère automatiquement.
 
 ### 3. Vérifier le stockage
 

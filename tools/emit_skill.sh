@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # emit_skill.sh — Publie un Kind 30503 NOSTR auto-attesté (folksonomy de compétence)
 #
-# Usage: emit_skill.sh SKILL [LEVEL] [EVIDENCE_CID]
+# Usage: emit_skill.sh SKILL [LEVEL] [EVIDENCE_CID] [ICON] [DESC]
 # Exemples:
-#   emit_skill.sh bash 1 QmXxx...
-#   emit_skill.sh docker 1
-#   emit_skill.sh astroport-install 1 QmYyy...
+#   emit_skill.sh bash 1 QmXxx... 🔧 'Scripting bash et administration système'
+#   emit_skill.sh docker 1 '' 🐳 'Orchestration de conteneurs'
+#   emit_skill.sh astroport-install 1 QmYyy... ⚓ 'Station décentralisée installée'
 # Niveaux : x1 = folksonomy auto-proclamé. x2+ = cérémonie ou 3 likes.
+# ICON et DESC sont injectés dans le content JSON et le tag 'summary' (NIP-23).
 #
 # Retourne le event ID sur la dernière ligne de stdout.
 # Author: Fred (support@qo-op.com) — AGPL-3.0
@@ -22,10 +23,14 @@ MY_PATH="$(cd "${MY_PATH}" && pwd)"
 _SKILL_RAW="${1:-}"
 _LEVEL="${2:-1}"
 _CID="${3:-}"
+_ICON="${4:-}"
+_DESC="${5:-}"
 
 if [[ -z "$_SKILL_RAW" ]]; then
-    echo "Usage: emit_skill.sh SKILL [LEVEL] [EVIDENCE_CID]" >&2
-    echo "Exemple: emit_skill.sh bash 1 QmXxx..." >&2
+    echo "Usage: emit_skill.sh SKILL [LEVEL] [EVIDENCE_CID] [ICON] [DESC]" >&2
+    echo "Exemples:" >&2
+    echo "  emit_skill.sh bash 1 QmXxx... 🔧 'Scripting bash et administration'" >&2
+    echo "  emit_skill.sh docker 1 '' 🐳 'Orchestration de conteneurs'" >&2
     exit 1
 fi
 
@@ -61,16 +66,32 @@ _ATTESTED_AT="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 _TAGS='[["d","'"$_PERMIT_KEY"'"],["l","'"$_PERMIT_KEY"'","permit_type"],["level","'"$_LEVEL"'"],["t","'"$_SKILL_NORM"'"],["t","auto_proclaimed"]]'
 
+# Enrichissement optionnel : description (tag 'summary') et titre (tag 'title')
+if [[ -n "$_DESC" ]]; then
+    _DESC_ESC=$(echo "$_DESC" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    _TAGS="${_TAGS%]}"
+    _TAGS="${_TAGS}"',["summary","'"$_DESC_ESC"'"]]'
+fi
+
 if [[ -n "$_CID" ]]; then
-    # Injecter les tags evidence avant le ] final
     _TAGS="${_TAGS%]}"
     _TAGS="${_TAGS}"',["e","'"$_CID"'","","evidence"],["r","ipfs://'"$_CID"'"]]'
 fi
 
 ########################################################################
-## Content JSON
+## Content JSON (enrichi avec icon + description si fournis)
 ########################################################################
-_CONTENT='{"skill":"'"$_SKILL_NORM"'","level":'"$_LEVEL"',"attested_at":"'"$_ATTESTED_AT"'","auto_proclaimed":true}'
+_CONTENT='{"skill":"'"$_SKILL_NORM"'","level":'"$_LEVEL"
+
+if [[ -n "$_ICON" ]]; then
+    _ICON_ESC=$(echo "$_ICON" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    _CONTENT="${_CONTENT}"',"icon":"'"$_ICON_ESC"'"'
+fi
+if [[ -n "$_DESC" ]]; then
+    _DESC_ESC=$(echo "$_DESC" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    _CONTENT="${_CONTENT}"',"description":"'"$_DESC_ESC"'"'
+fi
+_CONTENT="${_CONTENT}"',"attested_at":"'"$_ATTESTED_AT"'","auto_proclaimed":true}'
 
 ########################################################################
 ## Relay cible

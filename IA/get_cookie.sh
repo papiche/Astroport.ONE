@@ -38,11 +38,19 @@ if [[ ! -d "$PLAYER_DIR" ]]; then
     exit 1
 fi
 
-# Priority paths to check (in order) - all hidden files at root of NOSTR directory
-COOKIE_PATHS=(
-    "${PLAYER_DIR}/.${NORMALIZED_DOMAIN}.cookie"       # Domain-specific cookie
-    "${PLAYER_DIR}/.${DOMAIN}.cookie"                  # Domain-specific cookie (alternative)
-)
+# Chaîne de fallback: subdomain complet → parent → base domain
+# Ex: notebooklm.google.com → .notebooklm.google.com.cookie → .google.com.cookie
+COOKIE_PATHS=()
+_DOMAIN_WALK="$NORMALIZED_DOMAIN"
+while [[ -n "$_DOMAIN_WALK" ]]; do
+    COOKIE_PATHS+=("${PLAYER_DIR}/.${_DOMAIN_WALK}.cookie")
+    if [[ "$_DOMAIN_WALK" == *.*.* ]]; then
+        _DOMAIN_WALK="${_DOMAIN_WALK#*.}"
+    else
+        break
+    fi
+done
+COOKIE_PATHS+=("${PLAYER_DIR}/.${DOMAIN}.cookie")
 
 # Try to find cookie file
 for COOKIE_PATH in "${COOKIE_PATHS[@]}"; do

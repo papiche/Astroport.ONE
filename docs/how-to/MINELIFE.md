@@ -306,6 +306,10 @@ badge + narration → MP4 Ken Burns → IPFS → Kind 22
 
 | Fichier | Rôle |
 |---------|------|
+| `UPlanet/earth/install_craft.html` | Activation post-installation (joindre preuve + signer x1) |
+| `UPlanet/earth/skills.html` | Nuage de compétences p5.js — explorer la constellation, switch API/Relay, sélecteur constellation |
+| `UPlanet/earth/skills.js` | Widget SkillCloud réutilisable (p5.js, relay Kind 30503/30504, découverte oracle via tag `l permit_type`) |
+| `UPlanet/earth/relay.js` | Module RelaySelector — peuplement <select> depuis constellation, isLocal(), toApiBase() |
 | `UPlanet/earth/minelife.html` | Interface principale MineLife |
 | `UPlanet/earth/minelife.js` | Widget crafting (`MineLife.init`) |
 | `UPlanet/earth/grimoire.js` | Module Grimoire : Ken Burns, Studio trim, concatSegments |

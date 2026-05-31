@@ -759,8 +759,9 @@ if [[ $(which X 2>/dev/null) || -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
         printf "║ 💰 Valeur estimée des licences évitées : %-19s ║\n" "${_TOTAL_SAVINGS} €"
         echo "║                                                              ║"
         echo "║ Le Logiciel Libre vous fait économiser cet argent chaque     ║"
-        echo "║ année tout en respectant votre vie privée.                   ║"
-        echo "║ -> Pensez à faire un don aux développeurs !                  ║"
+        echo "║ année tout en respectant votre vie privée!                   ║"
+        echo "║ -> Le G1FabLab vous permet de choisir leur évolution...      ║"
+        echo "║ -> https://opencollective.com/monnaie-libre                  ║"
         echo "╚══════════════════════════════════════════════════════════════╝"
         echo ""
         [[ -t 0 ]] && read -r -p "  ↵  [Entrée pour continuer] " _
@@ -815,6 +816,10 @@ echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
 ~/.astro/bin/python -m playwright install chromium 2>> "$_ERROR_LOG" \
     && echo "✅ playwright chromium prêt" \
     || echo "⚠️  playwright chromium install FAILED (page_screenshot.py utilisera /usr/bin/chromium)"
+## Firefox requis par git.notebook.sh (NotebookLM) — Google lie ses sessions au browser fingerprint
+~/.astro/bin/python -m playwright install firefox 2>> "$_ERROR_LOG" \
+    && echo "✅ playwright firefox prêt (git.notebook.sh)" \
+    || echo "⚠️  playwright firefox install FAILED — git.notebook.sh utilisera le fallback chromium"
 
 
 ####################################################################
@@ -831,9 +836,8 @@ echo "#############################################"
 echo "#############################################"
 echo "######### INSTALL TIDDLYWIKI ############"
 echo "#############################################"
-##########################################################
-# Installation sans sudo : npm installe dans ~/.local/bin (déjà dans PATH)
-# sudo npm -g crée des dossiers root dans ~/.npm et casse les futures commandes npm utilisateur
+######## TW is for ZenCard.refresh data storage & sharing
+######## les versions supérieures @5.2.3 ne fonctionnent pas !
 mkdir -p "$HOME/.local/lib/node_modules"
 npm config set prefix "$HOME/.local"
 npm install -g tiddlywiki@5.2.3 \
@@ -1707,10 +1711,21 @@ done
 
 echo "  Les clés sont sauvegardées dans ~/.zen/demo/"
 echo ""
+
+## Publier la graine WoTx2 (skills + objets + crafts + transactions demo)
+if [[ -f "${MY_PATH}/tools/demo_wotx2_seed.sh" ]]; then
+    echo "  🌱 Publication de la graine WoTx2 (skills/objets/crafts)…"
+    bash "${MY_PATH}/tools/demo_wotx2_seed.sh" \
+        --relay "${NOSTR_RELAY_WS:-ws://127.0.0.1:7777}" \
+        || echo "  ⚠️  Graine WoTx2 partielle — relay non prêt ? Re-exécutez tools/demo_wotx2_seed.sh"
+fi
+
 echo "  ┌───────────────────────────────────────────────────────────┐"
 echo "  │ X. Ouvrez MineLife dans votre navigateur :                │"
 echo "  │    http://127.0.0.1:54321/earth/minelife.html             │"
 echo "  │    Changez d'identité dans nos2x pour simuler la WoTx2    │"
+echo "  │    objects.html → inventaire objets                        │"
+echo "  │    skills.html  → nuage de compétences                    │"
 echo "  └───────────────────────────────────────────────────────────┘"
 echo ""
 [[ -t 0 ]] && read -r -p "  ↵  [Entrée pour continuer] " _

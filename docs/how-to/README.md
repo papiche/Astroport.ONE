@@ -29,6 +29,8 @@ ce guide lui dit comment le faire.
 | [print_multipass_cards.md](print_multipass_cards.md) | Imprimer les QR codes MULTIPASS et ZenCards |
 | [publish_nostrtube_video.md](publish_nostrtube_video.md) | Uploader et publier une vidéo sur NostrTube |
 
+| [REPORT_FRICTION.md](REPORT_FRICTION.md) | Déclarer une friction WoTx² et suivre la médiation N1/N2 |
+
 ## À créer
 
 | Fichier | Tâche | Priorité |

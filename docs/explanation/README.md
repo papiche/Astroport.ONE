@@ -25,6 +25,7 @@ philosophie du projet. Discursif, analytique, visionnaire.
 | [minelife_wikipedia_wot.md](minelife_wikipedia_wot.md) | MineLife comme Wikipédia décentralisé — WoT relativiste, Capitaine bibliothécaire, effet constellation |
 | [ANALYTICS.md](ANALYTICS.md) | Analytics décentralisé — Kind 10600 + NIP-44, zéro fuite vers les GAFAM |
 | [ASYNC_TASKS_NOSTR.md](ASYNC_TASKS_NOSTR.md) | Tâches asynchrones inter-NODE via DMs NOSTR — le "RabbitMQ Web3" |
+| [WOTX2_MEDIATION.md](WOTX2_MEDIATION.md) | Assurance mutualiste WoT — pourquoi la médiation pair-à-pair remplace l'assurance centralisée |
 
 ## À créer
 

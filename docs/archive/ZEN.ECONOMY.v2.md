@@ -1,3 +1,10 @@
+> **⚠️ DOCUMENT OBSOLÈTE — v2**
+> Ce document décrit une version intermédiaire du modèle économique ZEN (Love Ledger partiel).
+> **Version actuelle : [`docs/explanation/ZEN.ECONOMY.v3.md`](../explanation/ZEN.ECONOMY.v3.md)**
+> **Script de référence : [`RUNTIME/ZEN.ECONOMY.sh`](../../RUNTIME/ZEN.ECONOMY.sh)**
+
+---
+
 # Modèle Économique G1FabLab — Règle des 3 Tiers (v2 + Love Ledger)
 
 > **Ğ1 apporte la Liberté · Ẑen apporte l'Égalité · ❤️ apporte la Fraternité**
