@@ -40,7 +40,7 @@ cd ~/.zen/strfry && ./strfry scan '{"kinds":[30503],"limit":20}' | jq '.tags[0]'
 
 ## Acte 2 — Exploration des compétences (skills.html)
 
-Ouvrez `UPlanet/earth/skills.html` dans votre navigateur (ou via `http://localhost:12345/ipfs/...`).
+Ouvrez `[UPlanet/earth/skills.html](http://127.0.0.1:54321/earth/skills.html)` dans votre navigateur.
 
 ### 2.1 Vue globale
 
@@ -83,7 +83,9 @@ Objet produit : Kind 30503 PERMIT_SOUND_SPOT_X2 pour ali
 
 Depuis minelife.html → onglet **Craft** → rechercher "sound-spot" → cliquer "Démarrer craft".
 
+UI a développer:
 toto scanne le QR de son MULTIPASS, ali scanne le sien → le craft est co-signé.
+
 
 **Résultat** :
 - Kind 1500 (log session) publié
