@@ -1113,12 +1113,22 @@ fi
 # Détecte quatuors / paires occultes / paires analogues / conseils
 # de tonalité et envoie un email HTML à chaque membre (opt-out géré).
 #######################################################################
+# KIN.news.sh — hebdomadaire (quatuors, occultes, analogues, guides, antipodes)
 if [[ -x "${MY_PATH}/KIN.news.sh" ]]; then
-    log_output "🌀 KIN news — envoi des correspondances Oracle Dreamspell..."
+    log_output "🌀 KIN news hebdo — correspondances Oracle Dreamspell..."
     "${MY_PATH}/KIN.news.sh" 2>&1 | while IFS= read -r _kn_line; do
         log_output "$_kn_line"
     done
-    log_output "✅ KIN news terminé"
+    log_output "✅ KIN news hebdo terminé"
+fi
+
+# KIN.daily.sh — quotidien (email personnalisé : Kin du jour, 5 pouvoirs, phi, hexagones)
+if [[ -x "${MY_PATH}/KIN.daily.sh" ]]; then
+    log_output "☀️ KIN daily — newsletter Oracle quotidienne personnalisée..."
+    "${MY_PATH}/KIN.daily.sh" 2>&1 | while IFS= read -r _kd_line; do
+        log_output "$_kd_line"
+    done
+    log_output "✅ KIN daily terminé"
 fi
 
 #######################################################################

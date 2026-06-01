@@ -117,6 +117,10 @@ echo "========================================================================"
 # ─────────────────────────────────────────────────────────────────────────────
 # Collecte des profils Kin Maya et GPS depuis le relay local (kind 30800)
 # ─────────────────────────────────────────────────────────────────────────────
+WELCOME_TMPL="${TMPL_DIR}/kin_alpha_welcome.html"
+WELCOME_DIR="${HOME}/.zen/game/.kin_welcomed"
+mkdir -p "$WELCOME_DIR"
+
 echo "  📡 Scan kind 30800..."
 declare -A kin_emails=()    # kin_number → "email1 email2 …"
 total_profiles=0
@@ -152,6 +156,37 @@ while IFS= read -r _evt; do
     [[ "${kin_emails[$_kin]:-}" == *"${_email}"* ]] && continue
     kin_emails["$_kin"]+="${_email} "
     ((total_profiles++))
+    # Envoi welcome alpha si premier contact (marqueur par email)
+    _wmark="${WELCOME_DIR}/$(echo "$_email" | md5sum | cut -c1-16)"
+    if [[ ! -f "$_wmark" && -f "$WELCOME_TMPL" && -x "$MJ" ]]; then
+        # Générer le welcome personnalisé
+        _ws=$(( (_kin-1)/13+1 )); _wpos=$(( (_kin-1)%13+1 ))
+        _wsi=$(( (_kin-1)%20 )); _wci=$(( (_kin-1)/13%5 ))
+        _wseal="${_DS_SEALS[$_wsi]:-?}"; _wcolor="${_DS_COLORS[$_wci]:-?}"
+        _wemo="${_DS_COLOR_EMO[$_wcolor]:-🌀}"
+        _wocc=$(( 261-_kin )); _wana=$(_kin_analog "$_kin")
+        _wguide=$(_kin_guide "$_kin"); _wanti=$(_kin_antipode "$_kin")
+        _tmpwel=$(mktemp /tmp/kin_welcome_XXXXXX.html)
+        _eoracle=$(mktemp /tmp/kin_wel_oracle_XXXXXX.html)
+        for _pk in $_wguide $_wanti $_wana $_wocc; do
+            _psi=$(( (_pk-1)%20 )); _pci=$(( (_pk-1)/13%5 ))
+            _pseal="${_DS_SEALS[$_psi]:-?}"; _pcolor="${_DS_COLORS[$_pci]:-?}"
+            _pemo="${_DS_COLOR_EMO[$_pcolor]:-}"
+            printf '<div style="margin:.3rem 0;padding:.5rem .8rem;background:#f8f7ff;border-radius:8px;font-size:.82rem">Kin %d %s %s %s</div>\n' \
+                "$_pk" "$_pemo" "$_pcolor" "$_pseal" >> "$_eoracle"
+        done
+        awk -v kn="$_kin" -v ks="$_wseal" -v kc="$_wcolor" -v ke="$_wemo" \
+            -v dest="$_email" -v date="$(date -u '+%-d %B %Y' 2>/dev/null||date -u +%Y-%m-%d)" \
+            -v efile="$_eoracle" \
+        '/_ORACLE_ENTRIES_/ { while((getline l < efile)>0) print l; next }
+         { gsub(/_KIN_NUM_/,kn); gsub(/_KIN_SEAL_/,ks); gsub(/_KIN_COLOR_/,kc)
+           gsub(/_KIN_COLOR_EMO_/,ke); gsub(/_DEST_/,dest); gsub(/_DATE_/,date); print }' \
+        "$WELCOME_TMPL" > "$_tmpwel"
+        rm -f "$_eoracle"
+        _wres=$("$MJ" "${_email}" "${_tmpwel}" "⚛ Bienvenue dans l'Alpha ATOM4LOVE — Kin ${_kin} ${_wemo} G1FabLab" 2>&1)
+        rm -f "$_tmpwel"
+        echo "$_wres" | grep -q "opt-out\|annule" || { touch "$_wmark"; echo "  🌟 Welcome → ${_email} (Kin ${_kin})"; }
+    fi
 done < <(cd "${STRFRY_DIR}" && ./strfry scan '{"kinds":[30800]}' 2>/dev/null)
 
 printf "  📊 %d profil(s) avec Kin Maya (%d Kin distincts)\n" \
@@ -372,6 +407,58 @@ for (( t=1; t<=13; t++ )); do
 done
 [[ $council_count -eq 0 ]] && echo "  ℹ️  Aucun conseil (< 2 membres par tonalité)"
 
+# ── 5. GUIDES — même famille-couleur, relation de mentorat ──────────────────
+echo ""
+echo "  ┌──────────────────────────────────────────────────────"
+echo "  │ 🧭 PAIRES GUIDE (mentor + guidé, même famille-couleur)"
+echo "  └──────────────────────────────────────────────────────"
+guide_count=0
+declare -A shown_guide=()
+for kin in "${!kin_emails[@]}"; do
+    guide=$(_kin_guide "$kin")
+    [[ "$guide" -eq "$kin" ]] && continue   # T1,T6,T11 = guide de soi-même, skip
+    [[ -z "${kin_emails[$guide]:-}" ]] && continue
+    pmin=$(( kin < guide ? kin : guide ))
+    [[ -n "${shown[$pmin]:-}" || -n "${shown_guide[$pmin]:-}" ]] && continue
+    shown_guide[$pmin]=1
+    ((guide_count++)); ((found_groups++))
+    printf "\n  🧭 Guide : %s → %s\n" "$(_kin_label "$guide")" "$(_kin_label "$kin")"
+    declare -a _g_ems _k_ems
+    read -ra _g_ems <<< "${kin_emails[$guide]:-}"
+    read -ra _k_ems <<< "${kin_emails[$kin]:-}"
+    _MATCH_GROUP_HTML=$(_kin_member_card_rich "$guide" "" "" "${_g_ems[@]}")
+    _MATCH_GROUP_HTML+=$(_kin_member_card_rich "$kin"  "" "" "${_k_ems[@]}")
+    _MATCH_GROUP_HTML+=$(_kin_meeting_block $guide $kin)
+    _send_group "Relation Guide — Kin ${guide} guide Kin ${kin}" "${_g_ems[@]}" "${_k_ems[@]}"
+done
+[[ $guide_count -eq 0 ]] && echo "  ℹ️  Aucune paire Guide isolée"
+
+# ── 6. ANTIPODES — défi créateur (sceau+10, tonalité miroir) ────────────────
+echo ""
+echo "  ┌──────────────────────────────────────────────────────"
+echo "  │ ⚡ PAIRES ANTIPODE (défi créateur — sceau+10, T miroir)"
+echo "  └──────────────────────────────────────────────────────"
+antipode_count=0
+declare -A shown_anti=()
+for kin in "${!kin_emails[@]}"; do
+    anti=$(_kin_antipode "$kin")
+    [[ "$anti" -eq "$kin" ]] && continue
+    [[ -z "${kin_emails[$anti]:-}" ]] && continue
+    pmin=$(( kin < anti ? kin : anti ))
+    [[ -n "${shown[$pmin]:-}" || -n "${shown_guide[$pmin]:-}" || -n "${shown_anti[$pmin]:-}" ]] && continue
+    shown_anti[$pmin]=1
+    ((antipode_count++)); ((found_groups++))
+    printf "\n  ⚡ Antipode : %s ↔ %s\n" "$(_kin_label "$kin")" "$(_kin_label "$anti")"
+    declare -a _a_ems _b_ems
+    read -ra _a_ems <<< "${kin_emails[$kin]:-}"
+    read -ra _b_ems <<< "${kin_emails[$anti]:-}"
+    _MATCH_GROUP_HTML=$(_kin_member_card_rich "$kin"  "" "" "${_a_ems[@]}")
+    _MATCH_GROUP_HTML+=$(_kin_member_card_rich "$anti" "" "" "${_b_ems[@]}")
+    _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $anti)
+    _send_group "Paire Antipode — Defi Createur" "${_a_ems[@]}" "${_b_ems[@]}"
+done
+[[ $antipode_count -eq 0 ]] && echo "  ℹ️  Aucune paire Antipode isolée"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Bilan et marqueur
 # ─────────────────────────────────────────────────────────────────────────────
@@ -380,7 +467,123 @@ echo "========================================================================"
 printf "  🔮 %d groupe(s) traité(s)\n" "$found_groups"
 printf "     💎 Quatuors: %d  🌙 Occultes: %d  🌀 Analogues: %d  🎵 Conseils: %d\n" \
        "$quartet_count" "$occult_count" "$analog_count" "$council_count"
+printf "     🧭 Guides: %d  ⚡ Antipodes: %d\n" "$guide_count" "$antipode_count"
 echo "========================================================================"
+
+# ─── Publication hebdo des tâches G1FabLab sur NOSTR ─────────────────────
+TASKS_SCRIPT="${MY_PATH}/KIN.tasks.sh"
+[[ -x "$TASKS_SCRIPT" ]] && "$TASKS_SCRIPT" --publish 2>/dev/null || true
+
+# ─── DÉTECTION DE SWARM GÉOGRAPHIQUE (Choeur des Nœuds) ─────────────────
+# Grouper les membres par zone UMAP (0.1° ≈ 11km) et détecter les clusters
+echo ""
+echo "  ┌──────────────────────────────────────────────────────"
+echo "  │ 🔊 ANALYSE DES SWARMS POTENTIELS (même zone UMAP)"
+echo "  └──────────────────────────────────────────────────────"
+
+declare -A zone_emails=()  # "LATZONE_LONZONE" → "email1 email2 ..."
+declare -A zone_kins=()    # "LATZONE_LONZONE" → "kin1 kin2 ..."
+
+# Regrouper par zone géographique (0.1° grid)
+for _email in "${!email_gps[@]}"; do
+    _gps="${email_gps[$_email]}"
+    _el=$(echo "$_gps" | grep -oP '(?<=LAT=)[^;]+')
+    _ol=$(echo "$_gps" | grep -oP '(?<=LON=)[^;]+')
+    [[ -z "$_el" || -z "$_ol" ]] && continue
+    _lzone=$(python3 -c "print(round(float('${_el}')/0.1)*0.1)" 2>/dev/null) || continue
+    _ozone=$(python3 -c "print(round(float('${_ol}')/0.1)*0.1)" 2>/dev/null) || continue
+    _zkey="${_lzone}_${_ozone}"
+    zone_emails["$_zkey"]+="${_email} "
+done
+
+swarm_count=0
+for _zkey in "${!zone_emails[@]}"; do
+    IFS=' ' read -ra _zemails <<< "${zone_emails[$_zkey]}"
+    [[ ${#_zemails[@]} -lt 2 ]] && continue  # swarm = 2 personnes minimum
+
+    ((swarm_count++))
+    _latzone=$(echo "$_zkey" | cut -d'_' -f1)
+    _lonzone=$(echo "$_zkey" | cut -d'_' -f2)
+
+    # Calculer le score H moyen de la zone (k entre toutes les paires)
+    _h_sum=0; _h_count=0
+    for _e1 in "${_zemails[@]}"; do
+        for _e2 in "${_zemails[@]}"; do
+            [[ "$_e1" == "$_e2" ]] && continue
+            # Phase de chaque membre via ses badges Kin
+            _k1=$(for _kn in "${!kin_emails[@]}"; do echo "${kin_emails[$_kn]}" | grep -q "$_e1" && echo "$_kn"; done | head -1)
+            _k2=$(for _kn in "${!kin_emails[@]}"; do echo "${kin_emails[$_kn]}" | grep -q "$_e2" && echo "$_kn"; done | head -1)
+            [[ -z "$_k1" || -z "$_k2" ]] && continue
+            _phi1=$(python3 -c "import math; print(1.0/(1.0+abs(math.sin((int('${_k1}')-int('${_k2}'))*math.pi/260))))" 2>/dev/null) || continue
+            _h_sum=$(python3 -c "print(${_h_sum}+${_phi1})" 2>/dev/null) || continue
+            ((_h_count++))
+        done
+    done
+    _h_score="0.50"
+    [[ $_h_count -gt 0 ]] && _h_score=$(python3 -c "print('%.2f'%(${_h_sum}/${_h_count}))" 2>/dev/null) || true
+
+    # Calculer le centre GPS approximatif et l'adresse a4l: (si Phi2X_Math disponible)
+    _hex_addr="a4l:zone_${_latzone}_${_lonzone}"
+    _gps_str="${_latzone}°N, ${_lonzone}°E"
+
+    printf "  🔊 SWARM détecté : %s (%d atomes, H=%.2f)\n" "$_zkey" "${#_zemails[@]}" "$_h_score"
+
+    # Construire le bloc HTML d'alerte swarm
+    _swarm_html=$(cat << SWARMEOF
+<div style="background:linear-gradient(135deg,#1e1b4b,#7c3aed);border-radius:12px;padding:1.2rem;margin:.8rem 0;color:#fff">
+  <div style="font-size:1rem;font-weight:700;margin-bottom:.5rem">🔊 CONVERGENCE REQUISE — Chœur des Nœuds</div>
+  <div style="font-size:.84rem;opacity:.9;margin-bottom:.8rem">
+    <strong>${#_zemails[@]} Atomes</strong> de votre zone ${_gps_str} sont alignés cette semaine.<br>
+    Score d'harmonie actuel : <strong>H = ${_h_score}</strong> — objectif : H ≥ 0.95.
+  </div>
+  <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:.7rem;font-size:.8rem;margin-bottom:.7rem">
+    📍 <strong>Zone de rendez-vous</strong> : ${_gps_str}<br>
+    🔮 <strong>Adresse hexagonale</strong> : <code>${_hex_addr}</code><br>
+    📅 <strong>Mission</strong> : Ce dimanche, activez vos radars LOCA. Vos téléphones commenceront à chanter ensemble. Déplacez-vous jusqu'à l'<strong>Accord Parfait</strong> (H ≥ 0.95).
+  </div>
+  <div style="font-size:.78rem;opacity:.8">
+    Participants : $(IFS=', '; echo "${_zemails[*]}" | sed 's/\b\([a-z]\{1,4\}\)[a-z0-9.]*@/\1***@/g')
+  </div>
+</div>
+SWARMEOF
+)
+
+    # Envoyer l'alerte à chaque membre du swarm (avec leur omega_bio si disponible)
+    for _semail in "${_zemails[@]}"; do
+        [[ -z "$_semail" ]] && continue
+        _tmpswarm=$(mktemp /tmp/kin_swarm_XXXXXX.html)
+        cat << HTMLEOF > "$_tmpswarm"
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔊 Swarm détecté — Votre Choeur attend</title>
+<style>body{margin:0;background:#0f0e17;font-family:-apple-system,sans-serif}.w{max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden}
+.ft{background:#f7f7fb;padding:1rem;text-align:center;font-size:.7rem;color:#9ca3af}a{color:#7c3aed}</style>
+</head><body><div class="w">
+${_swarm_html}
+<div style="padding:1rem 1.5rem">
+  <p style="font-size:.84rem;color:#374151">
+    🎙️ <strong>Préparez votre instrument :</strong> si vous n'avez pas encore enregistré votre Mantra vocal dans ATOM4LOVE (PROFIL → 🎙️), faites-le avant le rassemblement. Votre voix sera automatiquement pitchée sur votre résonance <strong>${_h_score} Hz</strong>.
+  </p>
+  <div style="text-align:center;margin-top:1rem">
+    <a href="https://u.copylaradio.com/apk/atom4love.apk"
+       style="background:#7c3aed;color:#fff;padding:.5rem 1.2rem;border-radius:8px;text-decoration:none;font-size:.85rem;font-weight:600">
+      📲 Ouvrir ATOM4LOVE
+    </a>
+  </div>
+</div>
+<div class="ft">ATOM4LOVE Alpha · G1FabLab · UPlanet ORIGIN<br>
+<a href="mailto:support@qo-op.com?subject=opt-out%20kin-swarm">Se désabonner</a></div>
+</div></body></html>
+HTMLEOF
+        if [[ -x "$MJ" ]]; then
+            "$MJ" "$_semail" "$_tmpswarm" \
+                "🔊 Swarm détecté — ${#_zemails[@]} atomes dans votre zone, H=${_h_score}" 2>/dev/null && \
+                printf "    📧 Alerte swarm → %s\n" "$_semail"
+        fi
+        rm -f "$_tmpswarm"
+    done
+done
+
+[[ $swarm_count -eq 0 ]] && echo "  ℹ️  Aucun swarm géographique détecté cette semaine"
 
 touch "$MARKER_FILE"
 exit 0

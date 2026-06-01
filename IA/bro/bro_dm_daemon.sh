@@ -71,10 +71,20 @@ _log() { echo "[$(date '+%H:%M:%S')] [bro_dm] $*" | tee -a "$LOG_FILE" -a "$IA_L
 
 ## Wrapper sécurisé : NSEC passé via stdin, jamais en argument (invisible dans ps aux).
 ## Utilise NIP-04 si l'expéditeur a écrit en NIP-04 (_DM_ENC="nip04"), NIP-44 sinon.
+## Envoie la réponse sur TOUS les relays connus (_RELAYS) pour garantir la
+## livraison que l'utilisateur soit en roaming (relay constellation) ou local
+## (relay de la home station).  Le 3e argument positionnel (relay_hint) est
+## ignoré depuis la correction — seul _RELAYS[] fait foi.
 _send_dm() {
     local _flag=""
     [[ "${_DM_ENC:-nip44}" == "nip04" ]] && _flag="--nip04"
-    printf '%s\n' "$NODE_NSEC" | python3 "$SECURE_DM" --nsec-stdin ${_flag} "$@" 2>/dev/null
+    local _recipient="$1" _message="$2"
+    local _sent=false _r
+    for _r in "${_RELAYS[@]}"; do
+        printf '%s\n' "$NODE_NSEC" | python3 "$SECURE_DM" --nsec-stdin ${_flag} \
+            "$_recipient" "$_message" "$_r" 2>/dev/null && _sent=true
+    done
+    $_sent
 }
 
 ## ── Alerte email capitaine (rate-limitée à 1/24h) ────────────────────
@@ -779,16 +789,60 @@ _handle_comfyui_job() {
     
     _log "🎬 comfyui_job: mode=${_MODE:-t2v} job=${_JOB_ID:-?} de ${sender:0:12}... (${_EMAIL:-?})"
 
+    ## ── Helper interne : envoyer un comfyui_result sur tous les relays ──────
+    ## Utilisé aussi bien pour le résultat final que pour notifier un échec.
+    ## Garantit que la réponse revient au satellite quel que soit son relay.
+    _comfyui_send_result() {
+        local _to="$1" _payload="$2"
+        [[ -z "$_to" || ${#_to} -ne 64 ]] && return 1
+        local _r _ok=false
+        for _r in "${_RELAYS[@]}"; do
+            printf '%s\n' "$NODE_NSEC" | python3 "$INTERCOM" send \
+                --nsec-stdin \
+                --to      "$_to" \
+                --channel "comfyui_result" \
+                --payload "$_payload" \
+                --relays  "$_r" \
+                2>/dev/null && _ok=true
+        done
+        $_ok
+    }
+
+    ## Construire le payload de résultat (success ou failure)
+    _comfyui_result_payload() {
+        python3 -c "
+import json, sys
+print(json.dumps({
+    'job_id':       sys.argv[1],
+    'email':        sys.argv[2],
+    'result_url':   sys.argv[3],
+    'status':       sys.argv[4],
+    'reply_pubkey': sys.argv[5],
+    'mode':         sys.argv[6],
+}))
+" "${_JOB_ID:-}" "${_EMAIL:-}" "${1:-}" "${2:-failed}" \
+  "${_REPLY_PUBKEY:-}" "${_MODE:-t2v}" 2>/dev/null
+    }
+
     ## Acquérir le verrou GPU exclusif (bloque jusqu'à 5 min max)
     (
         flock -x -w 300 9 || {
-            _log "WARN: 🎬 comfyui_job: timeout GPU lock — abandon job ${_JOB_ID:-?}"
+            _log "WARN: 🎬 comfyui_job: timeout GPU lock (>5min) — job ${_JOB_ID:-?} abandonné"
+            ## Notifier le satellite : réponse "failed" pour ne pas laisser
+            ## l'utilisateur attendre une réponse qui ne reviendra jamais.
+            _comfyui_send_result "$_REPLY_NODE_HEX" \
+                "$(_comfyui_result_payload "" "failed")" \
+                && _log "🎬 comfyui_job: timeout notifié → ${_REPLY_NODE_HEX:0:12}..." \
+                || _log "WARN: 🎬 comfyui_job: notification timeout FAILED"
             exit 1
         }
 
         ## Connecter ComfyUI local (local > P2P > SSH)
         if ! bash "$MY_PATH/../services/comfyui.me.sh" 2>/dev/null; then
-            _log "WARN: 🎬 comfyui_job: ComfyUI indisponible sur ce Brain"
+            _log "WARN: 🎬 comfyui_job: ComfyUI indisponible — job ${_JOB_ID:-?}"
+            _comfyui_send_result "$_REPLY_NODE_HEX" \
+                "$(_comfyui_result_payload "" "failed")" \
+                || _log "WARN: 🎬 comfyui_job: notification ComfyUI absent FAILED"
             exit 1
         fi
 
@@ -808,30 +862,12 @@ _handle_comfyui_job() {
         [[ -n "$_result_url" ]] && _status="ok"
         _log "🎬 comfyui_job: job=${_JOB_ID:-?} status=$_status url=${_result_url:0:60}"
 
-        ## Renvoyer le résultat au satellite demandeur via DM
+        ## Renvoyer le résultat au satellite sur tous les relays connus
         if [[ -n "$_REPLY_NODE_HEX" && ${#_REPLY_NODE_HEX} -eq 64 ]]; then
-            local _res_payload
-            _res_payload=$(python3 -c "
-import json, sys
-print(json.dumps({
-    'job_id':       sys.argv[1],
-    'email':        sys.argv[2],
-    'result_url':   sys.argv[3],
-    'status':       sys.argv[4],
-    'reply_pubkey': sys.argv[5],
-    'mode':         sys.argv[6],
-}))
-" "${_JOB_ID:-}" "${_EMAIL:-}" "$_result_url" "$_status" \
-  "${_REPLY_PUBKEY:-}" "${_MODE:-t2v}" 2>/dev/null)
-            python3 "$INTERCOM" send \
-                --nsec    "$NODE_NSEC" \
-                --to      "$_REPLY_NODE_HEX" \
-                --channel "comfyui_result" \
-                --payload "$_res_payload" \
-                --relays  "${_RELAYS[0]}" \
-                2>/dev/null \
+            _comfyui_send_result "$_REPLY_NODE_HEX" \
+                "$(_comfyui_result_payload "$_result_url" "$_status")" \
                 && _log "🎬 comfyui_job: résultat → ${_REPLY_NODE_HEX:0:12}..." \
-                || _log "WARN: 🎬 comfyui_job: DM résultat FAILED"
+                || _log "WARN: 🎬 comfyui_job: DM résultat FAILED (tous relays)"
         fi
     ) 9>"$_GPU_LOCK"
 }
@@ -1007,8 +1043,17 @@ _process_event() {
     [[ ! -f "$event_file" ]] && return
 
     local decoded
-    decoded=$(NOSTR_NSEC="$NODE_NSEC" python3 "$INTERCOM" decrypt 2>/dev/null < "$event_file")
-    rm -f "$event_file"
+    ## Deux formats possibles dans la queue :
+    ##  • Strfry  {"event":{"kind":4,...},"receivedAt":...} → déchiffrement via INTERCOM decrypt
+    ##  • Décodé  {"channel":...,"sender":...,"payload":...,"enc":...} → subscriber constellation
+    ##    (receive retourne déjà le JSON déchiffré ; pas besoin de decrypt)
+    if jq -e '.channel' "$event_file" >/dev/null 2>&1; then
+        decoded=$(cat "$event_file")
+        rm -f "$event_file"
+    else
+        decoded=$(NOSTR_NSEC="$NODE_NSEC" python3 "$INTERCOM" decrypt 2>/dev/null < "$event_file")
+        rm -f "$event_file"
+    fi
 
     if [[ -z "$decoded" ]]; then
         _log "WARN: déchiffrement échoué pour $(basename "$event_file")"
@@ -1179,24 +1224,80 @@ _constellation_subscriber_loop() {
         return
     fi
 
-    _log "🌐 Subscriber constellation démarré → $_relay (NODE ${_NODE_HEX:0:12}…)"
+    ## ── Persistance anti-perte et anti-doublon ──────────────────────────
+    ## _SINCE_FILE : _since survit aux redémarrages — les events reçus pendant
+    ##   une coupure du daemon (< TTL relay = 24h) ne sont pas perdus.
+    ## _SEEN_FILE  : fenêtre glissante des 500 derniers event_id traités —
+    ##   évite la double exécution si le relay rejoue les mêmes events
+    ##   (ex: --since qui n'avance pas car created_at = 0 sur event malformé).
+    local _SINCE_FILE="$HOME/.zen/tmp/bro_constellation_since"
+    local _SEEN_FILE="$HOME/.zen/tmp/bro_constellation_seen"
+
+    local _since
+    _since=$(cat "$_SINCE_FILE" 2>/dev/null | tr -d '[:space:]')
+    if [[ -z "$_since" || ! "$_since" =~ ^[0-9]+$ || "$_since" -lt 1000000000 ]]; then
+        _since=$(date +%s)
+    fi
+
+    local _seen_csv=""
+    [[ -f "$_SEEN_FILE" ]] && _seen_csv=$(cat "$_SEEN_FILE" 2>/dev/null | tr -d '[:space:]')
+
+    _log "🌐 Subscriber constellation démarré → $_relay (NODE ${_NODE_HEX:0:12}… since ${_since})"
+
     while [[ "$_BRO_CLEAN_STOP" != true ]]; do
-        ## nostr_node_intercom.py receive — timeout 30s, lit UN DM puis exit
-        ## On boucle pour maintenir un abonnement permanent
-        local _raw_event
-        _raw_event=$(NOSTR_NSEC="$NODE_NSEC" python3 "$INTERCOM" receive \
-            --pubkey   "$_NODE_HEX" \
-            --relay    "$_relay" \
-            --timeout  30 \
+        ## nostr_node_intercom.py receive (API actuelle) :
+        ##   --nsec-stdin : NSEC via stdin (invisible dans ps aux)
+        ##   --relays     : liste de relays (pluriel, required)
+        ##   --since      : timestamp Unix — retourne uniquement les events postérieurs
+        ## Retourne JSON array d'events déjà déchiffrés :
+        ##   [{"channel":..., "sender":..., "payload":..., "enc":...,
+        ##     "created_at":..., "event_id":...}]
+        local _decoded_json
+        _decoded_json=$(printf '%s\n' "$NODE_NSEC" | python3 "$INTERCOM" receive \
+            --nsec-stdin \
+            --relays   "$_relay" \
+            --since    "$_since" \
             2>/dev/null)
-        if [[ -n "$_raw_event" ]]; then
-            local _dst
-            _dst="$QUEUE_DIR/constellation_$(date +%s%N).json"
-            printf '%s\n' "$_raw_event" > "$_dst"
-            _log "🌐 DM constellation reçu → queue: $(basename "$_dst")"
+
+        if [[ -n "$_decoded_json" && "$_decoded_json" != "[]" ]]; then
+            ## Éclater le tableau en fichiers queue individuels.
+            ## _process_event détecte le champ .channel → saute l'étape decrypt.
+            local _count=0 _max_ts="$_since" _new_ids=""
+            while IFS= read -r _ev; do
+                [[ -z "$_ev" ]] && continue
+                local _eid _ts
+                _eid=$(jq -r '.event_id // ""' <<< "$_ev" 2>/dev/null)
+                ## Déduplication : ignorer si cet event_id a déjà été traité
+                if [[ -n "$_eid" && ",${_seen_csv}," == *",${_eid},"* ]]; then
+                    _log "🌐 event ${_eid:0:12}… déjà traité — ignoré"
+                    continue
+                fi
+                printf '%s\n' "$_ev" \
+                    > "$QUEUE_DIR/constellation_$(date +%s%N)_${_count}.json"
+                _ts=$(jq -r '.created_at // 0' <<< "$_ev" 2>/dev/null)
+                [[ "${_ts:-0}" -gt "$_max_ts" ]] && _max_ts="$_ts"
+                [[ -n "$_eid" ]] && _new_ids="${_new_ids}${_eid},"
+                (( _count++ ))
+            done < <(python3 -c \
+                "import json,sys; [print(json.dumps(e)) for e in json.loads(sys.stdin.read() or '[]')]" \
+                <<< "$_decoded_json" 2>/dev/null)
+
+            if [[ "$_count" -gt 0 ]]; then
+                _log "🌐 ${_count} DM(s) constellation reçu(s) → queue"
+                ## Persister _since pour survivre aux redémarrages
+                [[ "$_max_ts" -gt "$_since" ]] && _since=$(( _max_ts + 1 ))
+                printf '%s\n' "$_since" > "$_SINCE_FILE"
+                ## Mettre à jour la fenêtre des IDs vus (max 500, rotation)
+                _seen_csv="${_seen_csv}${_new_ids}"
+                _seen_csv=$(printf '%s\n' "${_seen_csv//,/$'\n'}" \
+                    | grep -v '^$' | tail -500 | tr '\n' ',')
+                printf '%s\n' "$_seen_csv" > "$_SEEN_FILE"
+            fi
         fi
-        ## Pause courte si le relay a renvoyé EOSE ou timeout (évite busy-loop)
-        [[ -z "$_raw_event" ]] && sleep 2
+
+        ## Poll toutes les 30s (la connexion WS prend déjà ~12s max côté Python)
+        [[ "$_BRO_CLEAN_STOP" == true ]] && break
+        sleep 30
     done
     _log "🌐 Subscriber constellation arrêté"
 }

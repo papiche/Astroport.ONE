@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>☀️ Oracle Kin _KIN_NUM_ — _DATE_</title>
+<style>
+body{margin:0;padding:0;background:#0f0e17;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.wrap{max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+/* ── Hero ── */
+.hero{background:linear-gradient(135deg,_KIN_HEX_COLOR_,#1e1b4b);color:#fff;padding:2.2rem 1.8rem;text-align:center}
+.hero-glyph{font-size:3.5rem;line-height:1;margin-bottom:.4rem}
+.hero-kin{font-size:1.4rem;font-weight:800;margin:.4rem 0;letter-spacing:.5px}
+.hero-sub{font-size:.88rem;opacity:.85;line-height:1.6}
+.hero-phi{font-size:.78rem;opacity:.8;margin-top:.3rem}
+.score-badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:.3rem 1rem;font-weight:700;font-size:.9rem;margin-top:.8rem}
+.birthday-banner{font-size:1.15rem;margin-top:.6rem;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+/* ── Sections ── */
+.section{padding:1.2rem 1.5rem;border-bottom:1px solid #f0f0f8}
+.section-title{font-size:.95rem;font-weight:700;color:_KIN_HEX_COLOR_;margin-bottom:.8rem;display:flex;align-items:center;gap:.4rem}
+/* ── Kin du jour ── */
+.today-box{background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:10px;padding:1rem 1.1rem;border-left:4px solid _KIN_HEX_COLOR_;margin-bottom:.6rem}
+.today-kin{font-weight:700;font-size:1.05rem}
+.today-detail{font-size:.82rem;color:#555;margin-top:.2rem}
+/* ── Vague-sort progress ── */
+.wave{display:flex;gap:3px;flex-wrap:wrap;margin:.6rem 0}
+.wd{width:24px;height:24px;border-radius:5px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;color:#9ca3af}
+.wd.today{background:_KIN_HEX_COLOR_;color:#fff}
+.wd.past{background:#d1fae5;color:#065f46}
+/* ── Achievements / Défis ── */
+.ach{color:#16a34a;font-size:.83rem;margin:.3rem 0;display:flex;align-items:flex-start;gap:.4rem}
+.challenge{background:#f5f3ff;border-radius:7px;padding:.45rem .85rem;font-size:.82rem;color:#7c3aed;margin:.3rem 0}
+/* ── Oracle ── */
+.oracle-card{margin:.4rem 0;padding:.7rem 1rem;border-radius:9px;border-left:4px solid;font-size:.85rem}
+.oracle-mate{color:#7c3aed;font-size:.8rem;display:block;margin:.2rem 0}
+/* ── Phi / Hex ── */
+.match-card{background:#f8f7ff;border-radius:9px;padding:.7rem 1rem;margin:.4rem 0;font-size:.85rem}
+.phi-bar{height:5px;background:#e5e7eb;border-radius:3px;margin:.3rem 0;overflow:hidden}
+.phi-fill{height:5px;border-radius:3px;background:_KIN_HEX_COLOR_}
+/* ── Stats ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.stat-card{border-radius:9px;padding:.7rem;text-align:center;font-size:.82rem}
+.stat-card strong{font-size:1.2rem;display:block;margin-bottom:.1rem}
+/* ── CTA ── */
+.cta{text-align:center;padding:1.2rem 1.5rem}
+.btn{display:inline-block;color:#fff;padding:.5rem 1.2rem;border-radius:9px;text-decoration:none;font-weight:600;font-size:.85rem;margin:.25rem;background:_KIN_HEX_COLOR_}
+.btn-green{background:#059669}
+/* ── Footer ── */
+.footer{background:#f7f7fb;padding:.9rem 1.2rem;text-align:center;font-size:.7rem;color:#9ca3af;line-height:1.6}
+</style>
+</head>
+<body><div class="wrap">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-glyph">_KIN_SEAL_EMO_</div>
+  <div class="hero-kin">KIN _KIN_NUM_ — _KIN_COLOR_EMO_ _KIN_COLOR_ _KIN_SEAL_</div>
+  <div class="hero-sub">Tonalité _KIN_TONE_ T_KIN_TONE_NUM_ · Vague-sort _MY_WS_NUM_, Jour _MY_WS_POS_/13</div>
+  <div class="hero-phi">_PHI_LINE_</div>
+  <div class="score-badge">🏆 +_SCORE_ pts aujourd'hui</div>
+  _BIRTHDAY_BANNER_
+</div>
+
+<!-- KIN DU JOUR -->
+<div class="section">
+  <div class="section-title">☀️ Kin du Jour — _DATE_</div>
+  <div class="today-box">
+    <div class="today-kin">Kin _TODAY_KIN_NUM_ _TODAY_KIN_EMO_ _TODAY_KIN_COLOR_ _TODAY_KIN_SEAL_</div>
+    <div class="today-detail">_TODAY_KIN_TONE_ · _TODAY_KIN_POWER_ · _TODAY_KIN_ACTION_</div>
+    <div class="wave">_WAVE_PROGRESS_</div>
+    <div style="font-size:.78rem;color:#6b7280">Vague-sort _TODAY_WS_NUM_, Jour _TODAY_WS_POS_/13</div>
+  </div>
+</div>
+
+<!-- ACHIEVEMENTS & DÉFIS -->
+_GAME_SECTION_
+
+<!-- 5 POUVOIRS ORACLE -->
+<div class="section">
+  <div class="section-title">🔮 Votre Oracle Dreamspell — 5 Pouvoirs</div>
+  _ORACLE_ENTRIES_
+</div>
+
+<!-- RÉSONANCES PHI -->
+_PHI_SECTION_
+
+<!-- NŒUDS HEXAGONAUX -->
+_HEX_SECTION_
+
+<!-- STATS -->
+<div class="section">
+  <div class="section-title">🏆 Profil ATOM4LOVE</div>
+  <div class="grid2">_STATS_CARDS_</div>
+</div>
+
+<!-- CONTEXTE ALPHA TEST -->
+<div class="section" style="background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(99,102,241,0.05));border-top:2px solid rgba(124,58,237,0.3)">
+  <div class="section-title" style="color:#7c3aed">🧪 Phase Alpha — UPlanet ORIGIN</div>
+  <p style="font-size:.82rem;color:#555;line-height:1.6;margin:0 0 .8rem 0">
+    Tu fais partie des premiers explorateurs d'<strong>ATOM4LOVE</strong> sur la constellation
+    <strong>UPlanet ORIGIN</strong>. Chaque résonance φ mesurée, chaque pensée déposée dans la
+    Spacememory contribue à valider les protocoles qui permettront d'accueillir
+    <strong>des milliers de familles d'âme et de cœur</strong> dans UPlanet ẐEN.
+  </p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;text-align:center;font-size:.75rem">
+    <div style="background:rgba(16,185,129,0.1);border-radius:8px;padding:.5rem">
+      <strong style="color:#059669">🌱 Utilisateur</strong><br>
+      <span style="color:#555">Ton MULTIPASS,<br>ta résonance φ</span>
+    </div>
+    <div style="background:rgba(59,130,246,0.1);border-radius:8px;padding:.5rem">
+      <strong style="color:#2563eb">⚓ Capitaine</strong><br>
+      <span style="color:#555">Gérer un satellite<br>24-250 users</span>
+    </div>
+    <div style="background:rgba(245,158,11,0.1);border-radius:8px;padding:.5rem">
+      <strong style="color:#d97706">🚢 Armateur</strong><br>
+      <span style="color:#555">Hub GPU<br>0-24 satellites</span>
+    </div>
+  </div>
+</div>
+
+<!-- MISSION VOCALE -->
+<div style="background:#f5f3ff;border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0;border-left:4px solid #7c3aed">
+  <div style="font-weight:700;color:#7c3aed;margin-bottom:.5rem">🎙️ Accordez votre Instrument Cosmique</div>
+  <div style="font-size:.84rem;color:#4b5563;line-height:1.6">
+    Votre MULTIPASS manque encore de votre <strong>signature vocale</strong>.<br>
+    Ouvrez ATOM4LOVE → onglet <strong>⚛ PROFIL</strong> → bouton <strong>🎙️ Enregistrer mon Mantra</strong>.<br>
+    Chantez une voyelle (<em>« Aaaa »</em> ou <em>« Ommm »</em>) pendant 1 seconde.<br><br>
+    Le réseau pitchera automatiquement votre voix sur votre résonance de l'eau
+    <strong>_OMEGA_BIO_ Hz</strong> — votre tonique cosmique personnelle.
+    Chaque atome vous entendra avec votre propre timbre dans la Chorale Galactique. 🎵
+  </div>
+  <div style="text-align:center;margin-top:.7rem">
+    <a href="https://u.copylaradio.com/apk/atom4love.apk"
+       style="background:#7c3aed;color:#fff;padding:.4rem 1rem;border-radius:8px;text-decoration:none;font-size:.82rem">
+      🎙️ Ouvrir ATOM4LOVE et enregistrer
+    </a>
+  </div>
+</div>
+
+<!-- ALERTE SWARM (injectée par KIN.news.sh si convergence détectée) -->
+_SWARM_ALERT_
+
+<!-- CTA VIRAL -->
+<div class="cta">
+  <div style="font-size:.88rem;color:#555;margin-bottom:.8rem">
+    Invite un proche à découvrir sa résonance φ — chaque nouvel atome enrichit la constellation 🌀
+  </div>
+  <a class="btn" href="https://opencollective.com/monnaie-libre">🤝 Devenir Co-Bâtisseur G1FabLab</a>
+  <a class="btn btn-green" href="https://u.copylaradio.com/apk/atom4love.apk">📲 Partager l'APK</a>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <strong>ATOM4LOVE</strong> · Test Alpha · Oracle Tzolkin Dreamspell · UPlanet ORIGIN → ẐEN<br>
+  G1FabLab · Un bien commun numérique construit par ceux qui le vivent<br>
+  Kin _TODAY_KIN_NUM_ _TODAY_KIN_COLOR_ _TODAY_KIN_SEAL_ — _DATE_<br>
+  <a href="mailto:support@qo-op.com?subject=opt-out%20kin-daily" style="color:#9ca3af">Se désabonner</a>
+</div>
+
+</div></body></html>

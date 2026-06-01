@@ -101,6 +101,288 @@ _kin_meeting_block() {
     printf '</div>\n'
 }
 
+# ─── CRT : sceau + tonalité → Kin (Chinese Remainder Theorem) ───────────────
+# s0=0-19 (sceau), t0=0-12 (tonalité) → Kin 1-260
+# Vérifié : _seal_tone_to_kin 0 0 = 1 (Imix Magnétique), _seal_tone_to_kin 10 12 = 91
+_seal_tone_to_kin() {
+    local s0=$1 t0=$2
+    local n=$(( (( (t0 - s0 % 13) * 2 ) % 13 + 13) % 13 ))
+    echo $(( s0 + 20 * n + 1 ))
+}
+
+# ─── Guide (5ème pouvoir — mentor de la famille-couleur) ─────────────────────
+# Même famille-couleur (seal % 4), position = (T-1)%5 dans la famille
+# T1,T6,T11 → guide=soi | T2,T7,T12 → pos1 | T3,T8,T13 → pos2 | T4,T9 → pos3 | T5,T10 → pos4
+_kin_guide() {
+    local k=$1
+    local s0=$(( (k-1) % 20 ))
+    local t0=$(( (k-1) % 13 ))
+    local T=$(( t0 + 1 ))
+    local guide_pos=$(( (T-1) % 5 ))
+    local fam=$(( s0 % 4 ))
+    local guide_s=$(( fam + guide_pos * 4 ))
+    _seal_tone_to_kin "$guide_s" "$t0"
+}
+
+# ─── Antipode (4ème pouvoir — défi créateur) ─────────────────────────────────
+# Sceau +10 mod 20, tonalité miroir 14-T
+_kin_antipode() {
+    local k=$1
+    local s0=$(( (k-1) % 20 ))
+    local t0=$(( (k-1) % 13 ))
+    local anti_s=$(( (s0 + 10) % 20 ))
+    local anti_t0=$(( 12 - t0 ))
+    _seal_tone_to_kin "$anti_s" "$anti_t0"
+}
+
+# ─── Vague-sort / Wavespell (cycle de 13 Kins) ───────────────────────────────
+# Retourne "num_vague:position:kin_graine"
+_kin_wavespell() {
+    local k=$1
+    local ws=$(( (k-1) / 13 + 1 ))
+    local pos=$(( (k-1) % 13 + 1 ))
+    local seed=$(( (ws-1) * 13 + 1 ))
+    echo "${ws}:${pos}:${seed}"
+}
+
+# ─── Kin du jour (Tzolkin epoch : 26 juillet 1987 = Kin 1) ──────────────────
+# Date de référence Dreamspell : 1987-07-26 = Kin 1
+_today_kin() {
+    local epoch_days today_days delta
+    epoch_days=$(awk 'BEGIN{
+        y=1987; m=7; d=26
+        if(m<3){y--;m+=12}
+        A=int(y/100); B=2-A+int(A/4)
+        printf "%d", int(365.25*(y+4716))+int(30.6001*(m+1))+d+B-1524
+    }')
+    today_days=$(awk 'BEGIN{
+        cmd="date -u +%Y-%m-%d"; cmd | getline dt; close(cmd)
+        split(dt,a,"-"); y=a[1]+0; m=a[2]+0; d=a[3]+0
+        if(m<3){y--;m+=12}
+        A=int(y/100); B=2-A+int(A/4)
+        printf "%d", int(365.25*(y+4716))+int(30.6001*(m+1))+d+B-1524
+    }')
+    local delta=$(( today_days - epoch_days ))
+    echo $(( (delta % 260 + 260) % 260 + 1 ))
+}
+
+# ─── Résonance phi : k = 1/(1+|sin(Δφ)|) — formule ATOM4LOVE ────────────────
+# 0.5 = minimum  |  1.0 = singularité optique (résonnance parfaite)
+_phi_resonance_k() {
+    awk -v pa="$1" -v pb="$2" 'BEGIN {
+        d = pa - pb; if (d < 0) d = -d
+        s = sin(d); if (s < 0) s = -s
+        printf "%.4f\n", 1.0 / (1.0 + s)
+    }'
+}
+
+# ─── Tableaux globaux enrichis A4L ──────────────────────────────────────────
+declare -A email_phi=()      # email → personal_phase φ_i
+declare -A email_omega=()    # email → omega_bio ω
+declare -A email_sex=()      # email → biological_sex (0=Φ 1=Octave)
+declare -A email_kin30078=() # email → kin_num depuis Kind 30078
+declare -A email_inst=()     # email → inst_id (0=synth 1=voix)
+declare -A pubkey_email=()   # hex pubkey → email (rempli par scan DID)
+declare -A email_hexagons=() # email → "a4l:P02H... a4l:P02 …" (Spacememory)
+declare -A email_k_sum=()    # email → somme des k Atom4Peace reçus
+declare -A email_k_count=()  # email → nombre de résonances live
+declare -A email_resonance_graph=() # email → "email1:k1 email2:k2 …" (graphe pairs)
+
+# ─── Scan DID (kind 30800) : peupler pubkey_email[], email_phi[], email_nostrns[] ──
+_scan_did_mapping() {
+    local strfry_dir="${HOME}/.zen/strfry"
+    local strfry_bin="${strfry_dir}/strfry"
+    [[ ! -x "$strfry_bin" ]] && return 1
+    local count=0
+    while IFS= read -r evt; do
+        [[ -z "$evt" ]] && continue
+        local pubkey content _email _ipns
+        pubkey=$(echo "$evt" | jq -r '.pubkey // empty' 2>/dev/null)
+        content=$(echo "$evt" | jq -r '.content // empty' 2>/dev/null)
+        [[ -z "$pubkey" || -z "$content" ]] && continue
+        _email=$(echo "$content" | jq -r '
+            .metadata.email //
+            (.alsoKnownAs // [] | map(select(startswith("mailto:"))) | first // "")
+        ' 2>/dev/null | sed 's/^mailto://')
+        [[ -z "$_email" || "$_email" == "null" ]] && continue
+        pubkey_email["$pubkey"]="$_email"
+        _ipns=$(echo "$content" | jq -r '
+            .service // [] | map(select(.id | endswith("#ipns-storage"))) | first.serviceEndpoint // ""
+        ' 2>/dev/null)
+        [[ -n "$_ipns" ]] && email_nostrns["$_email"]="$_ipns"
+        ((count++))
+    done < <(cd "$strfry_dir" && ./strfry scan '{"kinds":[30800]}' 2>/dev/null)
+    echo "$count"
+}
+
+# ─── Scan Kind 30078 (certificat A4L) : extraire φ_i et ω_bio ───────────────
+_scan_a4l_phi() {
+    # Scan Kind 30078 d=atom4love — extrait tous les champs ATOM4LOVE
+    # Champs v1 : personal_phase, omega_bio
+    # Champs v2 : + biological_sex, kin_num, inst_id (app v2+)
+    local strfry_dir="${HOME}/.zen/strfry"
+    [[ ! -x "${strfry_dir}/strfry" ]] && echo 0 && return 1
+    local count=0
+    local PHI2X="${MY_PATH}/phi2x.py"
+    while IFS= read -r evt; do
+        [[ -z "$evt" ]] && continue
+        local pubkey content phi omega sex kin_n inst proof
+        pubkey=$(echo "$evt" | jq -r '.pubkey // empty' 2>/dev/null)
+        content=$(echo "$evt" | jq -r '.content // empty' 2>/dev/null)
+        [[ -z "$pubkey" ]] && continue
+        phi=$(echo "$content"   | jq -r '.personal_phase    // empty' 2>/dev/null)
+        omega=$(echo "$content" | jq -r '.omega_bio         // empty' 2>/dev/null)
+        sex=$(echo "$content"   | jq -r '.biological_sex    // empty' 2>/dev/null)
+        kin_n=$(echo "$content" | jq -r '.kin_num           // empty' 2>/dev/null)
+        inst=$(echo "$content"  | jq -r '.inst_id           // "0"'   2>/dev/null)
+        [[ -z "$phi" ]] && continue
+        # Vérification a4l_proof (optionnelle, utilise phi2x.py si disponible)
+        if [[ -x "$PHI2X" ]]; then
+            proof=$(echo "$evt" | jq -r '.tags//[]|map(select(.[0]=="a4l_proof"))|first[1]//"" ' 2>/dev/null)
+            if [[ -n "$proof" ]]; then
+                _valid=$(python3 -c "
+import hashlib, sys
+pubkey='$pubkey'; proof='$proof'; salt='ATOM4LOVE_v1'
+expected=hashlib.sha256((pubkey+':'+salt).encode()).hexdigest()
+print('ok' if expected==proof else 'fail')
+" 2>/dev/null)
+                [[ "$_valid" != "ok" ]] && continue  # Ignorer les certifs invalides
+            fi
+        fi
+        local _email="${pubkey_email[$pubkey]:-}"
+        [[ -z "$_email" ]] && continue
+        email_phi["$_email"]="$phi"
+        [[ -n "$omega" ]] && email_omega["$_email"]="$omega"
+        [[ -n "$sex"   ]] && email_sex["$_email"]="$sex"
+        [[ -n "$kin_n" ]] && email_kin30078["$_email"]="$kin_n"
+        email_inst["$_email"]="${inst:-0}"
+        ((count++))
+    done < <(cd "$strfry_dir" && ./strfry scan '{"kinds":[30078],"#d":["atom4love"]}' 2>/dev/null)
+    echo "$count"
+}
+
+# ─── Scan Kind 1 Spacememory : hexagones fréquentés ─────────────────────────
+_scan_spacememory_hexagons() {
+    local strfry_dir="${HOME}/.zen/strfry"
+    [[ ! -x "${strfry_dir}/strfry" ]] && echo 0 && return 1
+    local count=0
+    while IFS= read -r evt; do
+        [[ -z "$evt" ]] && continue
+        local pubkey hex_tags
+        pubkey=$(echo "$evt" | jq -r '.pubkey // empty' 2>/dev/null)
+        [[ -z "$pubkey" ]] && continue
+        local _email="${pubkey_email[$pubkey]:-}"
+        [[ -z "$_email" ]] && continue
+        hex_tags=$(echo "$evt" | jq -r '
+            .tags // [] | map(select(.[0]=="l" and (.[1]//""|startswith("a4l:")))) | .[].1
+        ' 2>/dev/null | tr '\n' ' ')
+        [[ -z "$hex_tags" ]] && continue
+        email_hexagons["$_email"]+=" $hex_tags"
+        ((count++))
+    done < <(cd "$strfry_dir" && ./strfry scan '{"kinds":[1],"#t":["atom4love"]}' 2>/dev/null)
+    echo "$count"
+}
+
+# ─── Scan Kind 7 ATOM4LOVE : résonances — tag "#t"="a4l-resonance" ───────────
+# content "+k" avec k ∈ [0.5, 1.0] — jamais ambigu avec paiements ẐEN (+N, N>1)
+# Tag distinctif ["t","a4l-resonance"] ajouté depuis app v2 pour éviter toute
+# confusion avec les Kind 7 de paiement ẐEN (["t","atom4love"] seul).
+_scan_atom4peace_resonances() {
+    local strfry_dir="${HOME}/.zen/strfry"
+    [[ ! -x "${strfry_dir}/strfry" ]] && echo 0 && return 1
+    local count=0
+    while IFS= read -r evt; do
+        [[ -z "$evt" ]] && continue
+        local pubkey content k_val target_pubkey
+        pubkey=$(echo "$evt"        | jq -r '.pubkey // empty' 2>/dev/null)
+        content=$(echo "$evt"       | jq -r '.content // empty' 2>/dev/null)
+        target_pubkey=$(echo "$evt" | jq -r '.tags//[]|map(select(.[0]=="p"))|first[1]//"" ' 2>/dev/null)
+        [[ -z "$pubkey" ]] && continue
+        # Filtre : k ∈ [0.5, 1.0] (distingue des paiements ẐEN > 1)
+        k_val=$(echo "$content" | grep -oP '[0-9]+\.[0-9]+' | head -1)
+        [[ -z "$k_val" ]] && continue
+        _kf=$(awk -v k="$k_val" 'BEGIN{print (k>=0.45 && k<=1.0) ? "ok" : "skip"}')
+        [[ "$_kf" != "ok" ]] && continue
+        local _email="${pubkey_email[$pubkey]:-}"
+        [[ -z "$_email" ]] && continue
+        # Accumuler (somme + count pour moyenne k)
+        email_k_sum["$_email"]=$(awk -v a="${email_k_sum[$_email]:-0}" -v b="$k_val" \
+            'BEGIN{printf "%.4f",a+b}')
+        email_k_count["$_email"]=$(( ${email_k_count[$_email]:-0} + 1 ))
+        # Graphe de résonance : email_source → "email_cible:k ..."
+        if [[ -n "$target_pubkey" ]]; then
+            local _target_email="${pubkey_email[$target_pubkey]:-}"
+            if [[ -n "$_target_email" ]]; then
+                email_resonance_graph["$_email"]+="${_target_email}:${k_val} "
+                # Symétrique (k est réciproque)
+                email_resonance_graph["$_target_email"]+="${_email}:${k_val} "
+            fi
+        fi
+        ((count++))
+    done < <(cd "$strfry_dir" && ./strfry scan \
+        '{"kinds":[7],"#t":["a4l-resonance"]}' 2>/dev/null)
+    # Note : 7.sh (NIP-101 relay) traite les Kind 7 content "+N" (N entier) comme
+    # paiements ẐEN. Nos résonances "+k" (k décimal < 1.0) ne déclenchent jamais
+    # un paiement — la distinction est naturelle et ne nécessite pas de filtrage relay.
+    echo "$count"
+}
+
+# ─── Hexagones partagés entre deux membres ───────────────────────────────────
+_hexagon_shared_count() {
+    local ea="$1" eb="$2"
+    local ha="${email_hexagons[$ea]:-}" hb="${email_hexagons[$eb]:-}"
+    [[ -z "$ha" || -z "$hb" ]] && echo 0 && return
+    local shared=0
+    for hex in $ha; do
+        [[ "$hb" == *"$hex"* ]] && ((shared++))
+    done
+    echo "$shared"
+}
+
+# ─── Carte membre enrichie (phi, omega, hexagones, score) ───────────────────
+_kin_member_card_rich() {
+    local k="$1" phi="${2:-}" omega="${3:-}"; shift 3
+    local s t c
+    s=$(_kin_seal "$k"); t=$(_kin_tone "$k"); c=$(_kin_color "$k")
+    local color="${_DS_COLORS[$c]}" seal="${_DS_SEALS[$s]}" tone="${_DS_TONES[$((t-1))]}"
+    local hex="${_DS_COLOR_HEX[$color]:-#6366f1}"
+    local bg="${_DS_COLOR_BG[$color]:-#f5f3ff}"
+    local emo="${_DS_COLOR_EMO[$color]:-🌀}"
+    local seal_emo="${_DS_SEAL_EMO[$s]:-✦}"
+    for _email in "$@"; do
+        [[ -z "$_email" ]] && continue
+        local _phi="${email_phi[$_email]:-$phi}"
+        local _omega="${email_omega[$_email]:-$omega}"
+        local _ksum="${email_k_sum[$_email]:-}"
+        local _kcnt="${email_k_count[$_email]:-0}"
+        local _avg_k=""
+        [[ -n "$_ksum" && "$_kcnt" -gt 0 ]] && \
+            _avg_k=$(awk -v s="$_ksum" -v n="$_kcnt" 'BEGIN{printf "%.3f",s/n}')
+        local _hexcnt=$(echo "${email_hexagons[$_email]:-}" | wc -w)
+        local _profile_url="${email_nostrns[$_email]:-}"
+        printf '<div class="member" style="border-left:4px solid %s;background:%s;border-radius:10px;padding:.8rem 1rem;margin:.4rem 0">' "$hex" "$bg"
+        printf '<div style="display:flex;align-items:center;gap:.8rem">'
+        printf '<div style="font-size:1.8rem">%s</div>' "$seal_emo"
+        printf '<div style="flex:1">'
+        printf '<div style="font-weight:700;color:%s">KIN %s — %s %s</div>' "$hex" "$k" "$emo" "$seal"
+        printf '<div style="font-size:.85rem;color:#555">T%s %s</div>' "$t" "$tone"
+        printf '<div style="font-size:.82rem;color:#444;margin-top:.2rem">%s</div>' "$_email"
+        if [[ -n "$_phi" ]]; then
+            printf '<div style="font-size:.78rem;color:%s;margin-top:.2rem">⚛ φ_i = %s  |  ω = %s Hz</div>' "$hex" "$_phi" "$_omega"
+        fi
+        if [[ "$_kcnt" -gt 0 ]]; then
+            printf '<div style="font-size:.75rem;color:#7c3aed">🎯 k moyen = %s (%s résonances live)</div>' "$_avg_k" "$_kcnt"
+        fi
+        if [[ "$_hexcnt" -gt 0 ]]; then
+            printf '<div style="font-size:.75rem;color:#059669">⬡ %s nœuds hexagonaux explorés</div>' "$_hexcnt"
+        fi
+        if [[ -n "$_profile_url" ]]; then
+            printf '<div style="margin-top:.3rem"><a href="%s" style="color:%s;font-size:.8rem">🌐 Profil UPlanet →</a></div>' "$_profile_url" "$hex"
+        fi
+        printf '</div></div></div>\n'
+    done
+}
+
 # ─── GPS / proximité ──────────────────────────────────────────────────────────
 
 # Distance Haversine en km entre deux points GPS.

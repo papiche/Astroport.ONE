@@ -73,6 +73,7 @@ Rejoindre l'écosystème en 5 à 10 minutes : identité NOSTR, portefeuille Ğ1,
 | Fichier | Sujet |
 |---------|-------|
 | [NOSTR_EVENTS_REFERENCE.md](reference/NOSTR_EVENTS_REFERENCE.md) | **Référence centrale** des kinds NOSTR utilisés dans UPlanet |
+| [A4L_GEO_TAGGING.md](reference/A4L_GEO_TAGGING.md) | **Format `a4l:` propriétaire ATOM4LOVE** — adressage hexagonal Goldberg sur NOSTR |
 | [IDENTITY_MULTIPASS.md](reference/IDENTITY_MULTIPASS.md) | Identité niveau 1 — MULTIPASS : structure, champs, lifecycle |
 | [IDENTITY_ZENCARD.md](reference/IDENTITY_ZENCARD.md) | Identité niveau 2 — ZenCard : droits, ressources, propriété |
 | [INFO_JSON_FORMATS.md](reference/INFO_JSON_FORMATS.md) | Format de métadonnées `info.json` v2.0 pour les fichiers IPFS |
