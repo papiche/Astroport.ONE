@@ -226,6 +226,54 @@ SSL is managed by NPM:
 - `install/` — build-time (Dockerfile RUN): packages, binaries, config files
 - `install/setup/` — runtime (entrypoint): identity, keys, network, .env, cron
 
+## Configuration coopérative et Apps certifiées (cooperative_config.sh)
+
+`tools/cooperative_config.sh` stocke la configuration coopérative dans un événement NOSTR Kind 30800 (DID), chiffré avec `$UPLANETNAME`. Il est propagé automatiquement à tous les relays constellation via `backfill_constellation.sh`.
+
+### Gestion des Apps mobiles certifiées
+
+Le champ `AUTHORIZED_APPS` contient la liste des **proof salts** des apps autorisées à s'inscrire sur le relay, séparés par des virgules (jusqu'à 48 entrées). Le relay `NIP-101/filter/30078.sh` vérifie chaque événement Kind 30078 `d=atom4love` contre cette liste.
+
+```bash
+source tools/cooperative_config.sh
+
+# Lister les apps actuellement autorisées
+coop_config_get AUTHORIZED_APPS
+# → "ATOM4LOVE_v1,ZELKOVA_v1"
+
+# Ajouter une nouvelle app (idempotent)
+coop_app_add "ZELKOVA_v1"
+
+# Supprimer une app dépréciée
+coop_app_remove "ATOM4LOVE_v0"
+
+# Voir toutes les apps enregistrées
+cooperative_config.sh list
+```
+
+Ou via la CLI directe :
+```bash
+./tools/cooperative_config.sh app-add "MYAPP_v1"
+./tools/cooperative_config.sh app-remove "MYAPP_v0"
+```
+
+### Déploiement d'une nouvelle app certifiée
+
+1. L'app cliente calcule `a4l_proof = SHA256(pubkey_hex + ":" + "MYAPP_v1")`
+2. Publie Kind 30078 `d=atom4love` avec tag `["a4l_proof", proof]` + biométrie dans `content`
+3. L'opérateur enregistre : `./tools/cooperative_config.sh app-add "MYAPP_v1"`
+4. La config Kind 30800 est republiée → propagée via backfill sur tous les relays constellation
+5. Les nouveaux pubkeys sont automatiquement ajoutés à `amisOfAmis.txt` après vérification
+
+### Mise à jour de version d'app
+
+Conserver l'ancienne entrée pendant la période de migration, puis la supprimer :
+```bash
+coop_app_add "ATOM4LOVE_v2"
+# ... attendre migration des clients ...
+coop_app_remove "ATOM4LOVE_v1"
+```
+
 ## Development Notes
 
 - Scripts are written in **bash** and must work on Debian/Ubuntu/Mint Linux

@@ -607,6 +607,8 @@ coop_config_list() {
             "OC_URL_SATELLITE" "OC_URL_CONSTELLATION"
         "_comment_api"
             "PLANTNET_API_KEY" "GIT_HOST" "GIT_TOKEN" "GIT_OWNER"
+        "_comment_apps"
+            "AUTHORIZED_APPS"
         "_comment_mj"
             "MJ_APIKEY_PUBLIC" "MJ_APIKEY_PRIVATE" "MJ_SENDER_EMAIL"
         "_comment_ovh"
@@ -647,6 +649,7 @@ coop_config_list() {
                     3x13)    raw_title="3x1/3 + 1% RULE" ;;
                     oc)      raw_title="OPENCOLLECTIVE" ;;
                     api)     raw_title="API KEYS" ;;
+                    apps)    raw_title="AUTHORIZED MOBILE APPS" ;;
                     mj)      raw_title="MAILJET" ;;
                     ovh)     raw_title="DNSLINK OVH" ;;
                     *)       raw_title="${key#_comment_}" ;;
@@ -722,6 +725,8 @@ coop_config_show_decrypted() {
             "OC_URL_SATELLITE" "OC_URL_CONSTELLATION"
         "_comment_api"
             "PLANTNET_API_KEY" "GIT_HOST" "GIT_TOKEN" "GIT_OWNER"
+        "_comment_apps"
+            "AUTHORIZED_APPS"
         "_comment_mj"
             "MJ_APIKEY_PUBLIC" "MJ_APIKEY_PRIVATE" "MJ_SENDER_EMAIL"
         "_comment_ovh"
@@ -751,6 +756,7 @@ coop_config_show_decrypted() {
                     3x13)    raw_title="3x1/3 + 1% RULE" ;;
                     oc)      raw_title="OPENCOLLECTIVE" ;;
                     api)     raw_title="API KEYS" ;;
+                    apps)    raw_title="AUTHORIZED MOBILE APPS" ;;
                     mj)      raw_title="MAILJET" ;;
                     ovh)     raw_title="DNSLINK OVH" ;;
                     *)       raw_title="${key#_comment_}" ;;
@@ -884,6 +890,9 @@ coop_config_init() {
     "GIT_HOST": "https://github.com",
     "GIT_TOKEN": "",
     "GIT_OWNER": "papiche",
+
+    "_comment_apps": "=== AUTHORIZED MOBILE APPS (proof salts, comma-separated) ===",
+    "AUTHORIZED_APPS": "ATOM4LOVE_v1",
 
     "_comment_mj": "=== MAILJET (auto-encrypted) ===",
     "MJ_APIKEY_PUBLIC": "",
@@ -1046,6 +1055,10 @@ coop_load_env_vars() {
     val=$(coop_config_get "GIT_TOKEN" 2>/dev/null)
     [[ -n "$val" ]] && export GIT_TOKEN="$val"
 
+    # Authorized mobile apps (proof salts, comma-separated)
+    val=$(echo "$config" | jq -r '.AUTHORIZED_APPS // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export AUTHORIZED_APPS="$val"
+
     # Load MailJet credentials (auto-decrypted)
     val=$(coop_config_get "MJ_APIKEY_PUBLIC" 2>/dev/null)
     [[ -n "$val" ]] && export MJ_APIKEY_PUBLIC="$val"
@@ -1085,6 +1098,66 @@ get_oc_slug() {
 # Get OpenCollective API Key (deprecated, for backward compatibility)
 get_oc_api_key() {
     coop_config_get "OCAPIKEY"
+}
+
+################################################################################
+# App Certification Management (AUTHORIZED_APPS)
+################################################################################
+
+# Add a proof salt to AUTHORIZED_APPS (idempotent)
+# Usage: coop_app_add "MYAPP_v1"
+coop_app_add() {
+    local new_id="${1:-}"
+    if [[ -z "$new_id" ]]; then
+        echo "[ERROR] Usage: coop_app_add APP_SALT" >&2
+        return 1
+    fi
+    local current
+    current=$(coop_config_get "AUTHORIZED_APPS" 2>/dev/null)
+    current="${current:-ATOM4LOVE_v1}"
+    # Check if already present
+    if echo "$current" | tr ',' '\n' | grep -qxF "$new_id"; then
+        echo "[INFO] '$new_id' already in AUTHORIZED_APPS"
+        return 0
+    fi
+    # Count current apps
+    local count
+    count=$(echo "$current" | tr ',' '\n' | grep -cv '^$')
+    if [[ "$count" -ge 48 ]]; then
+        echo "[ERROR] AUTHORIZED_APPS already has $count entries (max 48)" >&2
+        return 1
+    fi
+    local updated="${current},${new_id}"
+    coop_config_set "AUTHORIZED_APPS" "$updated" "--no-encrypt"
+    echo "[OK] Added '$new_id' → AUTHORIZED_APPS now has $((count+1)) app(s)"
+}
+
+# Remove a proof salt from AUTHORIZED_APPS
+# Usage: coop_app_remove "MYAPP_v1"
+coop_app_remove() {
+    local del_id="${1:-}"
+    if [[ -z "$del_id" ]]; then
+        echo "[ERROR] Usage: coop_app_remove APP_SALT" >&2
+        return 1
+    fi
+    local current
+    current=$(coop_config_get "AUTHORIZED_APPS" 2>/dev/null)
+    current="${current:-ATOM4LOVE_v1}"
+    if ! echo "$current" | tr ',' '\n' | grep -qxF "$del_id"; then
+        echo "[INFO] '$del_id' not found in AUTHORIZED_APPS"
+        return 0
+    fi
+    # Remove the entry and clean up leading/trailing commas
+    local updated
+    updated=$(echo "$current" | tr ',' '\n' | grep -vxF "$del_id" | paste -sd ',' -)
+    if [[ -z "$updated" ]]; then
+        echo "[ERROR] Cannot remove last app — AUTHORIZED_APPS must have at least one entry" >&2
+        return 1
+    fi
+    coop_config_set "AUTHORIZED_APPS" "$updated" "--no-encrypt"
+    local count
+    count=$(echo "$updated" | tr ',' '\n' | grep -cv '^$')
+    echo "[OK] Removed '$del_id' → AUTHORIZED_APPS now has $count app(s)"
 }
 
 ################################################################################
@@ -1131,6 +1204,12 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]] && [[ -z "$_COOP_CONFIG_CLI_RAN" ]]; then
         init|coop_config_init)
             coop_config_init "$2"
             ;;
+        app-add|coop_app_add)
+            coop_app_add "$2"
+            ;;
+        app-remove|coop_app_remove)
+            coop_app_remove "$2"
+            ;;
         encrypt|coop_encrypt)
             coop_encrypt "$2"
             ;;
@@ -1149,6 +1228,8 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]] && [[ -z "$_COOP_CONFIG_CLI_RAN" ]]; then
             echo "  $0 [--verbose] export FILE          Export decrypted config to a .env file"
             echo "  $0 [--verbose] refresh              Force refresh from NOSTR"
             echo "  $0 [--verbose] init [--force]       Initialize default config"
+            echo "  $0 [--verbose] app-add APP_SALT     Add a certified app proof salt (e.g. MYAPP_v1)"
+            echo "  $0 [--verbose] app-remove APP_SALT  Remove a certified app proof salt"
             echo "  $0             encrypt VALUE        Encrypt a value (for testing)"
             echo "  $0             decrypt VALUE        Decrypt a value (for testing)"
             echo ""

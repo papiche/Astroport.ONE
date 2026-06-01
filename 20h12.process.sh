@@ -239,6 +239,32 @@ else
     git clone --depth 1 https://github.com/papiche/sound-spot.git
 fi
 
+## UPDATE cabine-33 (ATOM4LOVE — Interféromètre cosmique et social)
+## APK Android servi par UPassport sur /apk/atom4love.apk
+CABINE_DIR="$HOME/.zen/workspace/cabine-33"
+CABINE_APK="$CABINE_DIR/build/android/atom4love.apk"
+CABINE_REPO="git@github.com:papiche/cabine-33.git"
+if [[ -d "$CABINE_DIR" ]]; then
+    cd "$CABINE_DIR"
+    CABINE_BEFORE=$(git rev-parse HEAD 2>/dev/null || echo "none")
+    git pull --depth 1 2>&1 | tail -3
+    CABINE_AFTER=$(git rev-parse HEAD 2>/dev/null || echo "none")
+    if [[ "$CABINE_BEFORE" != "$CABINE_AFTER" || ! -f "$CABINE_APK" ]]; then
+        echo "🎮 cabine-33 mis à jour ou APK manquant"
+   else
+        echo "🎮 cabine-33 à jour (APK existant : $CABINE_APK)"
+    fi
+else
+    echo "🎮 cabine-33 : premier clone..."
+    mkdir -p "$HOME/.zen/workspace"
+    cd "$HOME/.zen/workspace"
+    if git clone --depth 1 "$CABINE_REPO"; then
+        echo "🎮 cabine-33 cloné — build APK en arrière-plan..."
+    else
+        echo "⚠️  cabine-33 : clone échoué (vérifiez la clé SSH)"
+    fi
+fi
+
 ## RUN OC2UPlanet monthly — recharge MULTIPASS des membres résidents
 ## Traite les transactions CREDIT du mois en cours via oc2uplanet.sh
 ## (cotisation cloud-usage + membre-resident → process_locataire)
