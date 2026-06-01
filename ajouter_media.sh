@@ -67,14 +67,8 @@ notify_user() {
 alias espeak='notify_user'
 
 ## CHECK IF IPFS DAEMON IS RUNNING
-floop=0
-while ! ss -tln 2>/dev/null | grep -q ':5001 '; do
-    sleep 1
-    ((floop++)) && [ $floop -gt 5 ] \
-        && echo "ERROR. IPFS daemon not running on port 5001" \
-        && espeak 'ERROR. I P F S daemon not running' \
-        && exit 1
-done
+curl -s http://127.0.0.1:5001/api/v0/version >/dev/null \
+    || { echo "ERROR: IPFS API is NOT accessible on port 5001"; exit 1; }
 
 . "${MY_PATH}/tools/my.sh"
 [[ $IPFSNODEID == "" ]] && echo "IPFSNODEID manquant" && espeak "IPFS NODE ID Missing" && exit 1
