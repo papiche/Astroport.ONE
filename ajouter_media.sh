@@ -455,13 +455,27 @@ ask_tmdb_metadata() {
 _ffmpeg_h264() {
     local src="$1" dst="$2"
 
+    # Sélection piste audio : français en priorité, sinon piste par défaut
+    local audio_map="-map 0:v:0 -map 0:a:0"
+    local fr_idx
+    fr_idx=$(ffprobe -v error -select_streams a \
+        -show_entries stream=index:stream_tags=language \
+        -of csv=p=0 "$src" 2>/dev/null \
+        | awk -F',' '$2 ~ /^(fre|fra|fr)$/ {print NR-1; exit}')
+    if [[ -n "$fr_idx" ]]; then
+        echo "🇫🇷 Piste audio française sélectionnée (index $fr_idx)"
+        audio_map="-map 0:v:0 -map 0:a:${fr_idx}"
+    fi
+
     # NVIDIA NVENC
     if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null 2>&1; then
         echo "🎮 GPU NVIDIA détecté — encodage h264_nvenc"
+        # shellcheck disable=SC2086
         if ffmpeg -loglevel quiet -hwaccel cuda -i "$src" \
+                $audio_map \
                 -c:v h264_nvenc -preset p4 -profile:v main \
                 -pix_fmt yuv420p \
-                -c:a aac -b:a 128k -movflags +faststart "$dst" 2>/dev/null; then
+                -c:a aac -ac 2 -b:a 128k -movflags +faststart "$dst" 2>/dev/null; then
             echo "✅ Encodage GPU nvenc terminé"
             return 0
         fi
@@ -473,9 +487,11 @@ _ffmpeg_h264() {
     vaapi_dev=$(find /dev/dri -name 'renderD*' 2>/dev/null | sort | head -1)
     if [[ -n "$vaapi_dev" ]]; then
         echo "🎮 VA-API détecté ($vaapi_dev) — encodage h264_vaapi"
+        # shellcheck disable=SC2086
         if ffmpeg -loglevel quiet -vaapi_device "$vaapi_dev" -i "$src" \
+                $audio_map \
                 -vf 'format=nv12,hwupload' -c:v h264_vaapi \
-                -c:a aac -b:a 128k -movflags +faststart "$dst" 2>/dev/null; then
+                -c:a aac -ac 2 -b:a 128k -movflags +faststart "$dst" 2>/dev/null; then
             echo "✅ Encodage GPU vaapi terminé"
             return 0
         fi
@@ -484,9 +500,11 @@ _ffmpeg_h264() {
 
     # Repli CPU libx264
     echo "🖥️  Encodage CPU (libx264)"
-    ffmpeg -loglevel quiet -i "$src" -c:v libx264 -profile:v main -level 4.1 \
+    # shellcheck disable=SC2086
+    ffmpeg -loglevel quiet -i "$src" $audio_map \
+        -c:v libx264 -profile:v main -level 4.1 \
         -pix_fmt yuv420p \
-        -c:a aac -b:a 128k -movflags +faststart "$dst"
+        -c:a aac -ac 2 -b:a 128k -movflags +faststart "$dst"
 }
 
 ########################################################################
@@ -532,7 +550,7 @@ _resize_if_needed() {
         ffmpeg -loglevel error -i "$file" \
             -c:v h264_nvenc -preset p4 -pix_fmt yuv420p \
             -vf "scale=${new_w}:${new_h}" \
-            -c:a aac -b:a 128k -movflags +faststart -y "$tmp" 2>/dev/null && ok=0
+            -c:a aac -ac 2 -b:a 128k -movflags +faststart -y "$tmp" 2>/dev/null && ok=0
         [[ $ok -ne 0 ]] && echo "⚠️  nvenc resize échoué — tentative VA-API..."
     fi
 
@@ -545,7 +563,7 @@ _resize_if_needed() {
             echo "🎮 Resize GPU vaapi : ${new_w}x${new_h}"
             ffmpeg -loglevel error -vaapi_device "$vdev" -i "$file" \
                 -vf "scale=${new_w}:${new_h},format=nv12,hwupload" -c:v h264_vaapi \
-                -c:a aac -b:a 128k -movflags +faststart -y "$tmp" 2>/dev/null && ok=0
+                -c:a aac -ac 2 -b:a 128k -movflags +faststart -y "$tmp" 2>/dev/null && ok=0
             [[ $ok -ne 0 ]] && echo "⚠️  vaapi resize échoué — repli CPU..."
         fi
     fi
@@ -557,7 +575,7 @@ _resize_if_needed() {
         ffmpeg -loglevel error -i "$file" \
             -c:v libx264 -preset fast -pix_fmt yuv420p \
             -vf "scale=${new_w}:${new_h}" \
-            -c:a aac -b:a 128k -movflags +faststart -y "$tmp" && ok=0
+            -c:a aac -ac 2 -b:a 128k -movflags +faststart -y "$tmp" && ok=0
     fi
 
     if [[ $ok -eq 0 && -s "$tmp" ]]; then
