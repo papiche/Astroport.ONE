@@ -43,6 +43,7 @@ Les événements NOSTR sont la **source de vérité** pour tout le système UPla
 | **1063** | File Metadata | Média | Métadonnées fichiers IPFS | NIP-94 |
 | **1111** | Comment | Interaction | Commentaires vidéo | NIP-22 |
 | **22242** | Auth Challenge | Auth | Authentification NIP-42 | NIP-42 |
+| **30078** | Incarnation Cert | **ATOM4LOVE** | Certificat vibratoire bootstrap WoT (personal_phase φ, omega_bio ω, a4l_proof) — `d=atom4love` | NIP-101 |
 | **30023** | Long-form | **Contenu** | Articles, documents, journaux | NIP-23 |
 | **30024** | Draft Article | Contenu | Brouillons | NIP-23 |
 | **30312** | ORE Meeting Space | **ORE** | Espace géographique ORE | NIP-101 |
@@ -54,6 +55,7 @@ Les événements NOSTR sont la **source de vérité** pour tout le système UPla
 | **30504** | Training Resource | **WoTx2** | Ressource de formation liée à un skill | NIP-101 |
 | **30505** | Object / Resource | **WoTx2** | Objet physique ou logique (crafting) — état courant (replaceable) | NIP-101 |
 | **30506** | Dossier de médiation | **Justice** | Cas de friction entre 2 MULTIPASS — état courant (replaceable) | NIP-101 |
+| **30508** | Match vibratoire | **ATOM4LOVE** | Rencontre physique — cohérence k entre deux porteurs (produit par cabine-33 via BLE/WiFi) | NIP-101 |
 | **1500**  | Craft Execution Log | **WoTx2** | Log session de craft : durée réelle, opérateurs, consommations | NIP-101 |
 | **1505**  | Object Transaction | **WoTx2** | Delta qty/durability sur un Kind 30505 (journal append-only) | NIP-101 |
 | **1506**  | Acte de médiation    | **Justice** | Vote/escalade/résolution sur un dossier 30506 (journal append-only) | NIP-101 |

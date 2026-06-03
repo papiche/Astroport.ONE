@@ -114,6 +114,17 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
   - `make_NOSTRCARD.sh` - NOSTR Card creation
   - `emit_skill.sh SKILL [LEVEL] [CID] [ICON] [DESC]` - Publie Kind 30503 (compétence WoTx², auto-attestée)
   - `emit_object.sh TITLE [TYPE] [KEY=VAL…]` - Publie Kind 30505 (objet/ressource physique ou logique)
+  - `kin_oracle.sh` — Bibliothèque Dreamspell (tables, HTML cartes, GPS haversine, `_kin_meeting_block` avec Kin synchrone)
+  - `kin_prefs.sh` — Préférences KIN par membre : `_kin_prefs_load EMAIL`, `_kin_type_enabled TYPE`, `_kin_build_scan_filter HEX`. Lit `~/.zen/game/nostr/EMAIL/.mailjet` (JSON géré par UPassport `/mailjet`)
+  - `kin.sh` — Tables Dreamspell CLI + `KIN_TONE_KEYS[]` (Action|Pouvoir|Essence par tonalité)
+- **`admin/`** - Tableaux de bord Capitaine (interfaces CLI interactives) :
+  - `dashboard.sh` — Menu général de la station
+  - `dashboard.WOTX2.manager.sh` — WoTx² / Grimoire / Oracle (Kind 30503–30508, objets, justice)
+  - `dashboard.JUSTICE.manager.sh` — Protocole médiation (Kind 30506/1506/1984)
+  - `dashboard.MAILJET.sh` — Notifications email : config clés API, opt-outs, prefs KIN, test envoi, logs
+  - `dashboard.DID.manager.sh` — Identités DID / MULTIPASS
+  - `dashboard.TUBE.manager.sh` — NostrTube (vidéos Kind 21/22)
+  - `dashboard.COOKIE.manager.sh` — Cookies de session
 - **`admin/monitor/`** - Monitoring et métriques :
   - `heartbox_analysis.sh` - Hardware analysis: CPU/RAM/GPU, Power-Score, services status, Ollama models. Cached in `~/.zen/tmp/$IPFSNODEID/heartbox_analysis.json`
 - **`admin/system/`** - Gestion système P2P :

@@ -64,7 +64,16 @@ fi
 ########################################################################
 _ATTESTED_AT="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
-_TAGS='[["d","'"$_PERMIT_KEY"'"],["l","'"$_PERMIT_KEY"'","permit_type"],["level","'"$_LEVEL"'"],["t","'"$_SKILL_NORM"'"],["t","auto_proclaimed"]]'
+# Expiration Tzolkin : x1=260j, x2=780j, x3=2600j (cycles mayas)
+case "$_LEVEL" in
+    1) _EXPIRE_DAYS=260 ;;
+    2) _EXPIRE_DAYS=780 ;;
+    3) _EXPIRE_DAYS=2600 ;;
+    *) _EXPIRE_DAYS=$((260 * _LEVEL)) ;;
+esac
+_EXPIRE_TS=$(( $(date +%s) + _EXPIRE_DAYS * 86400 ))
+
+_TAGS='[["d","'"$_PERMIT_KEY"'"],["l","'"$_PERMIT_KEY"'","permit_type"],["level","'"$_LEVEL"'"],["t","'"$_SKILL_NORM"'"],["t","auto_proclaimed"],["expiration","'"$_EXPIRE_TS"'"]]'
 
 # Enrichissement optionnel : description (tag 'summary') et titre (tag 'title')
 if [[ -n "$_DESC" ]]; then

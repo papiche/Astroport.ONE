@@ -63,7 +63,7 @@ Ce mode est le plus puissant : il permet d'archiver une **chaîne YouTube entiè
 
 1. **Créer le voeu** dans le TW (un tiddler avec les tags `voeu` + `CopierYoutube`)
 2. **Créer un ou plusieurs tiddlers de contenu** (tags : `CopierYoutube`) contenant les URLs à archiver
-3. Le système détecte le voeu et **appelle `ASTROBOT/G1CopierYoutube.sh`** automatiquement
+3. Le système détecte le voeu et **appelle `ASTROBOT/Z/G1CopierYoutube.sh`** automatiquement
 4. Chaque vidéo téléchargée devient un **tiddler dans le TW** avec lecteur vidéo/audio embarqué
 
 ### Étapes dans le TiddlyWiki
@@ -149,7 +149,7 @@ cat ~/.zen/game/players/<email>/G1CopierYoutube/CopierYoutube.json | jq '.[].tit
 
 ```bash
 # Déclencher manuellement pour un joueur (email = PLAYER)
-./ASTROBOT/G1CopierYoutube.sh \
+./ASTROBOT/Z/G1CopierYoutube.sh \
     ~/.zen/game/players/<email>/ipfs/moa/index.html \
     <email>
 ```

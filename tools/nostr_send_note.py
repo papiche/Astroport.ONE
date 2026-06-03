@@ -305,7 +305,8 @@ def send_nostr_event(keyfile_path: str, message: str,
         event.sign(priv_key_obj.hex())
         
         result["event_id"] = event.id
-        
+        result["event"] = event.to_dict()
+
         # Prepare event JSON
         event_json = json.dumps(["EVENT", event.to_dict()])
         

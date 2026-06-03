@@ -19,7 +19,7 @@
 ```bash
 # Télécharger et publier une vidéo YouTube sur votre uDRIVE NOSTR
 cd ~/.zen/Astroport.ONE
-./ASTROBOT/G1CopierYoutube.sh "https://www.youtube.com/watch?v=XXXXXXXXXXX" "email@exemple.fr"
+./ASTROBOT/Z/G1CopierYoutube.sh "https://www.youtube.com/watch?v=XXXXXXXXXXX" "email@exemple.fr"
 ```
 
 Le script :

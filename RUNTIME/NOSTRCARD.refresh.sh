@@ -1401,6 +1401,30 @@ ERRHTML
             echo "$TODATE" > ${HOME}/.zen/game/nostr/${PLAYER}/.todate
             echo "Daily refresh completed for ${PLAYER}"
             DAILY_UPDATES=$((DAILY_UPDATES + 1))
+
+            # ── KIN Oracle — quotidien (newsletter Oracle personnalisée) ────────────
+            # Envoyé UNE FOIS PAR JOUR par joueur local uniquement.
+            # Élimine les doublons inter-machines de la constellation.
+            _KIN_DAILY_FLAG="${HOME}/.zen/game/nostr/${PLAYER}/.kin_daily_${TODATE}"
+            if [[ ! -f "$_KIN_DAILY_FLAG" && -x "${MY_PATH}/KIN.daily.sh" ]]; then
+                log "INFO" "⚛ KIN Oracle quotidien → ${PLAYER}"
+                "${MY_PATH}/KIN.daily.sh" --email "${PLAYER}" --force \
+                    2>&1 | while IFS= read -r _kl; do log "DEBUG" "[KIN.daily] $_kl"; done
+                touch "$_KIN_DAILY_FLAG"
+            fi
+
+            # ── KIN News — hebdomadaire (correspondances Oracle : quatuors, paires…) ─
+            # Envoyé UNE FOIS PAR SEMAINE par joueur local.
+            # --player filtre l'envoi au seul PLAYER ; les autres membres du group
+            # reçoivent la notification de leur propre station.
+            _KIN_WEEK="$(date -u +%Y)W$(date -u +%V)"
+            _KIN_NEWS_FLAG="${HOME}/.zen/game/nostr/${PLAYER}/.kin_news_${_KIN_WEEK}"
+            if [[ ! -f "$_KIN_NEWS_FLAG" && -x "${MY_PATH}/KIN.news.sh" ]]; then
+                log "INFO" "🌀 KIN Correspondances hebdo → ${PLAYER}"
+                "${MY_PATH}/KIN.news.sh" --player "${PLAYER}" --force \
+                    2>&1 | while IFS= read -r _kl; do log "DEBUG" "[KIN.news] $_kl"; done
+                touch "$_KIN_NEWS_FLAG"
+            fi
         elif [[ "$REFRESH_REASON" == "new_files" ]]; then
             echo "IPNS updated due to new files for ${PLAYER}"
             FILE_UPDATES=$((FILE_UPDATES + 1))

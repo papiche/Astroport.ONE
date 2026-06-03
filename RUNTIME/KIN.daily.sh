@@ -16,6 +16,10 @@
 MY_PATH="$(dirname "$0")"; MY_PATH="$(cd "$MY_PATH" && pwd)"
 . "${MY_PATH}/../tools/my.sh"
 source "${MY_PATH}/../tools/kin_oracle.sh"
+# KIN_TONE_KEYS (Action|Pouvoir|Essence pour chaque tonalité) défini dans kin.sh
+source "${MY_PATH}/../tools/kin.sh"
+# Préférences KIN par membre (scope, opt-out daily/weekly)
+source "${MY_PATH}/../tools/kin_prefs.sh"
 
 FORCE=false; DRY_RUN=false; TARGET_EMAIL=""
 while [[ $# -gt 0 ]]; do
@@ -28,9 +32,24 @@ while [[ $# -gt 0 ]]; do
 done
 
 DAY_KEY="$(date -u +%Y-%m-%d)"
-MARKER="${HOME}/.zen/game/.kin_daily_${DAY_KEY}"
+# Marqueur par joueur quand --email est fourni, global sinon
+if [[ -n "$TARGET_EMAIL" ]]; then
+    MARKER="${HOME}/.zen/game/nostr/${TARGET_EMAIL}/.kin_daily_${DAY_KEY}"
+else
+    MARKER="${HOME}/.zen/game/.kin_daily_${DAY_KEY}"
+fi
 if [[ -f "$MARKER" && "$FORCE" != "true" && "$DRY_RUN" != "true" ]]; then
-    echo "INFO KIN.daily: deja envoye le ${DAY_KEY}. --force pour relancer." >&2; exit 0
+    echo "INFO KIN.daily: deja envoye le ${DAY_KEY} pour ${TARGET_EMAIL:-tous}. --force pour relancer." >&2; exit 0
+fi
+
+# Préférences du joueur cible : respecter son opt-out oracle quotidien
+if [[ -n "$TARGET_EMAIL" && "$DRY_RUN" != "true" ]]; then
+    _kin_prefs_load "$TARGET_EMAIL"
+    if [[ "$_KIN_DAILY" != "true" ]]; then
+        echo "INFO KIN.daily: oracle quotidien désactivé pour ${TARGET_EMAIL}." >&2
+        touch "$MARKER"
+        exit 0
+    fi
 fi
 
 STRFRY_DIR="${HOME}/.zen/strfry"
@@ -109,7 +128,7 @@ _oracle_card() {
         _found=true
     done
     if [[ "$_found" == "true" ]]; then
-        local vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin-oracle-${my_kin}-${p_kin}"
+        local vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin_oracle_${my_kin}_${p_kin}"
         printf '<br><a href="%s" style="display:inline-block;background:%s;color:#fff;padding:.25rem .7rem;border-radius:6px;text-decoration:none;font-size:.78rem;margin-top:.3rem">🎥 Rencontrer</a>' "$vdo" "$phex"
     else
         printf '<span style="color:#9ca3af;font-size:.8rem">Pas encore dans le reseau</span>'
@@ -196,7 +215,7 @@ for DEST in "${RECIPIENTS[@]}"; do
             [[ -z "$_e" ]] && continue
             _pct=$(awk -v k="$_k" 'BEGIN{printf "%d",k*100}')
             _pk="${email_kin[$_e]:-?}"
-            _vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin-phi-${MY_KIN}-${_pk}"
+            _vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin_phi_${MY_KIN}_${_pk}"
             _hsc=$(_hexagon_shared_count "$DEST" "$_e")
             _hsc_txt=""; [[ "$_hsc" -gt 0 ]] && \
                 _hsc_txt="<br><small style=\"color:#059669\">⬡ ${_hsc} noeuds hexagonaux partages</small>"
@@ -266,16 +285,22 @@ for DEST in "${RECIPIENTS[@]}"; do
     TMPL_USED="$TMPL"
     [[ "$IS_BIRTHDAY" == "true" && -f "$TMPL_BD" ]] && TMPL_USED="$TMPL_BD"
 
+    # Question de captation de vibe (rotation quotidienne)
+    _UNSUB_BASE="${uSPOT:-http://127.0.0.1:54321}/mailjet?email=${DEST}&token=$(printf '%s:%s' "$DEST" "$(cat "${HOME}/.zen/tmp/UPLANETNAME" 2>/dev/null || echo '')" | sha256sum | cut -c1-16)"
+    RESONANCE_HTML=$(_kin_resonance_question "$DEST" "" "$_UNSUB_BASE")
+
     _entries_oracle=$(mktemp /tmp/kin_oracle_XXXXXX.html)
     _entries_game=$(mktemp /tmp/kin_game_XXXXXX.html)
     _entries_phi=$(mktemp /tmp/kin_phi_XXXXXX.html)
     _entries_hex=$(mktemp /tmp/kin_hex_XXXXXX.html)
     _entries_stats=$(mktemp /tmp/kin_stats_XXXXXX.html)
-    printf '%s' "$ORACLE_HTML" > "$_entries_oracle"
-    printf '%s' "$GAME_SEC"   > "$_entries_game"
-    printf '%s' "$PHI_SEC"    > "$_entries_phi"
-    printf '%s' "$HEX_SEC"    > "$_entries_hex"
-    printf '%s' "$STATS_HTML" > "$_entries_stats"
+    _entries_rq=$(mktemp /tmp/kin_rq_XXXXXX.html)
+    printf '%s' "$ORACLE_HTML"    > "$_entries_oracle"
+    printf '%s' "$GAME_SEC"       > "$_entries_game"
+    printf '%s' "$PHI_SEC"        > "$_entries_phi"
+    printf '%s' "$HEX_SEC"        > "$_entries_hex"
+    printf '%s' "$STATS_HTML"     > "$_entries_stats"
+    printf '%s' "$RESONANCE_HTML" > "$_entries_rq"
 
     _out=$(mktemp /tmp/kin_daily_out_XXXXXX.html)
 
@@ -295,13 +320,15 @@ for DEST in "${RECIPIENTS[@]}"; do
         -v f_oracle="$_entries_oracle" -v f_game="$_entries_game" \
         -v f_phi="$_entries_phi"       -v f_hex="$_entries_hex"  \
         -v f_stats="$_entries_stats"   -v f_wave="$WAVE_HTML"    \
+        -v f_rq="$_entries_rq" \
     '
-    /_ORACLE_ENTRIES_/ { while((getline l < f_oracle)>0) print l; next }
-    /_GAME_SECTION_/   { while((getline l < f_game)>0)   print l; next }
-    /_PHI_SECTION_/    { while((getline l < f_phi)>0)    print l; next }
-    /_HEX_SECTION_/    { while((getline l < f_hex)>0)    print l; next }
-    /_STATS_CARDS_/    { while((getline l < f_stats)>0)  print l; next }
-    /_WAVE_PROGRESS_/  { gsub(/_WAVE_PROGRESS_/, f_wave) }
+    /_ORACLE_ENTRIES_/      { while((getline l < f_oracle)>0) print l; next }
+    /_GAME_SECTION_/        { while((getline l < f_game)>0)   print l; next }
+    /_PHI_SECTION_/         { while((getline l < f_phi)>0)    print l; next }
+    /_HEX_SECTION_/         { while((getline l < f_hex)>0)    print l; next }
+    /_STATS_CARDS_/         { while((getline l < f_stats)>0)  print l; next }
+    /_RESONANCE_QUESTION_/  { while((getline l < f_rq)>0)     print l; next }
+    /_WAVE_PROGRESS_/       { gsub(/_WAVE_PROGRESS_/, f_wave) }
     {
         gsub(/_KIN_NUM_/,       kn);   gsub(/_KIN_SEAL_/,       ks)
         gsub(/_KIN_COLOR_/,     kc);   gsub(/_KIN_TONE_/,       kt)
@@ -320,11 +347,11 @@ for DEST in "${RECIPIENTS[@]}"; do
         gsub(/_BIRTHDAY_BANNER_/, bday_banner)
         gsub(/_OMEGA_BIO_/,     omega_bio)
         gsub(/_SWARM_ALERT_/,   "")
-        gsub(/_VDO_URL_/, "https://vdo.copylaradio.com/?room=kin-birthday-" kn)
+        gsub(/_VDO_URL_/, "https://vdo.copylaradio.com/?room=kin_birthday_" kn)
         print
     }' "$TMPL_USED" > "$_out"
 
-    rm -f "$_entries_oracle" "$_entries_game" "$_entries_phi" "$_entries_hex" "$_entries_stats"
+    rm -f "$_entries_oracle" "$_entries_game" "$_entries_phi" "$_entries_hex" "$_entries_stats" "$_entries_rq"
 
     SUBJECT="⚛ [Alpha A4L] Kin ${MY_KIN} ${MY_COLOR_EMO} — Oracle $(date -u +%d/%m) · +${SCORE} pts · G1FabLab"
     [[ "$IS_BIRTHDAY" == "true" ]] && SUBJECT="🎂 ANNIVERSAIRE KIN ${MY_KIN} ${MY_COLOR_EMO} — Oracle Alpha ATOM4LOVE · G1FabLab"

@@ -87,27 +87,37 @@ def log_message(message):
     # Print to stderr instead of stdout to avoid polluting the result
     print(log_entry.strip(), file=sys.stderr)
 
-def download_image(image_url):
-    """Download image from URL"""
+def download_image(image_source):
+    """Download image from URL or read from local file"""
     try:
-        # Properly handle URLs with spaces and special characters
-        response = requests.get(image_url, timeout=30)
+        if not image_source.startswith('http://') and not image_source.startswith('https://'):
+            # Local file
+            if not os.path.exists(image_source):
+                log_message(f"Local file not found: {image_source}")
+                return None
+            with open(image_source, 'rb') as f:
+                data = f.read()
+            if len(data) > 10 * 1024 * 1024:
+                log_message("Image too large (max 10MB)")
+                return None
+            log_message(f"Read local image file: {len(data)} bytes")
+            return data
+
+        response = requests.get(image_source, timeout=30)
         response.raise_for_status()
-        
-        # Validate image size (max 10MB)
+
         if len(response.content) > 10 * 1024 * 1024:
             log_message("Image too large (max 10MB)")
             return None
-            
-        # Validate content type
+
         content_type = response.headers.get('content-type', '').lower()
         if not any(img_type in content_type for img_type in ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']):
             log_message(f"Invalid image type: {content_type}")
             return None
-            
+
         log_message(f"Image downloaded successfully: {len(response.content)} bytes, type: {content_type}")
         return response.content
-        
+
     except requests.exceptions.RequestException as e:
         log_message(f"Network error downloading image: {e}")
         return None
@@ -412,39 +422,127 @@ La plante n'a pas pu être identifiée avec certitude dans la base de données P
         log_message(f"Error formatting PlantNet result: {e}")
         return f"❌ Erreur lors du formatage du résultat PlantNet: {e}"
 
+def publish_kind1(content_text, image_source, email=None):
+    """Publie un kind 1 NOSTR avec le résultat PlantNet et l'image attachée via IPFS."""
+    # Résoudre le MULTIPASS cible
+    if not email:
+        email = os.getenv('CAPTAINEMAIL', '')
+    if not email:
+        # Lire depuis .env de la station
+        env_file = os.path.join(HOME_DIR, '.zen', 'Astroport.ONE', '.env')
+        if os.path.exists(env_file):
+            with open(env_file) as f:
+                for line in f:
+                    if line.startswith('CAPTAINEMAIL='):
+                        email = line.split('=', 1)[1].strip().strip('"\'')
+                        break
+    if not email:
+        log_message("publish: CAPTAINEMAIL introuvable — utilise --publish EMAIL")
+        return None
+
+    keyfile = os.path.join(HOME_DIR, '.zen', 'game', 'nostr', email, '.secret.nostr')
+    if not os.path.exists(keyfile):
+        log_message(f"publish: keyfile introuvable : {keyfile}")
+        return None
+
+    # Obtenir le CID IPFS de l'image (fichier local uniquement)
+    ipfs_url = None
+    if not image_source.startswith('http://') and not image_source.startswith('https://'):
+        try:
+            r = subprocess.run(['ipfs', 'add', '--quiet', '--pin=false', image_source],
+                               capture_output=True, text=True, timeout=30)
+            cid = r.stdout.strip().split()[-1] if r.returncode == 0 else None
+            if cid:
+                gateway = os.getenv('myLIBRA', 'https://ipfs.copylaradio.com').rstrip('/')
+                if gateway.endswith('/ipfs'):
+                    gateway = gateway[:-5]
+                ipfs_url = f"{gateway}/ipfs/{cid}"
+                log_message(f"publish: image IPFS → {ipfs_url}")
+        except Exception as e:
+            log_message(f"publish: ipfs add échoué : {e}")
+    else:
+        ipfs_url = image_source
+
+    # Construire le contenu final
+    full_content = content_text
+    if ipfs_url:
+        full_content += f"\n\n📸 {ipfs_url}"
+
+    # Tags kind 1
+    tags = [["t", "plantnet"], ["t", "botanique"], ["t", "nature"]]
+    if ipfs_url:
+        tags.append(["r", ipfs_url])
+
+    # Appel nostr_send_note.py
+    script = os.path.join(HOME_DIR, '.zen', 'Astroport.ONE', 'tools', 'nostr_send_note.py')
+    if not os.path.exists(script):
+        # Fallback : chemin relatif depuis ce fichier
+        script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              '..', 'tools', 'nostr_send_note.py')
+    relay = os.getenv('NOSTR_RELAY_WS', 'ws://127.0.0.1:7777')
+
+    try:
+        r = subprocess.run(
+            [sys.executable, script,
+             '--keyfile', keyfile,
+             '--content', full_content,
+             '--kind', '1',
+             '--tags', json.dumps(tags),
+             '--relays', relay,
+             '--json'],
+            capture_output=True, text=True, timeout=60
+        )
+        if r.returncode == 0:
+            pub = json.loads(r.stdout)
+            pub['_content'] = full_content
+            log_message(f"publish: kind 1 publié → {pub.get('event_id', '?')}")
+            return pub
+        else:
+            log_message(f"publish: échec nostr_send_note : {r.stderr[:200]}")
+            return None
+    except Exception as e:
+        log_message(f"publish: exception : {e}")
+        return None
+
+
 def main():
     """Main function"""
-    # Check for --json flag
-    output_format = 'text'
-    args = sys.argv[1:]
-    
-    if '--json' in args:
-        output_format = 'json'
-        args.remove('--json')
-    
-    if len(args) < 6:
-        log_message("Usage: plantnet_recognition.py <image_url> <latitude> <longitude> <user_id> <event_id> <pubkey> [--json]")
-        error_msg = "❌ Erreur: paramètres manquants pour la reconnaissance PlantNet"
-        if output_format == 'json':
-            print(json.dumps({'success': False, 'error': 'missing_parameters', 'message': error_msg}))
-        else:
-            print(error_msg)
-        sys.exit(0)
-    
-    image_url = args[0]
-    
-    # Safe float conversion with error handling
-    try:
-        latitude = float(args[1])
-        longitude = float(args[2])
-    except (ValueError, IndexError) as e:
-        log_message(f"Error parsing coordinates: {e}")
-        latitude = 0.0
-        longitude = 0.0
-    
-    user_id = args[3]
-    event_id = args[4]
-    pubkey = args[5]
+    import argparse
+    parser = argparse.ArgumentParser(description="PlantNet plant recognition — local file or URL")
+    parser.add_argument("image_source", help="Local file path or HTTP(S) URL")
+    parser.add_argument("--lat", "--latitude",  dest="latitude",  type=float, default=0.0)
+    parser.add_argument("--lon", "--longitude", dest="longitude", type=float, default=0.0)
+    parser.add_argument("--user",    dest="user_id",   default="")
+    parser.add_argument("--event",   dest="event_id",  default="")
+    parser.add_argument("--pubkey",  dest="pubkey",    default="")
+    parser.add_argument("--json",    action="store_true", help="Output JSON instead of text")
+    parser.add_argument("--publish", dest="publish_email", nargs="?", const="__captainemail__",
+                        metavar="EMAIL",
+                        help="Publier le résultat en kind 1 NOSTR (email du MULTIPASS, défaut: CAPTAINEMAIL)")
+    # Legacy positional compat: image lat lon user event pubkey
+    parser.add_argument("legacy", nargs="*", help=argparse.SUPPRESS)
+    args = parser.parse_args()
+
+    # Legacy positional fallback (image lat lon user_id event_id pubkey)
+    if args.legacy:
+        pos = args.legacy
+        if len(pos) >= 1 and args.latitude == 0.0:
+            try: args.latitude = float(pos[0])
+            except ValueError: pass
+        if len(pos) >= 2 and args.longitude == 0.0:
+            try: args.longitude = float(pos[1])
+            except ValueError: pass
+        if len(pos) >= 3 and not args.user_id:   args.user_id  = pos[2]
+        if len(pos) >= 4 and not args.event_id:  args.event_id = pos[3]
+        if len(pos) >= 5 and not args.pubkey:    args.pubkey   = pos[4]
+
+    output_format = 'json' if args.json else 'text'
+    image_url  = args.image_source
+    latitude   = args.latitude
+    longitude  = args.longitude
+    user_id    = args.user_id
+    event_id   = args.event_id
+    pubkey     = args.pubkey
     
     log_message(f"Starting PlantNet recognition for {user_id}")
     log_message(f"Image URL: {image_url}")
@@ -540,17 +638,40 @@ La reconnaissance de la plante a échoué.
     
     if result:
         log_message("PlantNet recognition completed successfully")
-        
+        pub = None
+
+        # Publication kind 1 si demandée
+        if args.publish_email is not None:
+            pub_email = None if args.publish_email == "__captainemail__" else args.publish_email
+            # Ne pas passer image_url local : publish_kind1 ajoutera l'URL IPFS lui-même
+            text_for_publish = result if isinstance(result, str) else format_plantnet_result(
+                plant_info, latitude, longitude, None, 'text')
+            pub = publish_kind1(text_for_publish, image_url, pub_email)
+            if pub:
+                if output_format == 'json':
+                    print(json.dumps(pub.get('event', pub), ensure_ascii=False))
+                else:
+                    print(f"\n✅ Publié kind 1 → {pub.get('event_id', '?')}")
+                    print(pub.get('_content', ''))
+            else:
+                if output_format == 'json':
+                    print(json.dumps({"publish_error": "échec publication NOSTR"}))
+                else:
+                    print("\n⚠️  Publication NOSTR échouée.")
+
         if output_format == 'json':
-            # Add additional metadata for ORE integration
             if isinstance(result, dict) and result.get('success'):
-                result['event_id'] = event_id
-                result['observer_pubkey'] = pubkey
-                result['user_id'] = user_id
+                if event_id:  result['event_id'] = event_id
+                if pubkey:    result['observer_pubkey'] = pubkey
+                if pub:
+                    result['published_event_id'] = pub.get('event_id')
+                    result['user_id'] = pub.get('event', {}).get('pubkey', user_id)
+                elif user_id:
+                    result['user_id'] = user_id
             print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
-            print(result)  # Output the text result to stdout
-        
+            print(result)
+
         sys.exit(0)  # Explicit success exit
     else:
         log_message("Failed to format PlantNet result")

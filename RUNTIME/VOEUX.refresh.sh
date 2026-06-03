@@ -98,10 +98,10 @@ do
 ##########################################################################
 ##########################################################################
     ## RUN SPECIFIC G1Voeu ASTROBOT PROGRAM (like G1CopierYoutube.sh)
-    if [[ -s $MY_PATH/../ASTROBOT/G1${WISHNAME}.sh ]]; then
+    if [[ -s $MY_PATH/../ASTROBOT/Z/G1${WISHNAME}.sh ]]; then
         echo "........................ Astrobot G1${WISHNAME}.sh PROGRAM FOUND !"
         echo "________________________________  Running it *****"
-        ${MY_PATH}/../ASTROBOT/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS" "~/.zen/tmp/${MOATS}/${WISH}.json"
+        ${MY_PATH}/../ASTROBOT/Z/G1${WISHNAME}.sh "$INDEX" "${PLAYER}" "$MOATS" "~/.zen/tmp/${MOATS}/${WISH}.json"
         echo "________________________________   Finished ******"
     else
         echo "......................... NO G1${WISHNAME} PROGRAM... "

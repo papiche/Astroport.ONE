@@ -11,7 +11,8 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-. "${MY_PATH}/../tools/my.sh"
+ASTROPATH="$HOME/.zen/Astroport.ONE"
+. "${ASTROPATH}/tools/my.sh"
 
 echo "
       _             _            _             _           _

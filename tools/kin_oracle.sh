@@ -83,21 +83,41 @@ _kin_member_card() {
 _kin_meeting_block() {
     local _room_suffix
     if [[ "$1" == tone-* ]]; then
-        _room_suffix="${1}"
+        _room_suffix="${1//-/_}"
     else
-        _room_suffix=$(echo "$*" | tr ' ' '\n' | sort -n | tr '\n' '-' | sed 's/-$//')
+        _room_suffix=$(echo "$*" | tr ' ' '\n' | sort -n | tr '\n' '_' | sed 's/_$//')
     fi
-    local _vdo_url="https://vdo.copylaradio.com/?room=kin-oracle-${_room_suffix}"
+    local _vdo_url="https://vdo.copylaradio.com/?room=kin_oracle_${_room_suffix}"
     local _cal_url="${myLIBRA}/ipns/copylaradio.com/calendars.html"
-    printf '<div style="margin-top:1.2rem;padding:1rem 1.2rem;background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:10px;border:1px solid #c4b5fd;text-align:center">'
-    printf '<div style="font-size:.78rem;color:#5b21b6;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:.7rem">🎥 Se rencontrer</div>'
-    printf '<div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:.6rem">'
-    printf '<a href="%s" style="display:inline-block;background:#7c3aed;color:#fff;padding:.4rem 1rem;border-radius:6px;text-decoration:none;font-size:.82rem;font-weight:600">🎥 Salle de visio</a>' \
+
+    # Prochain Kin synchrone : jour où le Kin du jour coïncide avec l'un des membres
+    local _tkin; _tkin=$(_today_kin)
+    local _best_days=260
+    for _mk in "$@"; do
+        [[ "$_mk" == tone-* || ! "$_mk" =~ ^[0-9]+$ ]] && continue
+        local _diff=$(( (_mk - _tkin + 260) % 260 ))
+        (( _diff < _best_days )) && _best_days=$_diff
+    done
+    local _sync_label
+    if [[ $_best_days -eq 0 ]]; then
+        _sync_label="Aujourd'hui — Kin synchrone actif !"
+    else
+        local _sdate
+        _sdate=$(LC_ALL=fr_FR.UTF-8 date -d "+${_best_days} days" '+%-d %B %Y' 2>/dev/null \
+               || date -d "+${_best_days} days" '+%Y-%m-%d')
+        _sync_label="${_sdate} — dans ${_best_days} jour$([[ $_best_days -gt 1 ]] && echo s)"
+    fi
+
+    printf '<div style="margin-top:1.2rem;padding:1rem 1.2rem;background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:10px;border:1px solid #c4b5fd">'
+    printf '<div style="font-size:.8rem;color:#5b21b6;font-weight:700;margin-bottom:.4rem">🗓 Moment idéal pour se retrouver</div>'
+    printf '<div style="font-size:.85rem;color:#4c1d95;margin-bottom:.7rem;font-weight:600">%s</div>' "$_sync_label"
+    printf '<div style="font-size:.78rem;color:#6b7280;margin-bottom:.6rem;line-height:1.5">Ce jour-là, le Kin du calendrier Tzolkin coïncide avec celui d'un membre de votre groupe — selon ATOM4LOVE, la synchronisation sera maximale.</div>'
+    printf '<div style="display:flex;gap:.5rem;flex-wrap:wrap">'
+    printf '<a href="%s" style="display:inline-block;background:#7c3aed;color:#fff;padding:.4rem 1rem;border-radius:6px;text-decoration:none;font-size:.82rem;font-weight:600">🎥 Visio maintenant</a>' \
         "$_vdo_url"
-    printf '<a href="%s" style="display:inline-block;background:#4f46e5;color:#fff;padding:.4rem 1rem;border-radius:6px;text-decoration:none;font-size:.82rem;font-weight:600">📅 Prendre RDV</a>' \
+    printf '<a href="%s" style="display:inline-block;background:#4f46e5;color:#fff;padding:.4rem 1rem;border-radius:6px;text-decoration:none;font-size:.82rem;font-weight:600">📅 Planifier</a>' \
         "$_cal_url"
     printf '</div>'
-    printf '<div style="font-size:.72rem;color:#7c3aed;line-height:1.5">Votre rencontre peut générer des ressources de formation<br>et alimenter vos certifications <strong>WoTx2 MineLife</strong> 🌱</div>'
     printf '</div>\n'
 }
 

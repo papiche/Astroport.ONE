@@ -7,7 +7,8 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-. "${MY_PATH}/../tools/my.sh"
+ASTROPATH="$HOME/.zen/Astroport.ONE"
+. "${ASTROPATH}/tools/my.sh"
 
 # Function to send email notification on NOSTR failure
 send_nostr_failure_email() {
@@ -17,7 +18,7 @@ send_nostr_failure_email() {
     local ipfs_link="$4"
     
     # Check if mailjet.sh exists
-    if [[ ! -f "$MY_PATH/../tools/mailjet.sh" ]]; then
+    if [[ ! -f "${ASTROPATH}/tools/mailjet.sh" ]]; then
         echo "⚠️  mailjet.sh not found, cannot send failure notification email"
         return 1
     fi
@@ -60,7 +61,7 @@ EOF
     
     # Send email using mailjet.sh
     echo "📧 Sending NOSTR failure notification email to ${player}"
-    $MY_PATH/../tools/mailjet.sh --template "$0" --expire 48h "$player" "$temp_message_file" "NOSTR Message Failure - ${title}" 2>/dev/null
+    ${ASTROPATH}/tools/mailjet.sh --template "$0" --expire 48h "$player" "$temp_message_file" "NOSTR Message Failure - ${title}" 2>/dev/null
     
     local email_result=$?
     
@@ -176,7 +177,7 @@ publish_nip71_video() {
     [[ "$myRELAY" != "wss://relay.copylaradio.com" ]] && relays="${relays},wss://relay.copylaradio.com"
 
     echo "📡 Publishing NIP-71 kind ${kind} video event via MULTIPASS (${player})..."
-    python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+    python3 "${ASTROPATH}/tools/nostr_send_note.py" \
         --keyfile "$keyfile" \
         --content "$content" \
         --kind    "$kind" \
@@ -390,7 +391,7 @@ while read LINE;
 
         ### CREATE GIF ANIM : make_video_gifanim_ipfs.sh
         [[ ${isMP3} == "" ]] \
-            && $(${MY_PATH}/../tools/make_video_gifanim_ipfs.sh "${HOME}/.zen/tmp/yt-dlp" "${ZFILE}" | tail -n 1) \
+            && $(${ASTROPATH}/tools/make_video_gifanim_ipfs.sh "${HOME}/.zen/tmp/yt-dlp" "${ZFILE}" | tail -n 1) \
             && echo "HOP=$HOP
         ANIMH=$ANIMH
         PROBETIME=$PROBETIME

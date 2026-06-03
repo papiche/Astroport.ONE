@@ -312,7 +312,17 @@ fi
 
 SUBJECT="[UPlanet] ${title}"
 
-MESSAGESIGN="---<br>message sent by <a href='${myIPFS}/ipns/$IPFSNODEID'>$(myHostName)</a> (Station Astroport.ONE)<br><small style='color:#aaa;'><a href='${_unsub_url}' style='color:#aaa;text-decoration:none;'>Gérer mes préférences de notification</a></small>"
+MESSAGESIGN="<hr style='border:none;border-top:1px solid #e5e7eb;margin:1.2rem 0 .8rem'>
+<table width='100%' cellpadding='0' cellspacing='0' border='0'>
+<tr>
+<td style='font-size:.75rem;color:#9ca3af;line-height:1.5;vertical-align:middle'>
+  Envoyé par <a href='${myIPFS}/ipns/$IPFSNODEID' style='color:#9ca3af;text-decoration:none'>$(myHostName)</a> · Station UPlanet
+</td>
+<td align='right' style='vertical-align:middle'>
+  <a href='${_unsub_url}' style='display:inline-block;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:.3rem .75rem;text-decoration:none;font-size:.78rem;font-weight:600;white-space:nowrap;font-family:-apple-system,sans-serif'>🔕 Se désabonner</a>
+</td>
+</tr>
+</table>"
 
 echo "
 ########################################################################

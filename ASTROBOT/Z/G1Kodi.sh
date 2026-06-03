@@ -11,7 +11,8 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-. "${MY_PATH}/../tools/my.sh"
+ASTROPATH="$HOME/.zen/Astroport.ONE"
+. "${ASTROPATH}/tools/my.sh"
 
 echo "(✜‿‿✜) G1Kodi
 Insert G1Kodi Tiddlers from Kodi database from VIDEODB
@@ -151,7 +152,7 @@ while read TITRE; do
             ## CREATE june:// QRCODE put it in IPFS
             PAYCOM="june://${G1PUB}?comment=N1Kodi:${THASH}&" ## comment=N1Kodi:TiddlerTiltleHash
             echo "${PAYCOM}"
-            amzqr "${PAYCOM}" -l H -c -p ${MY_PATH}/../images/TV.png -n VOD_${TITLE}.png -d ~/.zen/tmp/${MOATS}/
+            amzqr "${PAYCOM}" -l H -c -p ${ASTROPATH}/images/TV.png -n VOD_${TITLE}.png -d ~/.zen/tmp/${MOATS}/
             convert -gravity northwest -pointsize 20 -fill black -draw "text 30,3 \"${TITRE} (${YEAR})\"" ~/.zen/tmp/${MOATS}/VOD_${TITLE}.png ~/.zen/tmp/${MOATS}/VOD.png
 
             PV=$(ipfs add -q ~/.zen/tmp/${MOATS}/VOD.png)

@@ -12,7 +12,8 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-. "${MY_PATH}/../tools/my.sh"
+ASTROPATH="$HOME/.zen/Astroport.ONE"
+. "${ASTROPATH}/tools/my.sh"
 
 echo "$ME RUNNING"
 ########################################################################
@@ -80,9 +81,3 @@ mkdir -p $HOME/.zen/tmp/${MOATS} && echo $HOME/.zen/tmp/${MOATS}
 
 ## GET IPFS PARAMETER
 #~ RESPIPFS="/ipfs/"$(ipfs add -q "$RESP")
-
-
-## SENDING GCHANGE & CESIUM+ MESSAGE
-#~ $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myDATA} send -d "${DPUBKEY}" -t "N1GPU" -m "${MESSAGE}"
-#~ $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} send -d "${DPUBKEY}" -t "N1GPU" -m "${MESSAGE}"
-

@@ -27,6 +27,102 @@ import json
 import subprocess
 import socket
 
+HOME_DIR = os.path.expanduser("~")
+
+
+def _ipfs_url(cid):
+    """Construit une URL IPFS propre depuis le CID, sans double /ipfs/."""
+    gateway = os.getenv('myLIBRA', 'https://ipfs.copylaradio.com').rstrip('/')
+    # Retirer un éventuel suffixe /ipfs déjà présent dans la variable d'env
+    if gateway.endswith('/ipfs'):
+        gateway = gateway[:-5]
+    return f"{gateway}/ipfs/{cid}"
+
+
+def _deduplicate_sentences(text):
+    """Supprime les phrases dupliquées consécutives ou répétées dans le texte."""
+    import re
+    # Découpe sur . ! ? avec préservation du séparateur
+    parts = re.split(r'(?<=[.!?])\s+', text.strip())
+    seen = []
+    result = []
+    for part in parts:
+        # Normaliser pour comparaison (minuscules, sans ponctuation finale)
+        key = re.sub(r'[.!?\s]+$', '', part.lower().strip())
+        if key and key not in seen:
+            seen.append(key)
+            result.append(part)
+    return ' '.join(result)
+
+
+def publish_kind1(description, image_source, email=None):
+    """Publie la description en kind 1 NOSTR avec l'image attachée via IPFS."""
+    if not email:
+        email = os.getenv('CAPTAINEMAIL', '')
+    if not email:
+        env_file = os.path.join(HOME_DIR, '.zen', 'Astroport.ONE', '.env')
+        if os.path.exists(env_file):
+            with open(env_file) as f:
+                for line in f:
+                    if line.startswith('CAPTAINEMAIL='):
+                        email = line.split('=', 1)[1].strip().strip('"\'')
+                        break
+    if not email:
+        print("publish: CAPTAINEMAIL introuvable — utilise --publish EMAIL")
+        return None
+
+    keyfile = os.path.join(HOME_DIR, '.zen', 'game', 'nostr', email, '.secret.nostr')
+    if not os.path.exists(keyfile):
+        print(f"publish: keyfile introuvable : {keyfile}")
+        return None
+
+    ipfs_url = None
+    if not image_source.startswith('http://') and not image_source.startswith('https://'):
+        try:
+            r = subprocess.run(['ipfs', 'add', '--quiet', '--pin=false', image_source],
+                               capture_output=True, text=True, timeout=30)
+            cid = r.stdout.strip().split()[-1] if r.returncode == 0 else None
+            if cid:
+                ipfs_url = _ipfs_url(cid)
+        except Exception as e:
+            print(f"publish: ipfs add échoué : {e}")
+    else:
+        ipfs_url = image_source
+
+    content = f"👁️ {description}"
+    tags = [["t", "vision"], ["t", "ollama"]]
+    if ipfs_url:
+        content += f"\n\n📸 {ipfs_url}"
+        tags.append(["r", ipfs_url])
+
+    script = os.path.join(HOME_DIR, '.zen', 'Astroport.ONE', 'tools', 'nostr_send_note.py')
+    if not os.path.exists(script):
+        script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              '..', 'tools', 'nostr_send_note.py')
+    relay = os.getenv('NOSTR_RELAY_WS', 'ws://127.0.0.1:7777')
+
+    try:
+        r = subprocess.run(
+            [sys.executable, script,
+             '--keyfile', keyfile,
+             '--content', content,
+             '--kind', '1',
+             '--tags', json.dumps(tags),
+             '--relays', relay,
+             '--json'],
+            capture_output=True, text=True, timeout=60
+        )
+        if r.returncode == 0:
+            pub = json.loads(r.stdout)
+            pub['_content'] = content  # contenu réel publié
+            return pub
+        else:
+            print(f"publish: échec nostr_send_note : {r.stderr[:200]}")
+            return None
+    except Exception as e:
+        print(f"publish: exception : {e}")
+        return None
+
 def check_ollama_port(port=11434):
     """
     Check if the Ollama port is open locally.
@@ -113,26 +209,40 @@ def describe_image_from_ipfs(image_source, ollama_model="llama3.2-vision:11b", o
             if not output_json:
                 print(f"Read local image file ({len(image_bytes)} bytes).")
 
-        prompt = custom_prompt if custom_prompt else 'Décris précisément cette image comme si tu écrivais pour quelqu’un qui ne peut pas la voir.'
-        
-        if not output_json:
-            print(f"Sending image data to remote Ollama model '{ollama_model}'...")
-        
-        # En passant des octets (bytes) bruts, le client Python Ollama encode
-        # automatiquement l'image en Base64 et l'envoie via l'API REST.
-        # Le serveur distant reçoit directement les pixels et n'a pas besoin de fichier local !
-        ai_response = ollama.chat(
-            model=ollama_model,
-            messages=[
-                {
-                    'role': 'user',
-                    'content': prompt,
-                    'images': [image_bytes], 
-                },
-            ]
+        prompt = custom_prompt if custom_prompt else (
+            "Décris cette image en 3 à 5 phrases concises et factuelles. "
+            "Identifie les éléments principaux visibles (plantes, animaux, personnes, objets, paysage, couleurs). "
+            "Chaque phrase doit apporter une information nouvelle. Ne répète pas les mêmes informations."
         )
 
-        description = ai_response['message']['content']
+        if not output_json:
+            print(f"Sending image data to remote Ollama model '{ollama_model}'...")
+
+        def _ollama_chat():
+            return ollama.chat(
+                model=ollama_model,
+                messages=[{'role': 'user', 'content': prompt, 'images': [image_bytes]}],
+                options={'repeat_penalty': 1.4, 'num_predict': 600, 'temperature': 0.3}
+            )
+
+        # Retry once if connection is reset (tunnel may have dropped)
+        try:
+            ai_response = _ollama_chat()
+        except Exception as e:
+            if "104" in str(e) or "Connection reset" in str(e) or "Connection refused" in str(e):
+                if not output_json:
+                    print("Connection lost. Re-establishing tunnel via ollama.me.sh...")
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                ollama_script = os.path.join(script_dir, "services", "ollama.me.sh")
+                if os.path.exists(ollama_script):
+                    subprocess.run([ollama_script], capture_output=True, text=True, timeout=15)
+                if not output_json:
+                    print("Retrying...")
+                ai_response = _ollama_chat()
+            else:
+                raise
+
+        description = _deduplicate_sentences(ai_response['message']['content'])
         if not output_json:
             print("Ollama description received.")
 
@@ -143,16 +253,19 @@ def describe_image_from_ipfs(image_source, ollama_model="llama3.2-vision:11b", o
             return description
 
     except requests.exceptions.RequestException as e:
-        if not output_json:
-            print(f"Error downloading image from IPFS: {e}")
+        if output_json:
+            return json.dumps({"error": f"Error downloading image: {e}"})
+        print(f"Error downloading image from IPFS: {e}")
         return None
     except ConnectionError as e:
-        if not output_json:
-            print(f"Error connecting to Ollama: {e}")
+        if output_json:
+            return json.dumps({"error": f"Ollama connection error: {e}"})
+        print(f"Error connecting to Ollama: {e}")
         return None
     except Exception as e:
-        if not output_json:
-            print(f"An unexpected error occurred: {e}")
+        if output_json:
+            return json.dumps({"error": f"Unexpected error: {e}"})
+        print(f"An unexpected error occurred: {e}")
         return None
 
 
@@ -162,6 +275,9 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", dest="ollama_model_name", default="llama3.2-vision:11b", help="The name of the Ollama model to use (default: llama3.2-vision:11b).")
     parser.add_argument("--json", action="store_true", help="Output description in JSON format.")
     parser.add_argument("-p", "--prompt", dest="custom_prompt", default=None, help="Custom prompt to send to the AI (default: 'Décris précisément cette image...').")
+    parser.add_argument("--publish", dest="publish_email", nargs="?", const="__captainemail__",
+                        metavar="EMAIL",
+                        help="Publier la description en kind 1 NOSTR (email du MULTIPASS, défaut: CAPTAINEMAIL)")
 
     args = parser.parse_args()
 
@@ -169,10 +285,33 @@ if __name__ == "__main__":
 
     if description_output:
         if args.json:
-            print(description_output) # Already JSON string
+            print(description_output)
         else:
             print("\nImage Description from Ollama:")
             print(description_output)
+
+        if args.publish_email is not None:
+            raw_desc = description_output
+            if args.json:
+                try:
+                    raw_desc = json.loads(description_output).get("description", description_output)
+                except Exception:
+                    pass
+            pub_email = None if args.publish_email == "__captainemail__" else args.publish_email
+            pub = publish_kind1(raw_desc, args.image_source, pub_email)
+            if pub:
+                if args.json:
+                    print(json.dumps(pub.get('event', pub), ensure_ascii=False))
+                else:
+                    print(f"\n✅ Publié kind 1 → {pub.get('event_id', '?')}")
+                    print(pub.get('_content', ''))
+            else:
+                if args.json:
+                    print(json.dumps({"publish_error": "échec publication NOSTR"}))
+                else:
+                    print("\n⚠️  Publication NOSTR échouée.")
     else:
-        if not args.json: 
+        if args.json:
+            print(json.dumps({"error": "Failed to get image description"}))
+        else:
             print("\nFailed to get image description.")

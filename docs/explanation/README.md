@@ -26,6 +26,7 @@ philosophie du projet. Discursif, analytique, visionnaire.
 | [ANALYTICS.md](ANALYTICS.md) | Analytics décentralisé — Kind 10600 + NIP-44, zéro fuite vers les GAFAM |
 | [ASYNC_TASKS_NOSTR.md](ASYNC_TASKS_NOSTR.md) | Tâches asynchrones inter-NODE via DMs NOSTR — le "RabbitMQ Web3" |
 | [WOTX2_MEDIATION.md](WOTX2_MEDIATION.md) | Assurance mutualiste WoT — pourquoi la médiation pair-à-pair remplace l'assurance centralisée |
+| [ATOM4LOVE_PROTOCOL.md](ATOM4LOVE_PROTOCOL.md) | ATOM4LOVE — jeu comme protocole, signature vibratoire φ/ω, Kind 30078 bootstrap WoT, cabine-33 |
 
 ## À créer
 

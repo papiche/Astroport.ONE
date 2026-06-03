@@ -22,6 +22,9 @@ MY_PATH="$(cd "$MY_PATH" && pwd)"
 # Bibliothèque Oracle Dreamspell partagée (tables, HTML, GPS, haversine)
 # shellcheck source=/dev/null
 source "${MY_PATH}/../tools/kin_oracle.sh"
+# Préférences KIN par membre (scope N1/N2/relay, types, daily/weekly)
+# shellcheck source=/dev/null
+source "${MY_PATH}/../tools/kin_prefs.sh"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GPS — variables de filtre (fonctions dans kin_oracle.sh)
@@ -30,6 +33,10 @@ GPS_LAT=""
 GPS_LON=""
 GPS_RADIUS=""
 FORCE=false
+# En mode --player, seul ce joueur local reçoit ses correspondances Kin.
+# Les autres membres du relay sont scannés pour trouver les groupes, mais
+# aucun email ne leur est envoyé (leur machine s'en charge).
+TARGET_PLAYER=""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Parse arguments
@@ -47,6 +54,8 @@ while [[ $# -gt 0 ]]; do
                 shift 2
             fi
             ;;
+        --player)
+            TARGET_PLAYER="${2:-}"; shift 2 ;;
         --force)
             FORCE=true; shift ;;
         --help|-h)
@@ -82,11 +91,30 @@ _gps_tag=""
 if [[ -n "$GPS_LAT" ]]; then
     _gps_tag="_gps$(echo "${GPS_LAT}_${GPS_LON}_${GPS_RADIUS}" | tr '.' 'p' | tr '-' 'n')"
 fi
-MARKER_FILE="${HOME}/.zen/game/.kin_news_${WEEK_KEY}${_gps_tag}"
+# Marqueur par joueur en mode --player, global sinon
+if [[ -n "$TARGET_PLAYER" ]]; then
+    MARKER_FILE="${HOME}/.zen/game/nostr/${TARGET_PLAYER}/.kin_news_${WEEK_KEY}"
+else
+    MARKER_FILE="${HOME}/.zen/game/.kin_news_${WEEK_KEY}${_gps_tag}"
+fi
 
 if [[ -f "$MARKER_FILE" && "$FORCE" != "true" ]]; then
-    echo "INFO KIN.news: Correspondances Kin déjà envoyées semaine ${WEEK_KEY}. --force pour relancer." >&2
+    echo "INFO KIN.news: Correspondances Kin déjà envoyées semaine ${WEEK_KEY} pour ${TARGET_PLAYER:-tous}. --force pour relancer." >&2
     exit 0
+fi
+
+# ─── Préférences du joueur cible (scope, types, opt-out) ─────────────────────
+if [[ -n "$TARGET_PLAYER" ]]; then
+    _kin_prefs_load "$TARGET_PLAYER"
+    if [[ "$_KIN_WEEKLY" != "true" ]]; then
+        echo "INFO KIN.news: newsletter hebdo désactivée pour ${TARGET_PLAYER}." >&2
+        touch "$MARKER_FILE"
+        exit 0
+    fi
+    # Construire le filtre strfry selon la portée choisie
+    _player_hex=$(cat "${HOME}/.zen/game/nostr/${TARGET_PLAYER}/HEX" 2>/dev/null)
+    _kin_build_scan_filter "$_player_hex"
+    echo "  🔭 Portée : ${_KIN_SCOPE} (filtre: $(echo "$_KIN_SCAN_FILTER" | cut -c1-60)…)"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -122,6 +150,8 @@ WELCOME_DIR="${HOME}/.zen/game/.kin_welcomed"
 mkdir -p "$WELCOME_DIR"
 
 echo "  📡 Scan kind 30800..."
+# Pré-scan DID pour peupler pubkey_email[] (requis par _scan_a4l_phi)
+_scan_did_mapping 2>/dev/null
 declare -A kin_emails=()    # kin_number → "email1 email2 …"
 total_profiles=0
 
@@ -157,6 +187,8 @@ while IFS= read -r _evt; do
     kin_emails["$_kin"]+="${_email} "
     ((total_profiles++))
     # Envoi welcome alpha si premier contact (marqueur par email)
+    # En mode --player, n'envoyer le welcome qu'au joueur ciblé (sa machine s'en charge)
+    [[ -n "$TARGET_PLAYER" && "$_email" != "$TARGET_PLAYER" ]] && continue
     _wmark="${WELCOME_DIR}/$(echo "$_email" | md5sum | cut -c1-16)"
     if [[ ! -f "$_wmark" && -f "$WELCOME_TMPL" && -x "$MJ" ]]; then
         # Générer le welcome personnalisé
@@ -187,10 +219,15 @@ while IFS= read -r _evt; do
         rm -f "$_tmpwel"
         echo "$_wres" | grep -q "opt-out\|annule" || { touch "$_wmark"; echo "  🌟 Welcome → ${_email} (Kin ${_kin})"; }
     fi
-done < <(cd "${STRFRY_DIR}" && ./strfry scan '{"kinds":[30800]}' 2>/dev/null)
+done < <(cd "${STRFRY_DIR}" && ./strfry scan "${_KIN_SCAN_FILTER}" 2>/dev/null)
 
 printf "  📊 %d profil(s) avec Kin Maya (%d Kin distincts)\n" \
        "$total_profiles" "${#kin_emails[@]}"
+
+# Enrichissement phi/omega (Kind 30078 ATOM4LOVE) — nécessaire pour _kin_member_card_rich
+# pubkey_email[] déjà peuplé par _scan_did_mapping ci-dessus
+_scan_a4l_phi 2>/dev/null
+printf "  ⚛ phi_i chargés : %d\n" "${#email_phi[@]}"
 
 if [[ $total_profiles -lt 2 ]]; then
     echo "  ℹ️  Moins de 2 profils — aucune correspondance à envoyer"
@@ -210,6 +247,37 @@ _send_group() {
     local group_type="$1"; shift
     local -a all_emails=("$@")
     [[ ${#all_emails[@]} -eq 0 ]] && return
+
+    # En mode --player : vérifier les préférences de type et de portée
+    if [[ -n "${TARGET_PLAYER:-}" ]]; then
+        # Filtrage par type activé dans les prefs
+        local _gtype_key=""
+        case "$group_type" in
+            *Quatuor*)  _gtype_key="quartet"  ;;
+            *Occulte*)  _gtype_key="occult"   ;;
+            *Analogue*) _gtype_key="analog"   ;;
+            *Tonalit*)  _gtype_key="tone"     ;;
+            *Guide*)    _gtype_key="guide"    ;;
+            *Antipode*) _gtype_key="antipode" ;;
+        esac
+        if [[ -n "$_gtype_key" ]] && ! _kin_type_enabled "$_gtype_key"; then
+            return  # Type désactivé dans les prefs
+        fi
+
+        # N'envoyer que si le joueur ciblé est dans le groupe
+        local _in_group=false
+        for _d in "${all_emails[@]}"; do
+            [[ "$_d" == "$TARGET_PLAYER" ]] && _in_group=true && break
+        done
+        [[ "$_in_group" != "true" ]] && return
+        all_emails=("$TARGET_PLAYER")
+    fi
+
+    # Intro adaptée au langage de résonance du joueur
+    local _vibe_block=""
+    if [[ -n "${TARGET_PLAYER:-}" ]]; then
+        _vibe_block=$(_kin_vibe_intro "$group_type" "${_KIN_LANGAGE:-curieux}")
+    fi
 
     local tmpl
     case "$group_type" in
@@ -238,10 +306,15 @@ _send_group() {
         -v tname="${_MATCH_TONE_NAME:-}" \
         -v datestr="$date_fr" \
         -v efile="$entriesfile" \
+        -v vibe="$_vibe_block" \
     '
     /_KIN_ENTRIES_/ {
         while ((getline line < efile) > 0) print line
         next
+    }
+    /_VIBE_INTRO_/ {
+        gsub(/_VIBE_INTRO_/, vibe)
+        print; next
     }
     {
         gsub(/_GROUP_TYPE_/, gtype)
@@ -549,8 +622,10 @@ SWARMEOF
 )
 
     # Envoyer l'alerte à chaque membre du swarm (avec leur omega_bio si disponible)
+    # En mode --player : uniquement au joueur ciblé
     for _semail in "${_zemails[@]}"; do
         [[ -z "$_semail" ]] && continue
+        [[ -n "${TARGET_PLAYER:-}" && "$_semail" != "$TARGET_PLAYER" ]] && continue
         _tmpswarm=$(mktemp /tmp/kin_swarm_XXXXXX.html)
         cat << HTMLEOF > "$_tmpswarm"
 <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
