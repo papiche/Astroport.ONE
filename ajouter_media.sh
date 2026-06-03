@@ -450,6 +450,46 @@ ask_tmdb_metadata() {
 }
 
 ########################################################################
+# Encodage H264/AAC avec accélération GPU si disponible
+# Ordre : NVIDIA nvenc → VA-API (Intel/AMD) → CPU libx264
+_ffmpeg_h264() {
+    local src="$1" dst="$2"
+
+    # NVIDIA NVENC
+    if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null 2>&1; then
+        echo "🎮 GPU NVIDIA détecté — encodage h264_nvenc"
+        if ffmpeg -loglevel quiet -hwaccel cuda -i "$src" \
+                -c:v h264_nvenc -preset p4 -profile:v main \
+                -pix_fmt yuv420p \
+                -c:a aac -b:a 128k -movflags +faststart "$dst" 2>/dev/null; then
+            echo "✅ Encodage GPU nvenc terminé"
+            return 0
+        fi
+        echo "⚠️  nvenc échoué — tentative VA-API..."
+    fi
+
+    # VA-API (Intel QSV / AMD)
+    local vaapi_dev
+    vaapi_dev=$(find /dev/dri -name 'renderD*' 2>/dev/null | sort | head -1)
+    if [[ -n "$vaapi_dev" ]]; then
+        echo "🎮 VA-API détecté ($vaapi_dev) — encodage h264_vaapi"
+        if ffmpeg -loglevel quiet -vaapi_device "$vaapi_dev" -i "$src" \
+                -vf 'format=nv12,hwupload' -c:v h264_vaapi \
+                -c:a aac -b:a 128k -movflags +faststart "$dst" 2>/dev/null; then
+            echo "✅ Encodage GPU vaapi terminé"
+            return 0
+        fi
+        echo "⚠️  vaapi échoué — repli sur CPU..."
+    fi
+
+    # Repli CPU libx264
+    echo "🖥️  Encodage CPU (libx264)"
+    ffmpeg -loglevel quiet -i "$src" -c:v libx264 -profile:v main -level 4.1 \
+        -pix_fmt yuv420p \
+        -c:a aac -b:a 128k -movflags +faststart "$dst"
+}
+
+########################################################################
 # Conversion H264/AAC + upload IPFS + publication NOSTR
 # Arg $1: fichier source
 # Utilise les vars globales: TITLE_FOR_FILENAME TITLE_FOR_PUBLICATION VIDEO_DESC
@@ -472,9 +512,7 @@ convert_and_publish_video() {
 
     if [[ "$FILE_EXT" != "mp4" || "$VIDEO_CODEC_SRC" != "h264" || "$AUDIO_CODEC_SRC" != "aac" ]]; then
         espeak "Converting to H264 M P 4. Please wait"
-        ffmpeg -loglevel quiet -i "$SRC_FILE" -c:v libx264 -profile:v main -level 4.1 \
-            -pix_fmt yuv420p \
-            -c:a aac -b:a 128k -movflags +faststart "$FINAL_FILE"
+        _ffmpeg_h264 "$SRC_FILE" "$FINAL_FILE"
         espeak "M P 4 ready"
     else
         cp "$SRC_FILE" "$FINAL_FILE"
