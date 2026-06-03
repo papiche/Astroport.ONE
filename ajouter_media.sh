@@ -538,17 +538,30 @@ _resize_if_needed() {
     factor=$(awk "BEGIN{printf \"%.4f\", sqrt($cur_size / $tgt_bytes) * 1.1}")
     new_w=$(awk "BEGIN{w=int($w/$factor); if(w%2)w--; if(w<320)w=320; print w}")
     new_h=$(awk "BEGIN{h=int($h/$factor); if(h%2)h--; if(h<240)h=240; print h}")
-    echo "📐 ${w}x${h} → ${new_w}x${new_h}"
+
+    # Bitrate cible : garantit que la sortie tient dans tgt_bytes
+    local duration tgt_vkbps
+    duration=$(ffprobe -v error -show_entries format=duration \
+        -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null | cut -d'.' -f1)
+    if [[ -n "$duration" && "$duration" -gt 0 ]]; then
+        tgt_vkbps=$(( (tgt_bytes * 8 / 1000) / duration - 128 ))
+        [[ $tgt_vkbps -lt 400 ]] && tgt_vkbps=400
+    else
+        tgt_vkbps=800
+    fi
+    local maxrate=$(( tgt_vkbps * 2 )) bufsize=$(( tgt_vkbps * 4 ))
+    echo "📐 ${w}x${h} → ${new_w}x${new_h} | bitrate cible : ${tgt_vkbps} kbps"
 
     local tmp ok=1
     tmp=$(mktemp "$HOME/.zen/tmp/resize_XXXXXX.mp4")
 
     # NVIDIA nvenc
     if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null 2>&1; then
-        notify_user "Encodage GPU (nvenc) ${new_w}x${new_h}…" low
-        echo "🎮 Resize GPU nvenc : ${new_w}x${new_h}"
+        notify_user "Encodage GPU (nvenc) ${new_w}x${new_h} @ ${tgt_vkbps}kbps…" low
+        echo "🎮 Resize GPU nvenc : ${new_w}x${new_h} @ ${tgt_vkbps}kbps"
         ffmpeg -loglevel error -i "$file" \
             -c:v h264_nvenc -preset p4 -pix_fmt yuv420p \
+            -b:v "${tgt_vkbps}k" -maxrate "${maxrate}k" -bufsize "${bufsize}k" \
             -vf "scale=${new_w}:${new_h}" \
             -c:a aac -ac 2 -b:a 128k -movflags +faststart -y "$tmp" 2>/dev/null && ok=0
         [[ $ok -ne 0 ]] && echo "⚠️  nvenc resize échoué — tentative VA-API..."
@@ -559,10 +572,11 @@ _resize_if_needed() {
         local vdev
         vdev=$(find /dev/dri -name 'renderD*' 2>/dev/null | sort | head -1)
         if [[ -n "$vdev" ]]; then
-            notify_user "Encodage GPU (vaapi) ${new_w}x${new_h}…" low
-            echo "🎮 Resize GPU vaapi : ${new_w}x${new_h}"
+            notify_user "Encodage GPU (vaapi) ${new_w}x${new_h} @ ${tgt_vkbps}kbps…" low
+            echo "🎮 Resize GPU vaapi : ${new_w}x${new_h} @ ${tgt_vkbps}kbps"
             ffmpeg -loglevel error -vaapi_device "$vdev" -i "$file" \
                 -vf "scale=${new_w}:${new_h},format=nv12,hwupload" -c:v h264_vaapi \
+                -b:v "${tgt_vkbps}k" -maxrate "${maxrate}k" -bufsize "${bufsize}k" \
                 -c:a aac -ac 2 -b:a 128k -movflags +faststart -y "$tmp" 2>/dev/null && ok=0
             [[ $ok -ne 0 ]] && echo "⚠️  vaapi resize échoué — repli CPU..."
         fi
@@ -570,17 +584,26 @@ _resize_if_needed() {
 
     # CPU libx264
     if [[ $ok -ne 0 ]]; then
-        notify_user "Encodage CPU ${new_w}x${new_h} — patience…" low
-        echo "🖥️  Resize CPU : ${new_w}x${new_h}"
+        notify_user "Encodage CPU ${new_w}x${new_h} @ ${tgt_vkbps}kbps — patience…" low
+        echo "🖥️  Resize CPU : ${new_w}x${new_h} @ ${tgt_vkbps}kbps"
         ffmpeg -loglevel error -i "$file" \
             -c:v libx264 -preset fast -pix_fmt yuv420p \
+            -b:v "${tgt_vkbps}k" -maxrate "${maxrate}k" -bufsize "${bufsize}k" \
             -vf "scale=${new_w}:${new_h}" \
             -c:a aac -ac 2 -b:a 128k -movflags +faststart -y "$tmp" && ok=0
     fi
 
     if [[ $ok -eq 0 && -s "$tmp" ]]; then
+        local new_size new_mb
+        new_size=$(stat -c%s "$tmp")
+        new_mb=$(( new_size / 1024 / 1024 ))
+        if [[ $new_size -ge $cur_size ]]; then
+            rm -f "$tmp"
+            notify_user "Redimensionnement inefficace (${new_mb} Mo ≥ ${cur_mb} Mo) ❌" critical
+            echo "❌ Le fichier redimensionné (${new_mb} Mo) n'est pas plus petit que l'original (${cur_mb} Mo)"
+            return 1
+        fi
         mv "$tmp" "$file"
-        local new_mb=$(( $(stat -c%s "$file") / 1024 / 1024 ))
         notify_user "Vidéo réduite : ${cur_mb} Mo → ${new_mb} Mo ✅" normal
         echo "✅ Redimensionné → ${new_mb} Mo"
     else
