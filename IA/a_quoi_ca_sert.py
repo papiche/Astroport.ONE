@@ -88,7 +88,7 @@ def _ollama_vision(image_bytes, prompt, model='llama3.2-vision:11b'):
         raise
 
 
-def _ollama_text(prompt, model=None):
+def _ollama_text(prompt, model=None, num_predict=1200):
     import ollama
     if model is None:
         for candidate in ['mistral', 'llama3.2', 'llama3', 'phi3', 'qwen2']:
@@ -103,7 +103,7 @@ def _ollama_text(prompt, model=None):
     resp = ollama.chat(
         model=model,
         messages=[{'role': 'user', 'content': prompt}],
-        options={'temperature': 0.2, 'num_predict': 1200, 'repeat_penalty': 1.2}
+        options={'temperature': 0.2, 'num_predict': num_predict, 'repeat_penalty': 1.2}
     )
     return resp['message']['content']
 
@@ -123,10 +123,21 @@ def _load_image(source):
 
 # ─── Identification initiale ───────────────────────────────────────────────────
 
-IDENTIFY_PROMPT = """Regarde cette image. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après.
+IDENTIFY_PROMPT = """Regarde cette image attentivement. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après.
 Format exact :
-{"type":"plant|animal|food|object|tool|place|person|other","name":"nom le plus probable","confidence":0.0,"details":"description en 1 phrase"}
-Types : plant=plante/champignon, animal=animal/insecte, food=aliment préparé, object=objet manufacturé, tool=outil/appareil, place=lieu/paysage, person=personne, other=autre."""
+{"type":"TYPE","name":"nom précis en français","confidence":0.0,"details":"description visuelle en 1 phrase"}
+Types possibles (choisis le plus précis) :
+  plant    = plante, arbre, fleur, champignon, algue
+  animal   = animal, insecte, oiseau, poisson, reptile
+  food     = aliment, plat cuisiné, boisson, fruit, légume
+  object   = objet manufacturé, meuble, véhicule, bâtiment, machine
+  tool     = outil, appareil, instrument, équipement
+  place    = lieu géographique, paysage, architecture
+  person   = personne, portrait, groupe humain
+  astro    = objet astronomique : nébuleuse, galaxie, planète, étoile, amas stellaire, comète
+  art      = œuvre d'art, peinture, dessin, sculpture, photo artistique
+  other    = tout ce qui ne rentre pas dans les catégories ci-dessus
+Exemples : nébuleuse d'Orion → astro, tournesol → plant, marteau → tool, Paris → place."""
 
 
 def identify_subject(image_bytes):
@@ -209,17 +220,31 @@ def get_plantnet_key():
 
 # Domaines prioritaires pour --deep (bases botaniques, médicinales, phytothérapie)
 _DEEP_PRIORITY = [
+    # Botanique / médecine
     'pfaf.org', 'tela-botanica.org', 'botanical.com', 'henriettes-herb.com',
-    'ethnobotanical.com', 'phytotherapy.org', 'plants.usda.gov', 'itis.gov',
-    'tropicos.org', 'gbif.org', 'inaturalist.org', 'florabase.com',
-    'medplants.org', 'herbalremediesadvice.org', 'drugs.com', 'webmd.com',
+    'ethnobotanical.com', 'plants.usda.gov', 'gbif.org', 'inaturalist.org',
     'ncbi.nlm.nih.gov', 'pubmed.ncbi', 'sciencedirect.com',
-    'passeportsante.net', 'doctissimo.fr', 'vidal.fr', 'eurekasante.fr',
+    'passeportsante.net', 'doctissimo.fr', 'vidal.fr',
+    # Astronomie / sciences
+    'britannica.com', 'nasa.gov', 'esa.int', 'astro.unistra.fr',
+    'apod.nasa.gov', 'simbad.u-strasbg.fr', 'cosmos.esa.int',
+    'skyandtelescope.org', 'astronomie.fr', 'futura-sciences.com',
+    # Encyclopédies généralistes
+    'larousse.fr', 'universalis.fr', 'belin.fr',
 ]
 _DEEP_SKIP = [
+    # Réseaux sociaux / commerce
     'facebook.com', 'twitter.com', 'instagram.com', 'youtube.com',
     'amazon.', 'ebay.', 'shop', 'boutique', 'acheter', 'buy',
+    # Wikimedia
     'wikidata.org', 'wikimedia.org', 'commons.wikimedia',
+    # Fichiers d'autorité bibliographique — aucun contenu utile
+    'viaf.org', 'catalogue.bnf.fr', 'data.bnf.fr', 'id.loc.gov',
+    'd-nb.info', 'nli.org.il', 'lccn.loc.gov', 'isni.org',
+    'worldcat.org', 'openlibrary.org', 'oclc.org',
+    'denstoredanske', 'encyklopedia.pwn', 'snl.no',
+    'archive.wikiwix.com', 'wikiwix.com',
+    '/authorities/', '/authority/', '/catalog/', '/notice/',
 ]
 
 
@@ -343,11 +368,21 @@ def _build_context(subject, plant_info, enriched, cure_mode=False, deep_results=
 
     wiki = enriched.get('wikipedia', {})
 
+    # Présentation : summary > description > fallback intro raw_sections
+    presented = False
     for key in ('summary', 'description'):
         val = wiki.get(key, '').strip()
         if val:
             parts.append(f"\n[Présentation]\n{_trim(val, lim)}")
+            presented = True
             break
+    if not presented:
+        # Fallback : utiliser les premiers blocs de l'intro raw_sections
+        intro = next((s for s in wiki.get('raw_sections', []) if s['title'] == '__intro__'), None)
+        if intro and intro.get('content'):
+            text = '\n\n'.join(intro['content'][:3])
+            parts.append(f"\n[Présentation]\n{_trim(text, lim)}")
+            presented = True
 
     if wiki.get('uses'):
         parts.append(f"\n[Utilisations et propriétés]\n{_trim(wiki['uses'], lim)}")
@@ -358,15 +393,19 @@ def _build_context(subject, plant_info, enriched, cure_mode=False, deep_results=
     if wiki.get('warnings'):
         parts.append(f"\n[Précautions / toxicité]\n{_trim(wiki['warnings'], 500 if cure_mode else 300)}")
 
-    # En mode --cure : ajouter toutes les autres sections non catégorisées
-    if cure_mode:
-        for s in wiki.get('raw_sections', []):
-            if s['title'] == '__intro__':
-                continue
-            cat = _categorize_section(s['title'])
-            if cat == 'other' and s.get('content'):
-                text = '\n'.join(s['content'])
-                parts.append(f"\n[{s['title']}]\n{_trim(text, 600)}")
+    # Sections non catégorisées : toujours en cure, sinon les 2 premières seulement
+    max_other = None if cure_mode else 2
+    other_count = 0
+    for s in wiki.get('raw_sections', []):
+        if s['title'] == '__intro__':
+            continue
+        cat = _categorize_section(s['title'])
+        if cat == 'other' and s.get('content'):
+            if max_other is not None and other_count >= max_other:
+                break
+            text = '\n'.join(s['content'])
+            parts.append(f"\n[{s['title']}]\n{_trim(text, 600)}")
+            other_count += 1
 
     # Sources profondes (--deep)
     if deep_results:
@@ -380,19 +419,20 @@ def _build_context(subject, plant_info, enriched, cure_mode=False, deep_results=
     return '\n'.join(parts)
 
 
-# Champs standard
-_FIELDS_BASE = ('ce_que_cest', 'a_quoi_ca_sert', 'comment_sen_servir')
-
-# Champs étendus --cure
-_FIELDS_CURE = ('ce_que_cest', 'proprietes', 'preparations', 'usages_culinaires',
-                'precautions', 'comment_sen_servir')
+# Champs par type de sujet
+_FIELDS_BASE    = ('ce_que_cest', 'a_quoi_ca_sert', 'comment_sen_servir')
+_FIELDS_CURE    = ('ce_que_cest', 'proprietes', 'preparations', 'usages_culinaires',
+                   'precautions', 'comment_sen_servir')
+_FIELDS_ASTRO   = ('ce_que_cest', 'caracteristiques', 'comment_observer', 'interet')
+_FIELDS_PLACE   = ('ce_que_cest', 'histoire', 'a_voir', 'comment_visiter')
+_FIELDS_ART     = ('ce_que_cest', 'contexte', 'analyse', 'interet')
 
 SYNTHESIS_PROMPT_TMPL = """Contexte sur le sujet observé :
 {context}
 
 Réponds UNIQUEMENT avec ce JSON compact, sans markdown, sans code fence, sans commentaire :
-{{"ce_que_cest":"2 phrases max","a_quoi_ca_sert":"2-3 phrases max","comment_sen_servir":"2-3 phrases max"}}
-Chaque valeur : texte simple, phrases complètes, aucune répétition entre les champs."""
+{{"ce_que_cest":"définition précise avec caractéristiques clés, 2-3 phrases","a_quoi_ca_sert":"usages concrets et bénéfices avec détails techniques si disponibles, 3-4 phrases","comment_sen_servir":"conseils pratiques précis issus du contexte, 3-4 phrases"}}
+Inclus des faits précis tirés du contexte. Pas de généralités vagues."""
 
 CURE_PROMPT_TMPL = """Contexte détaillé sur le sujet observé :
 {context}
@@ -400,23 +440,67 @@ CURE_PROMPT_TMPL = """Contexte détaillé sur le sujet observé :
 Tu es un herboriste expert. Réponds UNIQUEMENT avec ce JSON compact (sans markdown, sans code fence) :
 {{"ce_que_cest":"1-2 phrases","proprietes":"propriétés thérapeutiques, nutritionnelles et actifs principaux en 3-4 phrases","preparations":"méthodes de préparation précises : infusion (quelle partie, quelle dose, combien de minutes), décoction, macération, huile essentielle, usage externe/interne, etc. — 3-5 phrases","usages_culinaires":"comment l'utiliser en cuisine, quelles associations, comment le conserver — 2-3 phrases","precautions":"contre-indications, interactions médicamenteuses, dosage maximum, personnes à risque — 2-3 phrases","comment_sen_servir":"conseils pratiques de récolte, conservation et usage quotidien — 2-3 phrases"}}"""
 
+ASTRO_PROMPT_TMPL = """Contexte sur l'objet astronomique observé :
+{context}
+
+Tu es un astronome expert. Utilise les données du contexte. Réponds UNIQUEMENT avec ce JSON compact (sans markdown, sans code fence) :
+{{"ce_que_cest":"nature, type et localisation précise (constellation, distance en années-lumière) en 2 phrases","caracteristiques":"données physiques concrètes : taille, magnitude, composition, âge, particularités — 3-4 phrases avec chiffres","comment_observer":"quand, où dans le ciel, avec quel instrument (œil nu / jumelles / télescope), magnitude et conseils — 3 phrases","interet":"découverte historique, importance scientifique, phénomènes remarquables — 2-3 phrases"}}"""
+
+PLACE_PROMPT_TMPL = """Contexte sur le lieu observé :
+{context}
+
+Réponds UNIQUEMENT avec ce JSON compact (sans markdown, sans code fence) :
+{{"ce_que_cest":"description géographique et identité du lieu en 1-2 phrases","histoire":"origines et faits historiques marquants en 2-3 phrases","a_voir":"points d'intérêt, attraits, activités en 2-3 phrases","comment_visiter":"accès, meilleure période, conseils pratiques en 2 phrases"}}"""
+
+ART_PROMPT_TMPL = """Contexte sur l'œuvre ou l'image artistique observée :
+{context}
+
+Réponds UNIQUEMENT avec ce JSON compact (sans markdown, sans code fence) :
+{{"ce_que_cest":"description de l'œuvre, auteur supposé, technique en 1-2 phrases","contexte":"époque, mouvement artistique, commande ou contexte de création en 2 phrases","analyse":"composition, symbolique, éléments remarquables en 2-3 phrases","interet":"pourquoi cette œuvre est notable ou influente en 1-2 phrases"}}"""
+
+
+def _synthesis_config(subject_type, cure_mode):
+    """Retourne (prompt_template, fields) selon le type de sujet."""
+    if cure_mode and subject_type in ('plant', 'food', 'animal'):
+        return CURE_PROMPT_TMPL, _FIELDS_CURE
+    if subject_type == 'astro':
+        return ASTRO_PROMPT_TMPL, _FIELDS_ASTRO
+    if subject_type == 'place':
+        return PLACE_PROMPT_TMPL, _FIELDS_PLACE
+    if subject_type == 'art':
+        return ART_PROMPT_TMPL, _FIELDS_ART
+    return SYNTHESIS_PROMPT_TMPL, _FIELDS_BASE
+
+
+def _normalize_key(k):
+    """Supprime les accents pour comparaison de clés JSON."""
+    import unicodedata
+    return ''.join(c for c in unicodedata.normalize('NFD', k)
+                   if unicodedata.category(c) != 'Mn').lower()
+
 
 def _extract_field(raw, field):
     import re
-    m = re.search(rf'"{field}"\s*:\s*"((?:[^"\\]|\\.)*)"', raw)
-    if m:
-        val = m.group(1).replace('\\"', '"').replace('\\n', ' ').strip()
-        last = re.search(r'^(.*[.!?])\s*$', val, re.DOTALL)
-        return last.group(1).strip() if last else val
+    # Chercher la clé exacte OU avec/sans accents
+    field_norm = _normalize_key(field)
+    pattern = rf'"([^"]*?)"\s*:\s*"((?:[^"\\]|\\.)*)"'
+    for m in re.finditer(pattern, raw):
+        key_raw, val = m.group(1), m.group(2)
+        if _normalize_key(key_raw) == field_norm:
+            val = val.replace('\\"', '"').replace('\\n', ' ').strip()
+            last = re.search(r'^(.*[.!?])\s*$', val, re.DOTALL)
+            return last.group(1).strip() if last else val
     return ''
 
 
 def synthesize(subject, plant_info, enriched, cure_mode=False, deep_results=None):
     import re
+    stype = subject.get('type', 'other')
     context = _build_context(subject, plant_info, enriched, cure_mode, deep_results)
-    tmpl = CURE_PROMPT_TMPL if cure_mode else SYNTHESIS_PROMPT_TMPL
+    tmpl, fields = _synthesis_config(stype, cure_mode)
     prompt = tmpl.format(context=context)
-    raw = _ollama_text(prompt)
+    tokens = 2000 if cure_mode else 1400
+    raw = _ollama_text(prompt, num_predict=tokens)
 
     raw = re.sub(r'```(?:json)?', '', raw).strip().rstrip('`').strip()
 
@@ -427,12 +511,11 @@ def synthesize(subject, plant_info, enriched, cure_mode=False, deep_results=None
         except Exception:
             pass
 
-    fields = _FIELDS_CURE if cure_mode else _FIELDS_BASE
     result = {f: _extract_field(raw, f) for f in fields}
     if any(result.values()):
         return result
 
-    return {'ce_que_cest': raw[:400], 'a_quoi_ca_sert': '', 'comment_sen_servir': ''}
+    return {'ce_que_cest': raw[:400]}
 
 
 # ─── Publication NOSTR kind 1 ──────────────────────────────────────────────────
@@ -479,6 +562,9 @@ def publish_kind1(text_content, image_source, email=None):
     tags = [["t", "identification"], ["t", "aquoicasert"]]
     if ipfs_url:
         content += f"\n\n📸 {ipfs_url}"
+        tags.append(["imeta",
+                     f"url {ipfs_url}",
+                     "m image/jpeg"])
         tags.append(["r", ipfs_url])
 
     script = os.path.join(HOME_DIR, '.zen', 'Astroport.ONE', 'tools', 'nostr_send_note.py')
@@ -514,9 +600,80 @@ def _safe_field(value):
     return v
 
 
+# Mapping champ → (emoji, label)
+_FIELD_LABELS = {
+    'ce_que_cest':       ('📖', "Ce que c'est"),
+    'a_quoi_ca_sert':    ('✅', 'À quoi ça sert'),
+    'comment_sen_servir':('🛠️ ', 'Comment s\'en servir'),
+    'proprietes':        ('🧪', 'Propriétés'),
+    'preparations':      ('⚗️ ', 'Préparations'),
+    'usages_culinaires': ('🍽️ ', 'Usages culinaires'),
+    'precautions':       ('⚠️ ', 'Précautions'),
+    'caracteristiques':  ('🔭', 'Caractéristiques'),
+    'comment_observer':  ('🌌', 'Comment l\'observer'),
+    'interet':           ('💡', 'Intérêt'),
+    'histoire':          ('📜', 'Histoire'),
+    'a_voir':            ('👁️ ', 'À voir'),
+    'comment_visiter':   ('🗺️ ', 'Comment visiter'),
+    'contexte':          ('🎨', 'Contexte'),
+    'analyse':           ('🔍', 'Analyse'),
+}
+
+# Mots-clés → emoji pour les titres de sections Wikipedia
+_SECTION_EMOJI_MAP = [
+    (['alimentaire', 'cuisine', 'culinaire', 'recette', 'comestible'], '🍽️'),
+    (['pharmaceutique', 'médecin', 'médical', 'médicinal', 'thérapeutique', 'phytothérapie'], '💊'),
+    (['propriété', 'composition', 'chimique', 'actif', 'pharmacol'], '🧪'),
+    (['préparation', 'décoction', 'infusion', 'macération', 'usage'], '⚗️'),
+    (['précaution', 'toxicité', 'danger', 'contre-indication', 'allergie', 'poison'], '⚠️'),
+    (['culture', 'plantation', 'jardinage', 'semis', 'entretien'], '🌱'),
+    (['récolte', 'cueillette', 'conservation', 'séchage'], '✂️'),
+    (['historique', 'histoire', 'étymologie', 'nomenclature', 'origine'], '📜'),
+    (['distribution', 'répartition', 'habitat', 'écologie', 'environnement'], '🗺️'),
+    (['espèce', 'taxonomie', 'classification', 'systématique'], '🔬'),
+    (['végétatif', 'morphologie', 'description', 'caractéristique', 'appareil'], '🌿'),
+    (['reproducteur', 'fleur', 'floraison', 'fruit', 'graine'], '🌸'),
+    (['envahissante', 'invasive', 'conséquence', 'éradication'], '🚫'),
+    (['observation', 'observer', 'télescope', 'astronomie'], '🔭'),
+    (['connexe', 'voir aussi', 'annexe', 'galerie'], '🔗'),
+    (['outil', 'machine', 'équipement', 'instrument'], '🔧'),
+    (['technique', 'procédé', 'méthode', 'processus'], '⚙️'),
+    (['application', 'utilisation', 'usage', 'emploi'], '✅'),
+]
+
+
+def _section_emoji(title):
+    t = title.lower()
+    for keywords, emoji in _SECTION_EMOJI_MAP:
+        if any(k in t for k in keywords):
+            return emoji
+    return '▸'
+
+
+def _md_to_nostr(text):
+    """Convertit le texte markdown en texte plain NOSTR : **titre** → emoji titre."""
+    import re
+    def replace_bold(m):
+        title = m.group(1).strip()
+        return f"\n{_section_emoji(title)} {title}"
+    text = re.sub(r'\*\*(.+?)\*\*', replace_bold, text)
+    # Nettoyer les doubles sauts de ligne excessifs
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
+
+TYPE_EMOJI = {
+    'plant': '🌿', 'food': '🍽️', 'animal': '🐾', 'astro': '🌌',
+    'place': '🗺️', 'art': '🎨', 'tool': '🔧', 'object': '📦',
+    'person': '👤', 'other': '🔍',
+}
+
+
 def format_text(subject, plant_info, synthesis, enriched, cure_mode=False):
     lines = []
+    stype = subject.get('type', 'other')
 
+    # En-tête
     if plant_info:
         sci = plant_info['scientific_name']
         common = ', '.join(plant_info['common_names'][:3])
@@ -530,35 +687,53 @@ def format_text(subject, plant_info, synthesis, enriched, cure_mode=False):
                 for r in plant_info['all_results'][1:3]
             ))
     else:
-        lines.append(f"🔍 {subject.get('name', '?')} ({subject.get('type', '?')})")
+        ico = TYPE_EMOJI.get(stype, '🔍')
+        lines.append(f"{ico} {subject.get('name', '?')}")
 
     lines.append('')
 
-    # Champs communs
-    if _safe_field(synthesis.get('ce_que_cest')):
-        lines.append(f"📖 Ce que c'est\n{synthesis['ce_que_cest']}")
-    if _safe_field(synthesis.get('a_quoi_ca_sert')):
-        lines.append(f"\n✅ À quoi ça sert\n{synthesis['a_quoi_ca_sert']}")
+    # Champs dans l'ordre défini par _synthesis_config
+    _, fields = _synthesis_config(stype, cure_mode)
+    first = True
+    for field in fields:
+        val = _safe_field(synthesis.get(field))
+        if val:
+            emoji, label = _FIELD_LABELS.get(field, ('•', field))
+            prefix = '' if first else '\n'
+            lines.append(f"{prefix}{emoji} {label}\n{val}")
+            first = False
 
-    # Champs --cure uniquement
-    if cure_mode:
-        if _safe_field(synthesis.get('proprietes')):
-            lines.append(f"\n🧪 Propriétés\n{synthesis['proprietes']}")
-        if _safe_field(synthesis.get('preparations')):
-            lines.append(f"\n⚗️  Préparations\n{synthesis['preparations']}")
-        if _safe_field(synthesis.get('usages_culinaires')):
-            lines.append(f"\n🍽️  Usages culinaires\n{synthesis['usages_culinaires']}")
-        if _safe_field(synthesis.get('precautions')):
-            lines.append(f"\n⚠️  Précautions\n{synthesis['precautions']}")
-
-    if _safe_field(synthesis.get('comment_sen_servir')):
-        lines.append(f"\n🛠️  Comment s'en servir\n{synthesis['comment_sen_servir']}")
-
+    # Détails Wikipedia — sections utiles non incluses dans la synthèse Ollama
     wiki = enriched.get('wikipedia', {})
+    detail_parts = []
+    # Utilisations / préparations / avertissements (contenu factuel direct)
+    for key, label in (('uses', None), ('how_to_use', None), ('warnings', '⚠️ Précautions')):
+        val = wiki.get(key, '').strip()
+        if val and len(val) > 80:
+            detail_parts.append((f"{label}\n" if label else '') + _trim(val, 600))
+    # Sections spécialisées non catégorisées (pas intro, pas déjà dans synthesis)
+    shown_cats = {'description', 'uses', 'how_to_use', 'warnings'}
+    for s in wiki.get('raw_sections', []):
+        if s['title'] == '__intro__' or not s.get('content'):
+            continue
+        cat = _categorize_section(s['title'])
+        if cat not in shown_cats:
+            text = '\n'.join(s['content'])
+            if len(text) > 80:
+                detail_parts.append(f"**{s['title']}**\n{_trim(text, 400)}")
+    if detail_parts:
+        lines.append('\n📚 En détail')
+        lines.append('─' * 40)
+        lines.append(_md_to_nostr('\n\n'.join(detail_parts)))
+
+    # Sources
+    sources = []
     if wiki.get('url'):
-        lines.append(f"\n🔗 Wikipedia : {wiki['url']}")
+        sources.append(f"🔗 Wikipedia : {wiki['url']}")
     if plant_info and plant_info.get('plantnet_url'):
-        lines.append(f"🌱 PlantNet : {plant_info['plantnet_url']}")
+        sources.append(f"🌱 PlantNet : {plant_info['plantnet_url']}")
+    if sources:
+        lines.append('\n' + '\n'.join(sources))
 
     return '\n'.join(lines)
 
@@ -595,17 +770,20 @@ Exemples :
   ./a_quoi_ca_sert.py /tmp/plante.jpg --model llava:13b
       Utiliser un modèle vision différent pour l'identification
 
-  ./a_quoi_ca_sert.py /tmp/plante.jpg --cure --deep
-      Mode détaillé + scraping des liens externes trouvés dans Wikipedia/PlantNet
+  ./a_quoi_ca_sert.py /tmp/plante.jpg --deep
+      Scraping des liens externes trouvés dans Wikipedia
       (pfaf.org, tela-botanica.org, pubmed, passeportsante.net…)
 
-  ./a_quoi_ca_sert.py /tmp/plante.jpg --cure --deep --max-deep 8
-      Idem avec jusqu'à 8 sources profondes (défaut: 4)
+  ./a_quoi_ca_sert.py /tmp/plante.jpg --cure --deep
+      Mode détaillé + scraping profond des sources externes
+
+  ./a_quoi_ca_sert.py /tmp/plante.jpg --deep --max-deep 8
+      Jusqu'à 8 sources profondes (défaut: 4)
 
   ./a_quoi_ca_sert.py /tmp/plante.jpg --cure --deep --publish --json
       Mode complet : identification + scraping profond + synthèse + publication NOSTR
 
-  ./a_quoi_ca_sert.py /tmp/plante.jpg --cure --deep --verbose
+  ./a_quoi_ca_sert.py /tmp/plante.jpg --deep --verbose
       Affiche le détail de chaque étape : sections Wikipedia, liens trouvés,
       contexte envoyé à Ollama, réponse brute avant parsing
 
@@ -627,7 +805,7 @@ Scrapers utilisés (Playwright) :
     parser.add_argument("--no-scrape", action="store_true",
                         help="Ne pas lancer les scrapers Wikipedia/PlantNet")
     parser.add_argument("--deep", action="store_true",
-                        help="Suivre les liens externes trouvés pour enrichir davantage (combiné avec --cure)")
+                        help="Suivre les liens externes trouvés dans Wikipedia pour enrichir davantage")
     parser.add_argument("--max-deep", type=int, default=4, metavar="N",
                         help="Nombre max de sources profondes à scraper (défaut: 4)")
     parser.add_argument("--verbose", "-v", action="store_true",
@@ -726,14 +904,16 @@ Scrapers utilisés (Playwright) :
 
     # 6. Synthèse
     log(f"Synthèse avec Ollama{'  (mode --cure)' if cure_mode else ''}{'  + --deep' if deep_results else ''}…")
+    stype = subject.get('type', 'other')
     context = _build_context(subject, plant_info, enriched, cure_mode, deep_results)
     vblock("Contexte envoyé à Ollama", context, max_chars=1200)
 
     try:
         import re as _re
-        tmpl = CURE_PROMPT_TMPL if cure_mode else SYNTHESIS_PROMPT_TMPL
+        tmpl, fields = _synthesis_config(stype, cure_mode)
         prompt = tmpl.format(context=context)
-        raw_response = _ollama_text(prompt)
+        tokens = 2000 if cure_mode else 1400
+        raw_response = _ollama_text(prompt, num_predict=tokens)
         vblock("Réponse brute Ollama", raw_response)
         raw_cleaned = _re.sub(r'```(?:json)?', '', raw_response).strip().rstrip('`').strip()
         m = _re.search(r'\{.*\}', raw_cleaned, _re.DOTALL)
@@ -741,15 +921,13 @@ Scrapers utilisés (Playwright) :
             try:
                 synthesis = json.loads(m.group())
             except Exception:
-                fields = _FIELDS_CURE if cure_mode else _FIELDS_BASE
                 synthesis = {f: _extract_field(raw_cleaned, f) for f in fields}
         else:
-            fields = _FIELDS_CURE if cure_mode else _FIELDS_BASE
             synthesis = {f: _extract_field(raw_cleaned, f) for f in fields}
         if not any(synthesis.values()):
-            synthesis = {'ce_que_cest': raw_cleaned[:400], 'a_quoi_ca_sert': '', 'comment_sen_servir': ''}
+            synthesis = {'ce_que_cest': raw_cleaned[:400]}
     except Exception as e:
-        synthesis = {'ce_que_cest': subject.get('details', str(e)), 'a_quoi_ca_sert': '', 'comment_sen_servir': ''}
+        synthesis = {'ce_que_cest': subject.get('details', str(e))}
 
     # 7. Résultat
     if args.json:
