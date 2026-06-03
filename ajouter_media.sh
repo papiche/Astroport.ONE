@@ -490,6 +490,90 @@ _ffmpeg_h264() {
 }
 
 ########################################################################
+# Réduit la résolution si le fichier dépasse 650 Mo (limite upload)
+# Arg $1: fichier MP4 (modifié en place)
+_resize_if_needed() {
+    local file="$1"
+    local max_bytes=$(( 650 * 1024 * 1024 ))
+    local tgt_bytes=$(( 600 * 1024 * 1024 ))
+    local cur_size
+    cur_size=$(stat -c%s "$file" 2>/dev/null || echo 0)
+    [[ $cur_size -le $max_bytes ]] && return 0
+
+    local cur_mb=$(( cur_size / 1024 / 1024 ))
+    notify_user "Fichier ${cur_mb} Mo — réduction de résolution en cours…" normal
+    echo "⚠️  Fichier ${cur_mb} Mo > 650 Mo — réduction de résolution..."
+
+    local dims w h
+    dims=$(ffprobe -v error -select_streams v:0 \
+        -show_entries stream=width,height -of csv=s=x:p=0 "$file" 2>/dev/null | head -1 | tr -d '\n\r')
+    w=$(echo "$dims" | cut -d'x' -f1)
+    h=$(echo "$dims" | cut -d'x' -f2)
+    if [[ -z "$w" || "$w" == "0" ]]; then
+        notify_user "Redimensionnement impossible : dimensions invalides" critical
+        echo "❌ Dimensions invalides — impossible de redimensionner"
+        return 1
+    fi
+
+    # facteur = sqrt(taille_actuelle / taille_cible) + 10% de marge
+    local factor new_w new_h
+    factor=$(awk "BEGIN{printf \"%.4f\", sqrt($cur_size / $tgt_bytes) * 1.1}")
+    new_w=$(awk "BEGIN{w=int($w/$factor); if(w%2)w--; if(w<320)w=320; print w}")
+    new_h=$(awk "BEGIN{h=int($h/$factor); if(h%2)h--; if(h<240)h=240; print h}")
+    echo "📐 ${w}x${h} → ${new_w}x${new_h}"
+
+    local tmp ok=1
+    tmp=$(mktemp "$HOME/.zen/tmp/resize_XXXXXX.mp4")
+
+    # NVIDIA nvenc
+    if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null 2>&1; then
+        notify_user "Encodage GPU (nvenc) ${new_w}x${new_h}…" low
+        echo "🎮 Resize GPU nvenc : ${new_w}x${new_h}"
+        ffmpeg -loglevel error -i "$file" \
+            -c:v h264_nvenc -preset p4 -pix_fmt yuv420p \
+            -vf "scale=${new_w}:${new_h}" \
+            -c:a aac -b:a 128k -movflags +faststart -y "$tmp" 2>/dev/null && ok=0
+        [[ $ok -ne 0 ]] && echo "⚠️  nvenc resize échoué — tentative VA-API..."
+    fi
+
+    # VA-API
+    if [[ $ok -ne 0 ]]; then
+        local vdev
+        vdev=$(find /dev/dri -name 'renderD*' 2>/dev/null | sort | head -1)
+        if [[ -n "$vdev" ]]; then
+            notify_user "Encodage GPU (vaapi) ${new_w}x${new_h}…" low
+            echo "🎮 Resize GPU vaapi : ${new_w}x${new_h}"
+            ffmpeg -loglevel error -vaapi_device "$vdev" -i "$file" \
+                -vf "scale=${new_w}:${new_h},format=nv12,hwupload" -c:v h264_vaapi \
+                -c:a aac -b:a 128k -movflags +faststart -y "$tmp" 2>/dev/null && ok=0
+            [[ $ok -ne 0 ]] && echo "⚠️  vaapi resize échoué — repli CPU..."
+        fi
+    fi
+
+    # CPU libx264
+    if [[ $ok -ne 0 ]]; then
+        notify_user "Encodage CPU ${new_w}x${new_h} — patience…" low
+        echo "🖥️  Resize CPU : ${new_w}x${new_h}"
+        ffmpeg -loglevel error -i "$file" \
+            -c:v libx264 -preset fast -pix_fmt yuv420p \
+            -vf "scale=${new_w}:${new_h}" \
+            -c:a aac -b:a 128k -movflags +faststart -y "$tmp" && ok=0
+    fi
+
+    if [[ $ok -eq 0 && -s "$tmp" ]]; then
+        mv "$tmp" "$file"
+        local new_mb=$(( $(stat -c%s "$file") / 1024 / 1024 ))
+        notify_user "Vidéo réduite : ${cur_mb} Mo → ${new_mb} Mo ✅" normal
+        echo "✅ Redimensionné → ${new_mb} Mo"
+    else
+        rm -f "$tmp"
+        notify_user "Échec du redimensionnement ❌" critical
+        echo "❌ Échec du redimensionnement"
+        return 1
+    fi
+}
+
+########################################################################
 # Conversion H264/AAC + upload IPFS + publication NOSTR
 # Arg $1: fichier source
 # Utilise les vars globales: TITLE_FOR_FILENAME TITLE_FOR_PUBLICATION VIDEO_DESC
@@ -517,6 +601,9 @@ convert_and_publish_video() {
     else
         cp "$SRC_FILE" "$FINAL_FILE"
     fi
+
+    # Vérification taille + resize si > 650 Mo
+    _resize_if_needed "$FINAL_FILE" || { espeak "Resize failed. Exit." && exit 1; }
 
     # Upload via upload2ipfs.sh
     echo "📤 Upload via upload2ipfs.sh..."
