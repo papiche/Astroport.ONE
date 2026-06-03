@@ -692,12 +692,15 @@ update_did_document() {
     # Add wallet addresses
     local multipass_g1pub=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
     if [[ -n "$multipass_g1pub" ]]; then
-        jq_cmd="$jq_cmd | .metadata.multipassWallet = {
-            \"g1pub\": \"$multipass_g1pub\",
-            \"type\": \"MULTIPASS\",
-            \"description\": \"Ẑ revenue wallet for service operations\",
-            \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
-        }"
+        local _uplanet_network="${UPLANETNAME_G1:-${UPLANETNAME:-UPlanet}}"
+        local _wallet_updated="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        # Upsert: préserve les wallets des autres UPlanets, remplace uniquement l'entrée courante
+        jq_cmd="$jq_cmd | del(.metadata.multipassWallet)
+            | .metadata.multipassWallets = (
+                (.metadata.multipassWallets // [])
+                | map(select(.network != \"${_uplanet_network}\"))
+                + [{\"g1pub\": \"${multipass_g1pub}\", \"network\": \"${_uplanet_network}\", \"updatedAt\": \"${_wallet_updated}\"}]
+            )"
     fi
     
     # Add France Connect compliance metadata (only for KYC-verified users)

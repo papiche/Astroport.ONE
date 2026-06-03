@@ -254,8 +254,14 @@ NSEC=$NPRIV; NPUB=$NPUBLIC; HEX=$HEX
 EOFNOSTR
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.nostr
 
-    # Get G1PUBNOSTR = MULTIPASS wallet G1(v1) address 
-    G1PUBNOSTR=$(${MY_PATH}/../tools/keygen -t duniter -i "$_CRED_NOSTR")
+    # 2. Identité Économique Locale (Duniter/Ğ1) -> Isolée par UPlanet
+    _CRED_DUNITER=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
+    # On crée un dérivé du PEPPER spécifique à ce réseau UPlanet
+    UPLANET_SALT=$(echo -n "${UPLANETNAME}" | sha256sum | cut -c1-16)
+    printf '%s\n%s\n' "${SALT}" "${PEPPER}_${UPLANET_SALT}" > "$_CRED_DUNITER"
+
+    # La clé G1 générée sera unique à cette UPlanet, vierge de toute transaction primale !
+    G1PUBNOSTR=$(${MY_PATH}/../tools/keygen -t duniter -i "$_CRED_DUNITER")
     echo "G1NOSTR _WALLET v1: $G1PUBNOSTR"
 
     # Conversion SS58 pour Duniter v2s (stockage persistant, cache, liens, gcli)
@@ -298,10 +304,10 @@ EOFNOSTR
     echo "$NPUBLIC" > ${HOME}/.zen/game/nostr/${EMAIL}/NPUB ## COPY NPUB
     ##########################################################################
     ## Create Bitcoin Twin Address - EXEMPLE - UPlanet ẐEN=Bitcoin
-    BITCOIN=$(${MY_PATH}/../tools/keygen -t bitcoin -i "$_CRED_NOSTR" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
+    BITCOIN=$(${MY_PATH}/../tools/keygen -t bitcoin -i "$_CRED_DUNITER" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
     echo "$BITCOIN" > ${HOME}/.zen/game/nostr/${EMAIL}/BITCOIN
     ## Create Monero Twin Address - EXEMPLE - UPlanet ẐEN=Monero
-    MONERO=$(${MY_PATH}/../tools/keygen -t monero -i "$_CRED_NOSTR" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
+    MONERO=$(${MY_PATH}/../tools/keygen -t monero -i "$_CRED_DUNITER" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
     echo "$MONERO" > ${HOME}/.zen/game/nostr/${EMAIL}/MONERO
     ############### etc... Any ED25519 elyptic key can be compatible ...
 
@@ -324,7 +330,7 @@ EOFNOSTR
     ${MY_PATH}/../tools/natools.py encrypt -p "$UPLANETG1PUB" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.enc >/dev/null
 
     ## CREATE IPNS KEY (SIDE STORAGE)
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${MOATS}.nostr.ipns -i "$_CRED_NOSTR"
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${MOATS}.nostr.ipns -i "$_CRED_DUNITER"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${MOATS}.nostr.ipns)
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
