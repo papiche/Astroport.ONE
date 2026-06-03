@@ -245,6 +245,20 @@ _DEEP_SKIP = [
     'denstoredanske', 'encyklopedia.pwn', 'snl.no',
     'archive.wikiwix.com', 'wikiwix.com',
     '/authorities/', '/authority/', '/catalog/', '/notice/',
+    # Bases de données taxonomiques — ne contiennent que des métadonnées
+    'ncbi.nlm.nih.gov/Taxonomy', 'ncbi.nlm.nih.gov/taxonomy',
+    'gbif.org/species', 'gbif.org/fr/species',
+    'inaturalist.org/taxa',
+    'itis.gov/servlet', 'catalogueoflife.org/data/taxon',
+    'iucnredlist.org/details', 'iucngisd.org/gisd',
+    'biolib.cz/en/taxon', 'dyntaxa.se/taxon',
+    'calflora.org/cgi-bin', 'florabase.dpaw',
+    'ecocrop.fao.org', 'arkive.org',
+    'biodiversity.org.au', 'floraofalabama.org/Plant',
+    'florida.plantatlas', 'plantatlas.usf',
+    'taxref.mnhn.fr', 'inpn.mnhn.fr',
+    'tela-botanica.org/bdtfx', 'tela-botanica.org/page:eflore',
+    'sophy.u-3mrs.fr',
 ]
 
 
@@ -326,6 +340,73 @@ def scrape_deep(enriched, log=None, max_sources=5):
             results.append(data)
 
     return results
+
+
+def _generate_pdf(url, log=None):
+    """Génère un PDF depuis une URL.
+    Pour les pages Wikipedia, utilise l'API officielle /api/rest_v1/page/pdf
+    (rendu natif Wikipedia, bien meilleur que Playwright).
+    Pour les autres URLs, utilise Playwright."""
+    import tempfile
+    import re as _re
+
+    pdf_path = tempfile.mktemp(suffix='.pdf')
+
+    # Détecter Wikipedia et extraire lang + titre
+    m = _re.match(r'https?://([a-z]+)\.wikipedia\.org/wiki/(.+)', url)
+    if m:
+        lang, title = m.group(1), m.group(2)
+        api_url = f"https://{lang}.wikipedia.org/api/rest_v1/page/pdf/{title}"
+        if log:
+            log(f"PDF via API Wikipedia ({lang}) : {title}")
+        try:
+            r = requests.get(api_url, timeout=60,
+                             headers={'User-Agent': 'a_quoi_ca_sert/1.0'})
+            r.raise_for_status()
+            with open(pdf_path, 'wb') as f:
+                f.write(r.content)
+            if log:
+                size = os.path.getsize(pdf_path)
+                log(f"PDF téléchargé ({size // 1024} Ko)")
+            return pdf_path
+        except Exception as e:
+            if log:
+                log(f"API Wikipedia PDF échouée ({e}), fallback Playwright…")
+            # Fallback Playwright ci-dessous
+
+    # Fallback Playwright pour les URLs non-Wikipedia
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={'width': 1200, 'height': 900})
+        try:
+            page.goto(url, wait_until='networkidle', timeout=40000)
+            page.add_style_tag(content="""
+                img, figure, .thumb, .thumbinner {
+                    break-inside: avoid !important;
+                    page-break-inside: avoid !important;
+                    float: none !important;
+                    display: block !important;
+                    max-width: 100% !important;
+                    height: auto !important;
+                    margin: 8px auto !important;
+                }
+                table { break-inside: avoid !important; max-width: 100% !important; }
+                h2, h3 { break-after: avoid !important; }
+            """)
+            page.pdf(path=pdf_path, format='A4', print_background=True,
+                     margin={'top': '15mm', 'bottom': '15mm',
+                             'left': '12mm', 'right': '12mm'})
+            if log:
+                size = os.path.getsize(pdf_path)
+                log(f"PDF Playwright ({size // 1024} Ko)")
+            return pdf_path
+        except Exception as e:
+            if log:
+                log(f"PDF échoué : {e}")
+            return None
+        finally:
+            browser.close()
 
 
 def scrape_sources(plant_info=None, subject_name=None):
@@ -527,7 +608,7 @@ def _ipfs_url(cid):
     return f"{gateway}/ipfs/{cid}"
 
 
-def publish_kind1(text_content, image_source, email=None):
+def publish_kind1(text_content, image_source, email=None, pdf_ipfs_url=None):
     if not email:
         email = os.getenv('CAPTAINEMAIL', '')
     if not email:
@@ -562,10 +643,10 @@ def publish_kind1(text_content, image_source, email=None):
     tags = [["t", "identification"], ["t", "aquoicasert"]]
     if ipfs_url:
         content += f"\n\n📸 {ipfs_url}"
-        tags.append(["imeta",
-                     f"url {ipfs_url}",
-                     "m image/jpeg"])
+        tags.append(["imeta", f"url {ipfs_url}", "m image/jpeg"])
         tags.append(["r", ipfs_url])
+    if pdf_ipfs_url:
+        tags.append(["r", pdf_ipfs_url])
 
     script = os.path.join(HOME_DIR, '.zen', 'Astroport.ONE', 'tools', 'nostr_send_note.py')
     if not os.path.exists(script):
@@ -669,7 +750,7 @@ TYPE_EMOJI = {
 }
 
 
-def format_text(subject, plant_info, synthesis, enriched, cure_mode=False):
+def format_text(subject, plant_info, synthesis, enriched, cure_mode=False, deep_results=None, pdf_ipfs_url=None):
     lines = []
     stype = subject.get('type', 'other')
 
@@ -730,8 +811,13 @@ def format_text(subject, plant_info, synthesis, enriched, cure_mode=False):
     sources = []
     if wiki.get('url'):
         sources.append(f"🔗 Wikipedia : {wiki['url']}")
-    if plant_info and plant_info.get('plantnet_url'):
-        sources.append(f"🌱 PlantNet : {plant_info['plantnet_url']}")
+    for src in (deep_results or []):
+        url = src.get('url', '')
+        title = src.get('title') or src.get('domain') or url[:60]
+        if url and not src.get('error') and len(src.get('text', '')) > 200:
+            sources.append(f"🌐 {title} : {url}")
+    if pdf_ipfs_url:
+        sources.append(f"📄 PDF Wikipedia : {pdf_ipfs_url}")
     if sources:
         lines.append('\n' + '\n'.join(sources))
 
@@ -808,6 +894,8 @@ Scrapers utilisés (Playwright) :
                         help="Suivre les liens externes trouvés dans Wikipedia pour enrichir davantage")
     parser.add_argument("--max-deep", type=int, default=4, metavar="N",
                         help="Nombre max de sources profondes à scraper (défaut: 4)")
+    parser.add_argument("--pdf", action="store_true",
+                        help="Convertir la page Wikipedia en PDF, l'ajouter sur IPFS et l'attacher à la publication")
     parser.add_argument("--verbose", "-v", action="store_true",
                         help="Afficher le détail de chaque étape (sections, liens, contexte Ollama, réponse brute)")
     args = parser.parse_args()
@@ -892,7 +980,29 @@ Scrapers utilisés (Playwright) :
                     for lnk in wiki['external_links'][:10]:
                         vlog(f"  [{lnk.get('context','')}] {lnk.get('label','')[:50]} → {lnk.get('url','')[:70]}")
 
-    # 5b. Scraping profond --deep
+    # 5b. Génération PDF Wikipedia --pdf
+    pdf_ipfs_url = None
+    if args.pdf:
+        wiki_url = enriched.get('wikipedia', {}).get('url')
+        if wiki_url:
+            log("Génération PDF Wikipedia…")
+            pdf_path = _generate_pdf(wiki_url, log=vlog)
+            if pdf_path:
+                try:
+                    r = subprocess.run(
+                        ['ipfs', 'add', '--quiet', '--pin=false', pdf_path],
+                        capture_output=True, text=True, timeout=60
+                    )
+                    cid = r.stdout.strip().split()[-1] if r.returncode == 0 else None
+                    if cid:
+                        pdf_ipfs_url = _ipfs_url(cid)
+                        log(f"→ PDF IPFS : {pdf_ipfs_url}")
+                except Exception as e:
+                    log(f"ipfs add PDF échoué : {e}")
+        else:
+            log("--pdf : pas de page Wikipedia trouvée")
+
+    # 5c. Scraping profond --deep
     deep_results = []
     cure_mode = args.cure
     if args.deep and not args.no_scrape and enriched:
@@ -948,13 +1058,13 @@ Scrapers utilisés (Playwright) :
         }
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
-        print(format_text(subject, plant_info, synthesis, enriched, cure_mode))
+        print(format_text(subject, plant_info, synthesis, enriched, cure_mode, deep_results, pdf_ipfs_url))
 
     # 8. Publication NOSTR
     if args.publish_email is not None:
         pub_email = None if args.publish_email == "__captainemail__" else args.publish_email
-        text_for_pub = format_text(subject, plant_info, synthesis, enriched, cure_mode)
-        pub = publish_kind1(text_for_pub, args.image_source, pub_email)
+        text_for_pub = format_text(subject, plant_info, synthesis, enriched, cure_mode, deep_results, pdf_ipfs_url)
+        pub = publish_kind1(text_for_pub, args.image_source, pub_email, pdf_ipfs_url)
         if pub:
             if args.json:
                 print(json.dumps(pub.get('event', pub), ensure_ascii=False))

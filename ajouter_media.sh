@@ -473,6 +473,7 @@ convert_and_publish_video() {
     if [[ "$FILE_EXT" != "mp4" || "$VIDEO_CODEC_SRC" != "h264" || "$AUDIO_CODEC_SRC" != "aac" ]]; then
         espeak "Converting to H264 M P 4. Please wait"
         ffmpeg -loglevel quiet -i "$SRC_FILE" -c:v libx264 -profile:v main -level 4.1 \
+            -pix_fmt yuv420p \
             -c:a aac -b:a 128k -movflags +faststart "$FINAL_FILE"
         espeak "M P 4 ready"
     else
@@ -516,6 +517,12 @@ convert_and_publish_video() {
     if [[ -z "$IPFS_CID" ]]; then
         echo "❌ CID IPFS manquant"
         espeak "IPFS upload failed"
+        rm -f "${TMDB_METADATA_FILE:-}" "$UPLOAD_OUTPUT_FILE"
+        exit 1
+    fi
+    if [[ ! "$IPFS_CID" =~ ^(Qm[a-zA-Z0-9]{44,}|b[a-zA-Z2-7]{58,})$ ]]; then
+        echo "❌ CID IPFS invalide (erreur IPFS daemon ?) : $IPFS_CID"
+        espeak "IPFS daemon error. Check your IPFS node."
         rm -f "${TMDB_METADATA_FILE:-}" "$UPLOAD_OUTPUT_FILE"
         exit 1
     fi
