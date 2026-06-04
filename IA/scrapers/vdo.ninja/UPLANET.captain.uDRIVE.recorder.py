@@ -169,14 +169,42 @@ def detect_motion(room):
         )
         print(f"[{room}] Flux actif. Analyse en cours... Appuyez sur Ctrl+C pour arrêter.")
 
-        CALM_DELAY = 30  # secondes sans mouvement avant de sauvegarder
+        CALM_DELAY = 10        # secondes sans mouvement → sauvegarde et retour idle
+        SEGMENT_MAX = 60       # durée max d'un tronçon → rotation forcée
+        MOTION_THRESHOLD = 10000
+
         output_dir = get_output_dir()
         prev_frame = None
+        # États : idle / recording
         recording = False
         out = None
         tmp_path = None
         start_ts = None
+        segment_start = None
         last_motion_time = None
+
+        def save_segment():
+            nonlocal out, tmp_path, recording, start_ts, segment_start, last_motion_time
+            out.release()
+            out = None
+            dest = output_dir / f"alerte_{start_ts}_{int(segment_start)}.mp4"
+            shutil.move(tmp_path, dest)
+            print(f"[{room}] Tronçon sauvegardé : {dest.name}")
+            tmp_path = None
+            recording = False
+            start_ts = None
+            segment_start = None
+            last_motion_time = None
+
+        def start_segment(now, h, w):
+            nonlocal out, tmp_path, recording, start_ts, segment_start
+            fd, tmp_path = tempfile.mkstemp(suffix=".mp4", prefix="uplanet_")
+            os.close(fd)
+            out = cv2.VideoWriter(tmp_path, cv2.VideoWriter_fourcc(*'mp4v'), 10.0, (w, h))
+            start_ts = int(now)
+            segment_start = now
+            recording = True
+            print(f"[{room}] MOUVEMENT — enregistrement démarré")
 
         try:
             while True:
@@ -195,46 +223,48 @@ def detect_motion(room):
                 frame_delta = cv2.absdiff(prev_frame, gray)
                 thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
                 thresh = cv2.dilate(thresh, None, iterations=2)
-                motion_level = np.sum(thresh)
+                motion = np.sum(thresh) > MOTION_THRESHOLD
                 now = time.time()
 
-                if motion_level > 10000:
-                    last_motion_time = now
-                    if not recording:
-                        print("MOUVEMENT DÉTECTÉ — début enregistrement")
-                        recording = True
-                        start_ts = int(now)
+                if not recording:
+                    # IDLE : on attend un mouvement pour démarrer
+                    if motion:
                         h, w, _ = frame.shape
-                        fd, tmp_path = tempfile.mkstemp(suffix=".mp4", prefix="uplanet_")
-                        os.close(fd)
-                        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                        out = cv2.VideoWriter(tmp_path, fourcc, 10.0, (w, h))
-                    out.write(frame)
+                        start_segment(now, h, w)
+                        last_motion_time = now
+                        out.write(frame)
                 else:
-                    if recording:
-                        out.write(frame)  # continuer à enregistrer pendant le calme
-                        elapsed = now - last_motion_time
-                        if elapsed >= CALM_DELAY:
-                            out.release()
-                            out = None
-                            dest = output_dir / f"alerte_{start_ts}.mp4"
-                            shutil.move(tmp_path, dest)
-                            print(f"Calme depuis {CALM_DELAY}s — vidéo sauvegardée : {dest}")
-                            recording = False
-                            tmp_path = None
-                            start_ts = None
+                    # RECORDING : on écrit la frame courante
+                    out.write(frame)
+                    if motion:
+                        last_motion_time = now
+
+                    calm_elapsed = now - last_motion_time
+                    seg_elapsed  = now - segment_start
+
+                    if calm_elapsed >= CALM_DELAY:
+                        # 10s sans mouvement → fin de séquence
+                        print(f"[{room}] Calme depuis {CALM_DELAY}s → fin de séquence")
+                        save_segment()
+                    elif seg_elapsed >= SEGMENT_MAX:
+                        # Tronçon trop long → rotation, retour idle
+                        print(f"[{room}] Rotation à {SEGMENT_MAX}s → retour idle")
+                        save_segment()
 
                 prev_frame = gray
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
-            print("Arrêt par l'utilisateur")
+            print(f"[{room}] Arrêt par l'utilisateur")
         finally:
             if out:
                 out.release()
             if tmp_path and Path(tmp_path).exists():
                 Path(tmp_path).unlink()
-            browser.close()
+            try:
+                browser.close()
+            except Exception:
+                pass
 
 if __name__ == "__main__":
     room = parse_args()
