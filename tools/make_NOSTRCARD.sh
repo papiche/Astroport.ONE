@@ -760,6 +760,7 @@ EOFJSON
     if [[ -z "${NOMAIL}" ]]; then
         MULTIPASS_ZINE="${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
         MAILJET_SCRIPT="${MY_PATH}/../tools/mailjet.sh"
+
         if [[ -s "$MULTIPASS_ZINE" ]] && [[ -x "$MAILJET_SCRIPT" ]]; then
             if "$MAILJET_SCRIPT" --template "${MULTIPASS_ZINE}" --expire 0s \
                 "${EMAIL}" \
@@ -767,7 +768,7 @@ EOFJSON
                 "MULTIPASS[Ẑ] [UPlanet:${UPLANETG1PUB:0:8}:${ZLAT}:${ZLON}]"; then
                 echo "📧 MULTIPASS envoyé par email à ${EMAIL}"
             else
-                echo "⚠️  Erreur envoi email MULTIPASS à ${EMAIL} (mailjet.sh a échoué)"
+                echo "ℹ️  Email non envoyé à ${EMAIL} — MULTIPASS créé avec succès (vérifiez votre boîte)"
             fi
         else
             [[ ! -s "$MULTIPASS_ZINE" ]] && echo "⚠️  ZINE MULTIPASS introuvable ou vide : $MULTIPASS_ZINE"
