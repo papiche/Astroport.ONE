@@ -606,6 +606,13 @@ ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/wallet_
     "${EMAIL_TEMPLATE}" \
     "CAPTAIN: ${youser} MULTIPASS Deactivated - Backup: ${NOSTRIFS}"
 
+# Remove OVH DNS Link
+OVH_TOOL="${MY_PATH}/../admin/system/ovh.me.sh"
+if [[ -x "$OVH_TOOL" ]]; then
+    youser=$(${MY_PATH}/../tools/clyuseryomail.sh ${player})
+    "$OVH_TOOL" delete "${youser}" 2>/dev/null || true
+fi
+
 ## REMOVE NOSTR IPNS VAULT key
 ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
 

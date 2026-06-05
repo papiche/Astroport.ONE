@@ -94,8 +94,34 @@ gstart=`date +%s`
 
 
 #### AVOID MULTIPLE RUN
-exec 200>"/tmp/nostrcard_refresh.lock"
-flock -n 200 || { echo "Script déjà en cours"; exit 0; }
+#### AVOID MULTIPLE RUN (AVEC AUTO-NETTOYAGE)
+LOCK_FILE="/tmp/nostrcard_refresh.lock"
+exec 200>"$LOCK_FILE"
+
+if ! flock -n 200; then
+    echo "Verrou actif détecté. Vérification des processus fantômes..."
+    # Récupère tous les PID qui maintiennent le verrou ouvert
+    STALE_PIDS=$(lsof -t "$LOCK_FILE" 2>/dev/null || fuser "$LOCK_FILE" 2>/dev/null | tr -d ':')
+    
+    REAL_RUN=false
+    for p in $STALE_PIDS; do
+        # Vérifie si c'est vraiment le script principal qui tourne
+        if [[ "$p" != "$$" ]] && ps -p "$p" -o cmd= 2>/dev/null | grep -q "[N]OSTRCARD.refresh.sh"; then
+            REAL_RUN=true
+            break
+        fi
+    done
+    
+    if [[ "$REAL_RUN" == false && -n "$STALE_PIDS" ]]; then
+        echo "🧹 Processus orphelins détectés ($STALE_PIDS). Auto-nettoyage..."
+        kill -9 $STALE_PIDS 2>/dev/null
+        sleep 1
+        # On retente d'acquérir le verrou après avoir fait le ménage
+        flock -n 200 || { echo "Script déjà en cours"; exit 0; }
+    else
+        echo "Script déjà en cours (instance légitime en cours d'exécution)"; exit 0;
+    fi
+fi
 
 echo "## RUNNING NOSTRCARD.refresh.sh
                  _
@@ -1502,7 +1528,7 @@ ERRHTML
                         else
                             log "WARN" "⚠️ ${DOMAIN} scraper completed with exit code $sync_exit_code for ${PLAYER}"
                         fi
-                    ) &
+                    ) 200>&- &
                     DOMAIN_SYNC_PID=$!
                     
                     log "INFO" "${DOMAIN} scraper started for ${PLAYER} (PID: $DOMAIN_SYNC_PID, log: $DOMAIN_SYNC_LOG)"

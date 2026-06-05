@@ -433,7 +433,7 @@ coop_load_config() {
                             echo "$_bg_config" > "$COOP_CONFIG_CACHE"
                         fi
                         rm -f "$_coop_lock"
-                    ) >/dev/null 2>&1 &
+                    ) >/dev/null 2>&1 200>&- &
                     disown
                 fi
             fi
