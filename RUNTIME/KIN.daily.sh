@@ -140,6 +140,12 @@ _oracle_card() {
 for DEST in "${RECIPIENTS[@]}"; do
     [[ -z "$DEST" ]] && continue
     MY_KIN="${email_kin[$DEST]:-}"; [[ -z "$MY_KIN" ]] && continue
+    # Charger les préférences /mailjet propres à ce joueur
+    _kin_prefs_load "$DEST"
+    if [[ "$_KIN_DAILY" != "true" ]]; then
+        echo "  ⏭ Skip ${DEST} — oracle quotidien désactivé." >&2
+        continue
+    fi
 
     MK_SI=$(( (MY_KIN-1)%20 )); MK_TI=$(( (MY_KIN-1)%13 )); MK_CI=$(( (MY_KIN-1)/13%5 ))
     MY_SEAL="${_DS_SEALS[$MK_SI]}" MY_TONE="${_DS_TONES[$MK_TI]}" MY_COLOR="${_DS_COLORS[$MK_CI]}"

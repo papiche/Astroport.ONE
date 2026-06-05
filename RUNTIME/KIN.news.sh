@@ -248,23 +248,22 @@ _send_group() {
     local -a all_emails=("$@")
     [[ ${#all_emails[@]} -eq 0 ]] && return
 
-    # En mode --player : vérifier les préférences de type et de portée
-    if [[ -n "${TARGET_PLAYER:-}" ]]; then
-        # Filtrage par type activé dans les prefs
-        local _gtype_key=""
-        case "$group_type" in
-            *Quatuor*)  _gtype_key="quartet"  ;;
-            *Occulte*)  _gtype_key="occult"   ;;
-            *Analogue*) _gtype_key="analog"   ;;
-            *Tonalit*)  _gtype_key="tone"     ;;
-            *Guide*)    _gtype_key="guide"    ;;
-            *Antipode*) _gtype_key="antipode" ;;
-        esac
-        if [[ -n "$_gtype_key" ]] && ! _kin_type_enabled "$_gtype_key"; then
-            return  # Type désactivé dans les prefs
-        fi
+    # Résoudre la clé de type une seule fois (utilisée en mode player ET batch)
+    local _gtype_key=""
+    case "$group_type" in
+        *Quatuor*)  _gtype_key="quartet"  ;;
+        *Occulte*)  _gtype_key="occult"   ;;
+        *Analogue*) _gtype_key="analog"   ;;
+        *Tonalit*)  _gtype_key="tone"     ;;
+        *Guide*)    _gtype_key="guide"    ;;
+        *Antipode*) _gtype_key="antipode" ;;
+    esac
 
-        # N'envoyer que si le joueur ciblé est dans le groupe
+    # En mode --player : filtrer par type/portée et restreindre à ce joueur
+    if [[ -n "${TARGET_PLAYER:-}" ]]; then
+        if [[ -n "$_gtype_key" ]] && ! _kin_type_enabled "$_gtype_key"; then
+            return
+        fi
         local _in_group=false
         for _d in "${all_emails[@]}"; do
             [[ "$_d" == "$TARGET_PLAYER" ]] && _in_group=true && break
@@ -331,6 +330,18 @@ _send_group() {
     local sent=0 skipped=0
     for dest in "${all_emails[@]}"; do
         [[ -z "$dest" ]] && continue
+        # En mode batch, vérifier les prefs /mailjet de chaque destinataire
+        if [[ -z "${TARGET_PLAYER:-}" ]]; then
+            _kin_prefs_load "$dest"
+            if [[ "$_KIN_WEEKLY" != "true" ]]; then
+                echo "    ⏭ Skip ${dest} — hebdo désactivé." >&2
+                ((skipped++)); continue
+            fi
+            if [[ -n "$_gtype_key" ]] && ! _kin_type_enabled "$_gtype_key"; then
+                echo "    ⏭ Skip ${dest} — type ${_gtype_key} désactivé." >&2
+                ((skipped++)); continue
+            fi
+        fi
         local _result
         _result=$("$MJ" "${dest}" "${tmpfile}" "${subject}" 2>&1)
         if echo "$_result" | grep -q "opt-out\|annulé"; then
@@ -578,17 +589,15 @@ for _zkey in "${!zone_emails[@]}"; do
     _latzone=$(echo "$_zkey" | cut -d'_' -f1)
     _lonzone=$(echo "$_zkey" | cut -d'_' -f2)
 
-    # Calculer le score H moyen de la zone (k entre toutes les paires)
+    # Calculer le score H moyen de la zone via compute_resonance_k(φ_i, φ_j) réels
     _h_sum=0; _h_count=0
     for _e1 in "${_zemails[@]}"; do
         for _e2 in "${_zemails[@]}"; do
             [[ "$_e1" == "$_e2" ]] && continue
-            # Phase de chaque membre via ses badges Kin
-            _k1=$(for _kn in "${!kin_emails[@]}"; do echo "${kin_emails[$_kn]}" | grep -q "$_e1" && echo "$_kn"; done | head -1)
-            _k2=$(for _kn in "${!kin_emails[@]}"; do echo "${kin_emails[$_kn]}" | grep -q "$_e2" && echo "$_kn"; done | head -1)
-            [[ -z "$_k1" || -z "$_k2" ]] && continue
-            _phi1=$(python3 -c "import math; print(1.0/(1.0+abs(math.sin((int('${_k1}')-int('${_k2}'))*math.pi/260))))" 2>/dev/null) || continue
-            _h_sum=$(python3 -c "print(${_h_sum}+${_phi1})" 2>/dev/null) || continue
+            _phi_i="${email_phi[$_e1]:-}"; _phi_j="${email_phi[$_e2]:-}"
+            [[ -z "$_phi_i" || -z "$_phi_j" ]] && continue
+            _k=$(python3 -c "import math; print('%.4f'%(1.0/(1.0+abs(math.sin(${_phi_i}-${_phi_j})))))" 2>/dev/null) || continue
+            _h_sum=$(python3 -c "print(${_h_sum}+${_k})" 2>/dev/null) || continue
             ((_h_count++))
         done
     done
