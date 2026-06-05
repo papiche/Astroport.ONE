@@ -454,8 +454,8 @@ get_media_metadata() {
 # Fonction pour nettoyer le nom de fichier pour JSON
 clean_filename() {
     local name="$1"
-    # Échapper les guillemets et antislashs pour JSON
-    echo "$name" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g'
+    # jq gère tous les caractères JSON : guillemets, antislashs et caractères de contrôle
+    printf '%s' "$name" | jq -R '.' | sed 's/^"\(.*\)"$/\1/'
 }
 
 # Fonction pour obtenir le timestamp d'un fichier
@@ -858,29 +858,18 @@ else
     subdirs_in_dir=$(find "$dir" -maxdepth 1 -type d | wc -l)
     subdirs_in_dir=$((subdirs_in_dir - 1)) # Enlever le répertoire lui-même
 
-    # Nettoyer les noms pour JSON
-    clean_basename=$(clean_filename "$basename_dir")
-    clean_path=$(clean_filename "$relative_path")
-
-    # Ajouter une catégorie "app" si le répertoire est dans "Apps"
-    app_category_field=""
-    if [[ "$relative_path" == Apps* ]]; then
-        app_category_field=",\"category\": \"app\""
-    fi
-
-    # Ajouter à la collection
-    if [ -n "$directories_json" ]; then
-        directories_json="${directories_json},"
-    fi
-
-    directories_json="${directories_json}
-        {
-            \"name\": \"$clean_basename\",
-            \"path\": \"$clean_path\",
-            \"type\": \"directory\",
-            \"files_count\": $files_in_dir,
-            \"subdirs_count\": $subdirs_in_dir$app_category_field
-        }"
+    # Construire l'entrée JSON avec jq (protection contre l'injection)
+    app_cat=""
+    [[ "$relative_path" == Apps* ]] && app_cat="app"
+    dir_entry=$(jq -n \
+        --arg name "$basename_dir" \
+        --arg path "$relative_path" \
+        --argjson files_count "$files_in_dir" \
+        --argjson subdirs_count "$subdirs_in_dir" \
+        --arg category "$app_cat" \
+        'if $category != "" then {name:$name,path:$path,type:"directory",files_count:$files_count,subdirs_count:$subdirs_count,category:$category} else {name:$name,path:$path,type:"directory",files_count:$files_count,subdirs_count:$subdirs_count} end')
+    [ -n "$directories_json" ] && directories_json="${directories_json},"
+    directories_json="${directories_json}${dir_entry}"
 
     dir_count=$((dir_count + 1))
 
@@ -971,10 +960,6 @@ while IFS= read -r -d '' file; do
     log_message "      🏷️  Type: $file_type"
     log_message "      🕐 Timestamp: $(date -d @$current_timestamp '+%Y-%m-%d %H:%M:%S')"
 
-    # Nettoyer les noms pour JSON
-    clean_basename=$(clean_filename "$basename_file")
-    clean_path=$(clean_filename "$relative_path")
-
     # Obtenir les métadonnées média AVANT toute modification/suppression
     log_message "      🔍 Extraction des métadonnées..."
     metadata=$(get_media_metadata "$file" "$file_type")
@@ -991,7 +976,7 @@ while IFS= read -r -d '' file; do
 
         ipfs_hash=$(add_file_to_ipfs "$file" "$relative_path")
         if [ $? -eq 0 ] && [ -n "$ipfs_hash" ]; then
-            ipfs_link="$ipfs_hash/$clean_basename"
+            ipfs_link="$ipfs_hash/$basename_file"
             updated_count=$((updated_count + 1))
             log_message "         ✅ Hash IPFS obtenu: $ipfs_hash"
             log_message "      ✅ Fichier ajouté avec succès - Link: $ipfs_link"
@@ -1030,51 +1015,39 @@ while IFS= read -r -d '' file; do
             fi
         fi
     fi
-    metadata_fields=""
     if [ -n "$metadata" ]; then
-        metadata_fields=", $metadata"
         log_message "      📝 Métadonnées extraites: $metadata"
     else
         log_message "      📝 Aucune métadonnée spécifique trouvée"
     fi
 
-    # Ajouter le lien IPFS s'il est disponible
-    ipfs_link_field=""
-    if [ -n "$ipfs_link" ]; then
-        ipfs_link_field=", \"ipfs_link\": \"$ipfs_link\""
-        log_message "      🔗 Lien IPFS final: $ipfs_link"
-    else
-        log_message "      ⚠️  Aucun lien IPFS disponible"
-    fi
-
-    # Ajouter une catégorie "app" si le fichier est dans "Apps"
-    app_category_field=""
-    if [[ "$relative_path" == Apps* ]]; then
-        app_category_field=", \"category\": \"app\""
-    fi
-
     # Ajouter à la collection seulement si le fichier a un lien IPFS valide
     # (soit nouvellement ajouté, soit déjà en cache)
     if [ -n "$ipfs_link" ]; then
-        # Ajouter à la collection
-        if [ -n "$files_json" ]; then
-            files_json="${files_json},"
+        log_message "      🔗 Lien IPFS final: $ipfs_link"
+        [ -n "$files_json" ] && files_json="${files_json},"
+        # Construire l'entrée JSON avec jq (protection contre l'injection)
+        app_cat=""
+        [[ "$relative_path" == Apps* ]] && app_cat="app"
+        file_entry=$(jq -n \
+            --arg name "$basename_file" \
+            --arg path "$relative_path" \
+            --argjson size "$file_size" \
+            --arg formatted_size "$formatted_size" \
+            --arg type "$file_type" \
+            --argjson last_modified "$current_timestamp" \
+            --arg ipfs_link "$ipfs_link" \
+            --arg category "$app_cat" \
+            '{name:$name,path:$path,size:$size,formatted_size:$formatted_size,type:$type,last_modified:$last_modified,ipfs_link:$ipfs_link} |
+            if $category != "" then . + {category:$category} else . end')
+        if [ -n "$metadata" ]; then
+            file_entry=$(printf '%s' "$file_entry" | jq ". + {$metadata}")
         fi
-
-        files_json="${files_json}
-        {
-            \"name\": \"$clean_basename\",
-            \"path\": \"$clean_path\",
-            \"size\": $file_size,
-            \"formatted_size\": \"$formatted_size\",
-            \"type\": \"$file_type\",
-            \"last_modified\": $current_timestamp$metadata_fields$ipfs_link_field$app_category_field
-        }"
-
+        files_json="${files_json}${file_entry}"
         total_size=$((total_size + file_size))
         file_count=$((file_count + 1))
     else
-        log_message "      ⚠️  Fichier ignoré dans le manifest (échec IPFS - pas de CID disponible)"
+        log_message "      ⚠️  Aucun lien IPFS disponible - fichier ignoré dans le manifest"
         # Le fichier reste sur le disque pour une nouvelle tentative
     fi
 
@@ -1110,25 +1083,26 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
             disk_file="$SOURCE_DIR/$old_path"
             [ -f "$disk_file" ] && continue
             [ -n "${processed_paths[$old_path]:-}" ] && continue
-            clean_basename=$(basename "$old_path" | sed 's/"/\\"/g')
-            clean_path=$(echo "$old_path" | sed 's/"/\\"/g')
             formatted_size=$(format_size "${old_size:-0}")
-            metadata_fields=""
             metadata_json=$(jq -r --arg path "$old_path" '.files[]? | select(.path == $path) | del(.ipfs_link, .path, .name, .size, .type, .last_modified, .formatted_size, .category) | to_entries | map("\"\(.key)\": \"\(.value)\"") | join(", ")' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
-            [ -n "$metadata_json" ] && [ "$metadata_json" != "{}" ] && metadata_fields=", $metadata_json"
-            app_category_field=""
-            [[ "$old_path" == Apps* ]] && app_category_field=", \"category\": \"app\""
+            fc_app_cat=""
+            [[ "$old_path" == Apps* ]] && fc_app_cat="app"
+            fc_entry=$(jq -n \
+                --arg name "$(basename "$old_path")" \
+                --arg path "$old_path" \
+                --argjson size "${old_size:-0}" \
+                --arg formatted_size "$formatted_size" \
+                --arg type "${old_type:-unknown}" \
+                --argjson last_modified "${old_last_modified:-0}" \
+                --arg ipfs_link "$old_ipfs_link" \
+                --arg category "$fc_app_cat" \
+                '{name:$name,path:$path,size:$size,formatted_size:$formatted_size,type:$type,last_modified:$last_modified,ipfs_link:$ipfs_link} |
+                if $category != "" then . + {category:$category} else . end')
+            if [ -n "$metadata_json" ] && [ "$metadata_json" != "{}" ]; then
+                fc_entry=$(printf '%s' "$fc_entry" | jq ". + {$metadata_json}")
+            fi
             [ -n "$files_json" ] && files_json="${files_json},"
-            files_json="${files_json}
-        {
-            \"name\": \"$clean_basename\",
-            \"path\": \"$clean_path\",
-            \"size\": ${old_size:-0},
-            \"formatted_size\": \"$formatted_size\",
-            \"type\": \"${old_type:-unknown}\",
-            \"last_modified\": ${old_last_modified:-0},
-            \"ipfs_link\": \"$old_ipfs_link\"$metadata_fields$app_category_field
-        }"
+            files_json="${files_json}${fc_entry}"
             total_size=$((total_size + ${old_size:-0}))
             file_count=$((file_count + 1))
             cached_count=$((cached_count + 1))
@@ -1138,34 +1112,33 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
     else
         while IFS= read -r file_entry; do
             [ -z "$file_entry" ] && continue
-            old_path=$(echo "$file_entry" | jq -r '.path // ""' 2>/dev/null)
-            old_ipfs_link=$(echo "$file_entry" | jq -r '.ipfs_link // ""' 2>/dev/null)
-            old_size=$(echo "$file_entry" | jq -r '.size // 0' 2>/dev/null)
-            old_type=$(echo "$file_entry" | jq -r '.type // "unknown"' 2>/dev/null)
-            old_last_modified=$(echo "$file_entry" | jq -r '.last_modified // 0' 2>/dev/null)
+            # Consolider les 5 extractions jq en un seul appel @tsv
+            IFS=$'\t' read -r old_path old_ipfs_link old_size old_type old_last_modified <<< \
+                "$(printf '%s' "$file_entry" | jq -r '[.path//"", .ipfs_link//"", (.size//0|tostring), (.type//"unknown"), (.last_modified//0|tostring)] | @tsv' 2>/dev/null)"
             [ -z "$old_path" ] || [ -z "$old_ipfs_link" ] && continue
             disk_file="$SOURCE_DIR/$old_path"
             [ -f "$disk_file" ] && continue
             [ -n "${processed_paths[$old_path]:-}" ] && continue
-            clean_basename=$(clean_filename "$(basename "$old_path")")
-            clean_path=$(clean_filename "$old_path")
-            formatted_size=$(format_size $old_size)
-            metadata_fields=""
-            metadata_json=$(echo "$file_entry" | jq -r 'del(.ipfs_link, .path, .name, .size, .type, .last_modified, .formatted_size, .category) | to_entries | map("\"\(.key)\": \"\(.value)\"") | join(", ")' 2>/dev/null)
-            [ -n "$metadata_json" ] && [ "$metadata_json" != "{}" ] && metadata_fields=", $metadata_json"
-            app_category_field=""
-            [[ "$old_path" == Apps* ]] && app_category_field=", \"category\": \"app\""
+            formatted_size=$(format_size "$old_size")
+            metadata_json=$(printf '%s' "$file_entry" | jq -r 'del(.ipfs_link, .path, .name, .size, .type, .last_modified, .formatted_size, .category) | to_entries | map("\"\(.key)\": \"\(.value)\"") | join(", ")' 2>/dev/null)
+            fb_app_cat=""
+            [[ "$old_path" == Apps* ]] && fb_app_cat="app"
+            fb_entry=$(jq -n \
+                --arg name "$(basename "$old_path")" \
+                --arg path "$old_path" \
+                --argjson size "$old_size" \
+                --arg formatted_size "$formatted_size" \
+                --arg type "$old_type" \
+                --argjson last_modified "$old_last_modified" \
+                --arg ipfs_link "$old_ipfs_link" \
+                --arg category "$fb_app_cat" \
+                '{name:$name,path:$path,size:$size,formatted_size:$formatted_size,type:$type,last_modified:$last_modified,ipfs_link:$ipfs_link} |
+                if $category != "" then . + {category:$category} else . end')
+            if [ -n "$metadata_json" ] && [ "$metadata_json" != "{}" ]; then
+                fb_entry=$(printf '%s' "$fb_entry" | jq ". + {$metadata_json}")
+            fi
             [ -n "$files_json" ] && files_json="${files_json},"
-            files_json="${files_json}
-        {
-            \"name\": \"$clean_basename\",
-            \"path\": \"$clean_path\",
-            \"size\": $old_size,
-            \"formatted_size\": \"$formatted_size\",
-            \"type\": \"$old_type\",
-            \"last_modified\": $old_last_modified,
-            \"ipfs_link\": \"$old_ipfs_link\"$metadata_fields$app_category_field
-        }"
+            files_json="${files_json}${fb_entry}"
             total_size=$((total_size + old_size))
             file_count=$((file_count + 1))
             cached_count=$((cached_count + 1))

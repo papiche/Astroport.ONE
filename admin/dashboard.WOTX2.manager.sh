@@ -1542,14 +1542,14 @@ cmd_cleanup() {
             if [[ ! -f "$STRFRY_BIN" ]]; then log_error "strfry introuvable."; return 1; fi
             local succ=0 fail=0
             cd "$STRFRY_DIR" || return 1
-            for eid in "${invalid_ids[@]}"; do
-                local ids_json; ids_json=$(printf '%s' "$eid" | jq -Rs '{ids: [.]}')
-                if ./strfry delete --filter="$ids_json" &>/dev/null; then
-                    succ=$((succ + 1))
-                else
-                    fail=$((fail + 1))
-                fi
-            done
+            # Batch : un seul appel strfry pour tous les IDs
+            local ids_json
+            ids_json=$(printf '%s\n' "${invalid_ids[@]}" | jq -Rsc '[split("\n")[] | select(. != "")] | {ids: .}')
+            if ./strfry delete --filter="$ids_json" &>/dev/null; then
+                succ=${#invalid_ids[@]}
+            else
+                fail=${#invalid_ids[@]}
+            fi
             cd - >/dev/null 2>&1
             log_success "Supprimés: $succ  Erreurs: $fail"
             ;;
@@ -1561,14 +1561,14 @@ cmd_cleanup() {
             if [[ ! -f "$STRFRY_BIN" ]]; then log_error "strfry introuvable."; return 1; fi
             local succ=0 fail=0
             cd "$STRFRY_DIR" || return 1
-            for eid in "${orphan_ids[@]}"; do
-                local ids_json; ids_json=$(printf '%s' "$eid" | jq -Rs '{ids: [.]}')
-                if ./strfry delete --filter="$ids_json" &>/dev/null; then
-                    succ=$((succ + 1))
-                else
-                    fail=$((fail + 1))
-                fi
-            done
+            # Batch : un seul appel strfry pour tous les orphelins
+            local ids_json
+            ids_json=$(printf '%s\n' "${orphan_ids[@]}" | jq -Rsc '[split("\n")[] | select(. != "")] | {ids: .}')
+            if ./strfry delete --filter="$ids_json" &>/dev/null; then
+                succ=${#orphan_ids[@]}
+            else
+                fail=${#orphan_ids[@]}
+            fi
             cd - >/dev/null 2>&1
             log_success "Orphelins supprimés: $succ  Erreurs: $fail"
             ;;

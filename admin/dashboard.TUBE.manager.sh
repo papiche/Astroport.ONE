@@ -1701,36 +1701,30 @@ delete_video_tree() {
         
         if [[ -f "${STRFRY_BIN}" ]]; then
             cd "$STRFRY_DIR" || continue
-            # Create filter JSON with proper format for strfry delete
-            # strfry expects: {"ids":["event_id1","event_id2"]}
-            local IDS_JSON=$(echo "$event_id" | jq -R . | jq -s -c '{ids: .}')
-            
-            # Verify JSON is valid before passing to strfry
-            if echo "$IDS_JSON" | jq -e '.' >/dev/null 2>&1; then
-                log_debug "Deleting event ${event_id:0:16}... with filter: $IDS_JSON"
-                # Capture strfry output to check if deletion was successful
-                local strfry_output=$(./strfry delete --filter="$IDS_JSON" 2>&1)
-                local strfry_exit=$?
-                
-                # Check if strfry reported deleting events (look for "Deleting N events" where N > 0)
-                local deleted_count=$(echo "$strfry_output" | grep -oP 'Deleting \K\d+' || echo "0")
-                
-                if [[ $strfry_exit -eq 0 ]] && [[ "$deleted_count" -gt 0 ]]; then
-                    physical_success=$((physical_success + 1))
-                    log_debug "✅ Physically deleted: ${event_id:0:16}... (strfry reported: $deleted_count event(s))"
-                elif [[ $strfry_exit -eq 0 ]] && [[ "$deleted_count" == "0" ]]; then
-                    # Event may have already been deleted by kind 5, or doesn't exist
-                    log_debug "⚠️  strfry reported 0 events deleted for ${event_id:0:16}... (may already be deleted)"
-                    # Still count as success if exit code is 0 (event doesn't exist = success)
-                    physical_success=$((physical_success + 1))
-                else
-                    physical_failed=$((physical_failed + 1))
-                    log_warning "Failed to physically delete: ${event_id:0:16}... (exit code: $strfry_exit)"
-                    log_debug "strfry output: ${strfry_output:0:200}..."
-                fi
+            # Un seul jq pour construire le filtre (--arg garantit l'échappement)
+            local IDS_JSON
+            IDS_JSON=$(jq -n --arg id "$event_id" '{ids: [$id]}')
+            log_debug "Deleting event ${event_id:0:16}... with filter: $IDS_JSON"
+            # Capture strfry output to check if deletion was successful
+            local strfry_output
+            strfry_output=$(./strfry delete --filter="$IDS_JSON" 2>&1)
+            local strfry_exit=$?
+
+            # Check if strfry reported deleting events (look for "Deleting N events" where N > 0)
+            local deleted_count
+            deleted_count=$(printf '%s' "$strfry_output" | grep -oP 'Deleting \K\d+' || echo "0")
+
+            if [[ $strfry_exit -eq 0 ]] && [[ "$deleted_count" -gt 0 ]]; then
+                physical_success=$((physical_success + 1))
+                log_debug "✅ Physically deleted: ${event_id:0:16}... (strfry reported: $deleted_count event(s))"
+            elif [[ $strfry_exit -eq 0 ]]; then
+                # Event may have already been deleted by kind 5, or doesn't exist
+                log_debug "⚠️  strfry reported 0 events deleted for ${event_id:0:16}... (may already be deleted)"
+                physical_success=$((physical_success + 1))
             else
                 physical_failed=$((physical_failed + 1))
-                log_warning "Invalid JSON filter for deletion: $IDS_JSON"
+                log_warning "Failed to physically delete: ${event_id:0:16}... (exit code: $strfry_exit)"
+                log_debug "strfry output: ${strfry_output:0:200}..."
             fi
             cd - > /dev/null 2>&1
         else

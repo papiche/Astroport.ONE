@@ -1062,10 +1062,10 @@ _process_event() {
     fi
 
     local channel sender payload
-    channel=$(  jq -r '.channel // "plain"' <<< "$decoded" 2>/dev/null)
-    sender=$(   jq -r '.sender  // ""'      <<< "$decoded" 2>/dev/null)
-    payload=$(  jq -c '.payload // {}'      <<< "$decoded" 2>/dev/null)
-    _DM_ENC=$(  jq -r '.enc     // "nip44"' <<< "$decoded" 2>/dev/null)
+    # Consolider 3 champs scalaires en un seul appel jq @tsv
+    IFS=$'\t' read -r channel sender _DM_ENC <<< \
+        "$(jq -r '[.channel//"plain", .sender//"", .enc//"nip44"] | @tsv' <<< "$decoded" 2>/dev/null)"
+    payload=$(jq -c '.payload // {}' <<< "$decoded" 2>/dev/null)
 
     [[ -z "$sender" ]] && return
 

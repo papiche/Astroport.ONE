@@ -111,7 +111,7 @@ _kin_meeting_block() {
     printf '<div style="margin-top:1.2rem;padding:1rem 1.2rem;background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:10px;border:1px solid #c4b5fd">'
     printf '<div style="font-size:.8rem;color:#5b21b6;font-weight:700;margin-bottom:.4rem">🗓 Moment idéal pour se retrouver</div>'
     printf '<div style="font-size:.85rem;color:#4c1d95;margin-bottom:.7rem;font-weight:600">%s</div>' "$_sync_label"
-    printf '<div style="font-size:.78rem;color:#6b7280;margin-bottom:.6rem;line-height:1.5">Ce jour-là, le Kin du calendrier Tzolkin coïncide avec celui d'un membre de votre groupe — selon ATOM4LOVE, la synchronisation sera maximale.</div>'
+    printf $'<div style="font-size:.78rem;color:#6b7280;margin-bottom:.6rem;line-height:1.5">Ce jour-là, le Kin du calendrier Tzolkin coïncide avec celui d\'un membre de votre groupe — selon ATOM4LOVE, la synchronisation sera maximale.</div>'
     printf '<div style="display:flex;gap:.5rem;flex-wrap:wrap">'
     printf '<a href="%s" style="display:inline-block;background:#7c3aed;color:#fff;padding:.4rem 1rem;border-radius:6px;text-decoration:none;font-size:.82rem;font-weight:600">🎥 Visio maintenant</a>' \
         "$_vdo_url"
