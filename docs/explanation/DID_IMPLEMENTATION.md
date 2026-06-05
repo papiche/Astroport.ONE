@@ -105,8 +105,8 @@ Quand la date de naissance est renseignée lors de l'inscription MULTIPASS, `did
 {"type":"MayaKin","kin":42,"glyph":"Ik","tone":"Magnétique","color":"Blanc","action":"Unifier","power":"Unification","essence":"Présence"}
 ```
 
-- Seul le numéro Kin (1–260) est public — la date de naissance reste dans `~/.zen/game/nostr/<email>/BIRTHDATE` (fichier local non publié sur IPFS)
-- `BIRTHDATE` (YYYY-MM-DD, non caché) ≠ `.birthdate` (caché, date d'inscription = facturation)
+- Seul le numéro Kin (1–260) est public — la date de naissance reste dans `~/.zen/game/nostr/<email>/.BIRTHDATE` (fichier local non publié sur IPFS)
+- `BIRTHDATE` (YYYY-MM-DD, non caché) ≠ `.account_created` (caché, date d'inscription = facturation)
 - Implémentation : `tools/kin.sh` (sourceable ou CLI) + `earth/kin-data.js` (JS partagé) + `earth/kin.js` (widget UPH)
 
 ### 2.2. UCAN : La Gestion des Droits de Location et d'Accès (MULTIPASS)

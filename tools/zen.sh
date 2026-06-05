@@ -1828,11 +1828,11 @@ get_user_payment_status() {
         # Try MULTIPASS birthdate (TODATE in nostr)
         elif [[ -s ~/.zen/game/nostr/${user_email}/TODATE ]]; then
             birthdate=$(cat ~/.zen/game/nostr/${user_email}/TODATE 2>/dev/null)
-        # Try .birthdate file
-        elif [[ -s ~/.zen/game/players/${user_email}/.birthdate ]]; then
-            birthdate=$(cat ~/.zen/game/players/${user_email}/.birthdate 2>/dev/null)
-        elif [[ -s ~/.zen/game/nostr/${user_email}/.birthdate ]]; then
-            birthdate=$(cat ~/.zen/game/nostr/${user_email}/.birthdate 2>/dev/null)
+        # Try .account_created file
+        elif [[ -s ~/.zen/game/players/${user_email}/.account_created ]]; then
+            birthdate=$(cat ~/.zen/game/players/${user_email}/.account_created 2>/dev/null)
+        elif [[ -s ~/.zen/game/nostr/${user_email}/.account_created ]]; then
+            birthdate=$(cat ~/.zen/game/nostr/${user_email}/.account_created 2>/dev/null)
         fi
         
         if [[ -n "$birthdate" ]]; then

@@ -183,10 +183,13 @@ initialize_account() {
     # Initialiser le jour du dernier rafraîchissement
     echo "$TODATE" > "${player_dir}/.todate"
 
-    # Initialiser le fichier TODAY (date de début de contrat), .birthdate (= date inscription)
+    # Initialiser le fichier TODAY (date de début de contrat), .account_created (= date inscription)
     [[ ! -s "${player_dir}/TODATE" ]] \
         && echo "$TODATE" > "${player_dir}/TODATE" \
-        && echo "$TODATE" > "${player_dir}/.birthdate"
+        && echo "$TODATE" > "${player_dir}/.account_created"
+    
+    [[ ! -s "${player_dir}/.account_created" ]] \
+        && cat "${player_dir}/TODATE" > "${player_dir}/.account_created"
 
     # Initialiser le fichier de dernière mise à jour IPNS
     date +%s > "${player_dir}/.last_ipns_update"
@@ -371,7 +374,7 @@ for PLAYER in "${NOSTR[@]}"; do
     # 1. Détection de corruption "Fantôme" (Fichiers de base absents)
     # ---------------------------------------------------------
     if [[ ! -f ~/.zen/game/nostr/${PLAYER}/HEX || ! -f ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR ]]; then
-        BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
+        BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.account_created 2>/dev/null)
         if [[ -n "$BIRTHDATE" ]]; then
             DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s 2>/dev/null || date +%s)) / 86400 ))
             if [ $DIFF -gt 7 ]; then
@@ -476,8 +479,8 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
-    [[ ! -s ~/.zen/game/nostr/${PLAYER}/.birthdate ]] \
-        && echo $BIRTHDATE > ~/.zen/game/nostr/${PLAYER}/.birthdate
+    [[ ! -s ~/.zen/game/nostr/${PLAYER}/.account_created ]] \
+        && echo $BIRTHDATE > ~/.zen/game/nostr/${PLAYER}/.account_created
 
     # Check for MULTIPASS anniversaries
     if [[ -n "$BIRTHDATE" ]]; then
@@ -531,7 +534,7 @@ for PLAYER in "${NOSTR[@]}"; do
         rm ~/.zen/game/nostr/${PLAYER}/ERROR 2>/dev/null
     else
         log "ERROR" "BAD DISCO DECODING for ${PLAYER}"
-        BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
+        BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.account_created 2>/dev/null)
         if [[ -n "$BIRTHDATE" ]]; then
             DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s 2>/dev/null || date +%s)) / 86400 ))
             if [ $DIFF -gt 7 ]; then

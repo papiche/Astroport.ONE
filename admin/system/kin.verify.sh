@@ -11,7 +11,7 @@ umask 077
 #   - Conformité du DID (did.json.cache) : id, champs obligatoires, JSON valide
 #   - Badge MayaKin dans .metadata.badges[] si BIRTHDATE présent
 #   - Cohérence Kin recalculé vs valeur dans le DID
-#   - Distinction BIRTHDATE (naissance) vs .birthdate (facturation — ne pas confondre)
+#   - Distinction .BIRTHDATE (naissance) vs .account_created (facturation — ne pas confondre)
 #   - ZUMAP / GPS présents et non nuls
 #
 # Pour le swarm (lecture seule via relay local kind 30800) :
@@ -320,7 +320,7 @@ verify_multipass() {
 
             # 5d. Badge MayaKin
             local birthdate
-            birthdate=$(cat "${dir}/BIRTHDATE" 2>/dev/null | tr -d '[:space:]')
+            birthdate=$(cat "${dir}/.BIRTHDATE" 2>/dev/null | tr -d '[:space:]')
 
             if [[ -n "$birthdate" ]]; then
                 _info "BIRTHDATE (naissance) : ${birthdate}"
@@ -405,7 +405,7 @@ verify_multipass() {
                 local birthdate_input
                 _ask "🌀 Date de naissance (YYYY-MM-DD, vide=ignorer)" "${_bd_hint}" birthdate_input
                 if [[ "$birthdate_input" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
-                    echo "$birthdate_input" > "${dir}/BIRTHDATE"
+                    echo "$birthdate_input" > "${dir}/.BIRTHDATE"
                     _fix "BIRTHDATE ajouté : ${birthdate_input}"
                     if [[ -x "$DID_MANAGER" ]]; then
                         echo "    🔧 Mise à jour DID avec Kin Maya..."
@@ -429,13 +429,13 @@ verify_multipass() {
                 fi
             fi
 
-            # 5e. Surveillance confusion BIRTHDATE vs .birthdate (facturation)
+            # 5e. Surveillance confusion BIRTHDATE vs .account_created (facturation)
             local billing_date
-            billing_date=$(cat "${dir}/.birthdate" 2>/dev/null | tr -d '[:space:]')
+            billing_date=$(cat "${dir}/.account_created" 2>/dev/null | tr -d '[:space:]')
             if [[ -n "$birthdate" && -n "$billing_date" && "$birthdate" == "$billing_date" ]]; then
-                _warn "BIRTHDATE == .birthdate : possible confusion date de naissance / date d'inscription (facturation)"
+                _warn "BIRTHDATE == .account_created : possible confusion date de naissance / date d'inscription (facturation)"
             elif [[ -n "$billing_date" ]]; then
-                _ok ".birthdate (facturation) = ${billing_date} — distinct de BIRTHDATE"
+                _ok ".account_created (facturation) = ${billing_date} — distinct de BIRTHDATE"
             fi
         fi
     fi

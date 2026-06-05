@@ -173,8 +173,8 @@ create_initial_did() {
         fi
     fi
 
-    # Date de naissance réelle (fichier BIRTHDATE écrit par make_NOSTRCARD.sh depuis le formulaire)
-    local birthdate=$(cat "${user_dir}/BIRTHDATE" 2>/dev/null)
+    # Date de naissance réelle (fichier .BIRTHDATE écrit par make_NOSTRCARD.sh depuis le formulaire)
+    local birthdate=$(cat "${user_dir}/.BIRTHDATE" 2>/dev/null)
 
     # Calcul du Kin Maya uniquement si la date de naissance est connue
     local badges_json=""
@@ -230,7 +230,6 @@ create_initial_did() {
         -e "s|_GPS_ENCRYPTED_|$(escape_sed "${gps_encrypted}")|g" \
         -e "s|_LANGUAGE_|$(escape_sed "${language}")|g" \
         -e "s|_YOUSER_|$(escape_sed "${youser}")|g" \
-        -e "s|_BIRTHDATE_|$(escape_sed "${birthdate}")|g" \
         -e "s|_BADGES_|${badges_json}|g" \
         -e "s|_IPFS_NODE_ID_|$(escape_sed "${ipfs_node_id}")|g" \
         "$template_file" > "$temp_template"; then
@@ -611,10 +610,10 @@ update_did_document() {
     [[ -n "$quota" ]] && jq_cmd="$jq_cmd | .metadata.storageQuota = \"$quota\""
     [[ -n "$services" ]] && jq_cmd="$jq_cmd | .metadata.services = \"$services\""
 
-    # Badge MayaKin — recalculé depuis BIRTHDATE à chaque update
-    # Garantit la cohérence même si BIRTHDATE a été ajouté après la création initiale du DID
+    # Badge MayaKin — recalculé depuis .BIRTHDATE à chaque update
+    # Garantit la cohérence même si .BIRTHDATE a été ajouté après la création initiale du DID
     local _birthdate_for_kin
-    _birthdate_for_kin=$(cat "$HOME/.zen/game/nostr/${email}/BIRTHDATE" 2>/dev/null | tr -d '[:space:]')
+    _birthdate_for_kin=$(cat "$HOME/.zen/game/nostr/${email}/.BIRTHDATE" 2>/dev/null | tr -d '[:space:]')
     if [[ -n "$_birthdate_for_kin" && "$_birthdate_for_kin" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ \
           && -f "${MY_PATH}/kin.sh" ]]; then
         source "${MY_PATH}/kin.sh"

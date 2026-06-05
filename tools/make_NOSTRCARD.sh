@@ -286,10 +286,10 @@ EOFNOSTR
     ## Données de naissance/conception (privées, transmises par /g1nostr)
     if [[ -n "${BIRTH_DATETIME}" ]]; then
         echo "${BIRTH_DATETIME}" > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_datetime"
-        # Extraire YYYY-MM-DD pour kin.sh et did_manager_nostr.sh (qui lit BIRTHDATE)
+        # Extraire YYYY-MM-DD pour kin.sh et did_manager_nostr.sh (qui lit .BIRTHDATE)
         _birth_date="${BIRTH_DATETIME%%T*}"
         [[ "${_birth_date}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
-            && echo "${_birth_date}" > "${HOME}/.zen/game/nostr/${EMAIL}/BIRTHDATE"
+            && echo "${_birth_date}" > "${HOME}/.zen/game/nostr/${EMAIL}/.BIRTHDATE"
         unset _birth_date
     fi
     [[ -n "${BIRTH_PLACE}" ]]         && echo "${BIRTH_PLACE}"         > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_place"

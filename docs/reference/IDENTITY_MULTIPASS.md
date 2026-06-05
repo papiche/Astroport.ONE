@@ -28,7 +28,7 @@ Lors de la création du MULTIPASS (formulaire `/g1nostr`), l'utilisateur peut re
 - La date extraite (YYYY-MM-DD) est écrite dans **`BIRTHDATE`** — lue par `did_manager_nostr.sh` pour calculer le **Kin Maya Tzolkin** et l'inclure dans le DID (kind 30800) comme badge `{"type":"MayaKin","kin":N,"glyph":"…","tone":"…","color":"…"}`
 - Ne sont **jamais** publiées sur IPFS ou les relays NOSTR (seul le numéro Kin apparaît dans le DID public)
 - Le calcul utilise l'algorithme **Dreamspell** (José Argüelles, 1990) implémenté dans `tools/kin.sh`
-- La date de naissance (`BIRTHDATE`) est distincte de `.birthdate` (date d'inscription = facturation hebdomadaire)
+- La date de naissance (`.BIRTHDATE`) est distincte de `.account_created` (date d'inscription = facturation hebdomadaire)
 
 Voir aussi : [kin.html](/earth/kin.html) — page interactive Kin Maya sur UPlanet.
 

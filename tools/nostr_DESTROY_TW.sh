@@ -104,7 +104,7 @@ if [[ -n ${salt} && -n ${pepper} ]]; then
 else
     log "ERROR" "BAD DISCO DECODING for ${PLAYER}"
     # Si le compte est vieux de plus de 7 jours et corrompu -> Nettoyage RADICAL
-    BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
+    BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.account_created 2>/dev/null)
     if [[ -n "$BIRTHDATE" ]]; then
         DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
         if [ $DIFF -gt 7 ]; then

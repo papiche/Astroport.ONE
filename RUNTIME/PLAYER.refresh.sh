@@ -112,7 +112,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     [[ -z ${BIRTHDATE} ]] \
         && BIRTHDATE="$TODATE" \
         && echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/TODATE \
-        && echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.birthdate ## INIT BIRTHDATE
+        && echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.account_created ## INIT BIRTHDATE
 
     ## ── Calcul de l'âge du compte en jours (variable days) ─────────────────────
     ## Utilisé pour le dispatch des ZINEs gamifiés (Jour 0 à Jour 7)
