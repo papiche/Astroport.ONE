@@ -250,36 +250,6 @@ should_refresh() {
     local last_refresh=$(cat "$last_refresh_file")
     local last_udrive=$(cat "$last_udrive_file" 2>/dev/null)
 
-    ##############################################
-    ## 🌍 GESTION DE L'ITINÉRANCE (ROAMING SYNC)
-    ## Vérifie si l'IPNS a été mis à jour par une AUTRE station de l'essaim
-    local nostrns=$(cat "${player_dir}/NOSTRNS" 2>/dev/null)
-    if [[ -n "$nostrns" ]]; then
-        # CORRECTION : On inclut /$player/ dans le chemin de résolution
-        local network_udrive=$(ipfs resolve -r --timeout=15s "$nostrns/$player/APP/uDRIVE" 2>/dev/null | sed 's|/ipfs/||')
-        
-        # Si le réseau a un CID différent de notre cache local
-        if [[ -n "$network_udrive" && "$network_udrive" != "$last_udrive" ]]; then
-            log "INFO" "🌍 ITINÉRANCE DÉTECTÉE : Le uDRIVE distant est différent. Synchronisation depuis le réseau..."
-            
-            # Télécharger la nouvelle version depuis IPFS dans un dossier temporaire
-            rm -rf "${player_dir}/APP/uDRIVE.tmp"
-            if ipfs get "/ipfs/$network_udrive" -o "${player_dir}/APP/uDRIVE.tmp" 2>/dev/null; then
-                rm -rf "${player_dir}/APP/uDRIVE"
-                mv "${player_dir}/APP/uDRIVE.tmp" "${player_dir}/APP/uDRIVE"
-                
-                # Mettre à jour le fichier cache avec le CID du réseau
-                echo "$network_udrive" > "$last_udrive_file"
-                last_udrive="$network_udrive"
-                log "INFO" "✅ Synchronisation Itinérance terminée (CID: $network_udrive)"
-            else
-                log "WARN" "⚠️ Échec de la synchronisation IPFS pour $network_udrive"
-                rm -rf "${player_dir}/APP/uDRIVE.tmp"
-            fi
-        fi
-    fi
-    ##############################################
-
     # Vérification 1 : Mise à jour quotidienne — une fois par jour APRÈS l'heure programmée.
     if [[ "$last_refresh" != "$TODATE" ]]; then
         local current_seconds=$((10#${current_time%%:*} * 3600 + 10#${current_time##*:} * 60))
