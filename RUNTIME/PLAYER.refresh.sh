@@ -204,14 +204,14 @@ for PLAYER in ${PLAYERONE[@]}; do
                 if [[ $DAYS_LEFT -le 30 && $DAYS_LEFT -gt 7 && "$LAST_REMINDER" != "30" ]]; then
                     echo "📬 Sending 30-day renewal reminder to ${PLAYER}"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_renewal.html")
-                    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/usociety_renewal.html" --expire 7d "${PLAYER}" $_tpl \
+                    ${MY_PATH}/../tools/mailjet.sh --channel usociety --template "${MY_PATH}/../templates/NOSTR/usociety_renewal.html" --expire 7d "${PLAYER}" $_tpl \
                         "Votre parrainage expire dans ${DAYS_LEFT} jours"
                     rm -f "$_tpl"
                     echo "30" > "$REMINDER_FILE"
                 elif [[ $DAYS_LEFT -le 7 && $DAYS_LEFT -gt 0 && "$LAST_REMINDER" != "7" ]]; then
                     echo "📬 Sending 7-day URGENT renewal reminder to ${PLAYER}"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_renewal_urgent.html")
-                    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/usociety_renewal_urgent.html" --expire 3d "${PLAYER}" $_tpl \
+                    ${MY_PATH}/../tools/mailjet.sh --channel usociety --template "${MY_PATH}/../templates/NOSTR/usociety_renewal_urgent.html" --expire 3d "${PLAYER}" $_tpl \
                         "URGENT : Parrainage expire dans ${DAYS_LEFT} jours !"
                     rm -f "$_tpl"
                     echo "7" > "$REMINDER_FILE"
@@ -225,7 +225,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 if [[ $NOTICE_AGE -gt 604800 ]]; then  # 7 days in seconds
                     echo "📬 Sending expiration notice to ${PLAYER} (balance: $ZEN ẐEN)"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_expired.html")
-                    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/usociety_expired.html" --expire 7d "${PLAYER}" $_tpl \
+                    ${MY_PATH}/../tools/mailjet.sh --channel usociety --template "${MY_PATH}/../templates/NOSTR/usociety_expired.html" --expire 7d "${PLAYER}" $_tpl \
                         "Parrainage expire ! Solde : ${ZEN} ẐEN"
                     rm -f "$_tpl"
                     echo "$CURRENT_SECONDS" > "$EXPIRED_NOTICE"
@@ -334,7 +334,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                         -e "s~_COINS_~${COINS:-0}~g" \
                         -e "s~_ZEN_~${ZEN:-0}~g" \
                         "${MY_PATH}/../templates/NOSTR/zencard_payment_error.html" > "$_tmpf"
-                    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/zencard_payment_error.html" \
+                    ${MY_PATH}/../tools/mailjet.sh --channel alerts --template "${MY_PATH}/../templates/NOSTR/zencard_payment_error.html" \
                         --expire 48h "${PLAYER}" "$_tmpf" "❌ Erreur paiement ZEN Card — $TODATE"
                     rm -f "$_tmpf"
                     echo "Error email sent to ${PLAYER} for payment failure"
@@ -353,7 +353,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 elif [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
                     echo "[7 DAYS CYCLE] ZENCARD ($COINS G1 / $ZEN ZEN) UNPLUG !!"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/zencard_insufficient.html")
-                    $MY_PATH/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/zencard_insufficient.html" --expire 7d "${PLAYER}" $_tpl \
+                    $MY_PATH/../tools/mailjet.sh --channel alerts --template "${MY_PATH}/../templates/NOSTR/zencard_insufficient.html" --expire 7d "${PLAYER}" $_tpl \
                         "Solde insuffisant (${ZEN} ZEN) - ZEN Card desactivee"
                     rm -f "$_tpl"
                     ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
@@ -416,13 +416,11 @@ for PLAYER in ${PLAYERONE[@]}; do
     fi
 
     ## ── Logique d'envoi ────────────────────────────────────────────────────────
-    ## • Jours 0-7    : ZINE d'onboarding quotidien pour TOUS les joueurs
+    ## • Jours 0-7    : onboarding géré par NOSTRCARD.refresh.sh (Zines J1-J6)
     ## • Jours 7+     : bulletin hebdomadaire Capitaine, U.SOCIETY et MULTIPASS
     ##                  (multiples de 7 : jours 14, 21, 28...)
     _SEND_ZINE=false
-    if [[ ${days} -ge 0 && ${days} -le 7 ]]; then
-        _SEND_ZINE=true   ## Onboarding : tous les joueurs, jours 0-7
-    elif [[ "$IS_CAPTAIN" == "true" && $(( days % 7 )) -eq 0 ]]; then
+    if [[ "$IS_CAPTAIN" == "true" && $(( days % 7 )) -eq 0 ]]; then
         _SEND_ZINE=true   ## Bulletin hebdo Capitaine (jours 14, 21, 28...)
         ## En bulletin hebdo, utiliser day_/captain.html en priorité
         TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/captain.html"
@@ -461,7 +459,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_PEPPER_~[PROTECTED]~g" \
                 > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
-        ${MY_PATH}/../tools/mailjet.sh --template "${TODAYZINE}" --expire 48h "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
+        ${MY_PATH}/../tools/mailjet.sh --channel zine --template "${TODAYZINE}" --expire 48h "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
                                         "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html"
 
     else

@@ -752,7 +752,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                 for player_dir in ~/.zen/game/nostr/*/; do
                     player_email=$(basename "$player_dir")
                     if [[ "$player_email" =~ @ && "$player_email" != "$CAPTAINEMAIL" ]]; then
-                        ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/bankrupt.html" --expire 7d "$player_email" "$BENEVOLAT_REPORT" \
+                        ${MY_PATH}/../tools/mailjet.sh --channel alerts --template "${MY_PATH}/../templates/NOSTR/bankrupt.html" --expire 7d "$player_email" "$BENEVOLAT_REPORT" \
                             "❤️ UPlanet Bénévolat Actif - Semaine $WEEK_KEY" 2>/dev/null
                     fi
                 done

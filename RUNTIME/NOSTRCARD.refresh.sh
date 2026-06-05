@@ -331,7 +331,7 @@ fi
 
 ## Helper: envoie un email MULTIPASS depuis un template avec substitutions dynamiques
 _send_player_email() {
-    local _tpl="$1" _subject="$2" _flag="${3:-}"
+    local _tpl="$1" _subject="$2" _flag="${3:-}" _channel="${4:-milestones}"
     local _tmpf
     _tmpf=$(mktemp)
     sed -e "s~_PLAYER_~${PLAYER}~g" \
@@ -350,6 +350,7 @@ _send_player_email() {
         -e "s~_COOKIE_BASENAME_~${COOKIE_BASENAME:-}~g" \
         "${MY_PATH}/../templates/NOSTR/${_tpl}" > "$_tmpf"
     ${MY_PATH}/../tools/mailjet.sh \
+        --channel "$_channel" \
         --template "${MY_PATH}/../templates/NOSTR/${_tpl}" \
         --expire 7d "${PLAYER}" "$_tmpf" "$_subject"
     rm -f "$_tmpf"
@@ -469,7 +470,7 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ $(echo "$COINS < 2" | bc -l) -eq 1 && ! -s ~/.zen/game/nostr/${PLAYER}/.balance_low_warned ]]; then
             _send_player_email "multipass_low_balance.html" \
                 "⚠️ Solde faible — votre MULTIPASS est en danger" \
-                "${HOME}/.zen/game/nostr/${PLAYER}/.balance_low_warned"
+                "${HOME}/.zen/game/nostr/${PLAYER}/.balance_low_warned" "alerts"
             log "INFO" "Low balance warning email sent to ${PLAYER}"
         fi
     fi
@@ -581,7 +582,7 @@ for PLAYER in "${NOSTR[@]}"; do
         && sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~_USPOT_~${uSPOT}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-        && ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/welcome.html" --expire 7d "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "Welcome on UPlanet"
+        && ${MY_PATH}/../tools/mailjet.sh --channel milestones --template "${MY_PATH}/../templates/NOSTR/welcome.html" --expire 7d "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "Welcome on UPlanet"
         log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
         log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
     fi
@@ -608,7 +609,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 -e "s~_NCARD_~${NCARD}~g" \
                 -e "s~_ZCARD_~${ZCARD}~g" \
                 "${MY_PATH}/../templates/NOSTR/zine/${tpl}" > "$tmp_zine"
-            ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/zine/${tpl}" --expire 2d \
+            ${MY_PATH}/../tools/mailjet.sh --channel zine --template "${MY_PATH}/../templates/NOSTR/zine/${tpl}" --expire 2d \
                 "${PLAYER}" "$tmp_zine" "$subject"
             rm -f "$tmp_zine"
             echo "${TODATE}" > "$flag"
@@ -813,7 +814,7 @@ small{color:#666;font-size:.8rem}
 <p style="text-align:center;margin-top:1.5rem"><small>UPlanet ORIGIN — support@qo-op.com</small></p>
 </div></div></body></html>
 OKHTML
-                                ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "✅ Redevance MULTIPASS réglée — $TODATE"
+                                ${MY_PATH}/../tools/mailjet.sh --channel milestones --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "✅ Redevance MULTIPASS réglée — $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Success email sent to ${PLAYER} for payment success"
                             else
@@ -923,7 +924,7 @@ ERRHTML
 
         ## Helper: envoie un email U.SOCIETY depuis un template avec substitutions dynamiques
         _send_usociety_email() {
-            local _tpl="$1" _subject="$2" _flag="${3:-}"
+            local _tpl="$1" _subject="$2" _flag="${3:-}" _channel="${4:-usociety}"
             local _tmpf
             _tmpf=$(mktemp)
             sed -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
@@ -934,6 +935,7 @@ ERRHTML
                 -e "s~_UENDDATE_~${UENDDATE:-}~g" \
                 "${MY_PATH}/../templates/NOSTR/${_tpl}" > "$_tmpf"
             ${MY_PATH}/../tools/mailjet.sh \
+                --channel "$_channel" \
                 --template "${MY_PATH}/../templates/NOSTR/${_tpl}" \
                 --expire 7d "${PLAYER}" "$_tmpf" "$_subject"
             rm -f "$_tmpf"
@@ -957,6 +959,7 @@ ERRHTML
                     -e "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" \
                     "${MY_PATH}/../templates/NOSTR/zine/zine_usociety_welcome.html" > "$_welcome_tmp"
                 ${MY_PATH}/../tools/mailjet.sh \
+                    --channel usociety \
                     --template "${MY_PATH}/../templates/NOSTR/zine/zine_usociety_welcome.html" \
                     --expire 7d "${PLAYER}" "$_welcome_tmp" "🌿 Bienvenue dans la coopérative UPlanet !"
                 rm -f "$_welcome_tmp"
@@ -1523,7 +1526,7 @@ ERRHTML
                         # Send cookie domain notification via template
                         _send_player_email "multipass_cookie_unknown.html" \
                             "🍪 Cookie ${DOMAIN} — service non disponible" \
-                            "$DOMAIN_NOTIF_FILE"
+                            "$DOMAIN_NOTIF_FILE" "alerts"
                         log "INFO" "✅ Notification email sent to ${PLAYER} for domain ${DOMAIN}"
                         log_metric "DOMAIN_NOTIFICATION_SENT" "1" "${PLAYER}"
                     else

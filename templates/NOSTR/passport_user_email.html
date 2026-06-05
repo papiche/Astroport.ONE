@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎫 Your UPlanet Passport is Ready!</title>
+    <title>🎫 Votre MULTIPASS UPlanet est prêt !</title>
     <style>
         body {
             margin: 0;
@@ -18,7 +18,7 @@
             background-color: #ffffff;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
         .email-header {
             background: linear-gradient(135deg, #27ae60, #229954);
@@ -36,7 +36,7 @@
             color: #333333;
         }
         .welcome-box {
-            background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(39, 174, 96, 0.05));
+            background: linear-gradient(135deg, rgba(39,174,96,0.1), rgba(39,174,96,0.05));
             border-left: 4px solid #27ae60;
             padding: 20px;
             margin: 20px 0;
@@ -86,9 +86,6 @@
             text-align: center;
             font-size: 16px;
         }
-        .passport-link:hover {
-            background: linear-gradient(135deg, #229954, #1e8449);
-        }
         .next-steps {
             background-color: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -121,7 +118,7 @@
             border: 1px solid #e9ecef;
         }
         .feature-item strong {
-            color: #3498db;
+            color: #27ae60;
             display: block;
             margin-bottom: 5px;
         }
@@ -133,13 +130,9 @@
             font-size: 12px;
             border-top: 1px solid #e9ecef;
         }
-        .emoji {
-            font-size: 28px;
-        }
+        .emoji { font-size: 28px; }
         @media (max-width: 600px) {
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
+            .feature-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -147,101 +140,99 @@
     <div class="email-container">
         <div class="email-header">
             <div class="emoji">🎉</div>
-            <h1>Your UPlanet Passport is Ready!</h1>
+            <h1>Votre MULTIPASS UPlanet est prêt !</h1>
         </div>
-        
+
         <div class="email-body">
             <div class="welcome-box">
-                <h2>Welcome to UPlanet!</h2>
-                <p style="font-size: 18px; margin: 10px 0 0 0;">Your journey into the decentralized Internet begins here.</p>
+                <h2>Bienvenue sur UPlanet !</h2>
+                <p style="font-size:18px; margin:10px 0 0 0;">Votre parcours vers l'Internet décentralisé commence ici.</p>
             </div>
-            
-            <p>Hello,</p>
-            
-            <p>Your UPlanet Passport has been successfully created for member <strong>_MEMBERUID_</strong>. You are now part of the Internet of Trust!</p>
-            
+
+            <p>Bonjour,</p>
+
+            <p>Votre MULTIPASS UPlanet a été créé avec succès pour le membre <strong>_MEMBERUID_</strong>. Vous faites désormais partie du réseau de confiance !</p>
+
             <div class="info-section">
-                <h2>📋 Your Passport Details</h2>
+                <h2>📋 Détails de votre MULTIPASS</h2>
                 <div class="info-item">
-                    <span class="info-label">Member:</span>
+                    <span class="info-label">Membre :</span>
                     <span class="info-value">_MEMBERUID_</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Public Key:</span>
+                    <span class="info-label">Clé publique :</span>
                     <span class="info-value">_PUBKEY_</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Creation Date:</span>
+                    <span class="info-label">Date de création :</span>
                     <span class="info-value">_DATE_</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">UPlanet:</span>
+                    <span class="info-label">UPlanet :</span>
                     <span class="info-value">_UPLANET8_</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Balance:</span>
+                    <span class="info-label">Solde initial :</span>
                     <span class="info-value">_AMOUNT_</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Location:</span>
+                    <span class="info-label">Localisation :</span>
                     <span class="info-value">_LAT_, _LON_</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">TOTAL:</span>
+                    <span class="info-label">Total :</span>
                     <span class="info-value">_TOTAL_ ẐEN</span>
                 </div>
             </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
+
+            <div style="text-align:center; margin:30px 0;">
                 <a href="_UPASSPORT_HTML_" class="passport-link">
-                    🎫 View My UPassport
+                    🎫 Consulter mon UPassport
                 </a>
                 <br>
-                <a href="_IPFS_URL_" style="display: inline-block; margin-top: 10px; color: #27ae60; text-decoration: none; font-size: 14px;">
-                    📁 Browse IPFS Directory
+                <a href="_IPFS_URL_" style="display:inline-block; margin-top:10px; color:#27ae60; text-decoration:none; font-size:14px;">
+                    📁 Parcourir mon espace IPFS
                 </a>
             </div>
-            
+
             <div class="feature-grid">
                 <div class="feature-item">
-                    <strong>🔐 Maximum Security</strong>
-                    <p style="margin: 0; font-size: 14px;">Your identity is protected by SSSS (Shamir Secret Sharing)</p>
+                    <strong>🔐 Identité souveraine</strong>
+                    <p style="margin:0; font-size:14px;">Votre identité protégée par NOSTR — aucun serveur ne peut vous la retirer.</p>
                 </div>
                 <div class="feature-item">
-                    <strong>💰 Transparent Economy</strong>
-                    <p style="margin: 0; font-size: 14px;">Every like = 1 ẐEN automatically in your wallet</p>
+                    <strong>💰 Économie transparente</strong>
+                    <p style="margin:0; font-size:14px;">Chaque like reçu = 1 ẐEN crédité automatiquement sur votre wallet.</p>
                 </div>
                 <div class="feature-item">
-                    <strong>🌐 Universal Access</strong>
-                    <p style="margin: 0; font-size: 14px;">Use your MULTIPASS on any UPlanet terminal worldwide</p>
+                    <strong>🌐 Accès universel</strong>
+                    <p style="margin:0; font-size:14px;">Votre MULTIPASS fonctionne sur n'importe quelle station Astroport.ONE.</p>
                 </div>
                 <div class="feature-item">
-                    <strong>🤖 Personal AI</strong>
-                    <p style="margin: 0; font-size: 14px;">Astro Bot creates your daily journals 24/7</p>
+                    <strong>🤖 IA personnelle</strong>
+                    <p style="margin:0; font-size:14px;">Votre assistant #BRO tourne sur votre station — vos données restent chez vous.</p>
                 </div>
             </div>
-            
+
             <div class="next-steps">
-                <h2>🗺️ Next Steps</h2>
+                <h2>🗺️ Prochaines étapes</h2>
                 <ol>
-                    <li><strong>📚 Understand:</strong> Read the UPlanet documentation and print your MULTIPASS Zine</li>
-                    <li><strong>🔌 Connect:</strong> Scan your SSSS QR code on any UPlanet terminal</li>
-                    <li><strong>💬 Participate:</strong> Join the N² social network and start earning ẐEN</li>
-                    <li><strong>🏛️ Become Co-Owner:</strong> Join ẐEN[0] cooperative (50€/year)</li>
+                    <li><strong>📚 Découvrir :</strong> Lisez le Zine UPlanet qui vous sera envoyé dans les prochains jours</li>
+                    <li><strong>🔌 Se connecter :</strong> Ouvrez Coracle avec votre clé NSEC pour rejoindre le réseau NOSTR</li>
+                    <li><strong>💬 Participer :</strong> Publiez du contenu utile et commencez à gagner des ẐEN</li>
+                    <li><strong>🏛️ S'engager :</strong> Rejoignez la coopérative G1FabLab (50 €/an) pour supprimer la redevance</li>
                 </ol>
             </div>
-            
-            <p style="text-align: center; font-size: 14px; color: #666; margin: 20px 0;">
-                Your email <strong>_EMAIL_</strong> has been authenticated via Web of Trust (WoT).
+
+            <p style="text-align:center; font-size:14px; color:#666; margin:20px 0;">
+                Votre email <strong>_EMAIL_</strong> a été authentifié via la Toile de Confiance (WoT).
             </p>
         </div>
-        
+
         <div class="footer">
-            <p><strong>Welcome to the Internet of Trust!</strong></p>
-            <p>Astroport.ONE - UPlanet Network</p>
-            <p><a href="https://copylaradio.com" style="color: #3498db; text-decoration: none;">copylaradio.com</a></p>
+            <p><strong>Bienvenue dans la constellation UPlanet !</strong></p>
+            <p>Astroport.ONE — Réseau UPlanet — <a href="mailto:support@qo-op.com" style="color:#3498db; text-decoration:none;">support@qo-op.com</a></p>
         </div>
     </div>
 </body>
 </html>
-

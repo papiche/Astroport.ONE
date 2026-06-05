@@ -114,6 +114,20 @@ _kin_build_scan_filter() {
     fi
 }
 
+# ─── _mailjet_flux_enabled CHANNEL [EMAIL] ───────────────────────────────────
+# Retourne 0 si le canal CHANNEL est activé pour EMAIL, 1 sinon.
+# Par défaut activé (flux non déclaré ou .mailjet absent).
+_mailjet_flux_enabled() {
+    local _channel="$1" _email="${2:-}"
+    [[ -z "$_email" ]] && return 0
+    local _pfile="${HOME}/.zen/game/nostr/${_email}/.mailjet"
+    [[ ! -f "$_pfile" ]] && return 0
+    local _enabled
+    _enabled=$(jq -r --arg ch "$_channel" '.flux[$ch] // true' "$_pfile" 2>/dev/null)
+    [[ "$_enabled" == "false" ]] && return 1
+    return 0
+}
+
 # ─── _kin_vibe_intro GROUP_TYPE LANGAGE ───────────────────────────────────────
 # Retourne un bloc HTML d'introduction adapté au langage de résonance du membre.
 # GROUP_TYPE : paire | quatuor | groupe | guide | antipode

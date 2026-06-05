@@ -705,7 +705,7 @@ cat ${ZINE} \
             -e "s~_SLON_~${SLON}~g" \
         > ~/.zen/game/players/${PLAYER}/.ZENCard.html
 
-$MY_PATH/../tools/mailjet.sh --template "${ZINE}" --expire 7d "${PLAYER}" ~/.zen/game/players/${PLAYER}/.ZENCard.html "✅ ẐEN Card activated"
+$MY_PATH/../tools/mailjet.sh --channel zine --template "${ZINE}" --expire 7d "${PLAYER}" ~/.zen/game/players/${PLAYER}/.ZENCard.html "✅ ẐEN Card activated"
 
 ### PRIMO TX DIFFÉRÉE — ZEN Card (désactivée à la création)
 ## La primo TX (1 Ğ1) sera envoyée par UPLANET.official.sh via ensure_wallet_initialized()

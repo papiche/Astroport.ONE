@@ -16,6 +16,15 @@ for _arg in "$@"; do
 USAGE
     $ME [OPTIONS] EMAIL MESSAGE_FILE SUBJECT [TW_INDEX]
 
+    --channel FLUX
+        Nom du flux de notification. Si défini et que le destinataire a
+        désactivé ce flux dans son profil .mailjet (flux.FLUX=false),
+        l'envoi est annulé silencieusement. Valeurs recommandées :
+          zine        Zines d'onboarding J1-J6 (période d'essai MULTIPASS)
+          usociety    Rappels coopérative (renouvellement, expiration)
+          alerts      Alertes de solde (ZEN Card insuffisant, erreurs paiement)
+          milestones  Événements MULTIPASS (bienvenue, anniversaire, confirmations)
+
 DESCRIPTION
     Envoie un email HTML via l'API Mailjet v3.1 au nom de la station UPlanet.
     Le contenu est publié sur IPFS, un lien "lire en ligne" est injecté dans
@@ -119,6 +128,7 @@ echo '
 # Parse command line arguments
 EPHEMERAL_DURATION=""
 TEMPLATE_SRC=""
+MAIL_CHANNEL=""
 while [[ $# -gt 0 ]]; do
     case $1 in
         --expire)
@@ -127,6 +137,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --template)
             TEMPLATE_SRC="$2"
+            shift 2
+            ;;
+        --channel)
+            MAIL_CHANNEL="$2"
             shift 2
             ;;
         --help|-h)
@@ -157,6 +171,15 @@ if [[ -f "$_mailjet_optout" ]]; then
     if printf '%s\n' "$_ch" | grep -qE '^(email|all)$'; then
         echo "⛔ ${mail} — opt-out Mailjet actif, envoi annulé"
         exit 0
+    fi
+
+    ## ── Vérification par flux (flux.CHANNEL == false) ────────────────────────
+    if [[ -n "${MAIL_CHANNEL:-}" ]]; then
+        _flux_enabled=$(jq -r --arg ch "${MAIL_CHANNEL}" '.flux[$ch] // true' "$_mailjet_optout" 2>/dev/null)
+        if [[ "$_flux_enabled" == "false" ]]; then
+            echo "⛔ ${mail} — canal ${MAIL_CHANNEL} désactivé, envoi annulé"
+            exit 0
+        fi
     fi
 fi
 
