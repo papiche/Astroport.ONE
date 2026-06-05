@@ -321,7 +321,7 @@ find "$HOME/.zen/tmp/" -mindepth 1 ! -name "swarm" ! -name "coucou" ! -name "$IP
 
 ########################################################################
 ################################# updating ipfs bootstrap
-ipfs bootstrap rm --all > /dev/null 2>&1
+# ipfs bootstrap rm --all
 for bootnode in $(cat ${STRAPFILE} | grep -Ev "#") # remove comments
 do
     ipfsnodeid=${bootnode##*/}

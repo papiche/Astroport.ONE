@@ -454,7 +454,7 @@ for PLAYER in "${NOSTR[@]}"; do
     # Valeurs par défaut pour éviter un crash bc si COINS/ZEN est vide ou "null"
     COINS=${COINS:-0}
     [[ "$COINS" == "null" ]] && COINS=0
-    ZEN=${ZEN:-0.00}
+    ZEN=${ZEN:-0}
 
     log "INFO" "${G1PUBNOSTR} AMOUNT (${COINS} G1) = ${ZEN} ZEN"
     log_metric "WALLET_BALANCE" "${COINS}" "${PLAYER}"
@@ -606,7 +606,7 @@ for PLAYER in "${NOSTR[@]}"; do
             tmp_zine=$(mktemp)
             sed -e "s~_USPOT_~${uSPOT}~g" \
                 -e "s~_MYIPFS_~${myIPFS}~g" \
-                -e "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" \
+                -e "s~_CORACLEURL_~${myCORACLE:-https://coracle.copylaradio.com}~g" \
                 -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
                 -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
                 -e "s~_NCARD_~${NCARD}~g" \
