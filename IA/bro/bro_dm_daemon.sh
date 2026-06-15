@@ -1047,7 +1047,7 @@ _process_event() {
     ##  • Strfry  {"event":{"kind":4,...},"receivedAt":...} → déchiffrement via INTERCOM decrypt
     ##  • Décodé  {"channel":...,"sender":...,"payload":...,"enc":...} → subscriber constellation
     ##    (receive retourne déjà le JSON déchiffré ; pas besoin de decrypt)
-    if jq -e '.channel' "$event_file" >/dev/null 2>&1; then
+    if grep -q '"channel"' "$event_file"; then
         decoded=$(cat "$event_file")
         rm -f "$event_file"
     else

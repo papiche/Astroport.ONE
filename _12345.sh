@@ -127,7 +127,10 @@ fi
 
 log_lines=$(wc -l < "$ACCESS_LOG" 2>/dev/null || echo 0)
 if [[ $log_lines -gt 2000 ]]; then
-    tail -n 1600 "$ACCESS_LOG" > "${ACCESS_LOG}.tmp" && mv "${ACCESS_LOG}.tmp" "$ACCESS_LOG"
+    (
+        flock -n 9 || exit 0
+        tail -n 1600 "$ACCESS_LOG" > "${ACCESS_LOG}.tmp" && mv "${ACCESS_LOG}.tmp" "$ACCESS_LOG"
+    ) 9>"${ACCESS_LOG}.lock"
 fi
 
 query=$(echo "$request_line" | sed -n 's/^GET \/\?[?]\(.*\) HTTP.*/\1/p')

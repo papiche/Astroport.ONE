@@ -384,71 +384,106 @@ get_file_type() {
 }
 
 # Fonction pour extraire les métadonnées des fichiers média
+# Retourne un objet JSON complet (ou "{}") — jamais un fragment brut.
 get_media_metadata() {
     local file="$1"
     local file_type="$2"
-    local metadata_json=""
 
     case $file_type in
         image)
             # Essayer d'obtenir les dimensions de l'image
             if command -v identify >/dev/null 2>&1; then
-                local dimensions=$(identify -format "%wx%h" "$file[0]" 2>/dev/null)
+                local dimensions
+                dimensions=$(identify -format "%wx%h" "$file[0]" 2>/dev/null)
                 if [ -n "$dimensions" ] && [ "$dimensions" != "0x0" ]; then
-                    local width=$(echo $dimensions | cut -d'x' -f1)
-                    local height=$(echo $dimensions | cut -d'x' -f2)
-                    metadata_json="\"width\": \"$width\", \"height\": \"$height\", \"dimensions\": \"$dimensions\""
+                    local width height
+                    width=$(echo "$dimensions" | cut -d'x' -f1)
+                    height=$(echo "$dimensions" | cut -d'x' -f2)
+                    jq -n \
+                        --arg width "$width" \
+                        --arg height "$height" \
+                        --arg dimensions "$dimensions" \
+                        '{width: $width, height: $height, dimensions: $dimensions}'
+                    return
                 fi
             fi
             ;;
         video)
             # Essayer d'obtenir les informations vidéo
             if command -v ffprobe >/dev/null 2>&1; then
-                local duration=$(ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null)
-                local dimensions=$(ffprobe -v quiet -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$file" 2>/dev/null)
+                local duration dimensions
+                duration=$(ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null)
+                dimensions=$(ffprobe -v quiet -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$file" 2>/dev/null)
 
+                local obj='{}'
                 if [ -n "$duration" ] && [ "$duration" != "N/A" ] && [ "$duration" != "" ]; then
-                    local formatted_duration=$(echo "$duration" | awk '{printf "%.0f", $1}')
-                    local min_sec=$(echo "$formatted_duration" | awk '{printf "%d:%02d", $1/60, $1%60}')
-                    metadata_json="\"duration_seconds\": $formatted_duration, \"formatted_duration\": \"$min_sec\""
+                    local formatted_duration min_sec
+                    formatted_duration=$(echo "$duration" | awk '{printf "%.0f", $1}')
+                    min_sec=$(echo "$formatted_duration" | awk '{printf "%d:%02d", $1/60, $1%60}')
+                    obj=$(jq -n \
+                        --argjson duration_seconds "$formatted_duration" \
+                        --arg formatted_duration "$min_sec" \
+                        '{duration_seconds: $duration_seconds, formatted_duration: $formatted_duration}')
                 fi
 
                 if [ -n "$dimensions" ] && [ "$dimensions" != "x" ] && [ "$dimensions" != "0x0" ]; then
-                    local width=$(echo $dimensions | cut -d'x' -f1)
-                    local height=$(echo $dimensions | cut -d'x' -f2)
-                    if [ -n "$metadata_json" ]; then
-                        metadata_json="$metadata_json, \"width\": \"$width\", \"height\": \"$height\", \"dimensions\": \"$dimensions\""
-                    else
-                        metadata_json="\"width\": \"$width\", \"height\": \"$height\", \"dimensions\": \"$dimensions\""
-                    fi
+                    local width height
+                    width=$(echo "$dimensions" | cut -d'x' -f1)
+                    height=$(echo "$dimensions" | cut -d'x' -f2)
+                    local dim_obj
+                    dim_obj=$(jq -n \
+                        --arg width "$width" \
+                        --arg height "$height" \
+                        --arg dimensions "$dimensions" \
+                        '{width: $width, height: $height, dimensions: $dimensions}')
+                    obj=$(printf '%s\n%s' "$obj" "$dim_obj" | jq -s '.[0] * .[1]')
+                fi
+
+                if [ "$obj" != '{}' ]; then
+                    echo "$obj"
+                    return
                 fi
             fi
             ;;
         audio)
             # Essayer d'obtenir les informations audio
             if command -v ffprobe >/dev/null 2>&1; then
-                local duration=$(ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null)
-                local bitrate=$(ffprobe -v quiet -show_entries format=bit_rate -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null)
+                local duration bitrate
+                duration=$(ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null)
+                bitrate=$(ffprobe -v quiet -show_entries format=bit_rate -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null)
 
+                local obj='{}'
                 if [ -n "$duration" ] && [ "$duration" != "N/A" ] && [ "$duration" != "" ]; then
-                    local formatted_duration=$(echo "$duration" | awk '{printf "%.0f", $1}')
-                    local min_sec=$(echo "$formatted_duration" | awk '{printf "%d:%02d", $1/60, $1%60}')
-                    metadata_json="\"duration_seconds\": $formatted_duration, \"formatted_duration\": \"$min_sec\""
+                    local formatted_duration min_sec
+                    formatted_duration=$(echo "$duration" | awk '{printf "%.0f", $1}')
+                    min_sec=$(echo "$formatted_duration" | awk '{printf "%d:%02d", $1/60, $1%60}')
+                    obj=$(jq -n \
+                        --argjson duration_seconds "$formatted_duration" \
+                        --arg formatted_duration "$min_sec" \
+                        '{duration_seconds: $duration_seconds, formatted_duration: $formatted_duration}')
                 fi
 
                 if [ -n "$bitrate" ] && [ "$bitrate" != "N/A" ] && [ "$bitrate" != "" ]; then
-                    local bitrate_kb=$(echo "$bitrate" | awk '{printf "%.0f", $1/1000}')
-                    if [ -n "$metadata_json" ]; then
-                        metadata_json="$metadata_json, \"bitrate\": $(echo "$bitrate" | awk '{printf "%.0f", $1}'), \"formatted_bitrate\": \"${bitrate_kb} kbps\""
-                    else
-                        metadata_json="\"bitrate\": $(echo "$bitrate" | awk '{printf "%.0f", $1}'), \"formatted_bitrate\": \"${bitrate_kb} kbps\""
-                    fi
+                    local bitrate_int bitrate_kb
+                    bitrate_int=$(echo "$bitrate" | awk '{printf "%.0f", $1}')
+                    bitrate_kb=$(echo "$bitrate" | awk '{printf "%.0f", $1/1000}')
+                    local br_obj
+                    br_obj=$(jq -n \
+                        --argjson bitrate "$bitrate_int" \
+                        --arg formatted_bitrate "${bitrate_kb} kbps" \
+                        '{bitrate: $bitrate, formatted_bitrate: $formatted_bitrate}')
+                    obj=$(printf '%s\n%s' "$obj" "$br_obj" | jq -s '.[0] * .[1]')
+                fi
+
+                if [ "$obj" != '{}' ]; then
+                    echo "$obj"
+                    return
                 fi
             fi
             ;;
     esac
 
-    echo "$metadata_json"
+    echo '{}'
 }
 
 # Fonction pour nettoyer le nom de fichier pour JSON
@@ -1040,8 +1075,8 @@ while IFS= read -r -d '' file; do
             --arg category "$app_cat" \
             '{name:$name,path:$path,size:$size,formatted_size:$formatted_size,type:$type,last_modified:$last_modified,ipfs_link:$ipfs_link} |
             if $category != "" then . + {category:$category} else . end')
-        if [ -n "$metadata" ]; then
-            file_entry=$(printf '%s' "$file_entry" | jq ". + {$metadata}")
+        if [ -n "$metadata" ] && [ "$metadata" != '{}' ]; then
+            file_entry=$(printf '%s\n%s' "$file_entry" "$metadata" | jq -s '.[0] * .[1]')
         fi
         files_json="${files_json}${file_entry}"
         total_size=$((total_size + file_size))
@@ -1084,7 +1119,7 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
             [ -f "$disk_file" ] && continue
             [ -n "${processed_paths[$old_path]:-}" ] && continue
             formatted_size=$(format_size "${old_size:-0}")
-            metadata_json=$(jq -r --arg path "$old_path" '.files[]? | select(.path == $path) | del(.ipfs_link, .path, .name, .size, .type, .last_modified, .formatted_size, .category) | to_entries | map("\"\(.key)\": \"\(.value)\"") | join(", ")' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
+            metadata_json=$(jq -c --arg path "$old_path" '.files[]? | select(.path == $path) | del(.ipfs_link, .path, .name, .size, .type, .last_modified, .formatted_size, .category)' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
             fc_app_cat=""
             [[ "$old_path" == Apps* ]] && fc_app_cat="app"
             fc_entry=$(jq -n \
@@ -1098,8 +1133,8 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
                 --arg category "$fc_app_cat" \
                 '{name:$name,path:$path,size:$size,formatted_size:$formatted_size,type:$type,last_modified:$last_modified,ipfs_link:$ipfs_link} |
                 if $category != "" then . + {category:$category} else . end')
-            if [ -n "$metadata_json" ] && [ "$metadata_json" != "{}" ]; then
-                fc_entry=$(printf '%s' "$fc_entry" | jq ". + {$metadata_json}")
+            if [ -n "$metadata_json" ] && [ "$metadata_json" != '{}' ] && [ "$metadata_json" != 'null' ]; then
+                fc_entry=$(printf '%s\n%s' "$fc_entry" "$metadata_json" | jq -s '.[0] * .[1]')
             fi
             [ -n "$files_json" ] && files_json="${files_json},"
             files_json="${files_json}${fc_entry}"
@@ -1120,7 +1155,7 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
             [ -f "$disk_file" ] && continue
             [ -n "${processed_paths[$old_path]:-}" ] && continue
             formatted_size=$(format_size "$old_size")
-            metadata_json=$(printf '%s' "$file_entry" | jq -r 'del(.ipfs_link, .path, .name, .size, .type, .last_modified, .formatted_size, .category) | to_entries | map("\"\(.key)\": \"\(.value)\"") | join(", ")' 2>/dev/null)
+            metadata_json=$(printf '%s' "$file_entry" | jq -c 'del(.ipfs_link, .path, .name, .size, .type, .last_modified, .formatted_size, .category)' 2>/dev/null)
             fb_app_cat=""
             [[ "$old_path" == Apps* ]] && fb_app_cat="app"
             fb_entry=$(jq -n \
@@ -1134,8 +1169,8 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
                 --arg category "$fb_app_cat" \
                 '{name:$name,path:$path,size:$size,formatted_size:$formatted_size,type:$type,last_modified:$last_modified,ipfs_link:$ipfs_link} |
                 if $category != "" then . + {category:$category} else . end')
-            if [ -n "$metadata_json" ] && [ "$metadata_json" != "{}" ]; then
-                fb_entry=$(printf '%s' "$fb_entry" | jq ". + {$metadata_json}")
+            if [ -n "$metadata_json" ] && [ "$metadata_json" != '{}' ] && [ "$metadata_json" != 'null' ]; then
+                fb_entry=$(printf '%s\n%s' "$fb_entry" "$metadata_json" | jq -s '.[0] * .[1]')
             fi
             [ -n "$files_json" ] && files_json="${files_json},"
             files_json="${files_json}${fb_entry}"
@@ -1157,28 +1192,39 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
     fi
 fi
 
-# Générer le JSON final
+# Générer le JSON final avec jq pour éviter toute injection
 # Utiliser le CID existant si disponible, sinon vide (sera mis à jour plus tard)
 FINAL_CID_FOR_MANIFEST="${EXISTING_FINAL_CID:-}"
-cat > "$SOURCE_DIR/manifest.json" << EOF
-{
-    "generated_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-    "version": "1.0.0",
-    "final_cid": "${FINAL_CID_FOR_MANIFEST}",
-    "owner_email": "$OWNER_EMAIL",
-    "owner_hex_pubkey": "$OWNER_HEX_PUBKEY",
-    "my_ipfs_gateway": "$ORIGIN_IPFS_GATEWAY",
-    "directories": [$directories_json
-    ],
-    "files": [$files_json
-    ],
-    "total_directories": $dir_count,
-    "total_files": $file_count,
-    "total_size": $total_size,
-    "formatted_total_size": "$(format_size $total_size)",
-    "station": ${_STATION_JSON}
-}
-EOF
+FORMATTED_TOTAL_SIZE="$(format_size "$total_size")"
+GENERATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+jq -n \
+    --arg generated_at "$GENERATED_AT" \
+    --arg final_cid "$FINAL_CID_FOR_MANIFEST" \
+    --arg owner_email "$OWNER_EMAIL" \
+    --arg owner_hex_pubkey "$OWNER_HEX_PUBKEY" \
+    --arg my_ipfs_gateway "$ORIGIN_IPFS_GATEWAY" \
+    --argjson directories "[${directories_json:-}]" \
+    --argjson files "[${files_json:-}]" \
+    --argjson total_directories "$dir_count" \
+    --argjson total_files "$file_count" \
+    --argjson total_size "$total_size" \
+    --arg formatted_total_size "$FORMATTED_TOTAL_SIZE" \
+    --argjson station "${_STATION_JSON}" \
+    '{
+        generated_at: $generated_at,
+        version: "1.0.0",
+        final_cid: $final_cid,
+        owner_email: $owner_email,
+        owner_hex_pubkey: $owner_hex_pubkey,
+        my_ipfs_gateway: $my_ipfs_gateway,
+        directories: $directories,
+        files: $files,
+        total_directories: $total_directories,
+        total_files: $total_files,
+        total_size: $total_size,
+        formatted_total_size: $formatted_total_size,
+        station: $station
+    }' > "$SOURCE_DIR/manifest.json"
 
 # Détecter les fichiers supprimés en comparant le nouveau manifest avec manifest-1.json
 deleted_count=$(detect_deleted_files_from_manifests)
