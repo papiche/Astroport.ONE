@@ -283,19 +283,36 @@ EOFNOSTR
     [[ -s ${IMAGE} ]] && cp ${IMAGE} ${HOME}/.zen/game/nostr/${EMAIL}/picture.png 2>/dev/null
     [[ "${IMAGE}" =~ ^[a-z]{2}$ ]] && LANG="${IMAGE}" || LANG="fr" ## Contains IMAGE or Navigator language
 
-    ## Données de naissance/conception (privées, transmises par /g1nostr)
+    ## Données de naissance/conception
+    # .BIRTHDATE (YYYY-MM-DD) : en clair — utilisé par kin.sh et did_manager_nostr.sh
+    # .birth_datetime.enc, .birth_weight.enc, .conception_datetime.enc : chiffrés avec
+    # la clé publique G1PUBNOSTR du joueur → seul le joueur peut déchiffrer.
+    # La reconstruction du DISCO se fait via SSSS (cf. NOSTRCARD.refresh.sh), pas via ces fichiers.
     if [[ -n "${BIRTH_DATETIME}" ]]; then
-        echo "${BIRTH_DATETIME}" > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_datetime"
-        # Extraire YYYY-MM-DD pour kin.sh et did_manager_nostr.sh (qui lit .BIRTHDATE)
         _birth_date="${BIRTH_DATETIME%%T*}"
         [[ "${_birth_date}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
             && echo "${_birth_date}" > "${HOME}/.zen/game/nostr/${EMAIL}/.BIRTHDATE"
+        # Chiffrer le datetime complet (heure = facteur SALT) avec la clé publique du joueur
+        echo "${BIRTH_DATETIME}" \
+            | ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" \
+                -o "${HOME}/.zen/game/nostr/${EMAIL}/.birth_datetime.enc" >/dev/null \
+            && rm -f "${HOME}/.zen/game/nostr/${EMAIL}/.birth_datetime"
         unset _birth_date
     fi
-    [[ -n "${BIRTH_PLACE}" ]]         && echo "${BIRTH_PLACE}"         > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_place"
-    [[ -n "${BIRTH_WEIGHT}" ]]        && echo "${BIRTH_WEIGHT}"        > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_weight"
-    [[ -n "${CONCEPTION_DATETIME}" ]] && echo "${CONCEPTION_DATETIME}" > "${HOME}/.zen/game/nostr/${EMAIL}/.conception_datetime"
-    [[ -n "${CONCEPTION_PLACE}" ]]    && echo "${CONCEPTION_PLACE}"    > "${HOME}/.zen/game/nostr/${EMAIL}/.conception_place"
+    [[ -n "${BIRTH_PLACE}" ]] && echo "${BIRTH_PLACE}" > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_place"
+    if [[ -n "${BIRTH_WEIGHT}" ]]; then
+        echo "${BIRTH_WEIGHT}" \
+            | ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" \
+                -o "${HOME}/.zen/game/nostr/${EMAIL}/.birth_weight.enc" >/dev/null \
+            && rm -f "${HOME}/.zen/game/nostr/${EMAIL}/.birth_weight"
+    fi
+    if [[ -n "${CONCEPTION_DATETIME}" ]]; then
+        echo "${CONCEPTION_DATETIME}" \
+            | ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" \
+                -o "${HOME}/.zen/game/nostr/${EMAIL}/.conception_datetime.enc" >/dev/null \
+            && rm -f "${HOME}/.zen/game/nostr/${EMAIL}/.conception_datetime"
+    fi
+    [[ -n "${CONCEPTION_PLACE}" ]] && echo "${CONCEPTION_PLACE}" > "${HOME}/.zen/game/nostr/${EMAIL}/.conception_place"
 
     ##########################################################################
     ## Public metadata (safe for IPFS publishing)

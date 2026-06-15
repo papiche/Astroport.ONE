@@ -25,6 +25,51 @@ declare -A _DS_COLOR_BG=( [Rouge]="#fef2f2" [Blanc]="#f9fafb" [Bleu]="#eff6ff" [
 declare -A _DS_COLOR_EMO=([Rouge]="🔴" [Blanc]="⬜" [Bleu]="🔵" [Jaune]="🟡" [Vert]="🟢")
 declare -a _DS_SEAL_EMO=(🐊 💨 🌙 🌱 🐍 ☠️ 🤚 ⭐ 🌊 🐕 🐒 🧑 🌿 🔮 🦅 🛡️ 🌍 ⚡ ⛈️ ☀️)
 
+# ─── Alchimie des Éléments (ci 0-4 → élément, couleur, archétype 5×5) ───────
+declare -a _DS_ELEMENTS=('🔥 Feu' '🌬️ Air' '🌊 Eau' '🪨 Terre' '✨ Éther')
+declare -A _DS_ELEMENT_HEX=([feu]='#ef4444' [air]='#94a3b8' [eau]='#3b82f6' [terre]='#eab308' [ether]='#10b981')
+declare -A _DS_ELEMENT_KEYS=([0]='feu' [1]='air' [2]='eau' [3]='terre' [4]='ether')
+# Matrice 5×5 : ligne=ciConception, colonne=ciBirth (index = ciC*5 + ciB)
+declare -a _DS_ARCHETYPES=(
+    'La Supernova'             'La Tempête Ignée'       'Le Geyser Quantique'    'Le Forgeron des Mondes'   'La Flamme Éternelle'
+    'La Comète Libre'          'Le Tourbillon Mental'   'Le Cyclone Émotionnel'  "L'Architecte Céleste"     'Le Murmure Stellaire'
+    "L'Évaporation Créatrice"  'La Vague de Conscience' "L'Océan Primordial"     "L'Oasis Vivante"          'La Source Infinie'
+    'Le Volcan Endormi'        'Le Désert Chantant'     'La Vallée Fertile'      'Le Cristal Ancré'         'La Montagne Sacrée'
+    "L'Aurore Boréale"         'Le Tisserand Cosmique'  'La Pluie de Lumière'    'Le Jardin des Possibles'  'La Singularité Pure'
+)
+
+# ci (0-4) depuis un numéro KIN
+_kin_element_idx()  { echo $(( ($1-1)/13 % 5 )); }
+_kin_element_name() { echo "${_DS_ELEMENTS[$(_kin_element_idx "$1")]}"; }
+_kin_element_hex()  {
+    local _k="${_DS_ELEMENT_KEYS[$(_kin_element_idx "$1")]}"; echo "${_DS_ELEMENT_HEX[$_k]:-#6366f1}"
+}
+
+# Badge HTML alchimique : naissance seul, ou duo conception→naissance avec archétype.
+_kin_alch_badge() {
+    local k_birth="$1" k_conc="${2:-}"
+    local ci_b; ci_b=$(_kin_element_idx "$k_birth")
+    local ename_b="${_DS_ELEMENTS[$ci_b]}"
+    local ekey_b="${_DS_ELEMENT_KEYS[$ci_b]}"
+    local ehex_b="${_DS_ELEMENT_HEX[$ekey_b]:-#6366f1}"
+    if [[ -z "$k_conc" || "$k_conc" == "0" ]]; then
+        printf '<span style="font-size:.75rem;color:%s;background:%s22;border:1px solid %s44;border-radius:4px;padding:1px 5px">%s</span>' \
+            "$ehex_b" "$ehex_b" "$ehex_b" "$ename_b"
+        return
+    fi
+    local ci_c; ci_c=$(_kin_element_idx "$k_conc")
+    local ename_c="${_DS_ELEMENTS[$ci_c]}"
+    local ekey_c="${_DS_ELEMENT_KEYS[$ci_c]}"
+    local ehex_c="${_DS_ELEMENT_HEX[$ekey_c]:-#6366f1}"
+    local arch_idx=$(( ci_c * 5 + ci_b ))
+    local archetype="${_DS_ARCHETYPES[$arch_idx]}"
+    local sing_badge=""
+    [[ "$ci_c" -eq "$ci_b" ]] && sing_badge=' <span style="color:#10b981;font-size:.7rem">✨ Singularité</span>'
+    printf '<span style="font-size:.75rem;border-radius:4px;padding:1px 5px"><span style="color:%s">%s</span> → <span style="color:%s">%s</span>%s</span>' \
+        "$ehex_c" "$ename_c" "$ehex_b" "$ename_b" "$sing_badge"
+    printf '<div style="font-size:.72rem;color:#aaa;font-style:italic;margin-top:1px">%s</div>' "$archetype"
+}
+
 # ─── Arithmétique Kin ─────────────────────────────────────────────────────────
 _kin_seal()  { echo $(( ($1-1) % 20 )); }
 _kin_tone()  { echo $(( ($1-1) % 13 + 1 )); }
@@ -74,6 +119,11 @@ _kin_member_card() {
             printf '<div class="member-link"><a href="%s" style="color:%s;font-size:.82rem;text-decoration:none">🌐 Profil UPlanet →</a></div>' \
                 "$_profile_url" "$hex"
         fi
+        local _kb="${email_kin30078[$_email]:-$k}"
+        local _kc="${email_kin_conception[$_email]:-}"
+        printf '<div style="margin-top:.3rem">'
+        _kin_alch_badge "$_kb" "$_kc"
+        printf '</div>'
         printf '</div></div>\n'
     done
 }
@@ -207,6 +257,8 @@ declare -A email_hexagons=() # email → "a4l:P02H... a4l:P02 …" (Spacememory)
 declare -A email_k_sum=()    # email → somme des k Atom4Peace reçus
 declare -A email_k_count=()  # email → nombre de résonances live
 declare -A email_resonance_graph=() # email → "email1:k1 email2:k2 …" (graphe pairs)
+declare -A email_kin_conception=()  # email → kin_conception depuis Kind 30078
+declare -A email_archetype=()       # email → archétype alchimique (texte)
 
 # ─── Scan DID (kind 30800) : peupler pubkey_email[], email_phi[], email_nostrns[] ──
 _scan_did_mapping() {
@@ -246,15 +298,17 @@ _scan_a4l_phi() {
     local PHI2X="${MY_PATH}/phi2x.py"
     while IFS= read -r evt; do
         [[ -z "$evt" ]] && continue
-        local pubkey content phi omega sex kin_n inst proof
+        local pubkey content phi omega sex kin_n inst proof kin_conc arch_val
         pubkey=$(echo "$evt" | jq -r '.pubkey // empty' 2>/dev/null)
         content=$(echo "$evt" | jq -r '.content // empty' 2>/dev/null)
         [[ -z "$pubkey" ]] && continue
-        phi=$(echo "$content"   | jq -r '.personal_phase    // empty' 2>/dev/null)
-        omega=$(echo "$content" | jq -r '.omega_bio         // empty' 2>/dev/null)
-        sex=$(echo "$content"   | jq -r '.biological_sex    // empty' 2>/dev/null)
-        kin_n=$(echo "$content" | jq -r '.kin_num           // empty' 2>/dev/null)
-        inst=$(echo "$content"  | jq -r '.inst_id           // "0"'   2>/dev/null)
+        phi=$(echo "$content"      | jq -r '.personal_phase    // empty' 2>/dev/null)
+        omega=$(echo "$content"    | jq -r '.omega_bio         // empty' 2>/dev/null)
+        sex=$(echo "$content"      | jq -r '.biological_sex    // empty' 2>/dev/null)
+        kin_n=$(echo "$content"    | jq -r '.kin_num           // empty' 2>/dev/null)
+        inst=$(echo "$content"     | jq -r '.inst_id           // "0"'   2>/dev/null)
+        kin_conc=$(echo "$content" | jq -r '.kin_conception    // empty' 2>/dev/null)
+        arch_val=$(echo "$content" | jq -r '.archetype         // empty' 2>/dev/null)
         [[ -z "$phi" ]] && continue
         # Vérification a4l_proof (optionnelle, utilise phi2x.py si disponible)
         if [[ -x "$PHI2X" ]]; then
@@ -272,10 +326,12 @@ print('ok' if expected==proof else 'fail')
         local _email="${pubkey_email[$pubkey]:-}"
         [[ -z "$_email" ]] && continue
         email_phi["$_email"]="$phi"
-        [[ -n "$omega" ]] && email_omega["$_email"]="$omega"
-        [[ -n "$sex"   ]] && email_sex["$_email"]="$sex"
-        [[ -n "$kin_n" ]] && email_kin30078["$_email"]="$kin_n"
+        [[ -n "$omega"    ]] && email_omega["$_email"]="$omega"
+        [[ -n "$sex"      ]] && email_sex["$_email"]="$sex"
+        [[ -n "$kin_n"    ]] && email_kin30078["$_email"]="$kin_n"
         email_inst["$_email"]="${inst:-0}"
+        [[ -n "$kin_conc" ]] && email_kin_conception["$_email"]="$kin_conc"
+        [[ -n "$arch_val" ]] && email_archetype["$_email"]="$arch_val"
         ((count++))
     done < <(cd "$strfry_dir" && ./strfry scan '{"kinds":[30078],"#d":["atom4love"]}' 2>/dev/null)
     echo "$count"
@@ -395,6 +451,32 @@ _kin_member_card_rich() {
         fi
         if [[ "$_hexcnt" -gt 0 ]]; then
             printf '<div style="font-size:.75rem;color:#059669">⬡ %s nœuds hexagonaux explorés</div>' "$_hexcnt"
+        fi
+        local _kb="${email_kin30078[$_email]:-$k}"
+        local _kc="${email_kin_conception[$_email]:-}"
+        local _arch="${email_archetype[$_email]:-}"
+        if [[ -n "$_kb" ]]; then
+            local _ci_b; _ci_b=$(_kin_element_idx "$_kb")
+            local _en_b="${_DS_ELEMENTS[$_ci_b]}"
+            local _ek_b="${_DS_ELEMENT_KEYS[$_ci_b]}"
+            local _eh_b="${_DS_ELEMENT_HEX[$_ek_b]:-#6366f1}"
+            if [[ -n "$_kc" ]]; then
+                local _ci_c; _ci_c=$(_kin_element_idx "$_kc")
+                local _en_c="${_DS_ELEMENTS[$_ci_c]}"
+                local _ek_c="${_DS_ELEMENT_KEYS[$_ci_c]}"
+                local _eh_c="${_DS_ELEMENT_HEX[$_ek_c]:-#6366f1}"
+                local _arch_idx=$(( _ci_c * 5 + _ci_b ))
+                local _displayed_arch="${_arch:-${_DS_ARCHETYPES[$_arch_idx]}}"
+                printf '<div style="font-size:.78rem;margin-top:.4rem;padding:.3rem .5rem;background:#ffffff22;border-radius:6px;border:1px solid #ffffff11">'
+                printf '🧬 <span style="color:%s">%s</span> → <span style="color:%s">%s</span>' \
+                    "$_eh_c" "$_en_c" "$_eh_b" "$_en_b"
+                [[ "$_ci_c" -eq "$_ci_b" ]] && printf ' <span style="color:#10b981">✨</span>'
+                printf '<br><span style="font-size:.72rem;color:#aaa;font-style:italic">%s</span>' "$_displayed_arch"
+                printf '</div>'
+            else
+                printf '<div style="font-size:.78rem;margin-top:.3rem">🧬 <span style="color:%s">%s</span></div>' \
+                    "$_eh_b" "$_en_b"
+            fi
         fi
         if [[ -n "$_profile_url" ]]; then
             printf '<div style="margin-top:.3rem"><a href="%s" style="color:%s;font-size:.8rem">🌐 Profil UPlanet →</a></div>' "$_profile_url" "$hex"
