@@ -140,6 +140,9 @@ mkdir -p "$(dirname "$ASTRO_PROFILE")"
 # N'afficher que les lignes BROKEN/FIXED dans le log principal
 grep -E "BROKEN|FIXED|TOTAL" "$ASTRO_PROFILE" | tail -20 >> "$LOG_FILE" 2>/dev/null || true
 
+echo "=== 22242 LOGIN/ROAMING ======================================" >> $LOG_FILE
+cat $HOME/.zen/tmp/nostr.auth.22242.log 2>/dev/null >> $LOG_FILE
+
 echo "=== SWARM INTRUDERS ==========================================" >> $LOG_FILE
 cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> $LOG_FILE
 cat "$HOME/.zen/game/firewall_candidates.txt" | sort -u >> $LOG_FILE
@@ -150,7 +153,7 @@ cat $HOME/.zen/tmp/IA.log 2>/dev/null >> $LOG_FILE
 cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
 
 echo "=== NOSTR / CONSTELLATION ERRORS =============================" >> $LOG_FILE
-cat $HOME/.zen/tmp/nostr*.log 2>/dev/null >> $LOG_FILE
+cat $HOME/.zen/tmp/nostr_*.log 2>/dev/null >> $LOG_FILE
 cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
 
 echo "=== SYSTEM/INSTALL ERRORS ====================================" >> $LOG_FILE
