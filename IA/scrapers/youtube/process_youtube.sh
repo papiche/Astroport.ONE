@@ -122,27 +122,20 @@ else
 fi
 
 # --- 5. METADATA & RESOLUTION INTELLIGENTE ---
-BASE_ARGS="$COOKIESRC $BGUTIL_ARG"
+# Deno requis pour résoudre les challenges nsig de YouTube (obligatoire depuis fin 2024)
+DENO_ARGS=""
+if [[ -n "$DENO_BIN" ]]; then
+    DENO_ARGS="--js-runtimes deno:${DENO_BIN} --remote-components ejs:github"
+    log_debug "Using Deno for signature solving: $DENO_BIN"
+fi
+BASE_ARGS="$DENO_ARGS $COOKIESRC $BGUTIL_ARG"
 
 log_debug "Extracting metadata for: $URL"
 # Attention : l'ordre ici DOIT être id | duration | uploader | title
-metadata_output=$(timeout 30 yt-dlp $BASE_ARGS --no-warnings \
+metadata_output=$(timeout 60 yt-dlp $BASE_ARGS --no-warnings \
     --print '%(id)s|%(duration)s|%(uploader)s|%(title)s' "$URL" 2>>"$LOGFILE")
 
 metadata_line=$(echo "$metadata_output" | grep -E "^[a-zA-Z0-9_-]{11}\|" | head -n 1)
-
-# Retry avec Deno (EJS) si le premier essai échoue
-if [[ -z "$metadata_line" && -n "$DENO_BIN" ]]; then
-    log_debug "First attempt failed. Retrying with Deno (EJS last resort)..."
-    DENO_ARG="--js-runtimes deno:${DENO_BIN} --remote-components ejs:github"
-    metadata_output=$(timeout 60 yt-dlp $DENO_ARG $BASE_ARGS --no-warnings \
-        --print '%(id)s|%(duration)s|%(uploader)s|%(title)s' "$URL" 2>>"$LOGFILE")
-    metadata_line=$(echo "$metadata_output" | grep -E "^[a-zA-Z0-9_-]{11}\|" | head -n 1)
-    if [[ -n "$metadata_line" ]]; then
-        BASE_ARGS="$DENO_ARG $BASE_ARGS"
-        log_debug "Deno (EJS) succeeded, using it for download too"
-    fi
-fi
 
 if [[ -z "$metadata_line" ]]; then
     output_json '{"error":"Failed to extract metadata. Check URL or cookies."}'
