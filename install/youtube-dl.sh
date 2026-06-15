@@ -25,10 +25,12 @@ for arg in "$@"; do
     esac
 done
 
-# Installation de yt-dlp
-if [[ ! -e "$HOME/.local/bin/yt-dlp" ]]; then
-    mkdir -p "$HOME/.local/bin"
-    rm -f "$HOME/.local/bin/yt-dlp"
+# Installation ou mise à jour de yt-dlp
+mkdir -p "$HOME/.local/bin"
+if [[ -x "$HOME/.local/bin/yt-dlp" ]]; then
+    echo ">>> yt-dlp déjà présent — mise à jour..."
+    sudo yt-dlp -U 2>&1 || yt-dlp -U 2>&1 || echo "⚠️  yt-dlp -U échoué (droits ?)"
+else
     curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o "$HOME/.local/bin/yt-dlp"
     chmod +x "$HOME/.local/bin/yt-dlp"
 
