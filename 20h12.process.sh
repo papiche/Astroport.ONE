@@ -147,8 +147,10 @@ echo "=== SWARM INTRUDERS ==========================================" >> $LOG_FI
 cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> $LOG_FILE
 cat "$HOME/.zen/game/firewall_candidates.txt" | sort -u >> $LOG_FILE
 
-#### COPY LOGS - before erase
-echo "=== YOUTUBE / IA SCRAPERS ===============bro_dm_daemon.log==============" >> $LOG_FILE
+echo "___________________bro_dm_daemon.log_______________"
+cat $HOME/.zen/tmp/bro_dm_daemon.log 2>/dev/null >> $LOG_FILE
+
+echo "=== YOUTUBE / IA SCRAPERS ===================================" >> $LOG_FILE
 cat $HOME/.zen/tmp/IA.log 2>/dev/null >> $LOG_FILE
 cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
 
@@ -370,7 +372,7 @@ sleep 30
 ########################################################
 ### DRAGON WOT : réouverture tunnels P2P après bootstrap
 ########################################################
-echo "DRAGONS SHIELD ON - réouverture tunnels P2P"
+echo "DRAGONS SHIELD ON - propagation authorized keys + réouverture tunnels P2P"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 ########################################################
 
@@ -405,6 +407,9 @@ echo "Publication trigger sent"
 
 ## ComfyUI need to get restarted to reduce VRAM
 [[ -s ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh ]] && sudo systemctl restart comfyui
+
+## Restart ollama
+[[ -s ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh ]] && sudo systemctl restart ollama
 
 #####################################
 # Node refreshing
