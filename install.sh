@@ -353,7 +353,7 @@ _env_upsert "INSTALL_PROFILE" "${INSTALL_PROFILE:-standard}" "${HOME}/.zen/Astro
 ########################################################################
 ## NOM DE LA MACHINE
 ########################################################################
-if [[ -z "${CUSTOM_MACHINE_NAME:-}" && "$_SILENT" == "false" ]]; then
+if [[ -z "${CUSTOM_MACHINE_NAME:-}" && "$_SILENT" == "false" && "${_IS_UPGRADE:-false}" != "true" ]]; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
     echo "║  🖥️  NOM DE VOTRE MACHINE                                    ║"
