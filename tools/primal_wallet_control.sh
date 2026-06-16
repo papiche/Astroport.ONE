@@ -64,7 +64,8 @@ bigint_to_g1() {
 # Retourne le solde en Ğ1 (ex: 4.94)
 get_wallet_balance() {
     local pubkey="$1"
-    local GCLI="${GCLI:-gcli}"
+    local GCLI_BIN="${GCLI:-gcli}"
+    local GCLI="timeout ${GCLI_TIMEOUT:-30} ${GCLI_BIN}"
     local rpc_url=""
 
     # Récupérer un noeud RPC via duniter_getnode.sh

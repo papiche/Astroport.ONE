@@ -29,7 +29,9 @@ ME="${0##*/}"
 [[ -f "${MY_PATH}/my.sh" ]] && . "${MY_PATH}/my.sh"
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-GCLI="${GCLI:-gcli}"
+GCLI_BIN="${GCLI:-gcli}"
+GCLI_TIMEOUT="${GCLI_TIMEOUT:-120}"
+GCLI="timeout ${GCLI_TIMEOUT} ${GCLI_BIN}"
 DECIMALS=2   # 1 Ğ1 = 100 centimes en brut (confirmé: amount=1 → 0.01 Ğ1)
 
 # Nœuds WebSocket — peuplés dynamiquement via duniter_getnode.sh si disponible
@@ -61,7 +63,7 @@ logw() { echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] $*${RESET}"; }
 logok(){ echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] $*${RESET}"; }
 
 # ── Prérequis ─────────────────────────────────────────────────────────────────
-for cmd in gcli jq curl bc; do
+for cmd in "$GCLI_BIN" jq curl bc timeout; do
     command -v "$cmd" &>/dev/null || { loge "Commande requise manquante : $cmd"; exit 1; }
 done
 
@@ -367,6 +369,7 @@ make_payment_gcli() {
         > "$result_file" 2>&1
     transfer_rc=$?
 
+    [[ $transfer_rc -eq 124 ]] && loge "Timeout gcli (${GCLI_TIMEOUT}s) dépassé sur $ws_node"
     return $transfer_rc
 }
 
