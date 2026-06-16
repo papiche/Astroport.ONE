@@ -1050,11 +1050,19 @@ ERRHTML
         ZENCARDG1=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
         G1PUBNOSTR=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
         ## Derive SS58 addresses for Duniter v2s
+        ## G1PUBNOSTR and ZENCARDG1 are already stored as SS58 by make_NOSTRCARD.sh/VISA.new.sh
+        ## g1pub_to_ss58.py passes SS58 through unchanged (ensure_ss58); fallback guards against
+        ## older versions of the script or unexpected errors.
         G1V2ADDRESS=""
         ZENCARDG1_V2=""
         if [[ -x "${MY_PATH}/../tools/g1pub_to_ss58.py" ]]; then
             G1V2ADDRESS=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$G1PUBNOSTR" 2>/dev/null)
+            [[ -z "$G1V2ADDRESS" ]] && G1V2ADDRESS="$G1PUBNOSTR"
             [[ -n "$ZENCARDG1" ]] && ZENCARDG1_V2=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$ZENCARDG1" 2>/dev/null)
+            [[ -n "$ZENCARDG1" && -z "$ZENCARDG1_V2" ]] && ZENCARDG1_V2="$ZENCARDG1"
+        else
+            G1V2ADDRESS="$G1PUBNOSTR"
+            ZENCARDG1_V2="$ZENCARDG1"
         fi
         NODE_NOSTR_HEX=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
         ### SEND PROFILE TO NOSTR RELAYS
