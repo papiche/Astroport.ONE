@@ -159,7 +159,10 @@ cat $HOME/.zen/tmp/nostr_*.log 2>/dev/null >> $LOG_FILE
 cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
 
 echo "=== SYSTEM/INSTALL ERRORS ====================================" >> $LOG_FILE
-cat $HOME/.zen/install.errors.log 2>/dev/null >> $LOG_FILE
+if [ -f "$HOME/.zen/install.errors.log" ]; then
+    find "$HOME/.zen/install.errors.log" -mtime +7 -delete
+fi
+cat "$HOME/.zen/install.errors.log" 2>/dev/null >> $LOG_FILE
 
 ########################################################################
 # show Ustats.sh cache of the day
