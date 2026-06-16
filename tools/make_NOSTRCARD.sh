@@ -721,9 +721,16 @@ EOFJSON
             echo "⚠️  Nostr profile publication failed (non-fatal, will retry at next refresh)"; }
 
     ## PRIMO TX - DECLENCHEE OPEN COLLECTIVE
-    ## initialisation manuelle :
-    ##   ~/.zen/Astroport.ONE/UPLANET.official.sh -l ${EMAIL} -m 1
-    echo "ℹ️  PRIMO TX différée — Manuel : ~/.zen/Astroport.ONE/UPLANET.official.sh -l ${EMAIL} -m 1"
+    ## Profil KIN-conforme : SALT et PEPPER font 43 chars (PBKDF2-SHA256 base64url)
+    ## → primo transaction 1 Ğ1 automatique pour initialiser le portefeuille à 0 Ẑen
+    if [[ ${#SALT} -eq 43 && ${#PEPPER} -eq 43 ]]; then
+        echo "🎯 Profil ATOMIC KIN-conforme (SALT=${#SALT}c / PEPPER=${#PEPPER}c) — Primo TX 1Ğ1 automatique..."
+        ${MY_PATH}/../UPLANET.official.sh -l "${EMAIL}" -m 1 \
+            && echo "✅ Primo TX 1Ğ1 envoyée pour ${EMAIL}" \
+            || echo "⚠️  Primo TX échouée — Manuel : ~/.zen/Astroport.ONE/UPLANET.official.sh -l ${EMAIL} -m 1"
+    else
+        echo "ℹ️  PRIMO TX différée — Manuel : ~/.zen/Astroport.ONE/UPLANET.official.sh -l ${EMAIL} -m 1"
+    fi
 
     ## Wait for MULTIPASS card to be generated (if still in background)
     if [[ -n "$MULTIPASS_PRINT_PID" ]]; then
