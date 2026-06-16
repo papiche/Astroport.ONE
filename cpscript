@@ -92,6 +92,8 @@ show_help() {
     echo "                      [Y=inclure / n=ignorer / a=tout inclure / q=quitter]"
     echo "    --doc             Inclure les .md de docs/ qui référencent ce script"
     echo "                      Permet la mise en conformité code ↔ documentation"
+    echo "    --templates       Inclure les fichiers HTML/tpl/j2 référencés dans les scripts"
+    echo "                      Détecte TMPL=\"…/template.html\", \${MY_PATH}/../templates/…html, etc."
     echo "    --help            Affiche cette aide."
     echo ""
     exit 0
@@ -117,6 +119,7 @@ JSON_MODE=false      # sortie JSON pour LLM tool
 CLEAN_MODE=false     # --clean : renommer .sh/.py → ._sh/._py dans les commentaires
 HUMAN_MODE=false     # --human : mode interactif - valider chaque dépendance
 DOC_MODE=false       # --doc : inclure les .md de docs/ qui référencent ce script
+TEMPLATES_MODE=false # --templates : inclure les templates HTML/tpl/j2 référencés dans les scripts
 WELL_KNOWN=false     # --well-known : exclure les bibliothèques tierces connues des IA
 declare -A EXCLUDED  # basenames à exclure (--exclude)
 declare -a EXCLUDE_PATTERNS=()  # patterns substring à exclure (--well-known)
@@ -209,11 +212,12 @@ while [[ $# -gt 0 ]]; do
             MAX_FILE_SIZE="$2"; shift 2 ;;
         --maxfilesize=*)
             MAX_FILE_SIZE="${1#--maxfilesize=}"; shift ;;
-        --json)       JSON_MODE=true;   shift ;;
-        --clean)      CLEAN_MODE=true;  shift ;;
-        --human)      HUMAN_MODE=true;  shift ;;
-        --doc)        DOC_MODE=true;    shift ;;
-        --well-known) WELL_KNOWN=true;  shift ;;
+        --json)       JSON_MODE=true;       shift ;;
+        --clean)      CLEAN_MODE=true;     shift ;;
+        --human)      HUMAN_MODE=true;     shift ;;
+        --doc)        DOC_MODE=true;       shift ;;
+        --templates)  TEMPLATES_MODE=true; shift ;;
+        --well-known) WELL_KNOWN=true;     shift ;;
         -*) echo "Option inconnue : $1"; show_help ;;
         *) POSITIONAL+=("$1"); shift ;;
     esac
@@ -547,6 +551,24 @@ extract_css_deps() {
       | sort -u | head -100
 }
 
+# Extraction des références vers des fichiers de template (HTML, tpl, j2) depuis sh/py
+# Activée uniquement avec --templates
+extract_template_refs() {
+    local FILE="$1"
+    local STRIPPED
+    STRIPPED=$(grep -v '^\s*#' "$FILE" 2>/dev/null)
+    {
+        # Chemins relatifs avec segment répertoire : templates/KIN/foo.html, ../templates/foo.html
+        echo "$STRIPPED" | grep -oP '[a-zA-Z0-9_.][a-zA-Z0-9_./]*(?:\.\.|\.)?/[a-zA-Z0-9_./-]+\.(?:html|tpl|j2)'
+        # Chemins absolus : /abs/path/template.html
+        echo "$STRIPPED" | grep -oP '(?<![a-zA-Z0-9_])/[a-zA-Z0-9_./+-]+\.(?:html|tpl|j2)'
+        # Chemins commençant par ./ : ./templates/foo.html
+        echo "$STRIPPED" | grep -oP '\./[a-zA-Z0-9_./-]+\.(?:html|tpl|j2)'
+        # Variables bash : ${MY_PATH}/../templates/KIN/kin_daily.html
+        echo "$STRIPPED" | grep -oP '\$\{?[A-Za-z_][A-Za-z0-9_]*\}?(?:/\.\.)*(?:/[a-zA-Z0-9_.+-]+)+\.(?:html|tpl|j2)'
+    } 2>/dev/null | grep -v '^https\?://' | sort -u | head -100
+}
+
 # Dispatcher selon le type de fichier
 extract_called_scripts() {
     local FILE="$1"
@@ -558,6 +580,10 @@ extract_called_scripts() {
         css)  extract_css_deps    "$FILE" ;;
         *)    extract_shell_deps  "$FILE" ;;
     esac
+    # --templates : ajouter les refs vers templates HTML/tpl/j2 depuis sh et py
+    if $TEMPLATES_MODE && [[ "$EXT" != "html" && "$EXT" != "js" && "$EXT" != "mjs" && "$EXT" != "css" ]]; then
+        extract_template_refs "$FILE"
+    fi
 }
 
 # Extraction d'une route FastAPI spécifique depuis un fichier Python

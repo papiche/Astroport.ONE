@@ -312,8 +312,8 @@ _send_group() {
         next
     }
     /_VIBE_INTRO_/ {
-        gsub(/_VIBE_INTRO_/, vibe)
-        print; next
+        print vibe
+        next
     }
     {
         gsub(/_GROUP_TYPE_/, gtype)

@@ -363,8 +363,7 @@ fi
 
 ## Substitution du placeholder {{UNSUB_URL}} dans les templates OC2UPlanet/autres
 if [[ "$RAW_CONTENT" == *"{{UNSUB_URL}}"* ]]; then
-    _url_safe="${_unsub_url//&/\\&}"
-    RAW_CONTENT=$(printf '%s' "$RAW_CONTENT" | awk -v u="$_url_safe" '{gsub(/\{\{UNSUB_URL\}\}/, u)} 1')
+    RAW_CONTENT="${RAW_CONTENT//\{\{UNSUB_URL\}\}/$_unsub_url}"
 fi
 
 # 2. Génération du lien IPFS (Conservé pour Nostr et TiddlyWiki)
