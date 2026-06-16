@@ -24,6 +24,21 @@ MODE=$(echo "$1" | tr '[:lower:]' '[:upper:]')
 [[ -z "$MODE" ]] && MODE="TOGGLE"  # Default: toggle current state
 
 ########################################################################
+# DÉTECTION TUNNEL SSH IPFS P2P
+# Si SSH_CONNECTION source = 127.0.0.1 ou tunnel ipfs p2p actif,
+# stopper/redémarrer IPFS couperait la session — on l'ignore.
+########################################################################
+_IPFS_TUNNEL_SSH=false
+if [[ -n "${SSH_CONNECTION:-}" ]]; then
+    _ssh_src_ip=$(echo "$SSH_CONNECTION" | awk '{print $1}')
+    if [[ "$_ssh_src_ip" == "127.0.0.1" ]] || ipfs p2p ls 2>/dev/null | grep -q .; then
+        _IPFS_TUNNEL_SSH=true
+        echo "⚠️  Tunnel SSH IPFS P2P détecté — les opérations sur le service ipfs seront ignorées"
+        echo "   Relancer manuellement depuis une console locale : sudo systemctl restart ipfs"
+    fi
+fi
+
+########################################################################
 # AUTODETECTION ASTROPORT CLASSIQUE vs PICOPORT (SoundSpot)
 ########################################################################
 if [[ -f "/opt/soundspot/picoport/picoport_20h12.sh" ]]; then
@@ -99,14 +114,17 @@ add_20h12_cron() {
 manage_service() {
     local action="$1"
     local svc="$2"
-    if [[ -n "$svc" ]]; then
-        if [[ "$action" == "start" ]]; then
-            sudo systemctl enable "$svc" 2>/dev/null
-            sudo systemctl restart "$svc" 2>/dev/null
-        elif [[ "$action" == "stop" ]]; then
-            sudo systemctl stop "$svc" 2>/dev/null
-            sudo systemctl disable "$svc" 2>/dev/null
-        fi
+    [[ -z "$svc" ]] && return
+    if [[ "$svc" == "ipfs" && "${_IPFS_TUNNEL_SSH:-false}" == "true" ]]; then
+        echo "  ⏭️  ipfs $action — ignoré (tunnel SSH actif)"
+        return
+    fi
+    if [[ "$action" == "start" ]]; then
+        sudo systemctl enable "$svc" 2>/dev/null
+        sudo systemctl restart "$svc" 2>/dev/null
+    elif [[ "$action" == "stop" ]]; then
+        sudo systemctl stop "$svc" 2>/dev/null
+        sudo systemctl disable "$svc" 2>/dev/null
     fi
 }
 

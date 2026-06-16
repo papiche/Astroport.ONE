@@ -147,6 +147,22 @@ if [[ "${_IS_UPGRADE:-false}" == "true" ]]; then
     echo "🔧 Upgrade — réapplication sudoers + .bashrc..."
     bash "${MY_PATH}/install/install_sudoers.sh" || true
     bash "${MY_PATH}/install/install_bashrc.sh"  || true
+
+    ## Détecter une session SSH via tunnel IPFS P2P (source = 127.0.0.1)
+    ## Dans ce cas, redémarrer IPFS couperait la connexion SSH active
+    _IPFS_TUNNEL_SSH=false
+    if [[ -n "${SSH_CONNECTION:-}" ]]; then
+        _ssh_src_ip=$(echo "$SSH_CONNECTION" | awk '{print $1}')
+        if [[ "$_ssh_src_ip" == "127.0.0.1" ]] || ipfs p2p ls 2>/dev/null | grep -q .; then
+            _IPFS_TUNNEL_SSH=true
+            echo ""
+            echo "⚠️  Tunnel SSH IPFS P2P détecté — le redémarrage d'IPFS sera ignoré"
+            echo "   Pour redémarrer IPFS après déconnexion (console locale) :"
+            echo "     sudo systemctl restart ipfs"
+            echo ""
+        fi
+    fi
+    export _IPFS_TUNNEL_SSH
 fi
 
 ########################################################################
@@ -1818,7 +1834,11 @@ if [[ "${INSTALL_PROFILE}" == "dev" ]]; then
 else
     _svc_restart strfry
 fi
-_svc_restart ipfs
+if [[ "${_IPFS_TUNNEL_SSH:-false}" == "true" ]]; then
+    echo "  ⏭️  ipfs — redémarrage ignoré (tunnel SSH actif, relancer manuellement)"
+else
+    _svc_restart ipfs
+fi
 _svc_restart g1billet
 
 ## Mise à jour des images Docker actives (docker pull si running)
