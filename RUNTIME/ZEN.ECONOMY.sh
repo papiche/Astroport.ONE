@@ -273,43 +273,116 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
         NODE_PAYMENT_SOURCE=""
         CAPTAIN_PAYMENT_SOURCE=""
 
+        ## ── Alerte email capitaine (rate-limitée : 1 par événement WAL) ───────────
+        ## Envoie un email HTML au capitaine décrivant l'état d'une TX en suspens.
+        ## Appelée uniquement depuis les blocs PENDING_TX/ABANDONED ci-dessous.
+        _zen_wal_alert() {
+            local _label="$1" _situation="$2"
+            [[ -z "${CAPTAINEMAIL:-}" ]] && return
+            [[ ! -x "${MY_PATH}/../tools/mailjet.sh" ]] && return
+            local _tmp; _tmp=$(mktemp /tmp/zen_wal_XXXXXX.html)
+            cat > "$_tmp" <<WALHTML
+<h2>⚠️ ZEN ECONOMY — Transaction en attente</h2>
+<p><strong>Station :</strong> ${myDOMAIN:-$(hostname)}</p>
+<p><strong>Semaine :</strong> $WEEK_KEY</p>
+<p><strong>Paiement :</strong> $_label</p>
+<p><strong>Situation :</strong> $_situation</p>
+<p>Le marqueur WAL se trouve dans <code>~/.zen/game/</code>. Vérifiez l'historique
+Duniter de la destination pour confirmer ou infirmer le paiement.</p>
+<p style="color:#888;font-size:.85em">Le daemon relancera la vérification au prochain cycle 20h12.</p>
+WALHTML
+            bash "${MY_PATH}/../tools/mailjet.sh" --template "$0" --expire 48h \
+                "$CAPTAINEMAIL" "$_tmp" "⚠️ ZEN WAL: $_label — $WEEK_KEY" 2>/dev/null
+            rm -f "$_tmp"
+        }
+
+        ## ── Machine d'état WAL : résoudre les marqueurs PENDING_TX/ABANDONED ───────
+        ## Format PENDING_TX : "PENDING_TX\t<ts>\t<comment>\t<dest>\t<retries>"
+        ## (tab-séparé, une ligne ; ni comment ni dest ne contiennent de tab)
+        _zen_wal_resolve() {
+            local _marker_file="$1" _label="$2" _paid_var="$3"
+            [[ ! -f "$_marker_file" ]] && return
+
+            local _content; _content=$(cat "$_marker_file" 2>/dev/null)
+
+            case "$_content" in
+
+              ABANDONED:*)
+                log_output "⚠️  $_label : paiement ABANDONNÉ cette semaine — skip (capitaine déjà alerté)"
+                printf -v "$_paid_var" '%s' "1"
+                ;;
+
+              PENDING_TX*)
+                local _ts _comment _dest _retries
+                IFS=$'\t' read -r _ _ts _comment _dest _retries <<< "$_content"
+                _retries="${_retries:-0}"
+                log_output "🔍 $_label : TX en suspens (retries=$_retries) — vérification on-chain..."
+
+                local _verify
+                _verify=$(bash "${MY_PATH}/../tools/g1tx_verify.sh" "$_dest" "$_comment" 2>/dev/null)
+
+                case "$_verify" in
+                  found)
+                    log_output "✅ $_label : TX retrouvée on-chain — marquée DONE (récupération WAL)"
+                    echo "DONE:$(date +%s):WAL_RECOVERED" > "$_marker_file"
+                    printf -v "$_paid_var" '%s' "1"
+                    ;;
+                  not_found)
+                    if [[ "$_retries" -ge 1 ]]; then
+                        log_output "ERROR: $_label : TX absente après 1 relance — ABANDONNÉ"
+                        echo "ABANDONED:$(date +%s):not_found_after_retry" > "$_marker_file"
+                        printf -v "$_paid_var" '%s' "1"
+                        _zen_wal_alert "$_label" \
+                            "TX broadcastée mais introuvable on-chain après 1 relance (commentaire: $_comment). Paiement ignoré cette semaine."
+                    else
+                        log_output "⚠️  $_label : TX absente — 1 relance autorisée (retry $_retries → 1)"
+                        rm -f "$_marker_file"
+                        # paid_var reste à 0 → paiement retenté ci-dessous
+                        _zen_wal_alert "$_label" \
+                            "TX broadcastée sans confirmation (commentaire: $_comment). Une relance sera tentée ce cycle."
+                    fi
+                    ;;
+                  error|*)
+                    log_output "ERROR: $_label : squid inaccessible — impossible de vérifier TX. ABANDONNÉ."
+                    echo "ABANDONED:$(date +%s):squid_unreachable" > "$_marker_file"
+                    printf -v "$_paid_var" '%s' "1"
+                    _zen_wal_alert "$_label" \
+                        "Squid GraphQL inaccessible : impossible de vérifier la TX (commentaire: $_comment). Paiement ignoré cette semaine."
+                    ;;
+                esac
+                ;;
+
+              PENDING:*)
+                local _ts="${_content#PENDING:}"
+                if [[ "$_ts" =~ ^[0-9]+$ ]] && (( $(date +%s) - _ts > 3600 )); then
+                    log_output "⚠️  Stale PENDING $_label marker (>1h) — clearing for retry"
+                    rm -f "$_marker_file"
+                else
+                    log_output "🔒 $_label payment claim actif (autre processus) — skip"
+                    printf -v "$_paid_var" '%s' "1"
+                fi
+                ;;
+
+              *)
+                # DONE:ts:SOURCE ou autre valeur → déjà payé
+                log_output "🔒 $_label déjà payé cette semaine (W${CURRENT_WEEK}) — skip double-paiement"
+                printf -v "$_paid_var" '%s' "1"
+                ;;
+            esac
+        }
+
         # ── Reprise atomique : détecter les étapes déjà payées cette semaine ──────
-        # Si le script a été interrompu après un paiement réussi, on ne repaie pas.
-        # Les marqueurs PENDING: (claim en cours d'une autre instance) sont nettoyés
-        # automatiquement si plus vieux de 1h (run écrasé ou machine redémarrée).
-        if [[ -f "$NODE_PAID_MARKER" ]]; then
-            _node_marker_content=$(cat "$NODE_PAID_MARKER" 2>/dev/null)
-            if [[ "$_node_marker_content" == PENDING:* ]]; then
-                _node_ts="${_node_marker_content#PENDING:}"
-                if [[ "$_node_ts" =~ ^[0-9]+$ ]] && (( $(date +%s) - _node_ts > 3600 )); then
-                    log_output "⚠️  Stale PENDING NODE marker (>1h) — clearing for retry"
-                    rm -f "$NODE_PAID_MARKER"
-                else
-                    log_output "🔒 NODE payment claim actif (autre processus) — skip"
-                    NODE_PAID=1
-                fi
-            else
-                log_output "🔒 NODE déjà payé cette semaine (W${CURRENT_WEEK}) — skip double-paiement"
-                NODE_PAID=1
-                NODE_PAYMENT_SOURCE=$(echo "$_node_marker_content" | cut -d: -f2 || echo "PREV")
-            fi
+        _zen_wal_resolve "$NODE_PAID_MARKER"    "NODE PAF"   NODE_PAID
+        _zen_wal_resolve "$CAPTAIN_PAID_MARKER" "CAPTAIN"    CAPTAIN_PAID
+
+        # Mettre à jour NODE_PAYMENT_SOURCE / CAPTAIN_PAYMENT_SOURCE si déjà payé
+        if [[ $NODE_PAID -eq 1 && -f "$NODE_PAID_MARKER" ]]; then
+            NODE_PAYMENT_SOURCE=$(awk -F'\t' '{print $3}' "$NODE_PAID_MARKER" 2>/dev/null \
+                | cut -d: -f2 || echo "PREV")
         fi
-        if [[ -f "$CAPTAIN_PAID_MARKER" ]]; then
-            _cpt_marker_content=$(cat "$CAPTAIN_PAID_MARKER" 2>/dev/null)
-            if [[ "$_cpt_marker_content" == PENDING:* ]]; then
-                _cpt_ts="${_cpt_marker_content#PENDING:}"
-                if [[ "$_cpt_ts" =~ ^[0-9]+$ ]] && (( $(date +%s) - _cpt_ts > 3600 )); then
-                    log_output "⚠️  Stale PENDING CAPTAIN marker (>1h) — clearing for retry"
-                    rm -f "$CAPTAIN_PAID_MARKER"
-                else
-                    log_output "🔒 CAPTAIN payment claim actif (autre processus) — skip"
-                    CAPTAIN_PAID=1
-                fi
-            else
-                log_output "🔒 CAPTAIN déjà payé cette semaine (W${CURRENT_WEEK}) — skip double-paiement"
-                CAPTAIN_PAID=1
-                CAPTAIN_PAYMENT_SOURCE=$(echo "$_cpt_marker_content" | cut -d: -f2 || echo "PREV")
-            fi
+        if [[ $CAPTAIN_PAID -eq 1 && -f "$CAPTAIN_PAID_MARKER" ]]; then
+            CAPTAIN_PAYMENT_SOURCE=$(awk -F'\t' '{print $3}' "$CAPTAIN_PAID_MARKER" 2>/dev/null \
+                | cut -d: -f2 || echo "PREV")
         fi
         
         # Calculate remuneration amounts
@@ -325,16 +398,28 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
         # On vérifie si le compte de COLLECTE (CAPTAIN_DED_ZEN) peut payer
         # Claim atomique AVANT le paiement : empêche les doubles paiements concurrents
         if [[ $NODE_PAID -eq 0 ]] && [[ $(echo "$CAPTAIN_DED_ZEN >= $WEEKLYPAF" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
+            _node_comment="UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:INCOME>NODE"
             if ( set -o noclobber; echo "PENDING:$(date +%s)" > "$NODE_PAID_MARKER" ) 2>/dev/null; then
-                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:INCOME>NODE" 2>/dev/null
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" \
+                    "$WEEKLYG1" "${NODEG1PUB}" "$_node_comment" 2>/dev/null
                 if [[ $? -eq 0 ]]; then
                     log_output "✅ REVENUS payent NODE PAF: $WEEKLYPAF Ẑen"
                     NODE_PAID=1
                     NODE_PAYMENT_SOURCE="REVENUS"
                     CAPTAIN_DED_ZEN=$(echo "scale=1; $CAPTAIN_DED_ZEN - $WEEKLYPAF" | bc)
-                    echo "$(date +%Y%m%d%H%M%S):INCOME" > "$NODE_PAID_MARKER"
+                    echo "DONE:$(date +%Y%m%d%H%M%S):INCOME" > "$NODE_PAID_MARKER"
                 else
-                    rm -f "$NODE_PAID_MARKER"
+                    ## WAL : TX possiblement broadcastée — ne pas supprimer le marqueur.
+                    ## Lire le retry_count éventuel (si reprise depuis PENDING_TX).
+                    _node_retries=0
+                    [[ "$(cat "$NODE_PAID_MARKER" 2>/dev/null)" =~ ^PENDING_TX$'\t' ]] && \
+                        _node_retries=$(awk -F'\t' '{print $5+1}' "$NODE_PAID_MARKER" 2>/dev/null || echo 1)
+                    printf 'PENDING_TX\t%s\t%s\t%s\t%s\n' \
+                        "$(date +%s)" "$_node_comment" "$NODEG1PUB" "$_node_retries" \
+                        > "$NODE_PAID_MARKER"
+                    log_output "⚠️  NODE PAF — PAYforSURE échoué post-broadcast possible. WAL écrit (retry=$_node_retries). Capitaine alerté."
+                    _zen_wal_alert "NODE PAF (${WEEKLYPAF}Ẑ → ${NODEG1PUB:0:12}...)" \
+                        "PAYforSURE a retourné une erreur. La TX sera vérifiée on-chain au prochain cycle 20h12 (commentaire: $_node_comment)."
                 fi
             fi
         fi
@@ -355,16 +440,27 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
             # Tenter de payer le Capitaine depuis le RESTE des revenus
             # Claim atomique AVANT le paiement : empêche les doubles paiements concurrents
             if [[ $(echo "$CAPTAIN_DED_ZEN >= $CAPTAIN_REMUNERATION" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
+                _cpt_comment="UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:INCOME>CPT"
                 if ( set -o noclobber; echo "PENDING:$(date +%s)" > "$CAPTAIN_PAID_MARKER" ) 2>/dev/null; then
-                    ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:INCOME>CPT" 2>/dev/null
+                    ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" \
+                        "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "$_cpt_comment" 2>/dev/null
                     if [[ $? -eq 0 ]]; then
                         log_output "✅ REVENUS payent Capitaine: $CAPTAIN_REMUNERATION Ẑen"
                         CAPTAIN_PAID=1
                         CAPTAIN_PAYMENT_SOURCE="REVENUS"
                         CAPTAIN_DED_ZEN=$(echo "scale=1; $CAPTAIN_DED_ZEN - $CAPTAIN_REMUNERATION" | bc)
-                        echo "$(date +%Y%m%d%H%M%S):INCOME" > "$CAPTAIN_PAID_MARKER"
+                        echo "DONE:$(date +%Y%m%d%H%M%S):INCOME" > "$CAPTAIN_PAID_MARKER"
                     else
-                        rm -f "$CAPTAIN_PAID_MARKER"
+                        ## WAL : TX possiblement broadcastée — ne pas supprimer le marqueur.
+                        _cpt_retries=0
+                        [[ "$(cat "$CAPTAIN_PAID_MARKER" 2>/dev/null)" =~ ^PENDING_TX$'\t' ]] && \
+                            _cpt_retries=$(awk -F'\t' '{print $5+1}' "$CAPTAIN_PAID_MARKER" 2>/dev/null || echo 1)
+                        printf 'PENDING_TX\t%s\t%s\t%s\t%s\n' \
+                            "$(date +%s)" "$_cpt_comment" "$CAPTAING1PUB" "$_cpt_retries" \
+                            > "$CAPTAIN_PAID_MARKER"
+                        log_output "⚠️  CAPTAIN — PAYforSURE échoué post-broadcast possible. WAL écrit (retry=$_cpt_retries). Capitaine alerté."
+                        _zen_wal_alert "CAPTAIN SALARY (${CAPTAIN_REMUNERATION}Ẑ → ${CAPTAING1PUB:0:12}...)" \
+                            "PAYforSURE a retourné une erreur. La TX sera vérifiée on-chain au prochain cycle 20h12 (commentaire: $_cpt_comment)."
                     fi
                 fi
             fi

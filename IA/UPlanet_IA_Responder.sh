@@ -395,7 +395,7 @@ _find_brain_node_hex() {
         _score=$(jq -r '.capacities.power_score // 0' "$_j" 2>/dev/null || echo 0)
         _hex=$(jq -r '.NODEHEX // ""' "$_j" 2>/dev/null || echo "")
         [[ ${#_hex} -ne 64 ]] && continue
-        if python3 -c "import sys; sys.exit(0 if float('$_score') > float('$best_score') else 1)" 2>/dev/null; then
+        if awk -v a="$_score" -v b="$best_score" 'BEGIN{exit !(a > b)}' 2>/dev/null; then
             best_score="$_score"
             best_hex="$_hex"
         fi
@@ -1816,19 +1816,21 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                     echo "Inventory: Coordinates ${ORIGINAL_LAT}, ${ORIGINAL_LON} (UMAP: ${UMAP_LAT}, ${UMAP_LON})" >&2
                     
                     # Build inventory recognition command
-                    INVENTORY_CMD="$MY_PATH/inventory_recognition.py \"$image_url\" $ORIGINAL_LAT $ORIGINAL_LON --json --contract"
-                    if [[ -n "$FORCE_TYPE" ]]; then
-                        INVENTORY_CMD="$INVENTORY_CMD --type $FORCE_TYPE"
-                    fi
-                    if [[ -n "$PUBKEY" ]]; then
-                        INVENTORY_CMD="$INVENTORY_CMD --pubkey $PUBKEY"
-                    fi
-                    if [[ -n "$EVENT" ]]; then
-                        INVENTORY_CMD="$INVENTORY_CMD --event-id $EVENT"
-                    fi
-                    
+                    # Utiliser un tableau bash pour éviter eval sur des données Nostr
+                    local -a _INV_CMD=(
+                        python3 "$MY_PATH/inventory_recognition.py"
+                        "$image_url"
+                        "$ORIGINAL_LAT"
+                        "$ORIGINAL_LON"
+                        "--json"
+                        "--contract"
+                    )
+                    [[ -n "$FORCE_TYPE" ]] && _INV_CMD+=(--type "$FORCE_TYPE")
+                    [[ -n "$PUBKEY"     ]] && _INV_CMD+=(--pubkey "$PUBKEY")
+                    [[ -n "$EVENT"      ]] && _INV_CMD+=(--event-id "$EVENT")
+
                     echo "Inventory: Running recognition..." >&2
-                    INVENTORY_JSON=$(eval $INVENTORY_CMD 2>/dev/null)
+                    INVENTORY_JSON=$("${_INV_CMD[@]}" 2>/dev/null)
                     INVENTORY_EXIT=$?
                     
                     if [[ $INVENTORY_EXIT -eq 0 && -n "$INVENTORY_JSON" ]]; then

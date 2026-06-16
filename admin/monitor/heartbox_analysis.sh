@@ -414,57 +414,49 @@ EOF
 # Fast capacities calculation
 #######################################################################
 get_fast_capacities() {
-    # Get disk space using df (faster than complex calculations)
+    # Lecture espace disque via df -k (Ko bruts) — fiable quelque soit la taille (M/G/T)
     local root_available_gb=0
     local ipfs_available_gb=0
     local nextcloud_available_gb=0
-    
+
     # Root disk space
-    if df -h / | tail -1 | grep -q .; then
-        local root_available=$(df -h / | tail -1 | awk '{print $4}')
-        root_available_gb=$(echo "$root_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
-    fi
-    
+    root_available_gb=$(df -k / 2>/dev/null | tail -1 | awk '{printf "%.0f", $4/1048576}' || echo "0")
+    [[ -z "$root_available_gb" || "$root_available_gb" == "0" ]] && root_available_gb=0
+
     # IPFS disk space
-    if df -h ~/.ipfs | tail -1 | grep -q .; then
-        local ipfs_available=$(df -h ~/.ipfs | tail -1 | awk '{print $4}')
-        ipfs_available_gb=$(echo "$ipfs_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
-    fi
-    
+    ipfs_available_gb=$(df -k ~/.ipfs 2>/dev/null | tail -1 | awk '{printf "%.0f", $4/1048576}' || echo "0")
+    [[ -z "$ipfs_available_gb" || "$ipfs_available_gb" == "0" ]] && ipfs_available_gb=0
+
     # NextCloud / BTRFS disk space
     local nextcloud_fs="unknown"
-    if [[ -d "/nextcloud-data" ]] && df -h /nextcloud-data | tail -1 | grep -q .; then
-        local nextcloud_available=$(df -h /nextcloud-data | tail -1 | awk '{print $4}')
-        nextcloud_available_gb=$(echo "$nextcloud_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
+    if [[ -d "/nextcloud-data" ]]; then
+        nextcloud_available_gb=$(df -k /nextcloud-data 2>/dev/null | tail -1 | awk '{printf "%.0f", $4/1048576}' || echo "0")
+        [[ -z "$nextcloud_available_gb" ]] && nextcloud_available_gb=0
         ## Détecter le filesystem BTRFS (recommandé pour NextCloud + IPFS)
         nextcloud_fs=$(findmnt -no FSTYPE /nextcloud-data 2>/dev/null || stat -f -c %T /nextcloud-data 2>/dev/null || echo "unknown")
     fi
-    
+
     # Calculate total available space — déduplique root et ipfs s'ils partagent le même device
     local _root_dev _ipfs_dev
-    _root_dev=$(df / 2>/dev/null | tail -1 | awk '{print $1}')
-    _ipfs_dev=$(df ~/.ipfs 2>/dev/null | tail -1 | awk '{print $1}')
+    _root_dev=$(df -k / 2>/dev/null | tail -1 | awk '{print $1}')
+    _ipfs_dev=$(df -k ~/.ipfs 2>/dev/null | tail -1 | awk '{print $1}')
     local total_available_gb=0
     if [[ "$_root_dev" == "$_ipfs_dev" ]]; then
-        total_available_gb=$(echo "$root_available_gb + $nextcloud_available_gb" | bc 2>/dev/null || echo "${root_available_gb:-0}")
+        total_available_gb=$(( root_available_gb + nextcloud_available_gb ))
     else
-        total_available_gb=$(echo "$root_available_gb + $ipfs_available_gb + $nextcloud_available_gb" | bc 2>/dev/null || echo "0")
+        total_available_gb=$(( root_available_gb + ipfs_available_gb + nextcloud_available_gb ))
     fi
-    [[ -z "$total_available_gb" ]] && total_available_gb=0
-    
-    # Calculate slots (simplified calculation)
+
+    # Calcul des slots : nostr_slots = IPFS / 10 Go, zencard_slots = NextCloud / 128 Go
+    # nostr_slots : si IPFS sur même device que root, on prend root_available_gb (plus juste)
+    local _ipfs_for_slots=$ipfs_available_gb
+    [[ "$_root_dev" == "$_ipfs_dev" ]] && _ipfs_for_slots=$root_available_gb
+
     local zencard_slots=0
     local nostr_slots=0
 
-    if [[ $(echo "$nextcloud_available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
-        zencard_slots=$(echo "($nextcloud_available_gb) / 128" | bc 2>/dev/null || echo "0")
-        [[ $(echo "$zencard_slots < 0" | bc 2>/dev/null) -eq 1 ]] && zencard_slots=0
-    fi
-
-    if [[ $(echo "$ipfs_available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
-        nostr_slots=$(echo "($ipfs_available_gb) / 10" | bc 2>/dev/null || echo "0")
-        [[ $(echo "$nostr_slots < 0" | bc 2>/dev/null) -eq 1 ]] && nostr_slots=0
-    fi
+    [[ $nextcloud_available_gb -gt 0 ]] && zencard_slots=$(( nextcloud_available_gb / 128 ))
+    [[ $_ipfs_for_slots -gt 0 ]]        && nostr_slots=$(( _ipfs_for_slots / 10 ))
 
     ## ── Power-Score : GPS de calcul (GPU×4 + CPU×2 + RAM×0.5) ──────────────
     ## Tiers : 0-10 = Light (RPi) | 11-40 = Standard (PC) | 41+ = Brain-Node (GPU)

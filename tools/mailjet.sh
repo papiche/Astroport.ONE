@@ -342,7 +342,7 @@ MESSAGESIGN="<hr style='border:none;border-top:1px solid #e5e7eb;margin:1.2rem 0
   Envoyé par <a href='${myIPFS}/ipns/$IPFSNODEID' style='color:#9ca3af;text-decoration:none'>$(myHostName)</a> · Station UPlanet
 </td>
 <td align='right' style='vertical-align:middle'>
-  <a href='${_unsub_url}' style='display:inline-block;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:.3rem .75rem;text-decoration:none;font-size:.78rem;font-weight:600;white-space:nowrap;font-family:-apple-system,sans-serif'>🔕 Se désabonner</a>
+  <a href='${_unsub_url}' style='display:inline-block;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:.3rem .75rem;text-decoration:none;font-size:.78rem;font-weight:600;white-space:nowrap;font-family:-apple-system,sans-serif'>🔕 Calibrez vos messages</a>
 </td>
 </tr>
 </table>"

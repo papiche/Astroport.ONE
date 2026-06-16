@@ -289,6 +289,9 @@ if [[ "$OC2UP_LAST" != "$OC2UP_MONTH" ]]; then
     fi
 fi
 
+## RAMDISK ~/.zen/tmp — réduit l'usure des cartes SD (idempotent)
+${MY_PATH}/install/.zen_tmp_ramdisk.sh
+
 ## INSTALL/UPGRADE gcli + cleanup legacy jaklis/silkaj
 ${MY_PATH}/install/install_gcli.sh
 

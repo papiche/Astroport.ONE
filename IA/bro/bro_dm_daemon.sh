@@ -700,9 +700,15 @@ _handle_zen_like() {
     [[ -z "$_EMAIL" || -z "$_G1PUB_DEST" || -z "$_ZEN_AMOUNT" ]] && \
         _log "WARN: ✈️ zen_like: payload incomplet" && return
 
+    ## Valider ZEN_AMOUNT : doit être un nombre (entier ou décimal positif)
+    ## Rejeter toute valeur non numérique AVANT toute interpolation dans du code
+    [[ ! "${_ZEN_AMOUNT:-0}" =~ ^[0-9]+(\.[0-9]+)?$ ]] && \
+        _log "WARN: ✈️ zen_like: ZEN_AMOUNT invalide '${_ZEN_AMOUNT}' — ignoré" && return
+
     ## Garde: ne traiter que les montants > 0 (redondant mais défensif)
+    ## Utiliser awk -v pour éviter toute interpolation de variable dans du code évalué
     local _zen_num
-    _zen_num=$(python3 -c "print(1 if float('${_ZEN_AMOUNT:-0}') > 0 else 0)" 2>/dev/null)
+    _zen_num=$(awk -v v="${_ZEN_AMOUNT}" 'BEGIN{print (v > 0) ? 1 : 0}')
     [[ "$_zen_num" != "1" ]] && \
         _log "WARN: ✈️ zen_like: ZEN_AMOUNT=0 ignoré" && return
 
@@ -713,10 +719,7 @@ _handle_zen_like() {
         _log "WARN: ✈️ zen_like: .secret.dunikey absent pour $_EMAIL" && return
 
     local _AMOUNT
-    _AMOUNT=$(python3 -c "
-v = float('${_ZEN_AMOUNT:-0}') * 0.1
-print(f'{v:.2f}')
-" 2>/dev/null)
+    _AMOUNT=$(awk -v v="${_ZEN_AMOUNT}" 'BEGIN{printf "%.2f", v * 0.1}')
     [[ -z "$_AMOUNT" ]] && _log "WARN: ✈️ zen_like: calcul G1 échoué" && return
 
     _log "✈️ zen_like: ${_ZEN_AMOUNT}Ẑ → ${_AMOUNT}G1 pour $_EMAIL → ${_G1PUB_DEST:0:12}..."

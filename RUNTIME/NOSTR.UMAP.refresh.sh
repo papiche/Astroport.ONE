@@ -829,15 +829,18 @@ process_multipass_summary() {
         echo "📱 MULTIPASS Summary: $multipass" >> ${UMAPPATH}/NOSTR_messages
         
         echo "$summaries" | while read -r summary; do
-            local content=$(echo "$summary" | jq -r .content)
-            local created_at=$(echo "$summary" | jq -r .created_at)
-            local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
-            
-            # Extract summary type from tags
-            local summary_type=$(echo "$summary" | jq -r '.tags[] | select(.[0] == "t" and .[1] == "Daily" or .[1] == "Weekly" or .[1] == "Monthly" or .[1] == "Yearly") | .[1]' | head -n 1)
-            if [[ -z "$summary_type" ]]; then
-                summary_type="Summary"
-            fi
+            # Un seul appel jq : content encodé @base64 pour protéger tabs/newlines dans @tsv
+            local _created_at _b64_content _summary_type
+            IFS=$'\t' read -r _created_at _b64_content _summary_type <<< \
+                "$(jq -r '[.created_at, (.content | @base64),
+                    (first(.tags[]? | select(.[0]=="t" and
+                        (.[1]=="Daily" or .[1]=="Weekly" or .[1]=="Monthly" or .[1]=="Yearly"))
+                    ) | .[1]) // "Summary"
+                ] | @tsv' <<< "$summary" 2>/dev/null)"
+            local created_at="$_created_at"
+            local content; content=$(base64 -d <<< "$_b64_content" 2>/dev/null)
+            local summary_type="${_summary_type:-Summary}"
+            local date_str; date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
             
             echo "### 📱 $date_str ($summary_type)" >> ${UMAPPATH}/NOSTR_messages
             echo "**Source**: MULTIPASS $multipass" >> ${UMAPPATH}/NOSTR_messages
@@ -911,10 +914,11 @@ process_market_messages_from_friends() {
       \"since\": ${SINCE},
       \"limit\": 500
     }" 2>/dev/null | jq -c 'select(.kind == 1 and (.content | contains("#market"))) | {id: .id, content: .content, created_at: .created_at, author: .pubkey, tags: .tags}' | while read -r message; do
-        local content=$(echo "$message" | jq -r .content)
-        local message_id=$(echo "$message" | jq -r .id)
-        local author_hex=$(echo "$message" | jq -r .author)
-        local created_at=$(echo "$message" | jq -r .created_at)
+        # Un seul appel jq pour les 4 champs scalaires
+        local _b64_content
+        IFS=$'\t' read -r message_id author_hex created_at _b64_content <<< \
+            "$(jq -r '[.id, .author, .created_at, (.content | @base64)] | @tsv' <<< "$message" 2>/dev/null)"
+        local content; content=$(base64 -d <<< "$_b64_content" 2>/dev/null)
 
         # Filter market messages by UMAP zone
         if ! is_message_in_umap_zone "$message"; then
@@ -943,18 +947,20 @@ process_recent_messages() {
       "authors": ["'"$ami"'"],
       "since": '$SINCE'
     }' 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at, tags: .tags}' | while read -r message; do
-        local content=$(echo "$message" | jq -r .content)
+        # Un seul appel jq pour les 7 champs (content encodé @base64 → résistant aux newlines)
+        local _b64_content
+        IFS=$'\t' read -r message_id created_at _b64_content \
+            message_application message_latitude message_longitude message_url <<< \
+            "$(jq -r '[.id, .created_at, (.content | @base64),
+                (first(.tags[]? | select(.[0]=="application")) | .[1]) // "",
+                (first(.tags[]? | select(.[0]=="latitude"))    | .[1]) // "",
+                (first(.tags[]? | select(.[0]=="longitude"))   | .[1]) // "",
+                (first(.tags[]? | select(.[0]=="url"))         | .[1]) // ""
+            ] | @tsv' <<< "$message" 2>/dev/null)"
+        local content; content=$(base64 -d <<< "$_b64_content" 2>/dev/null)
         ## Avoid treating Captain Warning Messages sent to unregistered message publishers
-        if [[ "$content" =~ "Hello NOSTR visitor." ]]; then continue; fi  
-        local message_id=$(echo "$message" | jq -r .id)
-        local created_at=$(echo "$message" | jq -r .created_at)
-        local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
-        
-        # Extract metadata from message tags
-        local message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' | head -n 1)
-        local message_latitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
-        local message_longitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
-        local message_url=$(echo "$message" | jq -r '.tags[] | select(.[0] == "url") | .[1]' | head -n 1)
+        if [[ "$content" =~ "Hello NOSTR visitor." ]]; then continue; fi
+        local date_str; date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
         
         # Extract GPS coordinates from message tags and filter by UMAP zone
         if ! is_message_in_umap_zone "$message"; then
