@@ -243,6 +243,14 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     #~ echo "Nostr Private Key: $NPRIV"
     echo "Nostr Public Key: $NPUBLIC = $HEX"
 
+    # Vérification conflit d'identité NOSTR (même npub → email différent)
+    _CONFLICT_EMAIL=$(grep -rl "NPUB=${NPUBLIC}" ~/.zen/game/nostr/*/.secret.nostr 2>/dev/null \
+        | head -1 | sed 's|.*/game/nostr/||;s|/.secret.nostr||')
+    if [[ -n "$_CONFLICT_EMAIL" && "$_CONFLICT_EMAIL" != "$EMAIL" ]]; then
+        echo "❌ IDENTITY_CONFLICT: npub ${NPUBLIC} already belongs to ${_CONFLICT_EMAIL}"
+        exit 2
+    fi
+
     # 2. Store the keys in secure files (private keys in hidden files)
     echo "$NPRIV" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.priv
     echo "$NPUBLIC" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.pub

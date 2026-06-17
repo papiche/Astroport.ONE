@@ -359,8 +359,11 @@ for DEST in "${RECIPIENTS[@]}"; do
 
     rm -f "$_entries_oracle" "$_entries_game" "$_entries_phi" "$_entries_hex" "$_entries_stats" "$_entries_rq"
 
-    SUBJECT="⚛ [Alpha A4L] Kin ${MY_KIN} ${MY_COLOR_EMO} — Oracle $(date -u +%d/%m) · +${SCORE} pts · G1FabLab"
-    [[ "$IS_BIRTHDAY" == "true" ]] && SUBJECT="🎂 ANNIVERSAIRE KIN ${MY_KIN} ${MY_COLOR_EMO} — Oracle Alpha ATOM4LOVE · G1FabLab"
+    if [[ "$IS_BIRTHDAY" == "true" ]]; then
+        SUBJECT=$(_kin_vibe_subject "birthday" "${_KIN_LANGAGE:-curieux}" "$MY_KIN" "$MY_SEAL" "$MY_COLOR_EMO" "$TODAY_SEAL" "$SCORE")
+    else
+        SUBJECT=$(_kin_vibe_subject "daily" "${_KIN_LANGAGE:-curieux}" "$MY_KIN" "$MY_SEAL" "$MY_COLOR_EMO" "$TODAY_SEAL" "$SCORE")
+    fi
 
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "  [DRY-RUN] ${DEST}  Kin ${MY_KIN} guide=${MY_GUIDE} anti=${MY_ANTI} score=${SCORE}"

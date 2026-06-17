@@ -224,16 +224,16 @@ done < <(cd "${STRFRY_DIR}" && ./strfry scan "${_KIN_SCAN_FILTER}" 2>/dev/null)
 printf "  📊 %d profil(s) avec Kin Maya (%d Kin distincts)\n" \
        "$total_profiles" "${#kin_emails[@]}"
 
-# Enrichissement phi/omega (Kind 30078 ATOM4LOVE) — nécessaire pour _kin_member_card_rich
-# pubkey_email[] déjà peuplé par _scan_did_mapping ci-dessus
-_scan_a4l_phi 2>/dev/null
-printf "  ⚛ phi_i chargés : %d\n" "${#email_phi[@]}"
-
 if [[ $total_profiles -lt 2 ]]; then
     echo "  ℹ️  Moins de 2 profils — aucune correspondance à envoyer"
     touch "$MARKER_FILE"
     exit 0
 fi
+
+# Enrichissement phi/omega (Kind 30078 ATOM4LOVE) — nécessaire pour _kin_member_card_rich
+# pubkey_email[] déjà peuplé par _scan_did_mapping ci-dessus
+_scan_a4l_phi 2>/dev/null
+printf "  ⚛ phi_i chargés : %d\n" "${#email_phi[@]}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Envoi d'un groupe oracle (non-interactif)
@@ -326,7 +326,8 @@ _send_group() {
 
     rm -f "$entriesfile"
 
-    local subject="🌀 Correspondance Kin Maya — ${group_type}"
+    # Sujet adapté au vibe du joueur (mode --player) ou générique (mode batch)
+    local subject; subject=$(_kin_vibe_subject "$group_type" "${_KIN_LANGAGE:-curieux}")
     local sent=0 skipped=0
     for dest in "${all_emails[@]}"; do
         [[ -z "$dest" ]] && continue
@@ -574,8 +575,8 @@ for _email in "${!email_gps[@]}"; do
     _el=$(echo "$_gps" | grep -oP '(?<=LAT=)[^;]+')
     _ol=$(echo "$_gps" | grep -oP '(?<=LON=)[^;]+')
     [[ -z "$_el" || -z "$_ol" ]] && continue
-    _lzone=$(python3 -c "print(round(float('${_el}')/0.1)*0.1)" 2>/dev/null) || continue
-    _ozone=$(python3 -c "print(round(float('${_ol}')/0.1)*0.1)" 2>/dev/null) || continue
+    _lzone=$(python3 -c "import sys; print(round(float(sys.argv[1])/0.1)*0.1)" "$_el" 2>/dev/null) || continue
+    _ozone=$(python3 -c "import sys; print(round(float(sys.argv[1])/0.1)*0.1)" "$_ol" 2>/dev/null) || continue
     _zkey="${_lzone}_${_ozone}"
     zone_emails["$_zkey"]+="${_email} "
 done
@@ -596,13 +597,16 @@ for _zkey in "${!zone_emails[@]}"; do
             [[ "$_e1" == "$_e2" ]] && continue
             _phi_i="${email_phi[$_e1]:-}"; _phi_j="${email_phi[$_e2]:-}"
             [[ -z "$_phi_i" || -z "$_phi_j" ]] && continue
-            _k=$(python3 -c "import math; print('%.4f'%(1.0/(1.0+abs(math.sin(${_phi_i}-${_phi_j})))))" 2>/dev/null) || continue
-            _h_sum=$(python3 -c "print(${_h_sum}+${_k})" 2>/dev/null) || continue
+            _k=$(python3 -c "import math,sys; a,b=float(sys.argv[1]),float(sys.argv[2]); print('%.4f'%(1.0/(1.0+abs(math.sin(a-b)))))" \
+                "$_phi_i" "$_phi_j" 2>/dev/null) || continue
+            _h_sum=$(python3 -c "import sys; print(float(sys.argv[1])+float(sys.argv[2]))" \
+                "$_h_sum" "$_k" 2>/dev/null) || continue
             ((_h_count++))
         done
     done
     _h_score="0.50"
-    [[ $_h_count -gt 0 ]] && _h_score=$(python3 -c "print('%.2f'%(${_h_sum}/${_h_count}))" 2>/dev/null) || true
+    [[ $_h_count -gt 0 ]] && _h_score=$(python3 -c "import sys; print('%.2f'%(float(sys.argv[1])/int(sys.argv[2])))" \
+        "$_h_sum" "$_h_count" 2>/dev/null) || true
 
     # Calculer le centre GPS approximatif et l'adresse a4l: (si Phi2X_Math disponible)
     _hex_addr="a4l:zone_${_latzone}_${_lonzone}"
@@ -613,13 +617,17 @@ for _zkey in "${!zone_emails[@]}"; do
     # Construire le bloc HTML d'alerte swarm
     _swarm_html=$(cat << SWARMEOF
 <div style="background:linear-gradient(135deg,#1e1b4b,#7c3aed);border-radius:12px;padding:1.2rem;margin:.8rem 0;color:#fff">
-  <div style="font-size:1rem;font-weight:700;margin-bottom:.5rem">🔊 CONVERGENCE REQUISE — Chœur des Nœuds</div>
+  <div style="font-size:1rem;font-weight:700;margin-bottom:.4rem">🔊 Voisins détectés — Chœur des Nœuds</div>
   <div style="font-size:.84rem;opacity:.9;margin-bottom:.8rem">
-    <strong>${#_zemails[@]} Atomes</strong> de votre zone ${_gps_str} sont alignés cette semaine.<br>
+    <strong>${#_zemails[@]} membres ATOM4LOVE</strong> vivent dans votre zone (rayon 0.01° ≈ 1 km).<br>
     Score d'harmonie actuel : <strong>H = ${_h_score}</strong> — objectif : H ≥ 0.95.
   </div>
+  <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:.6rem .8rem;font-size:.78rem;margin-bottom:.8rem;border-left:3px solid rgba(255,255,255,.3)">
+    <strong style="font-size:.8rem">💡 Pourquoi ces personnes ?</strong><br>
+    UPlanet utilise uniquement votre <em>zone géographique</em> (précision 0.01°, ~1 km) pour détecter les membres physiquement proches. Ni votre poids de naissance ni votre polarité ne sont transmis. Ce signal vous invite à explorer si une proximité spatiale résonne avec une proximité de Kin Maya.
+  </div>
   <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:.7rem;font-size:.8rem;margin-bottom:.7rem">
-    📍 <strong>Zone de rendez-vous</strong> : ${_gps_str}<br>
+    📍 <strong>Zone</strong> : ${_gps_str} · précision 0.01° ≈ 1 km<br>
     🔮 <strong>Adresse hexagonale</strong> : <code>${_hex_addr}</code><br>
     📅 <strong>Mission</strong> : Ce dimanche, activez vos radars LOCA. Vos téléphones commenceront à chanter ensemble. Déplacez-vous jusqu'à l'<strong>Accord Parfait</strong> (H ≥ 0.95).
   </div>

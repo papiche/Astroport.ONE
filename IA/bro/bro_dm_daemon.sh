@@ -28,6 +28,8 @@ BRO_SCRIPT_ID="bro_dm"
 BRO_LOG_FILE="$HOME/.zen/tmp/bro_dm_daemon.log"
 # shellcheck source=bro_common_lib.sh
 source "$MY_PATH/bro_common_lib.sh" 2>/dev/null || true
+# shellcheck source=love_handler.sh
+source "$MY_PATH/love_handler.sh" 2>/dev/null || true
 
 QUEUE_DIR="$HOME/.zen/tmp/bro_dm_queue"
 PID_FILE="$HOME/.zen/tmp/bro_dm_daemon.pid"
@@ -1159,6 +1161,9 @@ _process_event() {
             ;;
         zen_like)
             _handle_zen_like "$payload"
+            ;;
+        love)
+            _handle_love "$payload" "$sender"
             ;;
         bro_ia)
             _handle_bro_ia "$payload"

@@ -243,6 +243,75 @@ _kin_resonance_question() {
             "$_base" "$_qid" "$_v" "$_lbl"
     done
     printf '</div>'
-    printf '<div style="font-size:.68rem;color:#c4b5fd;margin-top:.5rem">Votre réponse affine votre Oracle Oracle personnalisé. Elle reste sur votre station, confidentielle.</div>'
+    printf '<div style="font-size:.68rem;color:#c4b5fd;margin-top:.5rem">Votre réponse affine votre Oracle personnalisé. Elle reste sur votre station, confidentielle.</div>'
     printf '</div>\n'
+}
+
+# ─── _kin_vibe_subject GROUP_TYPE LANGAGE [KIN SEAL EMO TODAY_SEAL SCORE] ────
+# Génère un sujet email court, adapté au langage de résonance du membre.
+# Appelé depuis KIN.news.sh (_send_group) et KIN.daily.sh.
+_kin_vibe_subject() {
+    local _gtype="$1" _lang="${2:-curieux}"
+    local _kin="${3:-}" _seal="${4:-}" _emo="${5:-}" _today="${6:-}" _score="${7:-}"
+
+    case "$_gtype" in
+        daily)
+            case "$_lang" in
+                pragmatique) printf '📊 Kin %s — Rapport oracle du jour · +%s pts' "$_kin" "$_score" ;;
+                symbolique)  printf '🔮 %s %s vous parle — Jour de %s dans le Tzolkin' "$_emo" "$_seal" "$_today" ;;
+                cosmique)    printf '⚛ Signal %s %s — Tisser le champ ce jour · +%s pts' "$_seal" "$_emo" "$_score" ;;
+                *)           printf '🌀 Kin %s %s — Vos 5 pouvoirs · Oracle %s' "$_kin" "$_emo" "$(date -u +%d/%m)" ;;
+            esac ;;
+        birthday)
+            case "$_lang" in
+                pragmatique) printf '🎯 Kin %s — Votre jour de puissance annuel' "$_kin" ;;
+                symbolique)  printf '🌟 ANNIVERSAIRE %s — Votre jour de naissance galactique' "$_seal" ;;
+                cosmique)    printf '✨ %s %s renaît — La Terre active votre programme ce jour' "$_seal" "$_emo" ;;
+                *)           printf '🎂 ANNIVERSAIRE KIN %s %s — Oracle Alpha ATOM4LOVE' "$_kin" "$_emo" ;;
+            esac ;;
+        *Quatuor*)
+            case "$_lang" in
+                pragmatique) printf '📊 Matching Kin — 4 profils complémentaires identifiés' ;;
+                symbolique)  printf '💎 Quatuor Oracle — Vos 4 dimensions galactiques réunies' ;;
+                cosmique)    printf '✨ Quatuor de Gardiens convoqué — La Terre assemble vos fréquences' ;;
+                *)           printf '💎 Quatuor Tzolkin détecté — 4 dates de naissance qui s'\''assemblent' ;;
+            esac ;;
+        *Occulte*)
+            case "$_lang" in
+                pragmatique) printf '📊 Profil complémentaire trouvé — Paire Occulte Tzolkin' ;;
+                symbolique)  printf '🌙 Partenaire d'\''ombre identifié — Oracle Dreamspell' ;;
+                cosmique)    printf '🌙 La Terre aligne vos pôles — Paire d'\''ombre et de lumière' ;;
+                *)           printf '🌙 Paire Occulte détectée — vos Kin s'\''additionnent à 261' ;;
+            esac ;;
+        *Analogue*)
+            case "$_lang" in
+                pragmatique) printf '📊 Profil miroir détecté — même fonctionnement, angle différent' ;;
+                symbolique)  printf '🌀 Analogue Oracle — votre miroir dans le Tzolkin' ;;
+                cosmique)    printf '🌀 Miroir cosmique révélé — vos fréquences se répondent' ;;
+                *)           printf '🌀 Paire Analogue — même tonalité, deux sceaux complémentaires' ;;
+            esac ;;
+        *Tonalit*|*Conseil*)
+            case "$_lang" in
+                pragmatique) printf '📊 Groupe de tonalité — profils au fonctionnement similaire' ;;
+                symbolique)  printf '🎵 Conseil Galactique — votre tonalité résonne en groupe' ;;
+                cosmique)    printf '🎵 Gardiens de la même fréquence — votre Conseil se réveille' ;;
+                *)           printf '🎵 Conseil de Tonalité — vous partagez la même question de vie' ;;
+            esac ;;
+        *Guide*)
+            case "$_lang" in
+                pragmatique) printf '📊 Relation mentor/apprenti détectée — Tzolkin Guide' ;;
+                symbolique)  printf '🧭 Oracle Guide — le 5ème pouvoir vous envoie un signe' ;;
+                cosmique)    printf '🧭 Votre mentor cosmique se manifeste — Relation Guide' ;;
+                *)           printf '🧭 Guide Tzolkin trouvé — une relation de transmission naturelle' ;;
+            esac ;;
+        *Antipode*)
+            case "$_lang" in
+                pragmatique) printf '📊 Défi créateur identifié — profil antipode Tzolkin' ;;
+                symbolique)  printf '⚡ Sparring partner cosmique — votre défi créateur arrive' ;;
+                cosmique)    printf '⚡ La friction s'\''allume — votre Antipode manifeste votre défi' ;;
+                *)           printf '⚡ Antipode détecté — celui qui vous bouscule utilement' ;;
+            esac ;;
+        *)
+            printf '🌀 Correspondance Kin Maya — %s' "$_gtype" ;;
+    esac
 }

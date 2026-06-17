@@ -353,6 +353,32 @@ def cmd_publish(args):
     print(event_dict["id"])
 
 
+# ── verify (signature Schnorr d'un event NOSTR) ──────────────────────────────
+
+def cmd_verify(_args):
+    """Vérifie l'ID et la signature Schnorr d'un event NOSTR depuis stdin. Exit 0=valide, 1=invalide."""
+    import coincurve
+    try:
+        ev = json.load(sys.stdin)
+        if "event" in ev:
+            ev = ev["event"]
+        pub_hex  = ev.get("pubkey", "")
+        sig_hex  = ev.get("sig", "")
+        event_id = ev.get("id", "")
+        serialized = json.dumps(
+            [0, ev["pubkey"], ev["created_at"], ev["kind"], ev["tags"], ev["content"]],
+            separators=(',', ':'), ensure_ascii=False,
+        )
+        computed_id = hashlib.sha256(serialized.encode('utf-8')).hexdigest()
+        if computed_id != event_id:
+            sys.exit(1)
+        pub = coincurve.PublicKeyXOnly(bytes.fromhex(pub_hex))
+        if not pub.verify(bytes.fromhex(sig_hex), bytes.fromhex(event_id)):
+            sys.exit(1)
+    except Exception:
+        sys.exit(1)
+
+
 # ── query (REQ filtre arbitraire) ────────────────────────────────────────────
 
 def cmd_query(args):
@@ -480,15 +506,17 @@ if __name__ == "__main__":
                         help='Filtre REQ JSON ex: {"kinds":[30500],"authors":["hex..."]}')
     p_qry.add_argument("--relays",  nargs="+", required=True)
 
+    sub.add_parser("verify", help="Vérifie la signature Schnorr d'un event NOSTR (stdin JSON)")
+
     args = parser.parse_args()
 
     # Résolution NSEC pour les sous-commandes qui en ont besoin
     # (send, send-udrive, receive, publish supportent --nsec-stdin ;
     #  decrypt : --nsec requis car stdin est déjà occupé par le JSON ;
-    #  query : pas de NSEC)
+    #  query, verify : pas de NSEC)
     if getattr(args, "nsec_stdin", False):
         args.nsec = sys.stdin.readline().strip()
-    elif args.cmd not in ("query", "decrypt") and not getattr(args, "nsec", None):
+    elif args.cmd not in ("query", "decrypt", "verify") and not getattr(args, "nsec", None):
         parser.error("--nsec ou --nsec-stdin requis")
 
     {
@@ -498,4 +526,5 @@ if __name__ == "__main__":
         "receive":     cmd_receive,
         "publish":     cmd_publish,
         "query":       cmd_query,
+        "verify":      cmd_verify,
     }[args.cmd](args)

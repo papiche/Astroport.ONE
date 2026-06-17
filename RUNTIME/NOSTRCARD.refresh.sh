@@ -579,9 +579,9 @@ for PLAYER in "${NOSTR[@]}"; do
     ## 1st Day send welcome message...
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
         cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-        && sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+        && sed -i "s~http://127.0.0.1:8080~${myLIBRA}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~_USPOT_~${uSPOT}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-        && sed -i "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+        && sed -i "s~_CORACLEURL_~${myCORACLE:-https://coracle.copylaradio.com}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && ${MY_PATH}/../tools/mailjet.sh --channel milestones --template "${MY_PATH}/../templates/NOSTR/welcome.html" --expire 7d "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "Welcome on UPlanet"
         log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
         log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
@@ -1041,7 +1041,7 @@ ERRHTML
         [[ ! -s ~/.zen/IPCity ]] && my_IPCity > ~/.zen/IPCity
         city=$(cat ~/.zen/IPCity 2>/dev/null)
         [[ -z "$city" ]] && city="UPlanet ${ORIGIN}"
-        description="💬 + ❤️ => Ẑen : ${uSPOT}/check_balance?g1pub=${PLAYER}"
+        description="💬 + ❤️ => Ẑen"
         zavatar="/ipfs/"$(cat ${HOME}/.zen/game/nostr/${PLAYER}/MULTIPASS.QR.png.cid 2>/dev/null)
         ## ELSE ASTROPORT LOGO
         [[ $zavatar == "/ipfs/" ]] \
@@ -1070,9 +1070,9 @@ ERRHTML
             "$NSEC"
             "✌(◕‿-)✌ $title" "$G1PUBNOSTR"
             "$description"
-            "$myIPFS/$zavatar"
-            "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg"
-            "" "$myIPFS${NOSTRNS}/${PLAYER}/APP/uDRIVE" "" "" "" ""
+            "$myLIBRA/$zavatar"
+            "$myLIBRA/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg"
+            "" "$myLIBRA${NOSTRNS}/${PLAYER}/APP/uDRIVE" "" "" "" ""
             "wss://relay.copylaradio.com" "$myRELAY"
             --city "$city"
             --ipfs_gw "$myIPFS"
@@ -1371,7 +1371,7 @@ ERRHTML
     ## UPDATE IPNS NOSTRVAULT KEY - Only when refresh is needed
     if [[ $refresh_needed -eq 0 ]]; then
         echo "IPNS update triggered for ${PLAYER} - Reason: $REFRESH_REASON"
-        echo "## $myIPFS$NOSTRNS"
+        echo "## $myLIBRA$NOSTRNS"
 
         ## Keeping .secret.ipns (quicker ipfs processing)
         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.ipns ]]; then

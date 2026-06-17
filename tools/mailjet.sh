@@ -183,6 +183,24 @@ if [[ -f "$_mailjet_optout" ]]; then
     fi
 fi
 
+## ── Canal email : actif pour ce flux ? (flux_channels.CHANNEL.email) ────────
+## Défaut true (rétrocompatibilité — si flux_channels absent, email toujours actif)
+_email_active=true
+if [[ -f "$_mailjet_optout" && -n "${MAIL_CHANNEL:-}" ]]; then
+    _ec=$(jq -r --arg ch "${MAIL_CHANNEL}" \
+        '.flux_channels[$ch].email // true' "$_mailjet_optout" 2>/dev/null)
+    [[ "$_ec" == "false" ]] && _email_active=false
+fi
+
+## ── Canal NOSTR DM NIP-44 : actif pour ce flux ? ────────────────────────────
+## Défaut false (opt-in explicite requis)
+_nostr_active=false
+if [[ -f "$_mailjet_optout" && -n "${MAIL_CHANNEL:-}" ]]; then
+    _nc=$(jq -r --arg ch "${MAIL_CHANNEL}" \
+        '.flux_channels[$ch].nostr // false' "$_mailjet_optout" 2>/dev/null)
+    [[ "$_nc" == "true" ]] && _nostr_active=true
+fi
+
 ## ── Token de désinscription (sha256(mail:UPLANETNAME)[:16]) ─────────────────
 ## Même algorithme que UPassport /mailjet (_token_for) pour vérification croisée
 _unsub_token=$(printf "%s:%s" "${mail}" "${UPLANETNAME}" | sha256sum | cut -c1-16)
@@ -421,7 +439,7 @@ if [[ -z "$MJ_APIKEY_PUBLIC" && -s ~/.zen/MJ_APIKEY ]]; then
     echo "MailJet credentials loaded from ~/.zen/MJ_APIKEY (legacy)"
 fi
 
-if [[ -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRIVATE" && -n "$SENDER_EMAIL" ]]; then
+if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRIVATE" && -n "$SENDER_EMAIL" ]]; then
     export RECIPIENT_EMAIL=${mail}
 
     # 3. Préparation du corps de l'email
@@ -489,4 +507,37 @@ if [[ -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRIVATE" && -n "$SENDER_EMAIL" ]]
         -H 'Content-Type: application/json' \
         -d "$json_payload"
 
+elif [[ "$_email_active" == "false" ]]; then
+    echo "ℹ️  ${mail} — canal email inactif pour flux '${MAIL_CHANNEL:-}', envoi email ignoré"
+fi
+
+## ── Canal NOSTR DM NIP-44 (station NODE → user) ────────────────────────────
+if [[ "$_nostr_active" == "true" && -n "$HEX" ]]; then
+    _ni="${MY_PATH}/nostr_node_intercom.py"
+    _captain_nsec=$(cat "${HOME}/.zen/game/nostr/${CAPTAINEMAIL:-}/secret.key" 2>/dev/null)
+    if [[ -f "$_ni" && -n "$_captain_nsec" ]]; then
+        # Texte compact : strip HTML, 400 chars max + lien IPFS
+        _dm_text=$(echo "${RAW_CONTENT:-$title}" \
+            | sed 's/<[^>]*>//g; s/&[a-z]*;//g; s/[[:space:]]\+/ /g' \
+            | tr -d '\n' | sed 's/^ //; s/ $//' | cut -c1-400)
+        _dm_payload=$(jq -n \
+            --arg type "mailjet" \
+            --arg subj "${title}" \
+            --arg url  "${TEXTPART:-}" \
+            --arg text "${_dm_text}" \
+            --arg ch   "${MAIL_CHANNEL:-}" \
+            '{"type":$type,"subject":$subj,"ipfs_url":$url,"preview":$text,"channel":$ch}')
+        python3 "$_ni" send \
+            --nsec    "$_captain_nsec" \
+            --to      "$HEX" \
+            --channel "mailjet" \
+            --payload "$_dm_payload" \
+            --relays  "ws://127.0.0.1:7777" \
+            2>/dev/null \
+            && echo "💬 DM NIP-44 → ${mail} (${HEX:0:8}…)" \
+            || echo "⚠️ DM NIP-44 échoué → ${mail}" >&2
+    else
+        [[ -z "$_captain_nsec" ]] && echo "⚠️ DM NIP-44 : clé capitaine indisponible (${CAPTAINEMAIL})" >&2
+        [[ ! -f "$_ni" ]] && echo "⚠️ DM NIP-44 : nostr_node_intercom.py introuvable" >&2
+    fi
 fi
