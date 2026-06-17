@@ -104,7 +104,7 @@ FICHIERS
     ~/.zen/MJ_APIKEY          Credentials Mailjet legacy
                               (MJ_APIKEY_PUBLIC, MJ_APIKEY_PRIVATE, SENDER_EMAIL)
     ~/.zen/tmp/mailjet.log    Log complet de toutes les exécutions
-    tools/my.sh               Bibliothèque centrale (myIPFS, myDOMAIN, uSPOT,
+    tools/my.sh               Bibliothèque centrale (myLIBRA, myDOMAIN, uSPOT,
                               UPLANETNAME, UPLANETG1PUB, IPFSNODEID, CAPTAINEMAIL…)
     templates/NOSTR/          Templates HTML des notifications UPlanet
     templates/UPlanetZINE/    Templates HTML des ZINEs d'onboarding
@@ -357,7 +357,7 @@ MESSAGESIGN="<hr style='border:none;border-top:1px solid #e5e7eb;margin:1.2rem 0
 <table width='100%' cellpadding='0' cellspacing='0' border='0'>
 <tr>
 <td style='font-size:.75rem;color:#9ca3af;line-height:1.5;vertical-align:middle'>
-  Envoyé par <a href='${myIPFS}/ipns/$IPFSNODEID' style='color:#9ca3af;text-decoration:none'>$(myHostName)</a> · Station UPlanet
+  Envoyé par <a href='${myLIBRA}/ipns/$IPFSNODEID' style='color:#9ca3af;text-decoration:none'>$(myHostName)</a> · Station UPlanet
 </td>
 <td align='right' style='vertical-align:middle'>
   <a href='${_unsub_url}' style='display:inline-block;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:.3rem .75rem;text-decoration:none;font-size:.78rem;font-weight:600;white-space:nowrap;font-family:-apple-system,sans-serif'>🔕 Calibrez vos messages</a>
@@ -386,7 +386,7 @@ fi
 
 # 2. Génération du lien IPFS (Conservé pour Nostr et TiddlyWiki)
 EMAILZ=$(echo "$RAW_CONTENT" | timeout 15s ipfs add -q --pin=false)
-export TEXTPART="${myIPFS}/ipfs/${EMAILZ}"
+export TEXTPART="${myLIBRA}/ipfs/${EMAILZ}"
 
 ################### IMPORT MAILJET INTO IF $4=TW
 INDEX="$4"
@@ -444,7 +444,7 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
 
     # 3. Préparation du corps de l'email
     # On intègre RAW_CONTENT directement dans le HTML
-    IPFS_ONLINE_LINK="<p style=\"text-align:center; font-size:0.85em; color:#888;\"><a href=\"${myIPFS}/ipfs/${EMAILZ}\">🌐 Lire ce message en ligne (IPFS)</a></p><hr style=\"border:none; border-top:1px solid #eee;\">"
+    IPFS_ONLINE_LINK="<p style=\"text-align:center; font-size:0.85em; color:#888;\"><a href=\"${myLIBRA}/ipfs/${EMAILZ}\">🌐 Lire ce message en ligne (IPFS)</a></p><hr style=\"border:none; border-top:1px solid #eee;\">"
 
     TEMPLATE_INFO=""
     if [[ "$UPLANET" == "UPlanet ORIGIN" && -n "$TEMPLATE_SRC" ]]; then
@@ -454,12 +454,12 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
     FULL_HTML="${IPFS_ONLINE_LINK}<h3>${title}</h3><br><br>${RAW_CONTENT}<br><br><hr><p><a href=\"${uSPOT}/g1\">${UPLANET}</a> [ <a href=\"${myLIBRA}/ipns/${pseudo}\">/ipns/${pseudo}</a> ]<br />${MESSAGESIGN}</p>${TEMPLATE_INFO}"
     
     # Fallback en texte brut contenant le lien IPFS
-    PLAIN_TEXT="Voir le message sur le réseau IPFS : ${myIPFS}/ipfs/${EMAILZ}\n\nMessage de ${UPLANET}"
+    PLAIN_TEXT="Voir le message sur le réseau IPFS : ${myLIBRA}/ipfs/${EMAILZ}\n\nMessage de ${UPLANET}"
 
     CONTENT_SIZE=${#RAW_CONTENT}
     if [[ $CONTENT_SIZE -gt 1000000 ]]; then # Limite à 1 Mo pour l'inline
         echo "⚠️ Message trop volumineux ($CONTENT_SIZE octets). Envoi du lien IPFS uniquement."
-        FULL_HTML="${IPFS_ONLINE_LINK}<p>Consultez le message ici.</p><h3><a href='${myIPFS}/ipfs/${EMAILZ}'>👉 Cliquer ici pour voir le rapport complet</a></h3><br>${MESSAGESIGN}"
+        FULL_HTML="${IPFS_ONLINE_LINK}<p>Consultez le message ici.</p><h3><a href='${myLIBRA}/ipfs/${EMAILZ}'>👉 Cliquer ici pour voir le rapport complet</a></h3><br>${MESSAGESIGN}"
     fi
 
     # 4. Construction du JSON sécurisé via jq (Gère automatiquement l'échappement des guillemets et retours à la ligne du HTML)
