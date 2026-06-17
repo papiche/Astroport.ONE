@@ -453,6 +453,57 @@ print(f"{total} {label}")
 PYEOF
 }
 
+## ── Lire les traces ATOM4LOVE (kind-10600 #t=trace #t=atom4love) ────────────
+## Retourne un array JSON de URLs canoniques visitées (via extension navigateur)
+_love_get_traces() {
+    local pubkey="$1"
+    [[ -z "$pubkey" ]] && echo "[]" && return
+    [[ ! -x "$_LOVE_STRFRY" ]] && echo "[]" && return
+    "$_LOVE_STRFRY" scan \
+        --filter "{\"kinds\":[10600],\"#t\":[\"atom4love\"],\"authors\":[\"${pubkey}\"],\"limit\":500}" 2>/dev/null \
+    | python3 -c "
+import sys, json
+urls = set()
+for line in sys.stdin:
+    try:
+        ev = json.loads(line)
+        for tag in ev.get('tags', []):
+            if tag[0] == 'url' and len(tag) > 1 and tag[1]:
+                urls.add(tag[1])
+    except: pass
+print(json.dumps(sorted(urls)))
+"
+}
+
+## ── Score de traces communes (0-20 pts + liste) ─────────────────────────────
+## 5 pts par URL commune, max 20 pts
+_love_trace_score() {
+    local my_json="$1" other_json="$2"
+    python3 -c "
+import json, sys
+mine  = set(json.loads(sys.argv[1]))
+other = set(json.loads(sys.argv[2]))
+common = mine & other
+score = min(20, len(common) * 5)
+# Extraire une étiquette lisible depuis la partie finale de l'URL
+def short(u):
+    from urllib.parse import urlparse, parse_qs
+    p = urlparse(u)
+    if 'youtube.com' in p.netloc:
+        v = parse_qs(p.query).get('v', [''])[0]
+        return f'YT:{v[:8]}' if v else 'YouTube'
+    if 'netflix.com' in p.netloc:
+        parts = p.path.strip('/').split('/')
+        return f'Netflix:{parts[-1][:12]}' if parts else 'Netflix'
+    if 'spotify.com' in p.netloc:
+        parts = p.path.strip('/').split('/')
+        return f'Spotify:{parts[-1][:12]}' if len(parts)>1 else 'Spotify'
+    return (p.path.split('/')[-1] or p.hostname or u)[:20]
+labels = ', '.join(short(u) for u in sorted(common)[:3])
+print(f'{score} {labels}' if labels else f'{score}')
+" "$my_json" "$other_json" 2>/dev/null || echo "0"
+}
+
 ## ── Vérifier si l'utilisateur est Tier 2 (+18) ───────────────────────────────
 _love_is_tier2() {
     local profile; profile=$(_love_get_profile "$1")
@@ -670,9 +721,25 @@ print(len(ms))
     python3 -c "import json,sys; p=json.load(sys.stdin); print('yes' if p.get('public') else 'no')" \
         <<< "$profile" 2>/dev/null | grep -q yes && is_public=true
 
-    # Vérifier si A4L actif
+    # Vérifier si A4L actif + compter les traces Kind 10600
     local a4l; a4l=$(_love_get_a4l_data "$email")
     [[ "$a4l" != "{}" ]] && has_phi2x=true
+
+    local trace_count=0
+    if $has_phi2x; then
+        local _my_hex; _my_hex=$(_love_pubkey_for_email "$email")
+        if [[ -n "$_my_hex" ]]; then
+            local _my_tr; _my_tr=$(_love_get_traces "$_my_hex")
+            trace_count=$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1])))" \
+                "$_my_tr" 2>/dev/null || echo 0)
+        fi
+    fi
+
+    local phi2x_line='💡 Phi² inactif (inscris-toi sur ATOM4LOVE)'
+    if $has_phi2x; then
+        phi2x_line='✅ Phi² ATOM4LOVE actif'
+        [[ $trace_count -gt 0 ]] && phi2x_line+=" · 🌐 ${trace_count} pages tracées"
+    fi
 
     local tier=1
     _love_is_tier3 "$email" && tier=3 || _love_is_tier2 "$email" && tier=2
@@ -686,7 +753,7 @@ print(len(ms))
 **Profil de rencontre :**
 $(${has_profile} && echo '✅ Bio renseignée' || echo '❌ Bio manquante')
 $(${has_kin}     && echo "✅ KIN Dreamspell : $(_love_get_kin "$email" | head -1)" || echo '❌ Date de naissance non renseignée (pour KIN)')
-$(${has_phi2x}   && echo '✅ Phi² ATOM4LOVE actif' || echo '💡 Phi² inactif (inscris-toi sur ATOM4LOVE)')
+${phi2x_line}
 $(${is_public}   && echo '✅ Profil visible pour le matching' || echo '🔒 Profil privé (envoie {"public":true} pour être visible)')"
 
     # Prochaine étape suggérée
@@ -881,10 +948,11 @@ Le message doit être court (3-5 phrases max), naturel, sincère, et refléter m
 }
 
 ## ── Handler : matching local (Tier 2, +18 requis) ───────────────────────────
-## Score composite (100 pts max) :
+## Score composite (120 pts max) :
 ##   • Intérêts communs  : 0-40 pts  (15 pts/intérêt commun, max 40)
 ##   • Compatibilité KIN : 0-30 pts  (formule Dreamspell seal/tone/couleur)
 ##   • Résonance Phi²    : 0-30 pts  (k=1/(1+|sin(Δφ)|) + bonus ω, ATOM4LOVE)
+##   • Traces communes   : 0-20 pts  (URLs Kind 10600 visitées en commun)
 _handle_love_match() {
     local sender="$1"
     local email; email=$(bro_resolve_email "$sender")
@@ -909,8 +977,14 @@ _handle_love_match() {
     local my_phi2x_available=false
     [[ -n "$my_phi" ]] && my_phi2x_available=true
 
+    # Traces ATOM4LOVE (Kind 10600, ext navigateur) — cache avant la boucle
+    local my_pubkey_hex; my_pubkey_hex=$(_love_pubkey_for_email "$email")
+    local my_traces="[]"
+    [[ -n "$my_pubkey_hex" ]] && my_traces=$(_love_get_traces "$my_pubkey_hex")
+    local my_trace_count; my_trace_count=$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1])))" "$my_traces" 2>/dev/null || echo 0)
+
     [[ "${LOVE_DEBUG:-0}" == "1" ]] && \
-        _log "💕 LOVE match: email=$email kin=${my_kin:-0} phi2x=$my_phi_available"
+        _log "💕 LOVE match: email=$email kin=${my_kin:-0} phi2x=$my_phi2x_available traces=$my_trace_count"
 
     # Collecter tous les candidats avec leurs scores
     declare -A candidate_scores=()
@@ -992,7 +1066,17 @@ print(len(common), ','.join(common[:4]))
             fi
         fi
 
-        local total_score=$(( score_interest + score_kin + score_phi2x ))
+        # ── Score 4 : traces communes ATOM4LOVE (0-20 pts) ───────────────
+        local score_traces=0 trace_label=""
+        if [[ "$my_trace_count" -gt 0 && -n "$other_pubkey" ]]; then
+            local other_traces; other_traces=$(_love_get_traces "$other_pubkey")
+            local trace_raw; trace_raw=$(_love_trace_score "$my_traces" "$other_traces")
+            score_traces=${trace_raw%% *}
+            trace_label="${trace_raw#* }"
+            [[ "$trace_label" == "$score_traces" ]] && trace_label=""  # aucun label si score seul
+        fi
+
+        local total_score=$(( score_interest + score_kin + score_phi2x + score_traces ))
         [[ $total_score -lt 10 ]] && continue
 
         local bio
@@ -1007,6 +1091,8 @@ print(len(common), ','.join(common[:4]))
             affinity_parts+=("KIN ${kin_label} (${kin_pct}%)")
         [[ $score_phi2x -gt 0 && -n "$phi2x_label" ]] && \
             affinity_parts+=("$phi2x_label")
+        [[ $score_traces -gt 0 && -n "$trace_label" ]] && \
+            affinity_parts+=("🌐 ${trace_label}")
 
         candidate_scores["$other_email"]=$total_score
         local _sep="" _lbl=""
@@ -1069,7 +1155,7 @@ print(json.loads(sys.argv[1]).get('about','')[:150])
         matches_text+="${count}. **${nostr_name:-Profil anonyme}**\n"
         [[ -n "$nostr_about" ]] && matches_text+="   ${nostr_about}\n"
         [[ -n "$bio" && "$bio" != "…" ]] && matches_text+="   _(Love)_ ${bio}\n"
-        matches_text+="   ⭐ ${sc}/100 | ${lbl}\n"
+        matches_text+="   ⭐ ${sc}/120 | ${lbl}\n"
         if [[ -n "$recent_posts" ]]; then
             matches_text+="\n   📝 Posts récents :\n"
             while IFS= read -r post; do

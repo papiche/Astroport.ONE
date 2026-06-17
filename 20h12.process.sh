@@ -137,6 +137,11 @@ mkdir -p "$(dirname "$ASTRO_PROFILE")"
     echo "=========================================================="
 } >> "$ASTRO_PROFILE"
 
+########################################################################
+# show Ustats.sh cache of the day
+echo "TODAY UPlanet landings"
+ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2 cache files
+
 # N'afficher que les lignes BROKEN/FIXED dans le log principal
 grep -E "BROKEN|FIXED|TOTAL" "$ASTRO_PROFILE" | tail -20 >> "$LOG_FILE" 2>/dev/null || true
 
@@ -148,15 +153,17 @@ cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> $LOG_FILE
 cat "$HOME/.zen/game/firewall_candidates.txt" | sort -u >> $LOG_FILE
 
 echo "___________________bro_dm_daemon.log_______________"
-cat $HOME/.zen/tmp/bro_dm_daemon.log 2>/dev/null >> $LOG_FILE
+tail -n 300 $HOME/.zen/tmp/bro_dm_daemon.log 2>/dev/null >> $LOG_FILE
 
 echo "=== YOUTUBE / IA SCRAPERS ===================================" >> $LOG_FILE
-cat $HOME/.zen/tmp/IA.log 2>/dev/null >> $LOG_FILE
-cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
+tail -n 300 $HOME/.zen/tmp/IA.log 2>/dev/null >> $LOG_FILE
+tail -n 300 $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
 
 echo "=== NOSTR / CONSTELLATION ERRORS =============================" >> $LOG_FILE
-cat $HOME/.zen/tmp/nostr_*.log 2>/dev/null >> $LOG_FILE
-cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
+for file in $HOME/.zen/tmp/nostr_*.log; do
+    tail -n 300 "$file" 2>/dev/null >> "$LOG_FILE"
+done
+tail -n 300 $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
 
 echo "=== SYSTEM/INSTALL ERRORS ====================================" >> $LOG_FILE
 if [ -f "$HOME/.zen/install.errors.log" ]; then
@@ -164,10 +171,6 @@ if [ -f "$HOME/.zen/install.errors.log" ]; then
 fi
 cat "$HOME/.zen/install.errors.log" 2>/dev/null >> $LOG_FILE
 
-########################################################################
-# show Ustats.sh cache of the day
-echo "TODAY UPlanet landings"
-ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2 cache files
 ########################################################################
 ## NETTOYAGE TMP : On garde les dossiers de cache vitaux !! 
 # On ne supprime que les fichiers/dossiers qui ne sont pas dans l'exclusion

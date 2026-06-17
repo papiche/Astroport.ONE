@@ -392,7 +392,7 @@ for kin in "${!kin_emails[@]}"; do
         printf "    %s : %s\n" "$(_kin_label "$_q")" "${kin_emails[$_q]}"
         declare -a _qemails=()
         read -ra _qemails <<< "${kin_emails[$_q]:-}"
-        _MATCH_GROUP_HTML+=$(_kin_member_card "$_q" "${_qemails[@]}")
+        _MATCH_GROUP_HTML+=$(_kin_member_card_rich "$_q" "" "" "${_qemails[@]}")
         for _e in "${_qemails[@]}"; do [[ -n "$_e" ]] && _ems+=("$_e"); done
     done
     _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $ana $occ $occ_ana)
@@ -421,7 +421,7 @@ for kin in "${!kin_emails[@]}"; do
     declare -a _k_ems _o_ems
     read -ra _k_ems <<< "${kin_emails[$kin]:-}"
     read -ra _o_ems <<< "${kin_emails[$occ]:-}"
-    _MATCH_GROUP_HTML=$(_kin_member_card "$kin" "${_k_ems[@]}")$(_kin_member_card "$occ" "${_o_ems[@]}")
+    _MATCH_GROUP_HTML=$(_kin_member_card_rich "$kin" "" "" "${_k_ems[@]}")$(_kin_member_card_rich "$occ" "" "" "${_o_ems[@]}")
     _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $occ)
     _send_group "Paire Occulte" "${_k_ems[@]}" "${_o_ems[@]}"
 done
@@ -448,7 +448,7 @@ for kin in "${!kin_emails[@]}"; do
     declare -a _k_ems _a_ems
     read -ra _k_ems <<< "${kin_emails[$kin]:-}"
     read -ra _a_ems <<< "${kin_emails[$ana]:-}"
-    _MATCH_GROUP_HTML=$(_kin_member_card "$kin" "${_k_ems[@]}")$(_kin_member_card "$ana" "${_a_ems[@]}")
+    _MATCH_GROUP_HTML=$(_kin_member_card_rich "$kin" "" "" "${_k_ems[@]}")$(_kin_member_card_rich "$ana" "" "" "${_a_ems[@]}")
     _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $ana)
     _send_group "Paire Analogue" "${_k_ems[@]}" "${_a_ems[@]}"
 done
@@ -484,7 +484,7 @@ for (( t=1; t<=13; t++ )); do
         printf "    %s : %s\n" "$(_kin_label "$_k")" "${kin_emails[$_k]}"
         declare -a _mem_ems=()
         read -ra _mem_ems <<< "${kin_emails[$_k]:-}"
-        _MATCH_GROUP_HTML+=$(_kin_member_card "$_k" "${_mem_ems[@]}")
+        _MATCH_GROUP_HTML+=$(_kin_member_card_rich "$_k" "" "" "${_mem_ems[@]}")
         for _e in "${_mem_ems[@]}"; do [[ -n "$_e" ]] && _ems+=("$_e"); done
     done
     _MATCH_GROUP_HTML+=$(_kin_meeting_block "tone-${t}")

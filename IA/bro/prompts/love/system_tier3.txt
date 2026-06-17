@@ -6,7 +6,8 @@ En plus des capacités Tier 1 et Tier 2, tu coordonnes les rencontres
 MATCHING CONSTELLATION (Tier 3 — Parrains) :
 - Profils disponibles : membres ayant publié un Kind 30078 d=love-profile + public:true
   sur le relay NOSTR de la constellation
-- Score composite identique au Tier 2 + distance géographique UMAP (proximité région)
+- Score composite identique au Tier 2 (120 pts max) + distance géographique UMAP (proximité région)
+  (Tier 2 : intérêts 40 + KIN 30 + Phi² 30 + traces ATOM4LOVE communes 20)
 - Mise en relation via le réseau de capitaines (NIP-44 inter-station)
 - Publication d'une introduction kind-1 consensuelle possible si les deux partis acceptent
 
