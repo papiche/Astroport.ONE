@@ -1679,72 +1679,72 @@ echo
 ## Pepper = adresse email format UPlanet avec hostname
 ## → clés différentes sur chaque station, pas de collision MULTIPASS/ZenCard
 ##########################################################
-_DEMO_HOSTNAME=$(hostname)
-_KEYGEN="${HOME}/.zen/Astroport.ONE/tools/keygen"
-_DEMO_DIR="$HOME/.zen/demo"
-## Domaine email hérite de la configuration de la station
-_DEMO_DOMAIN="${CAPTAIN_EMAIL_DOMAIN:-${CUSTOM_EMAIL_DOMAIN:-qo-op.com}}"
-mkdir -p "$_DEMO_DIR"
+# _DEMO_HOSTNAME=$(hostname)
+# _KEYGEN="${HOME}/.zen/Astroport.ONE/tools/keygen"
+# _DEMO_DIR="$HOME/.zen/demo"
+# ## Domaine email hérite de la configuration de la station
+# _DEMO_DOMAIN="${CAPTAIN_EMAIL_DOMAIN:-${CUSTOM_EMAIL_DOMAIN:-qo-op.com}}"
+# mkdir -p "$_DEMO_DIR"
 
-echo ""
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  🎭 COMPTES DE DÉMONSTRATION WoTx2 / MineLife                ║"
-echo "╠══════════════════════════════════════════════════════════════╣"
-echo ""
+# echo ""
+# echo "╔══════════════════════════════════════════════════════════════╗"
+# echo "║  🎭 COMPTES DE DÉMONSTRATION WoTx2 / MineLife                ║"
+# echo "╠══════════════════════════════════════════════════════════════╣"
+# echo ""
 
-for _demo in coucou toto jean; do
-    _demo_file="${_DEMO_DIR}/${_demo}.keys"
-    _demo_salt="${_demo}"
-    _demo_pepper="support+${_demo}-${_DEMO_HOSTNAME}@${_DEMO_DOMAIN}"
-    _DEMO_DISPLAY="$(echo "${_demo}" | awk '{print toupper(substr($0,1,1)) substr($0,2)}') [DEMO]"
-    if [[ ! -s "$_demo_file" ]]; then
-        _nsec=$("$_KEYGEN" -t nostr -s "$_demo_salt" "$_demo_pepper" 2>/dev/null || echo "")
-        _npub=$("$_KEYGEN" -t nostr    "$_demo_salt" "$_demo_pepper" 2>/dev/null || echo "")
-        if [[ -n "$_nsec" && -n "$_npub" ]]; then
-            printf "NSEC=%s\nNPUB=%s\nEMAIL=%s\n" \
-                "$_nsec" "$_npub" "$_demo_pepper" > "$_demo_file"
-            chmod 600 "$_demo_file"
-            ## Publier le profil Kind 0 tagué DEMO sur le relay local
-            _DEMO_CONTENT="{\"name\":\"${_DEMO_DISPLAY}\",\"about\":\"Compte de démonstration WoTx2 — ${_DEMO_HOSTNAME}\",\"demo\":true,\"picture\":\"https://robohash.org/${_demo_pepper}?set=set4\"}"
-            ~/.astro/bin/python3 ~/.zen/Astroport.ONE/tools/nostr_node_intercom.py publish \
-                --nsec "$_nsec" \
-                --kind 0 \
-                --tags '[["t","demo"]]' \
-                --content "$_DEMO_CONTENT" \
-                --relays "ws://localhost:7777" 2>/dev/null \
-                && echo "  ✅ ${_DEMO_DISPLAY} — profil publié sur le relay" \
-                || echo "  ⚠️  ${_DEMO_DISPLAY} — publication différée (relay non prêt)"
-        fi
-    fi
-    _nsec=$(grep "^NSEC=" "$_demo_file" 2>/dev/null | cut -d= -f2)
-    _npub=$(grep "^NPUB=" "$_demo_file" 2>/dev/null | cut -d= -f2)
-    _email=$(grep "^EMAIL=" "$_demo_file" 2>/dev/null | cut -d= -f2)
-    printf "  👤 %-10s  <%s>\n" "$_DEMO_DISPLAY" "$_email"
-    printf "     nsec : %s\n" "${_nsec:-(keygen non disponible)}"
-    printf "     npub : %s...\n" "${_npub:0:24}"
-    echo ""
-done
+# for _demo in coucou toto jean; do
+#     _demo_file="${_DEMO_DIR}/${_demo}.keys"
+#     _demo_salt="${_demo}"
+#     _demo_pepper="support+${_demo}-${_DEMO_HOSTNAME}@${_DEMO_DOMAIN}"
+#     _DEMO_DISPLAY="$(echo "${_demo}" | awk '{print toupper(substr($0,1,1)) substr($0,2)}') [DEMO]"
+#     if [[ ! -s "$_demo_file" ]]; then
+#         _nsec=$("$_KEYGEN" -t nostr -s "$_demo_salt" "$_demo_pepper" 2>/dev/null || echo "")
+#         _npub=$("$_KEYGEN" -t nostr    "$_demo_salt" "$_demo_pepper" 2>/dev/null || echo "")
+#         if [[ -n "$_nsec" && -n "$_npub" ]]; then
+#             printf "NSEC=%s\nNPUB=%s\nEMAIL=%s\n" \
+#                 "$_nsec" "$_npub" "$_demo_pepper" > "$_demo_file"
+#             chmod 600 "$_demo_file"
+#             ## Publier le profil Kind 0 tagué DEMO sur le relay local
+#             _DEMO_CONTENT="{\"name\":\"${_DEMO_DISPLAY}\",\"about\":\"Compte de démonstration WoTx2 — ${_DEMO_HOSTNAME}\",\"demo\":true,\"picture\":\"https://robohash.org/${_demo_pepper}?set=set4\"}"
+#             ~/.astro/bin/python3 ~/.zen/Astroport.ONE/tools/nostr_node_intercom.py publish \
+#                 --nsec "$_nsec" \
+#                 --kind 0 \
+#                 --tags '[["t","demo"]]' \
+#                 --content "$_DEMO_CONTENT" \
+#                 --relays "ws://localhost:7777" 2>/dev/null \
+#                 && echo "  ✅ ${_DEMO_DISPLAY} — profil publié sur le relay" \
+#                 || echo "  ⚠️  ${_DEMO_DISPLAY} — publication différée (relay non prêt)"
+#         fi
+#     fi
+#     _nsec=$(grep "^NSEC=" "$_demo_file" 2>/dev/null | cut -d= -f2)
+#     _npub=$(grep "^NPUB=" "$_demo_file" 2>/dev/null | cut -d= -f2)
+#     _email=$(grep "^EMAIL=" "$_demo_file" 2>/dev/null | cut -d= -f2)
+#     printf "  👤 %-10s  <%s>\n" "$_DEMO_DISPLAY" "$_email"
+#     printf "     nsec : %s\n" "${_nsec:-(keygen non disponible)}"
+#     printf "     npub : %s...\n" "${_npub:0:24}"
+#     echo ""
+# done
 
-echo "  Les clés sont sauvegardées dans ~/.zen/demo/"
-echo ""
+# echo "  Les clés sont sauvegardées dans ~/.zen/demo/"
+# echo ""
 
-## Publier la graine WoTx2 (skills + objets + crafts + transactions demo)
-if [[ -f "${MY_PATH}/tools/demo_wotx2_seed.sh" ]]; then
-    echo "  🌱 Publication de la graine WoTx2 (skills/objets/crafts)…"
-    bash "${MY_PATH}/tools/demo_wotx2_seed.sh" \
-        --relay "${NOSTR_RELAY_WS:-ws://127.0.0.1:7777}" \
-        || echo "  ⚠️  Graine WoTx2 partielle — relay non prêt ? Re-exécutez tools/demo_wotx2_seed.sh"
-fi
+# ## Publier la graine WoTx2 (skills + objets + crafts + transactions demo)
+# if [[ -f "${MY_PATH}/tools/demo_wotx2_seed.sh" ]]; then
+#     echo "  🌱 Publication de la graine WoTx2 (skills/objets/crafts)…"
+#     bash "${MY_PATH}/tools/demo_wotx2_seed.sh" \
+#         --relay "${NOSTR_RELAY_WS:-ws://127.0.0.1:7777}" \
+#         || echo "  ⚠️  Graine WoTx2 partielle — relay non prêt ? Re-exécutez tools/demo_wotx2_seed.sh"
+# fi
 
-echo "  ┌───────────────────────────────────────────────────────────┐"
-echo "  │ X. Ouvrez MineLife dans votre navigateur :                │"
-echo "  │    http://127.0.0.1:54321/earth/minelife.html             │"
-echo "  │    Changez d'identité dans nos2x pour simuler la WoTx2    │"
-echo "  │    objects.html → inventaire objets                        │"
-echo "  │    skills.html  → nuage de compétences                    │"
-echo "  └───────────────────────────────────────────────────────────┘"
-echo ""
-[[ -t 0 ]] && read -r -p "  ↵  [Entrée pour continuer] " _
+# echo "  ┌───────────────────────────────────────────────────────────┐"
+# echo "  │ X. Ouvrez MineLife dans votre navigateur :                │"
+# echo "  │    http://127.0.0.1:54321/earth/minelife.html             │"
+# echo "  │    Changez d'identité dans nos2x pour simuler la WoTx2    │"
+# echo "  │    objects.html → inventaire objets                        │"
+# echo "  │    skills.html  → nuage de compétences                    │"
+# echo "  └───────────────────────────────────────────────────────────┘"
+# echo ""
+# [[ -t 0 ]] && read -r -p "  ↵  [Entrée pour continuer] " _
 
 ##########################################################
 ## MULTIPASS CAPITAINE — Clé NOSTR d'identité principale
