@@ -692,7 +692,7 @@ fi
 ##########################
 myUPLANET="${myIPFS}/ipns/copylaradio.com" ## UPLANET ENTRANCE
 myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY
-myCORACLE="${myCORACLE:-${myIPFS}/ipns/coracle.copylaradio.com}" ## CORACLE NOSTR CLIENT
+myCORACLE="${myCORACLE:-https://coracle.copylaradio.com}" ## CORACLE NOSTR CLIENT
 
 ## UPLANETNAME IS $HOME/.ipfs/swarm.key OR 0000000000000000000000000000000000000000000000000000000000000000
 [ -n "$(UPlanetSharedSecret)" ] \
