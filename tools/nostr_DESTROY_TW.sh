@@ -513,7 +513,7 @@ if [[ -f "${MY_PATH}/nostr_update_profile.py" ]]; then
     fi
     
     # Update profile with deactivation message, backup link, and next HEX
-    "${MY_PATH}/nostr_update_profile.py" "${player}" "$myRELAY" "wss://relay.copylaradio.com" \
+    "${MY_PATH}/nostr_update_profile.py" "${player}" "ws://127.0.0.1:7777" "wss://relay.copylaradio.com" \
         --about "${ABOUT_MSG}" \
         --name "[DEACTIVATED] ${youser}" \
         --website "${myIPFS}/ipfs/${NOSTRIFS}" 2>/dev/null \
@@ -534,7 +534,7 @@ python3 $MY_PATH/nostr_send_note.py \
     --kind 3 \
     --content "" \
     --tags "[]" \
-    --relays "$myRELAY" 2>/dev/null \
+    --relays "ws://127.0.0.1:7777" 2>/dev/null \
     && echo "✅ Follow list cleared (empty kind 3 published)" \
     || echo "⚠️  Failed to clear follow list (will continue with destruction)"
 

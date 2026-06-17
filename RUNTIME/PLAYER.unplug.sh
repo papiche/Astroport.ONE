@@ -84,7 +84,9 @@ LAT=$(makecoord $LAT)
 LON=$(makecoord $LON)
 ##############################################################
 ## POPULATE UMAP IPNS & G1PUB
-$($MY_PATH/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
+_umap_line=$($MY_PATH/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
+[[ "$_umap_line" =~ ^# ]] && echo "WARN: getUMAP_ENV.sh failed for LAT=${LAT} LON=${LON}" || eval "$_umap_line"
+unset _umap_line
 
 ## GET COINS
 COINS=$($MY_PATH/../tools/G1check.sh ${UPLANETNAME_G1} | tail -n 1)
@@ -101,7 +103,7 @@ YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
 
 
 ## REMOVING PLAYER from ASTROPORT
-ipfs key rm "${PLAYER}" "${PLAYER}_feed" "${G1PUB}"
+ipfs key rm "${PLAYER}" "${PLAYER}_feed" ${G1PUB:+"${G1PUB}"}
 for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cut -d / -f 1 | rev); do
     echo "removing wish ${vk}"
     [[ ${vk} != "" ]] && ipfs key rm ${vk}
