@@ -8,14 +8,32 @@ ME="${0##*/}"
 
 . "${MY_PATH}/my.sh"
 
+## HELP
+if [[ "$1" == "-h" || "$1" == "--help" || $# -lt 2 ]]; then
+    echo "Usage: $ME LAT LON"
+    echo ""
+    echo "Get G1PUB & IPNS keys for a geographic UMAP cell."
+    echo "Outputs all computed values then a final 'export VAR=...' line"
+    echo "suitable for eval or direct execution via command substitution."
+    echo ""
+    echo "  LAT  Latitude  (format: NN.NN, ex: 42.97)"
+    echo "  LON  Longitude (format: N.NN or NN.NN, ex: 1.87)"
+    echo ""
+    echo "Note: 0.00 est rejeté (sentinelle GPS Point Nemo)."
+    echo ""
+    echo "Exemple:"
+    echo "  eval \"\$(${ME} 42.97 1.87 | tail -n 1)\""
+    [[ "$1" == "-h" || "$1" == "--help" ]] && exit 0 || exit 1
+fi
+
 ## INIT
 LAT="$1"
 LON="$2"
 ZLAT=$(makecoord ${LAT})
 ZLON=$(makecoord ${LON})
 ## CHECK
-[[ "$ZLAT" != "$LAT" || "$LAT" == "" ]] && echo "# ERROR - $LAT bad format -" && exit 1
-[[ "$ZLON" != "$LON" || "$LON" == "" ]] && echo "# ERROR - $LON bad format -" && exit 1
+[[ "$ZLAT" != "$LAT" || "$LAT" == "" ]] && echo "# ERROR - $LAT bad format -" >&2 && exit 1
+[[ "$ZLON" != "$LON" || "$LON" == "" ]] && echo "# ERROR - $LON bad format -" >&2 && exit 1
 
 ## COMPUTE UMAP, USECTOR, UREGION
 SLAT="${LAT::-1}"

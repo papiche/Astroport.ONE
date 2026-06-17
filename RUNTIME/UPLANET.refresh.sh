@@ -80,6 +80,7 @@ for UMAP in ${unique_combined[@]}; do
     UMAP="_${LAT}_${LON}"
     [[ ${LAT} == "" || ${LON} == "" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
     [[ ${LAT} == "null" || ${LON} == "null" ]] && echo ">> ERROR BAD ${LAT} ${LON}" && continue
+    [[ ${LAT} == "0.00" || ${LON} == "0.00" ]] && echo ">> SKIP Point Nemo sentinel ${UMAP}" && continue
     SLAT="${LAT::-1}"
     SLON="${LON::-1}"
     SECTOR="_${SLAT}_${SLON}"
@@ -88,9 +89,12 @@ for UMAP in ${unique_combined[@]}; do
     REGION="_${RLAT}_${RLON}"
     echo "SECTOR ${SECTOR} REGION ${REGION}"
     ##############################################################
-    ## setUMAP_ENV.sh 
+    ## setUMAP_ENV.sh
     ##############################################################
-    $(${MY_PATH}/../tools/setUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
+    _umap_last=$(${MY_PATH}/../tools/setUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)
+    [[ ${PIPESTATUS[0]} -ne 0 || "$_umap_last" != export\ * ]] \
+        && echo ">> setUMAP_ENV SKIP ${LAT} ${LON}" && continue
+    eval "$_umap_last"
     #######################################################################################
     [[ ! -d ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/ ]] && echo "UMAPPATH not found" && exit 1
 
