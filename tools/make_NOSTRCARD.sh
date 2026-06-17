@@ -367,7 +367,7 @@ EOFNOSTR
     uSPOT_QR_ipfs=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/uSPOT.QR.png)
 
     ## QR CODE accès NOSTR VAULTNSQR
-    amzqr "${myIPFS}/ipns/$NOSTRNS/${EMAIL}/APP/uDRIVE" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
+    amzqr "${myLIBRA}/ipns/$NOSTRNS/${EMAIL}/APP/uDRIVE" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
         -c -n IPNS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     VAULTNSQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
@@ -433,7 +433,7 @@ EOFJSON
     echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png.cid
 
     ## Create NOSTR Profile Viewer QR Code
-    amzqr "${myIPFS}/ipns/copylaradio.com/nostr_profile_viewer.html?hex=${HEX}" -l H -p ${MY_PATH}/../images/lamanostr.png \
+    amzqr "${myLIBRA}/ipns/copylaradio.com/nostr_profile_viewer.html?hex=${HEX}" -l H -p ${MY_PATH}/../images/lamanostr.png \
         -c -n PROFILE.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     PROFILEQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/PROFILE.QR.png)
@@ -538,14 +538,14 @@ EOFJSON
             -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
             -e "s~_HEX_~${HEX}~g" \
             -e "s~_DATE_~$(date -u)~g" \
-            -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
-            -e "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" \
+            -e "s~http://127.0.0.1:8080~${myLIBRA}~g" \
+            -e "s~_CORACLEURL_~${myCORACLE:-https://coracle.copylaradio.com}~g" \
         > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
 
     if [[ "$Z" == ":ZEN" ]]; then
         ## Replace Cesium Access with uSPOT/check_balance?g1pub=email (html output)
         # Escape special characters in URLs for sed
-        sed -i "s~${myIPFS}/ipfs/QmTnSdXe5nuAyYKWikU9vtRA84EDhwWc3michnevFFpR3g/#/wot/${G1PUBNOSTR}/~${uSPOT}/check_balance?g1pub=${EMAIL}~g" \
+        sed -i "s~${myLIBRA}/ipfs/QmTnSdXe5nuAyYKWikU9vtRA84EDhwWc3michnevFFpR3g/#/wot/${G1PUBNOSTR}/~${uSPOT}/check_balance?g1pub=${EMAIL}~g" \
             "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
     fi
 
@@ -588,7 +588,7 @@ EOFJSON
     # DID is accessible via Nostr (source of truth) and IPFS/.well-known (cache)
     Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z}
 
-𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR}
+𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myLIBRA}/ipfs/${G1PUBNOSTRQR}
 
 🆔 DID: did:nostr:${HEX}
 "
@@ -689,9 +689,9 @@ EOFJSON
 
     ## Build profile name and about (Cesium+ overrides defaults if available)
     PROFILE_NAME="${CESIUM_NAME:-[•͡˘㇁•͡˘] $YOUSER}"
-    PROFILE_ABOUT="${CESIUM_ABOUT:-⏰ UPlanet Ẑen ${ORIGIN} // Welcome // ${myIPFS}/ipns/copylaradio.com // DID: did:nostr:${HEX}}"
-    PROFILE_AVATAR="$myIPFS/ipfs/${G1PUBNOSTRQR}"
-    [[ -n "$CESIUM_AVATAR_CID" ]] && PROFILE_AVATAR="$myIPFS/ipfs/${CESIUM_AVATAR_CID}"
+    PROFILE_ABOUT="${CESIUM_ABOUT:-⏰ UPlanet Ẑen ${ORIGIN} // Welcome // ${myLIBRA}/ipns/copylaradio.com // DID: did:nostr:${HEX}}"
+    PROFILE_AVATAR="$myLIBRA/ipfs/${G1PUBNOSTRQR}"
+    [[ -n "$CESIUM_AVATAR_CID" ]] && PROFILE_AVATAR="$myLIBRA/ipfs/${CESIUM_AVATAR_CID}"
 
     ### CREATE PROFILE in NOSTR RELAYS
     ## Derive SS58 v2 address from G1 v1 pubkey (G1PUBNOSTR_V1 = base58 v1 requis ici)
@@ -703,8 +703,8 @@ EOFJSON
         "$PROFILE_NAME" "${G1PUBNOSTR}"
         "$PROFILE_ABOUT"
         "$PROFILE_AVATAR"
-        "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg"
-        "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" ""
+        "$myLIBRA/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg"
+        "" "$myLIBRA/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" ""
         "wss://relay.copylaradio.com" "$myRELAY"
         --g1v2 "$G1V2ADDRESS"
         --zencard "$ZENCARDG1"

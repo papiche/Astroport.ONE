@@ -377,7 +377,7 @@ if [[ -s "${_DEMO_DIR}/demo_objects.index" ]]; then
                 ;;
         esac
 
-        local _now; _now=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+        _now=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
         _tx_content="{\"type\":\"${_txtype}\",\"delta_quantity\":${_dqty},\"delta_durability\":${_ddur},\"reason\":\"${_reason}\",\"operators\":[\"${NPUB[$_owner]}\"],\"recorded_at\":\"${_now}\"}"
         _tx_tags="[[\"d\",\"${_dtag}\"],[\"e\",\"${_eid}\"],[\"t\",\"${_txtype}\"],[\"delta_quantity\",\"${_dqty}\"],[\"delta_durability\",\"${_ddur}\"]]"
 
