@@ -72,20 +72,20 @@ r      = int(body[h_idx+5:h_idx+9], 16) - 32768   # -148
 
 ## Les 12 Portails Goldberg
 
-| ID | Nom astronomique | Coordonnées (lat°, lon°) |
-|---|---|---|
-| P00 | Pôle Nord | +90.0, 0.0 |
-| P01 | Pôle Sud | −90.0, 0.0 |
-| P02 | Orion | +26.56, 0.0 |
-| P03 | Aldébaran | +26.56, +72.0 |
-| P04 | Sirius | +26.56, +144.0 |
-| P05 | Véga | +26.56, −72.0 |
-| P06 | Antarès | +26.56, −144.0 |
-| P07 | Fomalhaut | −26.56, +36.0 |
-| P08 | Achernar | −26.56, +108.0 |
-| P09 | Rigel | −26.56, +180.0 |
-| P10 | Capella | −26.56, −36.0 |
-| P11 | Deneb | −26.56, −108.0 |
+| ID | Nom astronomique | Coordonnées (lat°, lon°) | Wikipedia |
+|---|---|---|---|
+| P00 | Pôle Nord | +90.0, 0.0 | https://fr.wikipedia.org/wiki/P%C3%B4le_Nord |
+| P01 | Pôle Sud | −90.0, 0.0 | https://fr.wikipedia.org/wiki/P%C3%B4le_Sud |
+| P02 | Orion | +26.56, 0.0 | https://fr.wikipedia.org/wiki/N%C3%A9buleuse_d%27Orion |
+| P03 | Aldébaran | +26.56, +72.0 | https://fr.wikipedia.org/wiki/Ald%C3%A9baran |
+| P04 | Sirius | +26.56, +144.0 | https://fr.wikipedia.org/wiki/Sirius |
+| P05 | Véga | +26.56, −72.0 | https://fr.wikipedia.org/wiki/V%C3%A9ga |
+| P06 | Antarès | +26.56, −144.0 | https://fr.wikipedia.org/wiki/Antar%C3%A8s |
+| P07 | Fomalhaut | −26.56, +36.0 | https://fr.wikipedia.org/wiki/Fomalhaut |
+| P08 | Achernar | −26.56, +108.0 | https://fr.wikipedia.org/wiki/Achernar |
+| P09 | Rigel | −26.56, +180.0 | https://fr.wikipedia.org/wiki/Rigel |
+| P10 | Capella | −26.56, −36.0 | https://fr.wikipedia.org/wiki/Capella_(%C3%A9toile) |
+| P11 | Deneb | −26.56, −108.0 | https://fr.wikipedia.org/wiki/Deneb |
 
 > Les positions sont calculées dynamiquement avec la précession des équinoxes via `Phi2X_Math.get_dynamic_pentagons(unix_ts)`.
 
