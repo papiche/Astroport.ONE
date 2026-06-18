@@ -153,6 +153,7 @@ echo "  📡 Scan kind 30800..."
 # Pré-scan DID pour peupler pubkey_email[] (requis par _scan_a4l_phi)
 _scan_did_mapping 2>/dev/null
 declare -A kin_emails=()    # kin_number → "email1 email2 …"
+declare -A email_zencard=() # emails avec ẐEN Card activée (.metadata.zencardWallet ou .g1pub local)
 total_profiles=0
 
 while IFS= read -r _evt; do
@@ -168,6 +169,13 @@ while IFS= read -r _evt; do
     ' 2>/dev/null)
     [[ -z "$_email" || -z "$_kin" || "$_kin" == "null" ]] && continue
     [[ ! "$_kin" =~ ^[0-9]+$ || $_kin -lt 1 || $_kin -gt 260 ]] && continue
+    # Marquer la ẐEN Card : zencardWallet dans le DID, ou fichier local .g1pub
+    _zencard_pub=$(echo "$_cnt" | jq -r '.metadata.zencardWallet.g1pub // empty' 2>/dev/null)
+    if [[ -n "$_zencard_pub" ]]; then
+        email_zencard["$_email"]=1
+    elif [[ -s "${HOME}/.zen/game/players/${_email}/.g1pub" ]]; then
+        email_zencard["$_email"]=1
+    fi
     # Extraire GPS depuis DID (chiffré ou texte clair) et remplir email_gps[]
     if command -v gps_parse_did_coords &>/dev/null; then
         eval "$(gps_parse_did_coords "$_cnt" 2>/dev/null)"
@@ -584,6 +592,13 @@ done
 swarm_count=0
 for _zkey in "${!zone_emails[@]}"; do
     IFS=' ' read -ra _zemails <<< "${zone_emails[$_zkey]}"
+    # Filtre anti-spam : ne retenir que les membres ayant activé leur ẐEN Card
+    declare -a _zc_emails=()
+    for _ze in "${_zemails[@]}"; do
+        [[ -n "${email_zencard[$_ze]:-}" ]] && _zc_emails+=("$_ze")
+    done
+    _zemails=("${_zc_emails[@]}")
+    unset _zc_emails
     [[ ${#_zemails[@]} -lt 2 ]] && continue  # swarm = 2 personnes minimum
 
     ((swarm_count++))

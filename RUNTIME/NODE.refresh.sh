@@ -7,6 +7,9 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
+## Protection contre les exécutions concurrentes (cron + manuel simultanés)
+exec 200>"/tmp/node_refresh.lock"
+flock -n 200 || { echo "NODE.refresh.sh déjà en cours — exit"; exit 0; }
 ################################################################################
 ## MAP REFRESH
 # LOAD EXTRA DATA TO CACHE ~/.zen/tmp/${IPFSNODEID}/

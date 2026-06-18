@@ -527,7 +527,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
         else
             # Get dimensions and cache them
             screen=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
-            local _w="${screen%%x*}" _h="${screen##*x}"
+            _w="${screen%%x*}" _h="${screen##*x}"
             large=$((_w-300))
             haut=$((_h-200))
             mkdir -p "$HOME/.zen/tmp"
