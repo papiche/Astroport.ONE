@@ -128,7 +128,7 @@ _oracle_card() {
         _found=true
     done
     if [[ "$_found" == "true" ]]; then
-        local vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin_oracle_${my_kin}_${p_kin}"
+        local vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin_oracle_${my_kin}_${p_kin}&effects&record"
         printf '<br><a href="%s" style="display:inline-block;background:%s;color:#fff;padding:.25rem .7rem;border-radius:6px;text-decoration:none;font-size:.78rem;margin-top:.3rem">🎥 Rencontrer</a>' "$vdo" "$phex"
     else
         printf '<span style="color:#9ca3af;font-size:.8rem">Pas encore dans le reseau</span>'
@@ -221,7 +221,7 @@ for DEST in "${RECIPIENTS[@]}"; do
             [[ -z "$_e" ]] && continue
             _pct=$(awk -v k="$_k" 'BEGIN{printf "%d",k*100}')
             _pk="${email_kin[$_e]:-?}"
-            _vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin_phi_${MY_KIN}_${_pk}"
+            _vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin_phi_${MY_KIN}_${_pk}&effects&record"
             _hsc=$(_hexagon_shared_count "$DEST" "$_e")
             _hsc_txt=""; [[ "$_hsc" -gt 0 ]] && \
                 _hsc_txt="<br><small style=\"color:#059669\">⬡ ${_hsc} noeuds hexagonaux partages</small>"
@@ -353,7 +353,7 @@ for DEST in "${RECIPIENTS[@]}"; do
         gsub(/_BIRTHDAY_BANNER_/, bday_banner)
         gsub(/_OMEGA_BIO_/,     omega_bio)
         gsub(/_SWARM_ALERT_/,   "")
-        gsub(/_VDO_URL_/, "https://vdo.copylaradio.com/?room=kin_birthday_" kn)
+        gsub(/_VDO_URL_/, "https://vdo.copylaradio.com/?room=kin_birthday_&effects&record" kn)
         print
     }' "$TMPL_USED" > "$_out"
 

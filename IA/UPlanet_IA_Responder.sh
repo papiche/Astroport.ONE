@@ -1881,7 +1881,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                                 TIMESTAMP_NOW=$(date -u +%s)
                                 
                                 # Build ORE-compatible contract tags (kind 30312 format - NIP-53 compliant)
-                                VDO_SERVICE="https://vdo.copylaradio.com/?room=UMAP_ORE_${UMAP_LAT}_${UMAP_LON}"
+                                VDO_SERVICE="https://vdo.copylaradio.com/?room=UMAP_ORE_${UMAP_LAT}_${UMAP_LON}&effects&record"
                                 ORE_CONTRACT_TAGS=$(jq -n \
                                     --arg d "$ORE_D_TAG" \
                                     --arg title "$CONTRACT_TITLE" \

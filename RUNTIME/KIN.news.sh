@@ -663,7 +663,6 @@ ${_swarm_html}
   </div>
 </div>
 <div class="ft">ATOM4LOVE Alpha · G1FabLab · UPlanet ORIGIN<br>
-<a href="mailto:support@qo-op.com?subject=opt-out%20kin-swarm">Se désabonner</a></div>
 </div></body></html>
 HTMLEOF
         if [[ -x "$MJ" ]]; then
