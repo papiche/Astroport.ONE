@@ -1442,7 +1442,7 @@ ERRHTML
             echo "IPNS updated due to uDRIVE changes for ${PLAYER}"
             FILE_UPDATES=$((FILE_UPDATES + 1))
         elif [[ "$REFRESH_REASON" == "uworld_update" ]]; then
-            echo "IPNS updated due to uWORLD changes for ${PLAYER}"
+            echo "IPNS updated due to UPlanet changes for ${PLAYER}"
             FILE_UPDATES=$((FILE_UPDATES + 1))
         else
             echo "IPNS updated for ${PLAYER} (unknown reason: $REFRESH_REASON)"

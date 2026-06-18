@@ -6,632 +6,463 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/png" href="http://127.0.0.1:8080/ipfs/Qma5LvAd8HqiR2GadhRxWs6tF8XvtpFHfskh2sB9a15tyL" />
+  <meta name="Description" content="MULTIPASS - Votre identité numérique libre avec réseau social NOSTR et assistant IA personnel" />
+  <meta name="theme-color" content="#1a237e" />
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: sans-serif; }
 
-body {
-  font-family: sans-serif;
-}
+h1 { color: #1c4587; text-align: center; font-style: italic; font-size: 180%; }
+h2 { background: #ead1dc; color: #741b47; font-family: monospace; text-align: center;
+     font-size: 140%; font-weight: normal; margin: 0.2rem 0 0 0; padding: 0.2rem 0; }
+h3 { color: #1c4587; font-size: 120%; margin: 0.3rem 0; }
+th  { text-align: left; background: #c9daf8; color: #073763; }
+p   { padding: 0.2rem; padding-top: 0.5rem; font-size: 105%; }
+ul  { padding-left: 2rem; list-style: none; }
 
-h1 {
-  color: #1c4587;
-  text-align: center;
-  font-style: italic;
-  font-size: 180%;
-}
+.zine-li:before { content: '\21D2'; margin-left: -20px; margin-right: 10px; }
+.zine-link { font-family: monospace; background: #c9daf8; color: #073763; }
 
-h2 {
-  background: #ead1dc;
-  color: #741b47;
-  font-family: monospace;
-  text-align: center;
-  font-size: 140%;
-  font-weight: normal;
-  margin: 0.2rem 0 0 0;
-  padding: 0.2rem 0 0.2rem;
-}
+.captioned-img { object-fit: contain; max-height: 100%; max-width: 100%; padding: 0 2rem; }
+figcaption { font-family: monospace; font-size: 80%; font-style: italic;
+             background: #c9daf8; color: #073763; margin: 0 1rem; }
+.full-img  { object-fit: contain; max-height: 100%; max-width: 100%; padding: 1rem; }
+.mini-img  { max-width: 10rem; }
 
-h3 {
-  color: #1c4587;
-  font-size: 120%;
-  margin: 0.3rem 0;
-}
-
-th {
-  text-align: left;
-  background: #c9daf8;
-  color: #073763;
-}
-
-p {
-  padding: 0.2rem;
-  padding-top: 0.5rem;
-  font-size: 105%;
-}
-
-ul {
-  padding-left: 2rem;
-  list-style: none;
-}
-
-.zine-li:before {
-  content: '\21D2';
-  margin-left: -20px;
-  margin-right: 10px;
-}
-
-.zine-link {
-  font-family: monospace;
-  background: #c9daf8;
-  color: #073763;
-}
-
-.captioned-img {
-  object-fit: contain;
-  max-height: 100%;
-  max-width: 100%;
-  padding: 0 2rem 0 2rem;
-}
-
-figcaption {
-  font-family: monospace;
-  font-size: 80%;
-  font-style: italic;
-  background: #c9daf8;
-  color: #073763;
-  margin: 0 1rem 0 1rem;
-}
-
-.full-img {
-  object-fit: contain;
-  max-height: 100%;
-  max-width: 100%;
-  padding: 1rem;
-}
-
-.mini-img {
-  max-width: 10rem;
-}
-
-.glitchButton {
-  float: left;
-  padding: 1rem 0.5rem 0 0.5rem;
-}
-
-.cc-licence {
-  float: right;
-  margin: 1rem 0.5rem 0 0.5rem;
-}
+.glitchButton { float: left; padding: 1rem 0.5rem 0 0.5rem; }
+.cc-licence   { float: right; margin: 1rem 0.5rem 0 0.5rem; }
 
 /* Mode écran */
 @media screen {
-  body {
-    max-width: 30rem;
-    background: #ead1dc;
-    margin: auto;
-  }
-
-  .zine {
-    background: white;
-    padding: 10px;
-    border-left: 4px solid #741b47;
-    border-bottom: 4px solid #741b47;
-  }
-
-  .zine-page {
-    margin-top: 10px;
-  }
+  body { max-width: 30rem; background: #ead1dc; margin: auto; }
+  .zine { background: white; padding: 10px;
+          border-left: 4px solid #741b47; border-bottom: 4px solid #741b47; }
+  .zine-page { margin-top: 10px; }
 }
 
-/* Mode impression A4 */
+/* Mode impression A4 paysage */
 @media print {
-  body {
-    font-size: 45%;
-  }
-
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .mini-img {
-    max-width: 4.4rem;
-  }
-
-  @page {
-    size: landscape;
-    margin: 0.7cm;
-    bleed: 0;
-  }
-
+  body { font-size: 45%; }
+  a { color: inherit; text-decoration: none; }
+  .mini-img  { max-width: 4.4rem; }
+  @page { size: landscape; margin: 0.7cm; bleed: 0; }
   .zine {
-    width: 100vw;
-    height: 100vh;
-    display: grid;
-    gap: 1.5px;
-    background: lightgrey;
-    grid-template-areas:
-      "page-5 page-4 page-3 page-2"
-      "page-6 page-7 page-8 page-1";
-    grid-template-columns: repeat(4, 25%);
-    grid-template-rows: repeat(2, 50%);
+    width: 100vw; height: 100vh; display: grid; gap: 1.5px; background: lightgrey;
+    grid-template-areas: "page-5 page-4 page-3 page-2" "page-6 page-7 page-8 page-1";
+    grid-template-columns: repeat(4, 25%); grid-template-rows: repeat(2, 50%);
   }
-
-  .zine-page {
-    background: white;
-    padding: 0.5cm;
-    overflow: hidden;
-  }
-
-  .page-5, .page-4, .page-3, .page-2 {
-    transform: rotate(180deg) translateX(-0.1px);
-  }
-
-  .page-1 { grid-area: page-1; }
-  .page-2 { grid-area: page-2; }
-  .page-3 { grid-area: page-3; }
-  .page-4 { grid-area: page-4; }
-  .page-5 { grid-area: page-5; }
-  .page-6 { grid-area: page-6; }
-  .page-7 { grid-area: page-7; }
-  .page-8 { grid-area: page-8; }
-
-  table {
-    width: 100%;
-    table-layout: fixed;
-    word-wrap: break-word;
-    font-size: 85%;
-  }
-
-  table td {
-    word-break: break-all;
-    overflow-wrap: break-word;
-    hyphens: auto;
-    padding: 0.1rem;
-  }
-
-  h2 {
-    font-size: 120%;
-    margin: 0.1rem 0;
-    padding: 0.1rem 0;
-  }
-
-  p {
-    padding: 0.1rem;
-    font-size: 95%;
-  }
-
-  ul {
-    padding-left: 1.5rem;
-  }
-
-  .zine-li:before {
-    margin-left: -15px;
-    margin-right: 8px;
-  }
-
-  .full-img {
-    max-height: 40vh;
-    width: 100%;
-    object-fit: contain;
-  }
-
-  .half-img {
-    max-height: 35vh;
-    max-width: 48%;
-    object-fit: contain;
-  }
-
-  .captioned-img {
-    max-height: 35vh;
-    max-width: 100%;
-    object-fit: contain;
-    padding: 0.1rem;
-  }
-
-  .long-key {
-    font-family: monospace !important;
-    font-size: 45% !important;
-    word-break: break-all !important;
-    line-height: 1.1 !important;
-    padding: 0.05rem !important;
-  }
+  .zine-page { background: white; padding: 0.5cm; overflow: hidden; }
+  .page-5,.page-4,.page-3,.page-2 { transform: rotate(180deg) translateX(-0.1px); }
+  .page-1{grid-area:page-1} .page-2{grid-area:page-2} .page-3{grid-area:page-3}
+  .page-4{grid-area:page-4} .page-5{grid-area:page-5} .page-6{grid-area:page-6}
+  .page-7{grid-area:page-7} .page-8{grid-area:page-8}
+  table { width:100%; table-layout:fixed; word-wrap:break-word; font-size:85%; }
+  table td { word-break:break-all; overflow-wrap:break-word; hyphens:auto; padding:0.1rem; }
+  h2  { font-size: 120%; margin: 0.1rem 0; padding: 0.1rem 0; }
+  p   { padding: 0.1rem; font-size: 95%; }
+  ul  { padding-left: 1.5rem; }
+  .zine-li:before { margin-left:-15px; margin-right:8px; }
+  .full-img  { max-height:40vh; width:100%; object-fit:contain; }
+  .half-img  { max-height:35vh; max-width:48%; object-fit:contain; }
+  .captioned-img { max-height:35vh; max-width:100%; object-fit:contain; padding:0.1rem; }
+  .long-key  { font-family:monospace !important; font-size:45% !important;
+               word-break:break-all !important; line-height:1.1 !important; padding:0.05rem !important; }
 }
 
-/* Styles spécifiques MULTIPASS */
+/* ── Composants réutilisables ── */
 .multipass-header {
   background: linear-gradient(135deg, #1c4587, #741b47);
-  color: white;
-  padding: 0.5rem;
-  text-align: center;
-  border-radius: 4px;
+  color: white; padding: 0.5rem; text-align: center; border-radius: 4px;
 }
-
 .feature-block {
-  background: #f8f0f3;
-  border: 1px solid #d1b8c5;
-  border-radius: 4px;
-  padding: 0.3rem;
-  margin: 0.2rem 0;
+  background: #f8f0f3; border: 1px solid #d1b8c5;
+  border-radius: 4px; padding: 0.3rem; margin: 0.2rem 0;
 }
-
-.feature-title {
-  color: #1c4587;
-  font-weight: bold;
-  font-size: 110%;
-}
-
-.feature-desc {
-  font-size: 95%;
-  color: #741b47;
-}
-
+.feature-title { color: #1c4587; font-weight: bold; font-size: 110%; }
+.feature-desc  { font-size: 95%; color: #741b47; }
 .example-block {
-  background: #e8f4fd;
-  border-left: 3px solid #1c4587;
-  padding: 0.3rem;
-  margin: 0.2rem 0;
-  font-family: monospace;
-  font-size: 90%;
+  background: #e8f4fd; border-left: 3px solid #1c4587;
+  padding: 0.3rem; margin: 0.2rem 0; font-family: monospace; font-size: 90%;
 }
-
 .price-tag {
-  background: #741b47;
-  color: white;
-  padding: 0.2rem 0.5rem;
-  border-radius: 15px;
-  font-weight: bold;
-  text-align: center;
-  display: inline-block;
-  margin: 0.2rem;
+  background: #741b47; color: white; padding: 0.2rem 0.5rem;
+  border-radius: 15px; font-weight: bold; text-align: center;
+  display: inline-block; margin: 0.2rem;
 }
+.app-badge {
+  display: inline-block; background: #1c4587; color: white;
+  border-radius: 10px; padding: 0.1rem 0.4rem; font-size: 85%;
+  font-family: monospace; margin: 0.1rem 0.05rem;
+}
+.app-badge.green  { background: #1e6b3a; }
+.app-badge.amber  { background: #7a5c00; }
+.app-badge.purple { background: #5b2d8a; }
 
-.zine-page img {
-  max-width: 100%;
-  height: auto;
-  margin: 0.5rem 0;
-}
+.zine-page img { max-width: 100%; height: auto; margin: 0.5rem 0; }
+.services-row { display: flex; gap: 0.3rem; flex-wrap: wrap; margin: 0.3rem 0; align-items: center; }
 
 @media screen {
-  .full-img {
-    max-height: 60vh;
-  }
-  .half-img {
-    max-height: 25vh;
-  }
+  .full-img  { max-height: 60vh; }
+  .half-img  { max-height: 25vh; }
 }
-
 @media print {
-  .full-img {
-    max-height: 45vh;
-    width: 100%;
-  }
-  .half-img {
-    max-height: 40vh;
-    max-width: 50%;
-  }
+  .full-img  { max-height: 45vh; width: 100%; }
+  .half-img  { max-height: 40vh; max-width: 50%; }
 }
-
 @media screen and (max-width: 900px) {
-  .zine {
-    display: block !important;
-    width: 100%;
-    padding: 0;
-    border: none;
-  }
-  .zine-page {
-    width: 100%;
-    max-width: 100vw;
-    margin: 1rem 0;
-    padding: 1rem;
-    box-sizing: border-box;
-    transform: none !important;
-  }
-  .print-button {
-    display: none;
-  }
+  .zine { display:block !important; width:100%; padding:0; border:none; }
+  .zine-page { width:100%; max-width:100vw; margin:1rem 0; padding:1rem;
+               box-sizing:border-box; transform:none !important; }
+  .print-button { display: none; }
 }
 @media screen and (max-width: 600px) {
-  body {
-    font-size: 90%;
-  }
-  .zine-page {
-    padding: 0.5rem;
-  }
+  body { font-size: 90%; }
+  .zine-page { padding: 0.5rem; }
 }
 </style>
-
-  <meta name="Description" content="MULTIPASS - Votre identité numérique libre avec réseau social NOSTR et assistant IA personnel" />
-  <meta name="theme-color" content="#1a237e" />
 </head>
 
 <main class="zine">
 
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 1 — COUVERTURE                                        ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
 <header class="zine-page page-1">
-    <div class="multipass-header">
-        <h1>🌐 MULTIPASS — _UPLANET8_</h1>
-        <h2>_PLAYER_</h2>
-    </div>
+  <div class="multipass-header">
+    <h1>🌐 MULTIPASS — _UPLANET8_</h1>
+    <h2>_PLAYER_</h2>
+  </div>
 
-    <div class="price-tag">1 Ẑ / semaine — redevance d'usage</div>
+  <div class="price-tag">1 Ẑ / semaine — redevance d'usage</div>
 
-    <p><strong>Réseau social décentralisé + Assistant IA personnel</strong></p>
-    
-    <img class="full-img" src='/ipfs/QmS7nQG4yEVP8rBWcNSwkwFiWHcyKuP3FVedw9fYvirt21/page1.gif' alt="MULTIPASS Identity">
-    
-    <p>🔐 Identité NOSTR sécurisée<br>
-    🤖 Assistant IA personnel<br>
-    🌍 Services géolocalisés</p>
+  <p>Votre identité numérique souveraine dans<br>
+  l'écosystème <strong>UPlanet</strong></p>
+
+  <div class="services-row">
+    <span class="app-badge">⚛ ATOM4LOVE</span>
+    <span class="app-badge green">💚 Zelkova</span>
+    <span class="app-badge purple">📞 Cabine-33</span>
+    <span class="app-badge amber">📰 KIN.news</span>
+    <span class="app-badge">🤖 ASTROBOT</span>
+  </div>
+
+  <img class="full-img" src="/ipfs/QmS7nQG4yEVP8rBWcNSwkwFiWHcyKuP3FVedw9fYvirt21/page1.gif" alt="MULTIPASS Identity">
+
+  <p>🔐 Clés cryptographiques personnelles<br>
+     🌍 Services géolocalisés P2P<br>
+     🆓 100 % Logiciel Libre (AGPL)</p>
 </header>
 
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 2 — ⚛ ATOM4LOVE + CABINE-33                          ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
 <section class="zine-page page-2">
-    <h2>🔐 IDENTITÉ NOSTR</h2>
-    
-    <div class="feature-block">
-        <div class="feature-title">Profil décentralisé</div>
-        <div class="feature-desc">Votre identité numérique sur le réseau NOSTR</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Clés cryptographiques</div>
-        <div class="feature-desc">Contrôle total de vos données personnelles</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Stockage IPFS</div>
-        <div class="feature-desc">Données distribuées et résistantes à la censure</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Web of Trust</div>
-        <div class="feature-desc">Système de certification communautaire</div>
-    </div>
-    
-    <h3>🌍 Services géolocalisés</h3>
-    <ul>
-        <li class="zine-li">Découverte des utilisateurs proches</li>
-        <li class="zine-li">Partage de contenu local</li>
-        <li class="zine-li">Applications uDRIVE et uWORLD</li>
-        <li class="zine-li">UPassport numérique</li>
-    </ul>
+  <h2>⚛ ATOM4LOVE</h2>
+
+  <p><strong>Rencontres par résonance Phi2x</strong></p>
+
+  <div class="feature-block">
+    <div class="feature-title">📞 Cabine-33 — App mobile</div>
+    <div class="feature-desc">Géolocalisez-vous sur la grille hexagonale.
+    Restez 33 secondes au centre d'un hexagone pour déclencher le
+    <strong>Rituel de Cabine</strong> et publier votre trace NOSTR.</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">🧲 Résonance Phi2x — k ∈ [0, 1]</div>
+    <div class="feature-desc">Votre <em>phase personnelle</em> GPS + bio
+    est comparée à celle d'un autre membre.
+    k ≥ 0.95 → <strong>super-cohérence</strong> = lien covalent !</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">🔌 Extension navigateur</div>
+    <div class="feature-desc">Chrome / Firefox : signez vos événements
+    NOSTR depuis n'importe quelle page web. Découvrez votre résonance
+    avec l'auteur de chaque article. Laissez votre <em>traceur</em>
+    sur l'URL visitée.</div>
+  </div>
+
+  <h3>📲 Télécharger</h3>
+  <ul>
+    <li class="zine-li">APK Android : <span class="zine-link">atom4love.app</span></li>
+    <li class="zine-li">Extension : <span class="zine-link">Chrome Web Store</span></li>
+    <li class="zine-li">Web PWA : <span class="zine-link">app.atom4love.fr</span></li>
+  </ul>
 </section>
 
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 3 — 🤖 ASTROBOT + KIN.news                           ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
 <section class="zine-page page-3">
-    <h2>🤖 ASSISTANT IA</h2>
-    
-    <p><strong>ASTROBOT - Votre assistant personnel</strong></p>
-    
-    <div class="feature-block">
-        <div class="feature-title">#BRO - Activation IA</div>
-        <div class="feature-desc">Tag pour activer l'assistant personnel</div>
+  <h2>🤖 ASTROBOT + KIN.news</h2>
+
+  <p><strong>Votre assistant IA & journal vivant</strong></p>
+
+  <p>Envoyez <code>#BRO</code> suivi d'un tag sur votre relay NOSTR :</p>
+
+  <div class="feature-block">
+    <div class="feature-title">Recherche &amp; Création</div>
+    <div class="feature-desc">
+      <span class="app-badge">#search</span> recherche web intelligente<br>
+      <span class="app-badge">#image</span> génération d'image IA<br>
+      <span class="app-badge">#music</span> composition musicale<br>
+      <span class="app-badge">#video</span> création vidéo IA
     </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">#search - Recherche web</div>
-        <div class="feature-desc">Recherche intelligente sur internet</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">Téléchargement &amp; Nature</div>
+    <div class="feature-desc">
+      <span class="app-badge amber">#youtube</span> <span class="app-badge amber">#mp3</span> <span class="app-badge amber">#mp4</span> télécharger<br>
+      <span class="app-badge green">#plantnet</span> identifier une plante<br>
+      <span class="app-badge green">#inventory</span> scanner un objet
     </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">#image - Génération d'images</div>
-        <div class="feature-desc">Création d'images avec IA</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">Voix &amp; Mémoire</div>
+    <div class="feature-desc">
+      <span class="app-badge purple">#pierre</span> <span class="app-badge purple">#amelie</span> synthèse vocale<br>
+      <span class="app-badge">#mem</span> <span class="app-badge">#rec</span> <span class="app-badge">#reset</span> historique de session
     </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">#music - Création musicale</div>
-        <div class="feature-desc">Génération de musique personnalisée</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">#pierre / #amelie</div>
-        <div class="feature-desc">Synthèse vocale avec différentes voix</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">#youtube - Téléchargement</div>
-        <div class="feature-desc">Téléchargement de vidéos YouTube</div>
-    </div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">📰 KIN.news — votre ZINE hebdo</div>
+    <div class="feature-desc">Reçu par email chaque semaine : actualités
+    coopératives, KIN Dreamspell du jour, économie ẐEN, nouveautés UPlanet.</div>
+  </div>
 </section>
 
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 4 — 🚀 COMMENT DÉMARRER                               ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
 <section class="zine-page page-4">
-    <h2>🚀 COMMENT ÇA MARCHE</h2>
-    
-    <div class="feature-block">
-        <div class="feature-title">1. Inscription</div>
-        <div class="feature-desc">Recevez 1 G1 d'activation automatique</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">2. Configuration</div>
-        <div class="feature-desc">Profil NOSTR créé automatiquement</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">3. Utilisation</div>
-        <div class="feature-desc">Tag #BRO + votre question</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">4. Paiement</div>
-        <div class="feature-desc">1 Ẑ automatique par semaine</div>
-    </div>
-    
-    <h3>💡 Exemples d'usage</h3>
-    
-    <div class="example-block">
-        #BRO #search "meilleurs restaurants libres Paris"
-    </div>
-    
-    <div class="example-block">
-        #BRO #image "un chat zen dans un jardin japonais"
-    </div>
-    
-    <div class="example-block">
-        #BRO #music "ambiance jazz lounge"
-    </div>
-    
-    <div class="example-block">
-        #BRO #mem (voir l'historique)
-    </div>
+  <h2>🚀 DÉMARRER EN 4 ÉTAPES</h2>
+
+  <div class="feature-block">
+    <div class="feature-title">1. Votre MULTIPASS est actif ✅</div>
+    <div class="feature-desc">Profil NOSTR créé · 1 G1 d'activation reçu ·
+    Clés cryptographiques dérivées</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">2. Installez Zelkova 💚</div>
+    <div class="feature-desc">Wallet ẐEN (Android/iOS/Web).
+    Importez votre MULTIPASS avec votre email.
+    Voyez votre solde et envoyez des ẐEN.</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">3. Extension ATOM4LOVE ⚛</div>
+    <div class="feature-desc">Installez l'extension navigateur.
+    Entrez votre <code>nsec</code> pour signer vos événements NOSTR.
+    Activez le match Phi2x sur chaque page.</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">4. Cabine-33 📞</div>
+    <div class="feature-desc">Téléchargez l'APK ATOM4LOVE.
+    Activez le GPS. Trouvez votre hexagone.
+    Rencontrez vos atomes affinitaires.</div>
+  </div>
+
+  <h3>💡 Premiers messages NOSTR</h3>
+  <div class="example-block">#BRO Bonjour !</div>
+  <div class="example-block">#BRO #search "monnaie libre"</div>
+  <div class="example-block">#BRO #image "jardin zen"</div>
 </section>
 
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 5 — 💚 ZELKOVA + NOSTR                                ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
 <section class="zine-page page-5">
-    <h2>🌐 RÉSEAU NOSTR</h2>
-    
-    <p><strong>Protocole de communication décentralisé</strong></p>
-    
-    <div class="feature-block">
-        <div class="feature-title">Messagerie sécurisée</div>
-        <div class="feature-desc">Chiffrement de bout en bout</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Résistance à la censure</div>
-        <div class="feature-desc">Pas de serveur central</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Interopérabilité</div>
-        <div class="feature-desc">Compatible avec tous les clients NOSTR</div>
-    </div>
-    
-    <h3>🔧 Installation</h3>
-    <ul>
-        <li class="zine-li">Extension navigateur NOSTR</li>
-        <li class="zine-li">Import de votre clé privée</li>
-        <li class="zine-li">Connexion aux relais</li>
-        <li class="zine-li">Début de l'expérience</li>
-    </ul>
-    
-    <h3>📱 Applications</h3>
-    <ul>
-        <li class="zine-li">Coracle Z (web)</li>
-        <li class="zine-li">Amethyst (Android)</li>
-        <li class="zine-li">Damus (iOS)</li>
-        <li class="zine-li">Nostr Console (desktop)</li>
-    </ul>
+  <h2>💚 ZELKOVA — Wallet ẐEN</h2>
+
+  <p><strong>Paiements libres sur Duniter v2</strong></p>
+
+  <div class="feature-block">
+    <div class="feature-title">💸 Portefeuille ẐEN</div>
+    <div class="feature-desc">1 Ẑ = 1 € en UPlanet ẐEN<br>
+    1 Ẑ = 0,1 Ğ1 en UPlanet ORIGIN<br>
+    Envoi instantané entre membres</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">❤️ 1 like NOSTR = 1 Ẑ automatique</div>
+    <div class="feature-desc">Chaque réaction Kind 7 sur vos notes
+    déclenche un micro-paiement G1 via le relay.
+    5 likes reçus cette semaine = redevance couverte !</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">🔐 Sécurité SSSS 2-sur-3</div>
+    <div class="feature-desc">Votre clé privée est fragmentée en 3 parts.
+    2 parts suffisent à la reconstruire.
+    Aucun serveur ne connaît votre nsec.</div>
+  </div>
+
+  <h3>🌐 Réseau NOSTR</h3>
+  <ul>
+    <li class="zine-li">Relay souverain sur votre station</li>
+    <li class="zine-li">Messagerie chiffrée (NIP-44)</li>
+    <li class="zine-li">Compatible Coracle, Amethyst, Damus</li>
+    <li class="zine-li">Web of Trust N² — certifications pair-à-pair</li>
+  </ul>
+
+  <h3>📲 Zelkova</h3>
+  <ul>
+    <li class="zine-li">Android APK + iOS + Web PWA</li>
+    <li class="zine-li">Récupération par email (sans code PIN)</li>
+    <li class="zine-li"><span class="zine-link">copylaradio.com/zelkova</span></li>
+  </ul>
 </section>
 
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 6 — 🐉 L'APPEL DU DRAGON                             ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
 <section class="zine-page page-6">
-    <h2>🐉 L'Appel du DRAGON</h2>
+  <h2>🐉 L'Appel du DRAGON</h2>
 
-    <p><strong>Secteur : _SECTOR_ | Constellation : _UPLANET8_</strong></p>
+  <p><strong>Secteur : _SECTOR_ | Constellation : _UPLANET8_</strong></p>
 
-    <p>Vous avez exploré UPlanet ORIGIN. Le réseau ẐEN vous attend — l'économie réelle, le cloud privé, la gouvernance coopérative.</p>
+  <p>Vous avez exploré UPlanet ORIGIN. Le réseau ẐEN vous attend —
+  l'économie réelle, le cloud privé, la gouvernance coopérative.</p>
 
-    <div class="feature-block">
-        <div class="feature-title">🔑 swarm.key — votre laissez-passer</div>
-        <div class="feature-desc">Clé cryptographique du réseau privé ẐEN, délivrée après la Formation DRAGON</div>
-    </div>
+  <div class="feature-block">
+    <div class="feature-title">🔑 swarm.key — votre laissez-passer</div>
+    <div class="feature-desc">Clé cryptographique du réseau privé ẐEN,
+    délivrée après la Formation DRAGON</div>
+  </div>
 
-    <div class="feature-block">
-        <div class="feature-title">⚓ Grade Capitaine — 28 Ẑen/semaine</div>
-        <div class="feature-desc">Opérez votre propre station, accueillez des utilisateurs</div>
-    </div>
+  <div class="feature-block">
+    <div class="feature-title">⚓ Grade Capitaine — 28 Ẑ/semaine</div>
+    <div class="feature-desc">Opérez votre propre station Astroport,
+    accueillez des utilisateurs, gérez vos MULTIPASS</div>
+  </div>
 
-    <div class="feature-block">
-        <div class="feature-title">🐉 U.SOCIETY — zéro loyer annuel</div>
-        <div class="feature-desc">Parrainage 50€/an → NextCloud 128Go + droits de vote coopératifs</div>
-    </div>
+  <div class="feature-block">
+    <div class="feature-title">🐉 U.SOCIETY — zéro loyer annuel</div>
+    <div class="feature-desc">Parrainage 50 €/an → NextCloud 128 Go +
+    droits de vote coopératifs CopyLaRadio SCIC</div>
+  </div>
 
-    <p style="background:#ead1dc; padding:0.4rem; font-size:90%; text-align:center">
-        📧 <strong>support@qo-op.com</strong><br>
-        Objet : <em>"Candidature Capitaine DRAGON — _PLAYER_"</em>
-    </p>
+  <div class="feature-block">
+    <div class="feature-title">🧠 Stack IA coopérative</div>
+    <div class="feature-desc">Ollama + Open WebUI + Qdrant + ComfyUI
+    déployés sur votre station (profil <em>ai-company</em>)</div>
+  </div>
+
+  <p style="background:#ead1dc; padding:0.4rem; font-size:90%; text-align:center">
+    📧 <strong>support@qo-op.com</strong><br>
+    Objet : <em>"Candidature Capitaine DRAGON — _PLAYER_"</em>
+  </p>
 </section>
 
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 7 — 💰 ÉCONOMIE LIBRE                                 ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
 <section class="zine-page page-7">
-    <h2>💰 ÉCONOMIE LIBRE</h2>
-    
-    <div class="price-tag">1 Ẑ / semaine → Capitaine</div>
+  <h2>💰 ÉCONOMIE LIBRE</h2>
 
-    <p><strong>Redevance d'usage hebdomadaire (PAF)</strong></p>
-    
-    <div class="feature-block">
-        <div class="feature-title">Paiement automatique</div>
-        <div class="feature-desc">Tous les 7 jours au Captain</div>
+  <div class="price-tag">1 Ẑ / semaine → Capitaine</div>
+
+  <p><strong>La redevance d'usage hebdomadaire (PAF) finance l'infrastructure.</strong></p>
+
+  <div class="feature-block">
+    <div class="feature-title">Comment couvrir votre PAF</div>
+    <div class="feature-desc">
+      ❤️ 1 like reçu sur NOSTR = 1 Ẑ automatique<br>
+      📝 5 notes utiles cette semaine = PAF couverte<br>
+      ⚛ Résonance Phi2x &gt; 0.95 = 1 Ẑ bonus<br>
+      🐉 Parrain annuel = zéro PAF hebdomadaire
     </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Infrastructure partagée</div>
-        <div class="feature-desc">Coûts répartis entre tous les utilisateurs</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">Règle des 3×1/3</div>
+    <div class="feature-desc">
+      Chaque ẐEN entrant est réparti :<br>
+      🏦 1/3 → Trésorerie coopérative<br>
+      🔬 1/3 → R&amp;D et développement<br>
+      🏗️ 1/3 → Actifs de la station
     </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Développement communautaire</div>
-        <div class="feature-desc">Financement des améliorations</div>
-    </div>
-    
-    <h3>🌱 Avantages</h3>
-    <ul>
-        <li class="zine-li">Pas de publicité</li>
-        <li class="zine-li">Pas de vente de données</li>
-        <li class="zine-li">Modèle coopératif</li>
-        <li class="zine-li">Transparence totale</li>
-    </ul>
-    
-    <h3>🔄 Couvrir votre redevance</h3>
-    <ul>
-        <li class="zine-li">💬 1 like reçu sur Nostr = 1 Ẑen automatique</li>
-        <li class="zine-li">5 posts utiles cette semaine = redevance couverte</li>
-        <li class="zine-li">🐉 Parrain annuel = zéro redevance hebdomadaire</li>
-    </ul>
+  </div>
+
+  <h3>🌱 Modèle coopératif</h3>
+  <ul>
+    <li class="zine-li">Zéro publicité · Zéro vente de données</li>
+    <li class="zine-li">Transparence totale (AGPL-3.0)</li>
+    <li class="zine-li">Gouvernance par les membres (SCIC)</li>
+    <li class="zine-li">Zelkova pour visualiser vos ẐEN</li>
+  </ul>
+
+  <h3>🔄 Zelkova — votre solde en temps réel</h3>
+  <ul>
+    <li class="zine-li">Historique complet des transactions</li>
+    <li class="zine-li">Envoi ẐEN peer-to-peer instantané</li>
+    <li class="zine-li">Recharge G1 ↔ Ẑ sur votre station</li>
+  </ul>
 </section>
 
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 8 — FOOTER / REJOINDRE                                ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
 <footer class="zine-page page-8">
-    <h2>🌱 REJOIGNEZ LA RÉVOLUTION</h2>
-    
-    <p><strong>Numérique décentralisé et éthique</strong></p>
-    
-    <div class="feature-block">
-        <div class="feature-title">100% Logiciel Libre</div>
-        <div class="feature-desc">Code source ouvert et auditable</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Communauté active</div>
-        <div class="feature-desc">Support et entraide entre utilisateurs</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Évolution continue</div>
-        <div class="feature-desc">Nouvelles fonctionnalités régulières</div>
-    </div>
-    
-    <h3>📞 Contact</h3>
-    <ul>
-        <li class="zine-li">support@qo-op.com</li>
-        <li class="zine-li">forum.monnaie-libre.fr</li>
-        <li class="zine-li">copylaradio.com</li>
-    </ul>
-    
-    <h3>🔗 Liens utiles</h3>
-    <ul>
-        <li class="zine-li">UPlanet ORIGIN</li>
-        <li class="zine-li">CopyLaRadio SCIC</li>
-        <li class="zine-li">Ğ1FabLab</li>
-    </ul>
-    
-    <p style="text-align: center; margin-top: 1rem;">
-        <strong>Libérez votre identité numérique !</strong>
-    </p>
+  <h2>🌱 BIENVENUE DANS UPLANET</h2>
+
+  <p><strong>Votre écosystème numérique libre</strong></p>
+
+  <div class="feature-block">
+    <div class="feature-title">⚛ ATOM4LOVE</div>
+    <div class="feature-desc">App + Extension navigateur — résonance Phi2x,
+    rencontres, traceurs de présence</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">💚 Zelkova</div>
+    <div class="feature-desc">Wallet ẐEN mobile — paiements, solde, MULTIPASS</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">📞 Cabine-33</div>
+    <div class="feature-desc">Jeu NOSTR géolocalisé — hexagones, rituel 33s,
+    atomes affinitaires</div>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-title">🤖 ASTROBOT + 📰 KIN.news</div>
+    <div class="feature-desc">IA personnelle (#BRO) + journal coopératif
+    hebdomadaire Dreamspell</div>
+  </div>
+
+  <h3>📞 Contact &amp; Liens</h3>
+  <ul>
+    <li class="zine-li">support@qo-op.com</li>
+    <li class="zine-li">copylaradio.com</li>
+    <li class="zine-li">relay : _RELAY_</li>
+  </ul>
+
+  <p style="text-align: center; margin-top: 0.8rem; font-size: 90%;">
+    <strong>_UPLANET8_ — Secteur _SECTOR_</strong><br>
+    <em>Libérez votre identité numérique !</em>
+  </p>
 </footer>
 
 </main>
 
 <script>
-// Script pour l'impression
 document.addEventListener('DOMContentLoaded', function() {
-    const printButton = document.createElement('button');
-    printButton.textContent = '🖨️ Imprimer';
-    printButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 10px; background: #1c4587; color: white; border: none; border-radius: 5px; cursor: pointer;';
-    printButton.onclick = () => window.print();
-    document.body.appendChild(printButton);
+  const btn = document.createElement('button');
+  btn.textContent = '🖨️ Imprimer';
+  btn.className = 'print-button';
+  btn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:1000;padding:10px;'
+    + 'background:#1c4587;color:white;border:none;border-radius:5px;cursor:pointer;';
+  btn.onclick = () => window.print();
+  document.body.appendChild(btn);
 });
 </script>
 
 </body>
-</html> 
+</html>
