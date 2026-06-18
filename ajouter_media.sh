@@ -1176,6 +1176,10 @@ case ${CAT} in
         FILE_TO_UPLOAD="$HOME/.zen/tmp/$FILE_NAME"
         mv ~/.zen/tmp/output.pdf "$FILE_TO_UPLOAD"
         
+        # NIP-42 Authentication (requis par /api/fileupload)
+        echo "🔐 Sending NIP-42 authentication event..."
+        send_nip42_auth
+
         # Upload via API (upload2ipfs.sh will copy to uDRIVE)
         echo "📤 Uploading PDF via /api/fileupload..."
         
