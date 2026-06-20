@@ -42,6 +42,7 @@ BRO_NOSTR2HEX="${_BRO_ASTRO_TOOLS}/nostr2hex.py"
 BRO_SECURE_DM="${_BRO_ASTRO_TOOLS}/nostr_send_secure_dm.py"
 BRO_INTERCOM="${_BRO_ASTRO_TOOLS}/nostr_node_intercom.py"
 BRO_MAILJET="${_BRO_ASTRO_TOOLS}/mailjet.sh"
+BRO_USER_LEVEL="${_BRO_LIB_MY_PATH}/../bro_user_level.py"
 _BRO_ALERT_LOCK="$HOME/.zen/flashmem/bro_alert.lock"
 
 # ── Relay public constellation UPlanet ──────────────────────────────
@@ -551,4 +552,48 @@ except: pass
 
     # Home station introuvable dans le swarm → fallback public
     echo "${BRO_PUBLIC_RELAY:-wss://relay.copylaradio.com}"
+}
+
+########################################################################
+# bro_user_level HEX_PUBKEY [RELAY_URL]
+#   Détermine le niveau d'accès BRO d'un expéditeur.
+#
+#   Retourne le niveau comme entier sur stdout :
+#     0 anonyme      — aucun MULTIPASS local
+#     1 locataire    — MULTIPASS actif (active_rental)
+#     2 atome        — locataire + atom4love Kind 30078 valide
+#     3 satellite    — sociétaire satellite (sans IA)
+#     4 constellation— sociétaire constellation (avec IA)
+#     5 capitaine    — accès complet
+#
+#   Définit également BRO_LEVEL_JSON (JSON complet) et BRO_LEVEL_EMAIL.
+#
+#   Cache fichier 5 min pour le niveau global, 1h pour atom4love.
+########################################################################
+bro_user_level() {
+    local _hex="$1"
+    local _relay="${2:-${BRO_PUBLIC_RELAY:-wss://relay.copylaradio.com}}"
+
+    if [[ -z "$_hex" ]]; then
+        BRO_LEVEL_JSON='{"level":0,"email":"","contract_status":"anonymous","atom4love":false}'
+        BRO_LEVEL_EMAIL=""
+        echo 0
+        return
+    fi
+
+    local _python="${HOME}/.astro/bin/python3"
+    command -v "$_python" &>/dev/null || _python="python3"
+
+    BRO_LEVEL_JSON=$("$_python" "$BRO_USER_LEVEL" "$_hex" "$_relay" 2>/dev/null)
+    if [[ -z "$BRO_LEVEL_JSON" ]]; then
+        BRO_LEVEL_JSON='{"level":0,"email":"","contract_status":"unknown","atom4love":false}'
+    fi
+
+    local _lvl
+    _lvl=$(echo "$BRO_LEVEL_JSON" | jq -r '.level // 0' 2>/dev/null)
+    [[ "$_lvl" =~ ^[0-5]$ ]] || _lvl=0
+
+    BRO_LEVEL_EMAIL=$(echo "$BRO_LEVEL_JSON" | jq -r '.email // ""' 2>/dev/null)
+    export BRO_LEVEL_JSON BRO_LEVEL_EMAIL
+    echo "$_lvl"
 }

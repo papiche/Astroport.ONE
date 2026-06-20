@@ -1074,6 +1074,13 @@ _process_event() {
 
     [[ -z "$sender" ]] && return
 
+    ## ── Niveau d'accès BRO (atom4love + souscription ẐEN) ───────────────
+    ## Levels : 0=anonyme 1=locataire 2=atome 3=satellite 4=constellation 5=capitaine
+    local _USER_LEVEL
+    _USER_LEVEL=$(bro_user_level "$sender" "${_CONSTELLATION_RELAY}")
+    [[ "$_USER_LEVEL" =~ ^[0-5]$ ]] || _USER_LEVEL=0
+    _log "🔑 Level ${_USER_LEVEL} pour ${sender:0:12}… (${BRO_LEVEL_EMAIL:-?})"
+
     case "$channel" in
         plain)
             local question
@@ -1104,27 +1111,43 @@ _process_event() {
                 _handle_reset "$sender" "$slot"
 
             elif echo "$question" | grep -qi '#craft'; then
-                ## #craft <url> → décomposer une URL en recette WoTx2
+                ## #craft <url> — requiert Level ≥ 2 (atom4love)
+                if [[ "$_USER_LEVEL" -lt 2 ]]; then
+                    _send_dm "$sender" "🔒 #craft nécessite un profil atom4love.\nCrée le tien sur atomic.html puis reviens !"
+                    return
+                fi
                 local craft_url
                 craft_url=$(echo "$question" | grep -oiE 'https?://[^[:space:]]+' | head -1)
                 [[ -z "$craft_url" ]] && craft_url=$(echo "$question" | sed 's/#craft[[:space:]]*//' | xargs)
                 _handle_craft "$sender" "$craft_url"
 
             elif echo "$question" | grep -qi '#badge'; then
-                ## #badge <skill> → génère un badge image via ComfyUI
+                ## #badge <skill> — requiert Level ≥ 3 (satellite / constellation)
+                if [[ "$_USER_LEVEL" -lt 3 ]]; then
+                    _send_dm "$sender" "🔒 #badge nécessite une souscription ẐEN (satellite ou constellation).\nhttps://opencollective.com/monnaie-libre/contribute"
+                    return
+                fi
                 local badge_skill
                 badge_skill=$(echo "$question" | sed 's/.*#badge[[:space:]]*//' | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-' | head -c 40)
                 _handle_badge "$sender" "$badge_skill"
 
             elif [[ "$question" =~ ^#mem:([a-z0-9_-]*)([[:space:]]|$) ]]; then
-                ## #mem:<skill> → lecture mémoire skill partagée
+                ## #mem:<skill> — requiert Level ≥ 2 (atom4love)
+                if [[ "$_USER_LEVEL" -lt 2 ]]; then
+                    _send_dm "$sender" "🔒 #mem:<skill> nécessite un profil atom4love.\nCrée le tien sur atomic.html !"
+                    return
+                fi
                 _handle_mem_skill "$sender" "${BASH_REMATCH[1]}"
 
             elif echo "$question" | grep -qi '#mem'; then
                 _handle_mem "$sender" "$slot"
 
             elif [[ "$question" =~ ^#rec:([a-z0-9_-]+)[[:space:]]+(.*) ]]; then
-                ## #rec:<skill> <texte> → contribution mémoire partagée skill
+                ## #rec:<skill> — requiert Level ≥ 2 (atom4love)
+                if [[ "$_USER_LEVEL" -lt 2 ]]; then
+                    _send_dm "$sender" "🔒 #rec:<skill> nécessite un profil atom4love.\nCrée le tien sur atomic.html !"
+                    return
+                fi
                 _handle_rec_skill "$sender" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
 
             elif echo "$question" | grep -qi '#rec'; then
@@ -1169,6 +1192,11 @@ _process_event() {
             _handle_bro_ia "$payload"
             ;;
         comfyui_job)
+            ## comfyui_job — requiert Level ≥ 4 (constellation avec IA)
+            if [[ "$_USER_LEVEL" -lt 4 ]]; then
+                _send_dm "$sender" "🔒 ComfyUI nécessite une souscription constellation (avec IA).\nhttps://opencollective.com/monnaie-libre/contribute"
+                return
+            fi
             _handle_comfyui_job "$payload" "$sender"
             ;;
         comfyui_result)
