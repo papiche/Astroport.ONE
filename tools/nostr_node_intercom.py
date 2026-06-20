@@ -92,8 +92,25 @@ def _nip44_v2_hkdf(ikm: bytes, length: int, salt, info: bytes) -> bytes:
     ).derive(ikm)
 
 
+def _nip44_v2_expand(prk: bytes, info: bytes, length: int) -> bytes:
+    """HKDF-Expand uniquement (sans Extract) — PRK utilisé directement comme clé."""
+    from cryptography.hazmat.primitives.kdf.hkdf import HKDFExpand
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.backends import default_backend
+    return HKDFExpand(
+        algorithm=hashes.SHA256(), length=length, info=info, backend=default_backend()
+    ).derive(prk)
+
+
 def _nip44_v2_conv_key(priv_hex: str, pub_hex: str) -> bytes:
-    """Conversation key NIP-44 v2 : ECDH x-coordinate + HKDF(salt=None, info='nip44-v2')."""
+    """Conversation key NIP-44 v2 (spec officielle) :
+    HKDF-Extract(salt=b'nip44-v2', IKM=shared_x) = HMAC-SHA256(key=b'nip44-v2', msg=shared_x)."""
+    import hmac as _hmac, hashlib
+    return _hmac.new(b"nip44-v2", _derive_shared_secret(priv_hex, pub_hex), hashlib.sha256).digest()
+
+
+def _nip44_v2_conv_key_legacy(priv_hex: str, pub_hex: str) -> bytes:
+    """Ancienne conv key non-conforme (HKDF complet, salt=None) — conservée pour fallback."""
     return _nip44_v2_hkdf(_derive_shared_secret(priv_hex, pub_hex), 32, None, b"nip44-v2")
 
 
@@ -121,32 +138,43 @@ def _nip44_v2_pad_len(n: int) -> int:
 
 
 def _nip44_encrypt(plaintext: str, sender_priv_hex: str, recipient_pub_hex: str) -> str:
-    """NIP-44 v2 encryption — version byte 0x02, compatible with all standard extensions."""
+    """NIP-44 v2 encryption conforme spec : HMAC conv_key + HKDF-Expand message keys."""
     conv_key = _nip44_v2_conv_key(sender_priv_hex, recipient_pub_hex)
     nonce    = os.urandom(32)
     utf8     = plaintext.encode('utf-8')
     pad_len  = _nip44_v2_pad_len(len(utf8))
     padded   = struct.pack('>H', len(utf8)) + utf8 + b'\x00' * (pad_len - len(utf8))
-    keys     = _nip44_v2_hkdf(conv_key, 76, nonce, b"nip44-v2")
+    keys     = _nip44_v2_expand(conv_key, nonce, 76)
     ct       = _nip44_v2_chacha20(keys[0:32], keys[32:44], padded)
     mac      = _nip44_v2_hmac(keys[44:76], nonce + ct)
     return base64.b64encode(b'\x02' + nonce + ct + mac).decode('utf-8')
 
 
 def _nip44_decrypt(ciphertext_b64: str, recipient_priv_hex: str, sender_pub_hex: str) -> str:
-    """NIP-44 v2 decryption avec fallback vers l'ancien format custom."""
+    """NIP-44 v2 decryption : essaie la spec officielle, puis l'ancienne impl non-conforme."""
     import hmac as _h
     data = base64.b64decode(ciphertext_b64)
     # ── NIP-44 v2 (version byte = 0x02) ──
     if len(data) >= 99 and data[0] == 2:
-        conv_key = _nip44_v2_conv_key(recipient_priv_hex, sender_pub_hex)
         nonce, ct, mac = data[1:33], data[33:-32], data[-32:]
-        keys = _nip44_v2_hkdf(conv_key, 76, nonce, b"nip44-v2")
-        if not _h.compare_digest(mac, _nip44_v2_hmac(keys[44:76], nonce + ct)):
-            raise ValueError("NIP-44 v2 MAC invalide")
-        padded  = _nip44_v2_chacha20(keys[0:32], keys[32:44], ct)
-        msg_len = struct.unpack('>H', padded[0:2])[0]
-        return padded[2:2 + msg_len].decode('utf-8')
+
+        # Tentative 1 : spec officielle NIP-44 v2 (HMAC conv_key + HKDF-Expand(info=nonce))
+        conv_key = _nip44_v2_conv_key(recipient_priv_hex, sender_pub_hex)
+        keys = _nip44_v2_expand(conv_key, nonce, 76)
+        if _h.compare_digest(mac, _nip44_v2_hmac(keys[44:76], nonce + ct)):
+            padded  = _nip44_v2_chacha20(keys[0:32], keys[32:44], ct)
+            msg_len = struct.unpack('>H', padded[0:2])[0]
+            return padded[2:2 + msg_len].decode('utf-8')
+
+        # Tentative 2 : ancienne impl non-conforme (HKDF complet, salt=None)
+        conv_key_l = _nip44_v2_conv_key_legacy(recipient_priv_hex, sender_pub_hex)
+        keys_l = _nip44_v2_hkdf(conv_key_l, 76, nonce, b"nip44-v2")
+        if _h.compare_digest(mac, _nip44_v2_hmac(keys_l[44:76], nonce + ct)):
+            padded  = _nip44_v2_chacha20(keys_l[0:32], keys_l[32:44], ct)
+            msg_len = struct.unpack('>H', padded[0:2])[0]
+            return padded[2:2 + msg_len].decode('utf-8')
+
+        raise ValueError("NIP-44 v2 MAC invalide")
     # ── Ancien format (ChaCha20Poly1305, nonce 12 bytes — rétrocompatibilité) ──
     if len(data) >= 13:
         from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
