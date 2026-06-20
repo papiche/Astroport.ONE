@@ -187,10 +187,14 @@ def parse_kind7_resonance(event: dict) -> dict:
 def compute_omega_bio(height_cm: float, weight_kg: float, sex: int) -> float:
     """
     ω_bio = F_WATER × (water_kg / 70.0)
-    water_ratio : 0.65 (sex=0, Φ-wave) ou 0.60 (sex=1, Octave-wave)
+    Formule Watson TBW (sans âge) — synchronisée avec phi2x.js et Phi2X_Math.gd :
+    ♂ Φ-wave  : TBW = 0.1074·h + 0.3362·w − 5.0
+    ♀ Octave  : TBW = 0.1069·h + 0.2466·w − 2.0
     """
-    water_ratio = 0.65 if sex == 0 else 0.60
-    water_kg    = weight_kg * water_ratio
+    if sex == 0:
+        water_kg = max(0.1074 * height_cm + 0.3362 * weight_kg - 5.0, 1.0)
+    else:
+        water_kg = max(0.1069 * height_cm + 0.2466 * weight_kg - 2.0, 1.0)
     return F_WATER * (water_kg / 70.0)
 
 # ── Calendrier Kin Maya ──────────────────────────────────────────────────────
