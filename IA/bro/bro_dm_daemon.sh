@@ -38,38 +38,16 @@ INTERCOM="${HOME}/.zen/Astroport.ONE/tools/nostr_node_intercom.py"
 SECURE_DM="${HOME}/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py"
 MAILJET="${HOME}/.zen/Astroport.ONE/tools/mailjet.sh"
 BRO_SYNC="$MY_PATH/nextcloud_bro_sync.sh"
+## Déduplication inter-sources (filter/4.sh + constellation subscriber)
+_DEDUP_DIR="$HOME/.zen/tmp/bro_dm_dedup"
 
-mkdir -p "$QUEUE_DIR"
+mkdir -p "$QUEUE_DIR" "$_DEDUP_DIR"
 mkdir -p "$HOME/.zen/flashmem"
 
-## ── Sémaphore : jobs parallèles dynamiques selon RAM + GPU ─────────────
-## Base: RAM_GiB / 4 (4 GiB par job Ollama), min 1 max 8.
-## Si GPU NVIDIA détecté (Brain) : doublement du quota.
-_BRO_MAX_JOBS=$(python3 - <<'PYEOF'
-import subprocess, re, os
-try:
-    mem_kb = int(re.search(r'MemAvailable:\s+(\d+)', open('/proc/meminfo').read()).group(1))
-    ram_gib = mem_kb / 1024 / 1024
-except Exception:
-    ram_gib = 4.0
-jobs = max(1, min(8, int(ram_gib / 4)))
-try:
-    r = subprocess.run(
-        ['nvidia-smi', '--query-gpu=memory.total', '--format=csv,noheader,nounits'],
-        capture_output=True, text=True, timeout=3)
-    if r.returncode == 0 and r.stdout.strip():
-        jobs = min(8, jobs * 2)
-except Exception:
-    pass
-print(jobs)
-PYEOF
-)
-[[ -z "$_BRO_MAX_JOBS" || ! "$_BRO_MAX_JOBS" =~ ^[0-9]+$ ]] && _BRO_MAX_JOBS=3
-_BRO_SLOTS_DIR="$HOME/.zen/tmp/bro_dm_slots"
-mkdir -p "$_BRO_SLOTS_DIR"
+## Traitement sériel : un seul job à la fois (pas de parallélisme)
 
 IA_LOG="$HOME/.zen/tmp/IA.log"
-_log() { echo "[$(date '+%H:%M:%S')] [bro_dm] $*" | tee -a "$LOG_FILE" -a "$IA_LOG"; }
+_log() { echo "[$(date '+%H:%M:%S')] [bro_dm] $*" | tee -a "$IA_LOG"; }
 
 ## Wrapper sécurisé : NSEC passé via stdin, jamais en argument (invisible dans ps aux).
 ## Utilise NIP-04 si l'expéditeur a écrit en NIP-04 (_DM_ENC="nip04"), NIP-44 sinon.
@@ -173,14 +151,12 @@ _CONSTELLATION_RELAY="wss://relay.copylaradio.com"
 
 ## ── PID guard ────────────────────────────────────────────────────────
 echo $$ > "$PID_FILE"
-## Nettoyer les slots de l'instance précédente (PID mort)
-rm -f "$_BRO_SLOTS_DIR"/slot*.pid 2>/dev/null
 _BRO_CLEAN_STOP=false
 _SWEEP_PID=""
 trap '_BRO_CLEAN_STOP=true' INT TERM
-trap 'wait; kill "${_SWEEP_PID:-}" "${_CONSTELLATION_SUB_PID:-}" 2>/dev/null; rm -f "$PID_FILE" "$_BRO_SLOTS_DIR"/slot*.pid; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
+trap 'wait; kill "${_SWEEP_PID:-}" "${_CONSTELLATION_SUB_PID:-}" 2>/dev/null; rm -f "$PID_FILE"; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
 
-_log "🚀 Daemon DM NODE démarré (PID $$, max ${_BRO_MAX_JOBS} jobs) — queue: $QUEUE_DIR"
+_log "🚀 Daemon DM NODE démarré (PID $$, sériel) — queue: $QUEUE_DIR"
 
 ## ── Canal "#badge" : génération d'image de badge skill via ComfyUI ────────
 ## Syntaxe DM : "#badge <skill>"  ex: "#badge docker"
@@ -1016,36 +992,30 @@ Ma clé de contact : ${NODE_NPUB:-NODE}
     done
 }
 
-## ── Traitement asynchrone avec sémaphore à slots ────────────────────
-## Acquiert un slot libre (bloquant), traite l'event, libère le slot.
-## Usage : _process_event_async <fichier> &
-_process_event_async() {
-    local fname="$1"
-    local _my_pid=$BASHPID _slot _sfile _pid
-    while true; do
-        for _slot in $(seq 1 "$_BRO_MAX_JOBS"); do
-            _sfile="$_BRO_SLOTS_DIR/slot${_slot}.pid"
-            ## Création atomique via noclobber
-            if (set -C; echo "$_my_pid" > "$_sfile") 2>/dev/null; then
-                _process_event "$fname" \
-                    || _alert_captain "Erreur traitement DM — $(basename "$fname")"
-                rm -f "$_sfile"
-                return
-            fi
-            ## Récupérer le slot si le process propriétaire est mort
-            _pid=$(cat "$_sfile" 2>/dev/null)
-            if [[ -n "$_pid" ]] && ! kill -0 "$_pid" 2>/dev/null; then
-                rm -f "$_sfile"
-            fi
-        done
-        sleep 0.5
-    done
-}
-
 ## ── Traitement d'un event JSON ───────────────────────────────────────
 _process_event() {
     local event_file="$1"
     [[ ! -f "$event_file" ]] && return
+
+    ## ── Déduplication inter-sources (filter/4.sh + constellation) ───────
+    ## Extrait l'event_id selon le format, puis pose un marqueur atomique.
+    ## Si un autre worker (ou une autre source) a déjà pris cet event, on abandonne.
+    local _ev_id=""
+    if grep -q '"channel"' "$event_file" 2>/dev/null; then
+        _ev_id=$(jq -r '.event_id // ""' < "$event_file" 2>/dev/null)
+    else
+        _ev_id=$(jq -r '.event.id // ""' < "$event_file" 2>/dev/null)
+    fi
+    if [[ -n "$_ev_id" && ${#_ev_id} -ge 16 ]]; then
+        local _dedup_marker="$_DEDUP_DIR/${_ev_id}"
+        if ! (set -C; : > "$_dedup_marker") 2>/dev/null; then
+            _log "ℹ️  Event ${_ev_id:0:12}… déjà traité (doublon filter/constellation) — ignoré"
+            rm -f "$event_file"
+            return
+        fi
+        ## Nettoyage automatique : supprimer les marqueurs > 24h
+        find "$_DEDUP_DIR" -maxdepth 1 -mmin +1440 -delete 2>/dev/null &
+    fi
 
     local decoded
     ## Deux formats possibles dans la queue :
@@ -1080,6 +1050,12 @@ _process_event() {
     _USER_LEVEL=$(bro_user_level "$sender" "${_CONSTELLATION_RELAY}")
     [[ "$_USER_LEVEL" =~ ^[0-5]$ ]] || _USER_LEVEL=0
     _log "🔑 Level ${_USER_LEVEL} pour ${sender:0:12}… (${BRO_LEVEL_EMAIL:-?})"
+
+    ## Seule la home station (level ≥ 1) répond — les autres ignorent silencieusement
+    if [[ "$_USER_LEVEL" -eq 0 ]]; then
+        _log "ℹ️  ${sender:0:12}… inconnu sur cette station (level 0) — ignoré"
+        return
+    fi
 
     case "$channel" in
         plain)
@@ -1208,9 +1184,9 @@ _process_event() {
     esac
 }
 
-## ── Traiter les fichiers déjà présents dans la queue (parallèle) ─────
+## ── Traiter les fichiers déjà présents dans la queue ─────────────────
 for _f in "$QUEUE_DIR"/*.json; do
-    [[ -f "$_f" ]] && _process_event_async "$_f" &
+    [[ -f "$_f" ]] && _dispatch_file "$_f"
 done
 
 ## ── Présentation du NODE aux MULTIPASS locaux (une seule fois chacun) ─
@@ -1219,14 +1195,13 @@ _send_welcome_messages
 ## Attendre la fin des traitements initiaux avant la boucle inotifywait
 wait
 
-## ── Dispatch atomique (utilisé par polling ET par inotifywait-retry) ────
+## ── Dispatch sériel ─────────────────────────────────────────────────
 _dispatch_file() {
     local _src="$1"
     [[ -f "$_src" ]] || return
-    # Move atomique : si deux appelants concurrents tentent le mv, un seul gagne
     local _dst="${_src%.json}.dispatching"
-    mv "$_src" "$_dst" 2>/dev/null || return  # l'autre process a déjà pris le fichier
-    _process_event_async "$_dst" &
+    mv "$_src" "$_dst" 2>/dev/null || return
+    _process_event "$_dst" || _alert_captain "Erreur traitement DM — $(basename "$_dst")"
 }
 
 ## Sweep périodique (30s) — rattrape les events perdus si le kernel inotify queue déborde

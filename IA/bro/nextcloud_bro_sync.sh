@@ -41,19 +41,17 @@ QDRANT_URL="${QDRANT_URL:-http://127.0.0.1:6333}"
 QDRANT_COLLECTION="nextcloud_kb"
 OLLAMA_URL="${OLLAMA_URL:-http://127.0.0.1:11434}"
 
-## ── Clé API Qdrant = UPLANETNAME (cohérence de constellation) ────────
-## UPLANETNAME identifie l'essaim UPlanet ẐEN → clé partagée par toutes stations
-## Cela permet à nextcloud_bro_sync.sh de se connecter à TOUT Qdrant de la constellation
-## (même sur SSH tunnel ou IPFS P2P via ollama.me.sh)
+## ── Clé API Qdrant ────────────────────────────────────────────────────
 QDRANT_API_KEY="${QDRANT_API_KEY:-}"
 if [[ -z "$QDRANT_API_KEY" ]]; then
-    ## Priorité 1 : UPLANETNAME (depuis my.sh, source de vérité constellation)
-    [[ -n "${UPLANETNAME:-}" ]] && QDRANT_API_KEY="$UPLANETNAME"
-fi
-if [[ -z "$QDRANT_API_KEY" ]]; then
-    ## Priorité 2 : .env ai-company (fallback si UPLANETNAME absent)
+    ## Priorité 1 : .env ai-company (clé configurée localement)
     _AI_ENV="$HOME/.zen/ai-company/.env"
     [[ -s "$_AI_ENV" ]] && QDRANT_API_KEY=$(grep '^QDRANT_API_KEY=' "$_AI_ENV" 2>/dev/null | cut -d'=' -f2)
+fi
+if [[ -z "$QDRANT_API_KEY" ]]; then
+    ## Priorité 2 : UPLANETNAME (constellation sans .env, si non-nul)
+    _UP="${UPLANETNAME:-}"
+    [[ -n "$_UP" && "$_UP" != "0000000000000000000000000000000000000000000000000000000000000000" ]] && QDRANT_API_KEY="$_UP"
 fi
 ## En-tête curl Qdrant (vide si pas de clé — Qdrant sans auth)
 _QDRANT_AUTH=()
@@ -199,14 +197,17 @@ _index_document() {
     case "${extension,,}" in
         pdf)
             command -v pdftotext &>/dev/null \
-                && content=$(pdftotext "$filepath" - 2>/dev/null | head -c 8000) \
+                && content=$(pdftotext "$filepath" - 2>/dev/null | python3 -c "import sys; print(sys.stdin.read(3500), end='')") \
                 || content=$(FPATH="$filepath" python3 -c "
 import subprocess, os
 r = subprocess.run(['pdftotext', os.environ['FPATH'], '-'], capture_output=True, text=True)
-print(r.stdout[:8000])" 2>/dev/null)
+print(r.stdout[:3500])" 2>/dev/null)
             ;;
         md|txt|rst)
-            content=$(head -c 8000 "$filepath")
+            content=$(FPATH="$filepath" python3 -c "
+import os
+with open(os.environ['FPATH'], encoding='utf-8', errors='ignore') as f:
+    print(f.read(3500), end='')")
             ;;
         docx|odt)
             command -v pandoc &>/dev/null \
@@ -247,18 +248,18 @@ print(json.dumps(d, ensure_ascii=False)[:8000])" 2>/dev/null)
 
     ## Sérialiser le payload via python3 pour un JSON propre (pas de sed)
     local payload_json
-    payload_json=$(python3 -c "
+    payload_json=$(FPREV="$content" python3 -c "
 import json, sys, os
 payload = {
     'filename':        sys.argv[1],
     'filepath':        sys.argv[2],
     'extension':       sys.argv[3],
-    'content_preview': sys.argv[4][:300],
+    'content_preview': os.environ.get('FPREV','')[:1500],
     'indexed_at':      os.popen('date -u +%Y-%m-%dT%H:%M:%SZ').read().strip(),
-    'source':          'nextcloud/' + sys.argv[5],
+    'source':          'nextcloud/' + sys.argv[4],
 }
 print(json.dumps(payload))
-" "$filename" "$filepath" "$extension" "${content:0:300}" "$NC_COLLECTION_PATH")
+" "$filename" "$filepath" "$extension" "$NC_COLLECTION_PATH")
 
     ## Upsert dans Qdrant
     local vector_json="[$(echo "$vector" | tr ' ' ',')]"
@@ -320,6 +321,35 @@ results = data.get('result', [])
 ctx = '\n\n'.join([r.get('payload',{}).get('content_preview','') for r in results[:3]])
 print(ctx[:4000])
 " 2>/dev/null)
+
+    ## Enrichir avec top 2 résultats de la collection codebase (si disponible)
+    local results_code
+    results_code=$(curl -sf --max-time 2 -X POST "$QDRANT_URL/collections/codebase/points/search" \
+        "${_QDRANT_AUTH[@]}" \
+        -H "Content-Type: application/json" \
+        -d "{\"vector\":$vector_json,\"limit\":2,\"with_payload\":true}" 2>/dev/null)
+    if [[ -n "$results_code" ]]; then
+        local context_code
+        context_code=$(echo "$results_code" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+results = data.get('result', [])
+## Ne garder que les résultats avec un score > 0.65 (pertinence minimale)
+relevant = [r for r in results if r.get('score',0) > 0.65]
+if not relevant: sys.exit(0)
+parts = []
+for r in relevant:
+    p = r.get('payload', {})
+    path = p.get('path', '?')
+    preview = p.get('preview', '')[:600]
+    parts.append(f'[CODE: {path}]\n{preview}')
+print('\n\n'.join(parts))
+" 2>/dev/null)
+        [[ -n "$context_code" ]] && context_global="${context_global}
+
+--- Code source pertinent ---
+${context_code}"
+    fi
 
     ## Fallback : si KB vide, chercher dans docs/ locaux via grep
     if [[ -z "$context_global" ]]; then

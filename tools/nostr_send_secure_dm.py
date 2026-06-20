@@ -121,8 +121,16 @@ def _nip44_v2_hkdf(ikm: bytes, length: int, salt, info: bytes) -> bytes:
 
 
 def _nip44_v2_conv_key(priv_hex: str, pub_hex: str) -> bytes:
-    """Conversation key NIP-44 v2 : ECDH x-coordinate + HKDF(salt=None, info='nip44-v2')."""
-    return _nip44_v2_hkdf(derive_shared_secret(priv_hex, pub_hex), 32, None, b"nip44-v2")
+    """Conversation key NIP-44 v2 spec : HMAC-SHA256(key=b'nip44-v2', msg=shared_x)."""
+    import hmac as _h
+    return _h.new(b"nip44-v2", derive_shared_secret(priv_hex, pub_hex), hashlib.sha256).digest()
+
+
+def _nip44_v2_expand(prk: bytes, info: bytes, length: int) -> bytes:
+    from cryptography.hazmat.primitives.kdf.hkdf import HKDFExpand
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.backends import default_backend
+    return HKDFExpand(algorithm=hashes.SHA256(), length=length, info=info, backend=default_backend()).derive(prk)
 
 
 def _nip44_v2_chacha20(key: bytes, nonce_12: bytes, data: bytes) -> bytes:
@@ -153,7 +161,7 @@ def nip44_encrypt(message: str, sender_private_key: str, recipient_public_key: s
     utf8     = message.encode('utf-8')
     pad_len  = _nip44_v2_pad_len(len(utf8))
     padded   = struct.pack('>H', len(utf8)) + utf8 + b'\x00' * (pad_len - len(utf8))
-    keys     = _nip44_v2_hkdf(conv_key, 76, nonce, b"nip44-v2")
+    keys     = _nip44_v2_expand(conv_key, nonce, 76)
     ct       = _nip44_v2_chacha20(keys[0:32], keys[32:44], padded)
     mac      = _nip44_v2_hmac(keys[44:76], nonce + ct)
     return base64.b64encode(b'\x02' + nonce + ct + mac).decode('utf-8')
