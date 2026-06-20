@@ -36,6 +36,8 @@ import threading
 import time
 import base64
 import os
+import struct
+import math
 
 
 # ── Clés NOSTR ────────────────────────────────────────────────────────────────
@@ -75,36 +77,83 @@ def _derive_shared_secret(priv_hex: str, pub_hex: str) -> bytes:
     return priv_obj.exchange(ec.ECDH(), pub_obj)
 
 
-# ── NIP-44 ────────────────────────────────────────────────────────────────────
+# ── NIP-44 v2 ────────────────────────────────────────────────────────────────
+# Standard NIP-44 v2 : ECDH secp256k1 → HKDF("nip44-v2") → ChaCha20 + HMAC-SHA256
+# Version byte 0x02, nonce 32 bytes, power-of-2 padding, MAC sur nonce+ct.
+# Rétrocompatibilité : déchiffrement du vieux format (ChaCha20Poly1305, nonce 12 bytes).
 
-def _nip44_key(shared_secret: bytes) -> bytes:
+def _nip44_v2_hkdf(ikm: bytes, length: int, salt, info: bytes) -> bytes:
     from cryptography.hazmat.primitives.kdf.hkdf import HKDF
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.backends import default_backend
     return HKDF(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=b"nostr-nip44-v1",
-        info=b"nostr-encryption",
-        backend=default_backend(),
-    ).derive(shared_secret)
+        algorithm=hashes.SHA256(), length=length,
+        salt=salt, info=info, backend=default_backend(),
+    ).derive(ikm)
+
+
+def _nip44_v2_conv_key(priv_hex: str, pub_hex: str) -> bytes:
+    """Conversation key NIP-44 v2 : ECDH x-coordinate + HKDF(salt=None, info='nip44-v2')."""
+    return _nip44_v2_hkdf(_derive_shared_secret(priv_hex, pub_hex), 32, None, b"nip44-v2")
+
+
+def _nip44_v2_chacha20(key: bytes, nonce_12: bytes, data: bytes) -> bytes:
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
+    from cryptography.hazmat.backends import default_backend
+    # Python cryptography: nonce = 4-byte counter(LE=0) + 12-byte nonce
+    cipher = Cipher(algorithms.ChaCha20(key, b'\x00\x00\x00\x00' + nonce_12),
+                    mode=None, backend=default_backend())
+    enc = cipher.encryptor()
+    return enc.update(data) + enc.finalize()
+
+
+def _nip44_v2_hmac(key: bytes, msg: bytes) -> bytes:
+    import hmac as _h
+    return _h.new(key, msg, hashlib.sha256).digest()
+
+
+def _nip44_v2_pad_len(n: int) -> int:
+    if n <= 32:
+        return 32
+    nextpow = 1 << (math.floor(math.log2(n - 1)) + 1)
+    chunk = 32 if nextpow <= 256 else nextpow // 8
+    return chunk * ((n - 1) // chunk + 1)
 
 
 def _nip44_encrypt(plaintext: str, sender_priv_hex: str, recipient_pub_hex: str) -> str:
-    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-    key = _nip44_key(_derive_shared_secret(sender_priv_hex, recipient_pub_hex))
-    nonce = os.urandom(12)
-    ct = ChaCha20Poly1305(key).encrypt(nonce, plaintext.encode('utf-8'), None)
-    return base64.b64encode(nonce + ct).decode('utf-8')
+    """NIP-44 v2 encryption — version byte 0x02, compatible with all standard extensions."""
+    conv_key = _nip44_v2_conv_key(sender_priv_hex, recipient_pub_hex)
+    nonce    = os.urandom(32)
+    utf8     = plaintext.encode('utf-8')
+    pad_len  = _nip44_v2_pad_len(len(utf8))
+    padded   = struct.pack('>H', len(utf8)) + utf8 + b'\x00' * (pad_len - len(utf8))
+    keys     = _nip44_v2_hkdf(conv_key, 76, nonce, b"nip44-v2")
+    ct       = _nip44_v2_chacha20(keys[0:32], keys[32:44], padded)
+    mac      = _nip44_v2_hmac(keys[44:76], nonce + ct)
+    return base64.b64encode(b'\x02' + nonce + ct + mac).decode('utf-8')
 
 
 def _nip44_decrypt(ciphertext_b64: str, recipient_priv_hex: str, sender_pub_hex: str) -> str:
-    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-    key = _nip44_key(_derive_shared_secret(recipient_priv_hex, sender_pub_hex))
+    """NIP-44 v2 decryption avec fallback vers l'ancien format custom."""
+    import hmac as _h
     data = base64.b64decode(ciphertext_b64)
-    if len(data) < 13:
-        raise ValueError("NIP-44 trop court")
-    return ChaCha20Poly1305(key).decrypt(data[:12], data[12:], None).decode('utf-8')
+    # ── NIP-44 v2 (version byte = 0x02) ──
+    if len(data) >= 99 and data[0] == 2:
+        conv_key = _nip44_v2_conv_key(recipient_priv_hex, sender_pub_hex)
+        nonce, ct, mac = data[1:33], data[33:-32], data[-32:]
+        keys = _nip44_v2_hkdf(conv_key, 76, nonce, b"nip44-v2")
+        if not _h.compare_digest(mac, _nip44_v2_hmac(keys[44:76], nonce + ct)):
+            raise ValueError("NIP-44 v2 MAC invalide")
+        padded  = _nip44_v2_chacha20(keys[0:32], keys[32:44], ct)
+        msg_len = struct.unpack('>H', padded[0:2])[0]
+        return padded[2:2 + msg_len].decode('utf-8')
+    # ── Ancien format (ChaCha20Poly1305, nonce 12 bytes — rétrocompatibilité) ──
+    if len(data) >= 13:
+        from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+        shared = _derive_shared_secret(recipient_priv_hex, sender_pub_hex)
+        key = _nip44_v2_hkdf(shared, 32, b"nostr-nip44-v1", b"nostr-encryption")
+        return ChaCha20Poly1305(key).decrypt(data[:12], data[12:], None).decode('utf-8')
+    raise ValueError(f"NIP-44 payload invalide (len={len(data)}, v={data[0] if data else '?'})")
 
 
 # ── NIP-04 (fallback déchiffrement) ──────────────────────────────────────────
@@ -126,12 +175,10 @@ def _nip04_decrypt(ciphertext: str, recipient_priv_hex: str, sender_pub_hex: str
 
 
 def _decrypt_content(content: str, recipient_priv_hex: str, sender_pub_hex: str) -> str:
-    """Tente NIP-44 puis retombe sur NIP-04."""
-    try:
-        return _nip44_decrypt(content, recipient_priv_hex, sender_pub_hex)
-    except Exception:
-        pass
-    return _nip04_decrypt(content, recipient_priv_hex, sender_pub_hex)
+    """NIP-44 v2 → ancien NIP-44 custom → NIP-04."""
+    if '?iv=' in content:
+        return _nip04_decrypt(content, recipient_priv_hex, sender_pub_hex)
+    return _nip44_decrypt(content, recipient_priv_hex, sender_pub_hex)
 
 
 # ── Événement NOSTR (kind 4, Schnorr BIP-340) ────────────────────────────────

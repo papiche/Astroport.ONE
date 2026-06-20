@@ -43,6 +43,8 @@ import websocket
 import threading
 import secrets
 import hmac
+import struct
+import math
 from datetime import datetime, timedelta
 from pynostr.event import Event, EventKind
 from pynostr.key import PrivateKey
@@ -108,50 +110,53 @@ def hex_to_uncompressed_pubkey(pubkey_hex: str) -> bytes:
     y_bytes = y.to_bytes(32, 'big')
     return b'\x04' + x_bytes + y_bytes
 
+def _nip44_v2_hkdf(ikm: bytes, length: int, salt, info: bytes) -> bytes:
+    from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.backends import default_backend
+    return HKDF(
+        algorithm=hashes.SHA256(), length=length,
+        salt=salt, info=info, backend=default_backend(),
+    ).derive(ikm)
+
+
+def _nip44_v2_conv_key(priv_hex: str, pub_hex: str) -> bytes:
+    """Conversation key NIP-44 v2 : ECDH x-coordinate + HKDF(salt=None, info='nip44-v2')."""
+    return _nip44_v2_hkdf(derive_shared_secret(priv_hex, pub_hex), 32, None, b"nip44-v2")
+
+
+def _nip44_v2_chacha20(key: bytes, nonce_12: bytes, data: bytes) -> bytes:
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
+    from cryptography.hazmat.backends import default_backend
+    cipher = Cipher(algorithms.ChaCha20(key, b'\x00\x00\x00\x00' + nonce_12),
+                    mode=None, backend=default_backend())
+    enc = cipher.encryptor()
+    return enc.update(data) + enc.finalize()
+
+
+def _nip44_v2_hmac(key: bytes, msg: bytes) -> bytes:
+    return hmac.new(key, msg, hashlib.sha256).digest()
+
+
+def _nip44_v2_pad_len(n: int) -> int:
+    if n <= 32:
+        return 32
+    nextpow = 1 << (math.floor(math.log2(n - 1)) + 1)
+    chunk = 32 if nextpow <= 256 else nextpow // 8
+    return chunk * ((n - 1) // chunk + 1)
+
+
 def nip44_encrypt(message: str, sender_private_key: str, recipient_public_key: str) -> str:
-    """
-    Encrypt a message using NIP-44 (ChaCha20-Poly1305 with HKDF).
-    This provides enhanced security with ChaCha20-Poly1305.
-    
-    Args:
-        message: Message to encrypt
-        sender_private_key: Hex private key of sender
-        recipient_public_key: Hex public key of recipient
-        
-    Returns:
-        Base64 encoded encrypted message with authentication tag
-    """
-    try:
-        from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-        from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-        from cryptography.hazmat.primitives import hashes
-        from cryptography.hazmat.backends import default_backend
-    except ImportError:
-        print("Error: cryptography library not available. Install with: pip install cryptography")
-        sys.exit(1)
-    
-    # Derive shared secret using ECDH
-    shared_secret = derive_shared_secret(sender_private_key, recipient_public_key)
-    
-    # Derive encryption key using HKDF with better parameters
-    hkdf = HKDF(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=b"nostr-nip44-v1",  # Version-specific salt
-        info=b"nostr-encryption",
-        backend=default_backend()
-    )
-    key = hkdf.derive(shared_secret)
-    
-    # Generate random nonce (12 bytes for ChaCha20-Poly1305)
-    nonce = os.urandom(12)
-    
-    # Encrypt message with authentication
-    cipher = ChaCha20Poly1305(key)
-    encrypted_data = cipher.encrypt(nonce, message.encode('utf-8'), None)
-    
-    # Combine nonce and encrypted data, encode as base64
-    return base64.b64encode(nonce + encrypted_data).decode('utf-8')
+    """NIP-44 v2 encryption — version byte 0x02, compatible with all standard NIP-07 extensions."""
+    conv_key = _nip44_v2_conv_key(sender_private_key, recipient_public_key)
+    nonce    = os.urandom(32)
+    utf8     = message.encode('utf-8')
+    pad_len  = _nip44_v2_pad_len(len(utf8))
+    padded   = struct.pack('>H', len(utf8)) + utf8 + b'\x00' * (pad_len - len(utf8))
+    keys     = _nip44_v2_hkdf(conv_key, 76, nonce, b"nip44-v2")
+    ct       = _nip44_v2_chacha20(keys[0:32], keys[32:44], padded)
+    mac      = _nip44_v2_hmac(keys[44:76], nonce + ct)
+    return base64.b64encode(b'\x02' + nonce + ct + mac).decode('utf-8')
 
 def add_metadata_protection(message: str, sender_hex: str, recipient_hex: str) -> str:
     """
@@ -334,7 +339,7 @@ def nip04_encrypt(message: str, sender_private_key: str, recipient_public_key: s
     import base64
 
     shared = derive_shared_secret(sender_private_key, recipient_public_key)
-    key = shared[1:33]          # x-coordinate secp256k1 (32 bytes AES-256)
+    key = shared[0:32]          # x-coordinate secp256k1 (32 bytes AES-256)
     iv  = os.urandom(16)
 
     padder   = sym_padding.PKCS7(128).padder()
