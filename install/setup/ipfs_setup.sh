@@ -59,6 +59,7 @@ ipfs config --json Routing.AcceleratedDHTClient true
 ipfs config --json Ipns.UsePubsub true
 ipfs config --json Swarm.RelayClient.Enabled true
 ipfs config --json Swarm.RelayService.Enabled true
+ipfs config --json Swarm.EnableHolePunching true
 
 # 5. GENERATION DU SERVICE SYSTEMD
 echo ">>> Installation du service systemd..."

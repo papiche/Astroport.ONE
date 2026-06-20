@@ -6,11 +6,13 @@ Peut récupérer des événements NOSTR directement depuis un relay
 """
 
 # Auto-reinvocation dans le venv ~/.astro/ si dépendances absentes
+# Guard: uniquement en mode script, pas lors d'un import par FastAPI
 import sys as _sys
 import os as _os
-_venv_python = _os.path.expanduser("~/.astro/bin/python3")
-if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
-    _os.execv(_venv_python, [_venv_python] + _sys.argv)
+if __name__ == '__main__':
+    _venv_python = _os.path.expanduser("~/.astro/bin/python3")
+    if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
+        _os.execv(_venv_python, [_venv_python] + _sys.argv)
 del _sys, _os
 
 
