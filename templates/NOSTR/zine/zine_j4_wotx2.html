@@ -3,67 +3,235 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zine J4 — WoTx2 &amp; MineLife</title>
+<title>Zine J4 — WoTx2 &amp; Forge</title>
 <style>
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #fff3e0; color: #1a2e1a; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #fff8f0; color: #1a2e1a; }
 .container { max-width: 600px; margin: 0 auto; background: white; }
-.header { background: linear-gradient(135deg, #e65100, #ff9800); color: white; padding: 2rem; text-align: center; }
-.header .day { font-size: 0.85rem; opacity: 0.8; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.5rem; }
-.header h1 { margin: 0; font-size: 1.5rem; }
-.content { padding: 1.5rem; }
-.section { margin: 1rem 0; padding: 1rem; border-radius: 8px; }
-.wot { background: #fff3e0; border-left: 4px solid #e65100; }
-.mine { background: #e8f5e9; border-left: 4px solid #2e7d32; }
-.why { background: #e3f2fd; border-left: 4px solid #1565c0; }
-h2 { font-size: 1.05rem; margin: 0 0 0.5rem 0; }
-p { line-height: 1.6; margin: 0.5rem 0; font-size: 0.95rem; }
-.btn { display: inline-block; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.95rem; margin: 0.25rem; }
-.btn-wot { background: #e65100; }
-.btn-mine { background: #2e7d32; }
-.progress { text-align: center; padding: 0.5rem; background: #f8f9fa; font-size: 0.8rem; color: #666; border-radius: 4px; margin-top: 1rem; }
-small { color: #666; font-size: 0.8rem; }
+
+/* HEADER */
+.header { background: linear-gradient(135deg, #1a2e20 0%, #0d4a2a 50%, #1a3a2e 100%); color: white; padding: 2rem 1.5rem 1.5rem; text-align: center; }
+.header .day { font-size: 0.78rem; opacity: 0.7; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 0.6rem; }
+.header h1 { margin: 0 0 0.5rem; font-size: 1.55rem; line-height: 1.2; }
+.header .subtitle { font-size: 0.88rem; opacity: 0.75; max-width: 420px; margin: 0 auto; line-height: 1.5; }
+
+/* CONTENT */
+.content { padding: 1.4rem; }
+
+/* SECTIONS */
+.section { margin: 1.1rem 0; padding: 1.1rem 1.1rem 0.9rem; border-radius: 10px; }
+.section h2 { font-size: 1rem; margin: 0 0 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
+.section p, .section li { line-height: 1.65; font-size: 0.9rem; margin: 0.35rem 0; }
+
+/* Couleurs par section */
+.s-wot    { background: #f0faf4; border-left: 4px solid #059669; }
+.s-mine   { background: #f0f7ff; border-left: 4px solid #0369a1; }
+.s-flow   { background: #fffbf0; border-left: 4px solid #d97706; }
+.s-doc    { background: #faf0ff; border-left: 4px solid #7c3aed; }
+.s-why    { background: #f0f4ff; border-left: 4px solid #1d4ed8; }
+
+/* FLOW DIAGRAM */
+.flow-steps { display: flex; flex-direction: column; gap: 0; margin: 0.6rem 0 0; }
+.flow-step { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.5rem 0; border-bottom: 1px dashed rgba(0,0,0,0.08); }
+.flow-step:last-child { border-bottom: none; }
+.flow-num {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700; color: white; background: #059669;
+  margin-top: 1px;
+}
+.flow-num.blue  { background: #0369a1; }
+.flow-num.amber { background: #d97706; }
+.flow-num.purple { background: #7c3aed; }
+.flow-step-body { flex: 1; }
+.flow-step-title { font-weight: 700; font-size: 0.87rem; margin-bottom: 2px; }
+.flow-step-desc  { font-size: 0.8rem; color: #4b5563; line-height: 1.4; }
+.flow-kind { display: inline-block; font-family: monospace; font-size: 0.72rem; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,0.07); color: #374151; margin-left: 4px; }
+
+/* TRUST LEVELS */
+.trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin: 0.7rem 0 0; }
+.trust-card { border-radius: 8px; padding: 0.6rem; text-align: center; }
+.trust-card.x1 { background: rgba(5,150,105,0.1); border: 1px solid rgba(5,150,105,0.3); }
+.trust-card.x2 { background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.3); }
+.trust-card.x3 { background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); }
+.trust-level { font-size: 1.1rem; font-weight: 800; display: block; }
+.trust-card.x1 .trust-level { color: #059669; }
+.trust-card.x2 .trust-level { color: #0369a1; }
+.trust-card.x3 .trust-level { color: #7c3aed; }
+.trust-label { font-size: 0.72rem; font-weight: 600; color: #374151; display: block; margin: 2px 0; }
+.trust-how   { font-size: 0.68rem; color: #6b7280; line-height: 1.35; }
+
+/* KINDS TABLE */
+.kinds-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin: 0.5rem 0 0; }
+.kinds-table th { text-align: left; font-size: 0.72rem; color: #6b7280; padding: 4px 6px; border-bottom: 1px solid #e5e7eb; }
+.kinds-table td { padding: 5px 6px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+.kinds-table tr:last-child td { border-bottom: none; }
+.kind-badge { display: inline-block; font-family: monospace; font-size: 0.72rem; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: #1e293b; color: #e2e8f0; }
+
+/* BUTTONS */
+.btn { display: inline-block; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.88rem; margin: 0.2rem; }
+.btn-green  { background: #059669; }
+.btn-blue   { background: #0369a1; }
+.btn-purple { background: #7c3aed; }
+.btn-amber  { background: #d97706; }
+.btn:hover  { opacity: 0.88; }
+
+/* PROGRESS */
+.progress { text-align: center; padding: 0.6rem; background: #f8f9fa; font-size: 0.78rem; color: #6b7280; border-radius: 6px; margin-top: 1.2rem; }
+
+/* CALLOUT */
+.callout { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 0.7rem 0.9rem; margin: 0.7rem 0 0; font-size: 0.84rem; line-height: 1.5; }
+.callout strong { color: #92400e; }
+
+small { color: #6b7280; font-size: 0.78rem; }
+ul { margin: 0.3rem 0 0; padding-left: 1.4rem; }
 </style>
 </head>
 <body>
 <div class="container">
+
 <div class="header">
   <div class="day">Jour 4 · Période d'essai</div>
-  <h1>🕸️ WoTx2 &amp; ⛏️ MineLife</h1>
+  <h1>🕸️ WoTx2 &amp; ⚒️ La Forge<br><small style="font-size:.85rem;opacity:.8">Vos compétences réelles sur la constellation NOSTR</small></h1>
+  <p class="subtitle">Un système de certification décentralisé : prouvez vos savoir-faire, assemblez des recettes, construisez une base documentaire commune.</p>
 </div>
+
 <div class="content">
 
-<div class="section wot">
-<h2>🕸️ WoTx2 — La toile de confiance numérique</h2>
-<p>La <strong>Toile de Confiance v2 (WoTx2)</strong> est le système qui transforme votre identité NOSTR en identité vérifiable dans le monde réel. Contrairement au Web2 où une entreprise certifie votre identité, ici c'est votre communauté qui se porte garante.</p>
-<p>Comment ça marche :</p>
-<ul style="padding-left:1.5rem; margin: 0.5rem 0;">
-  <li>Vous certifiez que vous connaissez vraiment quelqu'un</li>
-  <li>Il vous certifie en retour</li>
-  <li>Après 5 certifications mutuelles, vous accédez aux services Niveau 2</li>
-  <li>L'idéal : <strong>20 personnes dans la même région</strong> pour activer les fonctions de groupe</li>
-</ul>
-<p style="text-align:center; margin: 1rem 0;">
-  <a href="_USPOT_/wot" class="btn btn-wot" target="_blank">🕸️ Voir ma WoT →</a>
-</p>
+<!-- WOT -->
+<div class="section s-wot">
+  <h2>🕸️ WoTx2 — La toile de confiance des compétences</h2>
+  <p>WoTx2 (<em>Web of Trust eXtended on NOSTR</em>) transforme vos compétences réelles en attestations cryptographiques vérifiables, sans intermédiaire centralisé. Chaque certification est un événement NOSTR signé, immuable et P2P.</p>
+  <p>Contrairement à LinkedIn ou à une école, c'est <strong>votre communauté locale</strong> qui valide — des pairs qui possèdent eux-mêmes la compétence.</p>
+
+  <div class="trust-grid">
+    <div class="trust-card x1">
+      <span class="trust-level">x1</span>
+      <span class="trust-label">Auto-proclamé</span>
+      <span class="trust-how">Vous déclarez votre skill + preuve (capture, log, vidéo)</span>
+    </div>
+    <div class="trust-card x2">
+      <span class="trust-level">x2</span>
+      <span class="trust-label">Attesté P2P</span>
+      <span class="trust-how">3 pairs qualifiés valident (Kind 7) <em>ou</em> 1 pair certifié adoube (Kind 30502)</span>
+    </div>
+    <div class="trust-card x3">
+      <span class="trust-level">x3</span>
+      <span class="trust-label">Certifié Oracle</span>
+      <span class="trust-how">Le capitaine de la station cosigne officiellement (Kind 30503)</span>
+    </div>
+  </div>
 </div>
 
-<div class="section mine">
-<h2>⛏️ MineLife — Mineurs de sens</h2>
-<p>MineLife est un jeu de simulation coopérative qui modélise les ressources de votre territoire. Chaque joueur représente un acteur local (producteur, consommateur, artisan). Ensemble vous cartographiez les flux réels de votre région.</p>
-<p>C'est une façon ludique de comprendre l'économie coopérative et de repérer les synergies locales — qui produit quoi, qui a besoin de quoi, comment se connecter.</p>
-<p style="text-align:center; margin: 1rem 0;">
-  <a href="_MYIPFS_/ipns/minelife.copylaradio.com" class="btn btn-mine" target="_blank">⛏️ Rejoindre MineLife →</a>
-</p>
+<!-- FORGE -->
+<div class="section s-mine">
+  <h2>⚒️ La Forge — Interface unifiée WoTx2</h2>
+  <p>La Forge est l'interface centrale WoTx2 : inspirée de Minecraft, elle rassemble inventaire, crafting et recettes dans un seul écran. Compétences et objets physiques peuvent être produits par craft.</p>
+  <p><strong>3 colonnes (desktop) / 4 onglets (mobile) :</strong></p>
+  <ul>
+    <li>🎒 <strong>Inventaire</strong> — vos skills certifiés (Kind 30503) et vos objets (Kind 30505), filtrable</li>
+    <li>⚒️ <strong>Forge</strong> — grille 3×3 : glissez skills + objets, la recette correspondante s'affiche automatiquement</li>
+    <li>📜 <strong>Recettes</strong> — Permits disponibles (Kind 30500), définissez la vôtre directement depuis la Forge</li>
+  </ul>
+  <p>Chaque recette peut produire un <strong>skill</strong> (Kind 30503) <em>ou</em> un <strong>objet</strong> (Kind 30505), avec des ressources documentaires attachées depuis votre uDRIVE.</p>
 </div>
 
-<div class="section why">
-<h2>💡 Pourquoi c'est important</h2>
-<p>WoTx2 + MineLife, c'est le passage du numérique individuel au <strong>numérique territorial</strong>. Votre MULTIPASS devient un outil de coordination locale réelle — pas juste un compte sur internet de plus.</p>
-<p>L'idéal, c'est de faire ça <strong>à 5 minimum, à 20 dans la même région</strong>. Commencez par inviter vos amis dans la WoT.v1 (Ğ1 / Duniter).</p>
+<!-- FLUX -->
+<div class="section s-flow">
+  <h2>🔄 Le flux de certification — de zéro au diplôme</h2>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-step-body">
+        <div class="flow-step-title">Déclarez votre aspiration <span class="flow-kind">Kind 30501</span></div>
+        <div class="flow-step-desc">Dans l'onglet Explorer → "Aspirer à ce skill". Publie votre demande d'apprentissage sur le relay local. Les porteurs du skill sont notifiés.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num blue">2</div>
+      <div class="flow-step-body">
+        <div class="flow-step-title">Travaillez et prouvez <span class="flow-kind">Kind 30504</span></div>
+        <div class="flow-step-desc">Ajoutez vos ressources depuis votre uDRIVE (📂) ou uploadez directement (📎) : vidéo démo, capture d'écran, PDF technique. Ces ressources enrichissent la base documentaire commune et servent de preuve.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num amber">3</div>
+      <div class="flow-step-body">
+        <div class="flow-step-title">Validation par vos pairs</div>
+        <div class="flow-step-desc">
+          <strong>Règle A</strong> : 3 pairs qualifiés réagissent 👍 <span class="flow-kind">Kind 7 "+"</span> → vous pouvez passer au niveau suivant.<br>
+          <strong>Règle B</strong> : un pair certifié vous adoube directement <span class="flow-kind">Kind 30502</span>.
+        </div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num purple">4</div>
+      <div class="flow-step-body">
+        <div class="flow-step-title">Certification officielle <span class="flow-kind">Kind 30503</span></div>
+        <div class="flow-step-desc">Votre certificat WoTx2 est publié sur le relay et visible dans la constellation. Il débloque les crafts composites qui requièrent votre compétence comme ingrédient.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num" style="background:#0f172a">5</div>
+      <div class="flow-step-body">
+        <div class="flow-step-title">Grimoire vidéo automatique <span class="flow-kind">Kind 22</span></div>
+        <div class="flow-step-desc">Après chaque craft réussi, la Forge génère une courte vidéo (Ken Burns sur le badge ComfyUI) et la publie sur NOSTR — votre trace permanente sur la constellation.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BASE DOCUMENTAIRE -->
+<div class="section s-doc">
+  <h2>📚 La base documentaire coopérative</h2>
+  <p>Chaque recette peut être accompagnée de <strong>ressources partagées</strong> — stockées dans votre uDRIVE personnel et accessibles à tous les membres de la constellation :</p>
+  <ul>
+    <li>🎬 <strong>Vidéos démo</strong> — depuis votre uDRIVE (📂) ou uploadées directement (📎 → IPFS)</li>
+    <li>📄 <strong>Documents</strong> — PDF, guides Markdown, captures d'écran de preuves</li>
+    <li>🔴 <strong>Sessions LIVE</strong> — transmissions en direct liées à un craft, archivées automatiquement</li>
+    <li>🤖 <strong>Import IA</strong> — BRO analyse une URL et propose automatiquement les ingrédients du craft</li>
+  </ul>
+
+  <table class="kinds-table">
+    <thead><tr><th>Kind</th><th>Rôle</th></tr></thead>
+    <tbody>
+      <tr><td><span class="kind-badge">30500</span></td><td>Permit / recette de craft (ingrédients skills + objets + ressources uDRIVE)</td></tr>
+      <tr><td><span class="kind-badge">30501</span></td><td>Aspiration — déclaration d'apprentissage</td></tr>
+      <tr><td><span class="kind-badge">30502</span></td><td>Attestation directe P2P (Règle B)</td></tr>
+      <tr><td><span class="kind-badge">30503</span></td><td>Certificat de compétence (skill — résultat d'un craft skill)</td></tr>
+      <tr><td><span class="kind-badge">30504</span></td><td>Ressource de formation liée à un skill</td></tr>
+      <tr><td><span class="kind-badge">30505</span></td><td>Objet / ressource physique ou logique (résultat d'un craft objet)</td></tr>
+      <tr><td><span class="kind-badge">7</span></td><td>Validation P2P (Kind 7 "+") ou paiement Ẑ ("+N")</td></tr>
+      <tr><td><span class="kind-badge">22</span></td><td>Grimoire vidéo court (Ken Burns, post-craft)</td></tr>
+      <tr><td><span class="kind-badge">30311</span></td><td>Session LIVE NIP-53 (démarrer / arrêter)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- POURQUOI -->
+<div class="section s-why">
+  <h2>💡 Pourquoi c'est différent</h2>
+  <p>WoTx2 + La Forge, c'est le passage des diplômes papier au <strong>savoir-faire territorial vérifiable</strong>. Votre MULTIPASS NOSTR devient un portefeuille de compétences et d'objets prouvés — reconnu par votre communauté, pas par une autorité centrale.</p>
+  <ul>
+    <li><strong>Souverain</strong> — vos certifications vivent sur le relay NOSTR de votre station, jamais chez un tiers</li>
+    <li><strong>Composable</strong> — skills et objets s'assemblent comme dans Minecraft pour former des compétences composites ou des ressources collectives (ex : <em>atelier = espace + outillage + savoir-faire</em>)</li>
+    <li><strong>Documenté</strong> — chaque recette peut être liée à des vidéos, PDF et guides stockés dans votre uDRIVE IPFS</li>
+    <li><strong>Économique</strong> — les validations déclenchent des échanges Ẑ entre pairs via Kind 7 "+N"</li>
+  </ul>
+
+  <div class="callout">
+    <strong>Pour commencer :</strong> ouvrez la <em>⚒️ Forge</em>, cliquez sur "Définir cette recette" et déclarez votre premier skill x1 avec une preuve (vidéo ou document depuis votre uDRIVE). Il suffit d'un seul pair pour que la chaîne commence.
+  </div>
+</div>
+
+<!-- CTA -->
+<div style="text-align:center;padding:1.2rem 0 0.5rem">
+  <a href="_USPOT_/earth/forge.html" class="btn btn-green">⚒️ Ouvrir la Forge</a>
+  <a href="_USPOT_/earth/skills.html" class="btn btn-blue">☁️ Nuage de Compétences</a>
+  <a href="_USPOT_/earth/minelife.html" class="btn btn-amber">⛏️ MineLife</a>
 </div>
 
 <div class="progress">Jour 4/7 · Prochain Zine demain : Zelkova &amp; TrocZen, l'économie Ẑen</div>
-<p style="text-align:center; margin-top:1.5rem"><small>UPlanet ORIGIN — <a href="_USPOT_">votre Astroport</a> · support@qo-op.com</small></p>
+<p style="text-align:center;margin-top:1rem"><small>UPlanet ORIGIN — <a href="_USPOT_">votre Astroport</a> · support@qo-op.com</small></p>
 </div>
 </div>
 </body>

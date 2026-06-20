@@ -971,9 +971,10 @@ _handle_love_match() {
 
     # Données Phi² de l'utilisateur (cache avant la boucle)
     local my_a4l; my_a4l=$(_love_get_a4l_data "$email")
-    local my_phi my_omega
+    local my_phi my_omega my_a5l
     my_phi=$(jq -r '.personal_phase // empty' <<< "$my_a4l" 2>/dev/null)
     my_omega=$(jq -r '.omega_bio // empty' <<< "$my_a4l" 2>/dev/null)
+    my_a5l=$(jq -r '.a5l_amplitude // empty' <<< "$my_a4l" 2>/dev/null)
     local my_phi2x_available=false
     [[ -n "$my_phi" ]] && my_phi2x_available=true
 
@@ -1076,7 +1077,55 @@ print(len(common), ','.join(common[:4]))
             [[ "$trace_label" == "$score_traces" ]] && trace_label=""  # aucun label si score seul
         fi
 
-        local total_score=$(( score_interest + score_kin + score_phi2x + score_traces ))
+        # ── Score 5 : proximité cymatique a5l (0-10 pts bonus) ────────────
+        # Deux personnes sur le même ventre d'onde planétaire (|Ψ_i − Ψ_j| < 0.10)
+        # partagent un alignement vibratoire indépendant de leur géographie.
+        local score_a5l=0 a5l_label=""
+        if [[ -n "${my_a5l:-}" ]]; then
+            local other_a5l; other_a5l=$(jq -r '.a5l_amplitude // empty' <<< "${other_a4l:-{\}}" 2>/dev/null)
+            if [[ -n "$other_a5l" ]]; then
+                local a5l_delta
+                a5l_delta=$(python3 -c "
+import sys
+diff = abs(float(sys.argv[1]) - float(sys.argv[2]))
+if diff < 0.05:
+    print('10 ✨ Nœud cymatique identique')
+elif diff < 0.10:
+    print('7 🌊 Même ventre d\\'onde')
+elif diff < 0.20:
+    print('3 〰 Onde voisine')
+else:
+    print('0')
+" "$my_a5l" "$other_a5l" 2>/dev/null) || a5l_delta="0"
+                score_a5l=${a5l_delta%% *}
+                a5l_label="${a5l_delta#* }"
+                [[ "$a5l_label" == "$score_a5l" ]] && a5l_label=""
+            fi
+        fi
+
+        # ── Score total : interférence non-linéaire (Géométrie de la Confiance) ─
+        # k = score_phi2x normalisé sur [0,1] pilote le régime d'interférence.
+        # k ≥ 0.95 → Singularité (fusion exponentielle)
+        # k ≤ 0.55 → Alignement orthogonal (friction créatrice, diviseur)
+        # sinon   → Interférence constructive classique (smooth-min)
+        local total_score
+        total_score=$(python3 -c "
+import math
+si=$score_interest; sk=$score_kin; sp=$score_phi2x; st=$score_traces; sa=$score_a5l
+k = sp / 30.0  # sp est borné à 30 pts → k ∈ [0,1]
+if k >= 0.95:
+    total = (si + sk + st) * 1.5 + sp
+elif k <= 0.55:
+    total = (si + sk + st) * 0.5 + sp
+else:
+    social = si + sk + st
+    h = max(k - abs(social - sp * 3) / 100.0, 0.0)
+    total = min(social, sp * 3) - h * h * 0.25 * 100
+    total = total / 3.0 + sp
+# Le bonus cymatique a5l s'additionne toujours (indépendant du régime d'interférence)
+total += sa
+print(min(120, max(0, int(total))))
+" 2>/dev/null) || total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l ))
         [[ $total_score -lt 10 ]] && continue
 
         local bio
@@ -1093,6 +1142,8 @@ print(len(common), ','.join(common[:4]))
             affinity_parts+=("$phi2x_label")
         [[ $score_traces -gt 0 && -n "$trace_label" ]] && \
             affinity_parts+=("🌐 ${trace_label}")
+        [[ $score_a5l -gt 0 && -n "$a5l_label" ]] && \
+            affinity_parts+=("$a5l_label")
 
         candidate_scores["$other_email"]=$total_score
         local _sep="" _lbl=""

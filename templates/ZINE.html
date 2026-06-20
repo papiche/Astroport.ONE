@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<title>Astroport.ONE - UPlanet ZINE Capsule & Contrat</title>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="/ipfs/QmU8XZpK2rGGJC8ZCFrKRo5cdDWr78vCgx68mCXDcXUpiv" />
+<link rel="stylesheet" href="/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/style.css" />
+
+<meta name="Description" content="Zine interactif et Contrat de Commodat pour héberger un Astroport.ONE et rejoindre l'économie Z.E.N. (Monnaie Libre Ğ1 et Cashback €)" />
+<meta name="theme-color" content="#6a0dad" />
+
+<style>
+  /* Styles spécifiques pour le Verso (Contrat A4) */
+  @media print {
+    .verso-page {
+      page-break-before: always !important;
+      margin: 0;
+      padding: 0;
+    }
+    .zine {
+      page-break-after: always;
+    }
+  }
+
+  .verso-page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 20px auto;
+    padding: 20px;
+    background: #fff;
+    border: 4px solid #6a0dad;
+    outline: 2px solid goldenrod;
+    outline-offset: -10px;
+    font-family: 'Courier New', Courier, monospace;
+    position: relative;
+    box-sizing: border-box;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  }
+
+  /* Filigrane d'arbre en fond */
+  .verso-page::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 80%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="%236a0dad" opacity="0.05" d="M50 10c-20 0-30 20-20 40h-10l5 10h15v40h20V60h15l5-10h-10c10-20 0-40-20-40z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .verso-content {
+    position: relative;
+    z-index: 1;
+    color: #333;
+    line-height: 1.4;
+    font-size: 0.85rem;
+  }
+
+  .verso-content h1 {
+    text-align: center;
+    color: #6a0dad;
+    border-bottom: 2px solid goldenrod;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    font-size: 1.6rem;
+    font-family: sans-serif;
+    text-transform: uppercase;
+  }
+
+  .verso-content h2 {
+    color: #4a0080;
+    font-size: 1.1rem;
+    margin-top: 15px;
+    margin-bottom: 5px;
+  }
+
+  .form-group {
+    margin-bottom: 10px;
+  }
+
+  .form-line {
+    border-bottom: 1px dotted #666;
+    display: inline-block;
+    min-width: 200px;
+  }
+
+  .signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+  }
+
+  .signature-box {
+    width: 45%;
+    border: 1px solid #6a0dad;
+    height: 100px;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: center;
+    color: #666;
+    background: rgba(106, 13, 173, 0.02);
+  }
+
+  .footer-instructions {
+    text-align: center;
+    margin-top: 20px;
+    font-weight: bold;
+    color: #d9534f;
+    border-top: 1px dashed #ccc;
+    padding-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- RECTO : LE ZINE (8 Pages A7) -->
+<main class="zine">
+  <header class="zine-page page-1">
+    <h2><button class="print-button" onclick="window.print()">🖨️ Imprimer</button> ASTROPORT </h2>
+    <!-- Image : Graine lumineuse flottant entre deux mains / Arbre cosmique -->
+    <img class="full-img" src="/ipfs/QmZH9UYqyUZkms5vGnhd4D1ApdwFntFzdMHpWnWmQuojAQ" alt="Arbre Cosmique">
+    <pre><code class="language-css">LE NOUVEL INTERNET LIBRE.</code></pre>
+  </header>
+  
+  <section class="zine-page page-2">
+    <h3>Le Paradigme Z.E.N.</h3>
+    <p>Nous libérons la création de la monnaie-dette. Le réseau Astroport.ONE tisse une <strong>Toile de Confiance (WoTx2)</strong>.</p>
+    <p>La Zone Économique Nouvelle (Z.E.N) utilise la <strong>Monnaie Libre (Ğ1)</strong>. Pas de serveurs centraux, juste une harmonie d'humains et de nœuds relais.</p>
+    <p><em>Vous avez l'espace. Nous avons la technologie.</em></p>
+  </section>
+
+  <section class="zine-page page-3">
+    <h3>Accueillez un Astroport</h3>
+    <p>Devenez un <strong>Armateur</strong> du réseau Web3 UPlanet.</p>
+    <p>En hébergeant un Astroport (un mini-serveur IPFS/G1 ou un Dôme de recherche), vous renforcez le réseau maillé citoyen.</p>
+    <p>En échange de votre électricité et connexion internet, l'économie Z.E.N vous rémunère !</p>
+  </section>
+
+  <section class="zine-page page-4">
+    <h3>L'Économie des PAF ẑen</h3>
+    <p>La Proof of Work (PoW) classique détruit la planète. Nous utilisons la Proof of Life !</p>
+    <p>Votre Astroport collecte des <strong>PAF (Participation Aux Frais) en ẑen</strong>.</p>
+    <p style="color: #6a0dad; font-weight: bold;">Le double avantage :</p>
+    <ul style="font-size: 0.9em;">
+      <li>Ils génèrent de la Monnaie Libre Ğ1.</li>
+      <li><strong>Cashback € :</strong> Le collectif convertit jusqu'à 1/3 de vos ẑen en Euros sur présentation de vos factures validées !</li>
+    </ul>
+  </section>
+
+  <section class="zine-page page-5">
+    <h3>Légal, Sûr et Libre</h3>
+    <p>Zéro paperasse toxique. Nous utilisons l'Art. 1875 du Code Civil : <strong>Le Commodat (Prêt à l'Usage)</strong>.</p>
+    <ul style="font-size: 0.9em;">
+      <li>Vous restez maître de votre salon ou terrain.</li>
+      <li>G1FabLab fournit et maintient le matériel.</li>
+      <li>Vous prêtez juste l'électricité et l'IP.</li>
+      <li>Révocable à tout moment avec 1 mois de préavis.</li>
+    </ul>
+  </section>
+
+  <section class="zine-page page-6">
+    <h3>La Magie Opère...</h3>
+    <p>Comme les anciens bâtisseurs qui alignaient les pierres sur les ondes terrestres, les Astroports alignent nos données sur les fréquences harmoniques de la confiance (Phi2x).</p>
+    <p>En devenant Armateur, vous devenez l'architecte invisible du monde de demain. Un monde sans banques, basé sur le Vivant.</p>
+  </section>
+
+  <section class="zine-page page-7">
+    <h3>Comment procéder ?</h3>
+    <ol style="font-size: 0.8em; padding-left: 15px;">
+      <li><strong>Dépliez</strong> cette feuille.</li>
+      <li><strong>Lisez et remplissez</strong> le Contrat de Commodat au dos.</li>
+      <li><strong>Signez</strong> l'accord.</li>
+      <li><strong>Prenez en photo</strong> le document avec votre smartphone.</li>
+      <li><strong>Envoyez-le</strong> à l'équipe G1FabLab.</li>
+    </ol>
+  </section>
+
+  <footer class="zine-page page-8">
+    <h3 style="text-align: center;">Rejoignez l'Uni Vers</h3>
+    <p style="text-align: center; font-size: 0.8em;">Présentation Officielle mi-juillet<br>Agora Monnaie Libre</p>
+    
+    <div style="text-align: center; margin: 10px 0;">
+      <!-- QR Code vers la documentation -->
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://ipfs.guenoel.fr/ipns/copylaradio.com/Unation.html" alt="QR Code G1FabLab">
+    </div>
+    
+    <p style="font-size: 0.7em; text-align: center;"><strong>Contactez-nous :</strong><br>https://opencollective.com/monnaie-libre</p>
+    
+    <hr style="border: 1px solid goldenrod; margin: 10px 0;">
+    <p style="text-align: center; font-weight: bold; font-size: 0.9em;">⬇️ DÉPLIEZ CE ZINE ⬇️<br>POUR LE CONTRAT</p>
+  </footer>
+</main>
+
+<!-- VERSO : LE CONTRAT A4 -->
+<div class="verso-page">
+  <div class="verso-content">
+    <h1>Contrat de Prêt à l'Usage (Commodat)</h1>
+    <p style="text-align: center; font-style: italic; margin-bottom: 20px;">Soumis aux articles 1875 et suivants du Code civil français.</p>
+
+    <h2>1. Les Parties</h2>
+    <div class="form-group">
+      <strong>Entre le PRÊTEUR (Le Propriétaire / Hébergeur) :</strong><br>
+      Nom / Prénom (ou Raison Sociale) : <span class="form-line" style="width: 60%;"></span><br>
+      Adresse de l'installation : <span class="form-line" style="width: 70%;"></span><br>
+      Email / Clé Publique Ğ1 : <span class="form-line" style="width: 65%;"></span>
+    </div>
+    <div class="form-group" style="margin-top: 15px;">
+      <strong>Et l'EMPRUNTEUR (L'Opérateur Astroport) :</strong><br>
+      Association / Collectif : <strong>G1FabLab / Réseau Astroport.ONE</strong><br>
+      Représentant : <span class="form-line" style="width: 40%;"></span>
+    </div>
+
+    <h2>2. Objet du Contrat</h2>
+    <p>Le Prêteur met gratuitement à la disposition de l'Emprunteur un espace défini (intérieur pour un nœud-boîtier ou extérieur pour un dôme technique) situé à l'adresse susmentionnée. Cet espace est destiné à accueillir l'installation d'un "Nœud Astroport.ONE" (micro-serveur Web3, IPFS, G1).</p>
+
+    <h2>3. Conditions du Prêt et Mécanisme Z.E.N.</h2>
+    <ul>
+      <li><strong>Gratuité & Propriété :</strong> Le présent prêt d'espace est consenti à titre gratuit. L'équipement Astroport demeure la propriété exclusive et insaisissable de l'Emprunteur (G1FabLab).</li>
+      <li><strong>Énergie & Connexion :</strong> Le Prêteur fournit l'accès à une prise électrique 220V et une connexion internet.</li>
+      <li><strong>Compensation (Les PAF ẑen) :</strong> En contrepartie des fluides fournis, le nœud génère automatiquement des PAF ẑen (Participation Aux Frais). Ceux-ci permettent de récolter de la Monnaie Libre (Ğ1). <strong>De plus, sur présentation de factures validées par le collectif (électricité, internet), le Prêteur peut convertir jusqu'à un tiers (1/3) de ses ẑen accumulés en "cashback €"</strong>, agissant comme un remboursement direct de ses frais fiat.</li>
+      <li><strong>Entretien :</strong> L'Emprunteur s'engage à installer, configurer et entretenir le matériel à ses seuls frais.</li>
+    </ul>
+
+    <h2>4. Durée et Résiliation</h2>
+    <p>Ce contrat prend effet à la date de signature pour une durée indéterminée et est tacitement reconduit. Chacune des parties peut résilier le contrat à tout moment, par simple notification écrite ou numérique, moyennant un préavis d'un (1) mois. À l'issue de ce délai, l'Emprunteur s'engage à retirer son matériel et à remettre l'espace dans son état initial.</p>
+
+    <h2>5. Litiges et Engagements</h2>
+    <p>Les parties s'engagent à résoudre tout différend à l'amiable, selon les principes d'équité de la Toile de Confiance. Le Prêteur ne peut en aucun cas être tenu responsable de la nature des données cryptées transitant sur le réseau IPFS via le nœud qu'il héberge.</p>
+
+    <p style="margin-top: 20px;">Fait à <span class="form-line" style="width: 200px;"></span>, le <span class="form-line" style="width: 150px;"></span>.</p>
+
+    <div class="signatures">
+      <div class="signature-box">
+        <strong>Signature du PRÊTEUR</strong><br>
+        <span style="font-size: 0.7em;">(Faire précéder de la mention "Lu et approuvé")</span>
+      </div>
+      <div class="signature-box">
+        <strong>Signature de l'EMPRUNTEUR</strong><br>
+        <span style="font-size: 0.7em;">G1FabLab / Astroport.ONE</span>
+      </div>
+    </div>
+
+    <div class="footer-instructions">
+      📸 MODE D'EMPLOI : Remplissez et signez ce document, puis prenez-le en photo avec votre smartphone. <br>Envoyez la photo à l'opérateur pour finaliser votre embarquement dans le réseau !
+    </div>
+  </div>
+</div>
+
+<script src="/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/script.js" async defer></script>
+
+</body>
+</html>

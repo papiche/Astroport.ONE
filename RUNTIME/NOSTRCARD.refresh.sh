@@ -1098,27 +1098,30 @@ ERRHTML
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
         NPUB=$(cat ~/.zen/game/nostr/${PLAYER}/NPUB)
 
-        # Update email in NOSTR profile during refresh (ensure email is always present)
+        # Republier le profil NOSTR si le tag #i email: est absent (profils pré-NIP-39)
         if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
-            # Update email only during daily refresh to avoid excessive updates
-            # But ensure it's done at least once per day
-            if [[ "$REFRESH_REASON" == "daily_update" ]]; then
-                _PLAYER_NSEC="${NSEC:-}"
-                _PLAYER_NPUB="${NPUB:-}"
+            _has_email_tag=""
+            if command -v jq &>/dev/null && [[ -x "${HOME}/.zen/strfry/strfry" ]]; then
+                _has_email_tag=$(cd ~/.zen/strfry && ./strfry scan \
+                    "{\"kinds\":[0],\"authors\":[\"${HEX}\"]}" 2>/dev/null \
+                    | jq -r --arg ei "email:${PLAYER}" \
+                    'select((.tags // []) | map(select(.[0]=="i" and .[1]==$ei)) | length > 0) | "found"' \
+                    2>/dev/null | head -1)
+            fi
+            if [[ "$_has_email_tag" != "found" ]]; then
                 NODE_NOSTR_HEX=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
-                log "INFO" "Updating email+home_station in NOSTR profile for ${PLAYER} during daily refresh"
-                ${MY_PATH}/../tools/nostr_update_profile.py \
-                    "${PLAYER}" \
-                    "wss://relay.copylaradio.com" "$myRELAY" \
-                    --email "$PLAYER" \
-                    --home_station "${IPFSNODEID}:${NODE_NOSTR_HEX}" \
-                    2>&1 | while read line; do log "DEBUG" "$line"; done
-                    
-                    if [[ $? -eq 0 ]]; then
-                        log "INFO" "✅ Email updated in NOSTR profile for ${PLAYER}"
-                    else
-                        log "WARN" "⚠️ Failed to update email in NOSTR profile for ${PLAYER}"
-                    fi
+                log "INFO" "Tag #i email: absent pour ${PLAYER} — republication du profil NOSTR"
+                ( set -o pipefail
+                  ${MY_PATH}/../tools/nostr_update_profile.py \
+                      "${PLAYER}" \
+                      "wss://relay.copylaradio.com" "$myRELAY" \
+                      --email "$PLAYER" \
+                      --home_station "${IPFSNODEID}:${NODE_NOSTR_HEX}" \
+                      2>&1 | while IFS= read -r _uline; do log "DEBUG" "$_uline"; done
+                ) && log "INFO" "✅ Tag #i email: publié pour ${PLAYER}" \
+                  || log "WARN" "⚠️ Republication tag email échouée pour ${PLAYER}"
+            fi
+            if [[ "$REFRESH_REASON" == "daily_update" ]]; then
                     
                     # Update DID document - Read from NOSTR relay (source of truth) instead of local cache
                     # This updates IPNS addresses, wallet info, and other metadata

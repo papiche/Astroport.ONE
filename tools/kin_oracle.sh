@@ -249,6 +249,7 @@ _phi_resonance_k() {
 # ─── Tableaux globaux enrichis A4L ──────────────────────────────────────────
 declare -A email_phi=()      # email → personal_phase φ_i
 declare -A email_omega=()    # email → omega_bio ω
+declare -A email_a5l=()      # email → a5l_amplitude Ψ ∈ [0,1] (champ cymatique naissance)
 declare -A email_sex=()      # email → biological_sex (0=Φ 1=Octave)
 declare -A email_kin30078=() # email → kin_num depuis Kind 30078
 declare -A email_inst=()     # email → inst_id (0=synth 1=voix)
@@ -298,12 +299,13 @@ _scan_a4l_phi() {
     local PHI2X="${MY_PATH}/phi2x.py"
     while IFS= read -r evt; do
         [[ -z "$evt" ]] && continue
-        local pubkey content phi omega sex kin_n inst proof kin_conc arch_val
+        local pubkey content phi omega a5l_val sex kin_n inst proof kin_conc arch_val
         pubkey=$(echo "$evt" | jq -r '.pubkey // empty' 2>/dev/null)
         content=$(echo "$evt" | jq -r '.content // empty' 2>/dev/null)
         [[ -z "$pubkey" ]] && continue
         phi=$(echo "$content"      | jq -r '.personal_phase    // empty' 2>/dev/null)
         omega=$(echo "$content"    | jq -r '.omega_bio         // empty' 2>/dev/null)
+        a5l_val=$(echo "$content"  | jq -r '.a5l_amplitude     // empty' 2>/dev/null)
         sex=$(echo "$content"      | jq -r '.biological_sex    // empty' 2>/dev/null)
         kin_n=$(echo "$content"    | jq -r '.kin_num           // empty' 2>/dev/null)
         inst=$(echo "$content"     | jq -r '.inst_id           // "0"'   2>/dev/null)
@@ -327,6 +329,7 @@ print('ok' if expected==proof else 'fail')
         [[ -z "$_email" ]] && continue
         email_phi["$_email"]="$phi"
         [[ -n "$omega"    ]] && email_omega["$_email"]="$omega"
+        [[ -n "$a5l_val"  ]] && email_a5l["$_email"]="$a5l_val"
         [[ -n "$sex"      ]] && email_sex["$_email"]="$sex"
         [[ -n "$kin_n"    ]] && email_kin30078["$_email"]="$kin_n"
         email_inst["$_email"]="${inst:-0}"
@@ -444,7 +447,14 @@ _kin_member_card_rich() {
         printf '<div style="font-size:.85rem;color:#555">T%s %s</div>' "$t" "$tone"
         printf '<div style="font-size:.82rem;color:#444;margin-top:.2rem">%s</div>' "$_email"
         if [[ -n "$_phi" ]]; then
-            printf '<div style="font-size:.78rem;color:%s;margin-top:.2rem">⚛ φ_i = %s  |  ω = %s Hz</div>' "$hex" "$_phi" "$_omega"
+            local _a5l="${email_a5l[$_email]:-}"
+            local _a5l_str=""
+            if [[ -n "$_a5l" ]]; then
+                local _pct; _pct=$(python3 -c "print(int(float('$_a5l')*100))" 2>/dev/null) || _pct=""
+                [[ -n "$_pct" ]] && _a5l_str="  |  Ψ = ${_pct}%"
+            fi
+            printf '<div style="font-size:.78rem;color:%s;margin-top:.2rem">⚛ φ_i = %s  |  ω = %s Hz%s</div>' \
+                "$hex" "$_phi" "$_omega" "$_a5l_str"
         fi
         if [[ "$_kcnt" -gt 0 ]]; then
             printf '<div style="font-size:.75rem;color:#7c3aed">🎯 k moyen = %s (%s résonances live)</div>' "$_avg_k" "$_kcnt"

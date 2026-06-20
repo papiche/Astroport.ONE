@@ -552,6 +552,139 @@ for kin in "${!kin_emails[@]}"; do
 done
 [[ $antipode_count -eq 0 ]] && echo "  ℹ️  Aucune paire Antipode isolée"
 
+# ── 7. NŒUDS CYMATIQUES — même ventre d'onde planétaire (a5l), indépendant géo ──
+echo ""
+echo "  ┌──────────────────────────────────────────────────────"
+echo "  │ 🌊 NŒUDS CYMATIQUES (même antinode d'onde terrestre)"
+echo "  └──────────────────────────────────────────────────────"
+# Un nœud cymatique regroupe des membres dont la naissance a eu lieu sur le
+# même ventre d'onde planétaire |Ψ_i − Ψ_j| < 0.10, quelle que soit leur géographie.
+# Requiert email_a5l[] peuplé par _scan_a4l_phi (via kin_oracle.sh).
+cymatic_count=0
+declare -A shown_cymatic=()
+declare -a a5l_emails=()
+for _email in "${!email_a5l[@]}"; do
+    a5l_emails+=("$_email")
+done
+
+for (( _ia=0; _ia < ${#a5l_emails[@]}; _ia++ )); do
+    _e1="${a5l_emails[$_ia]}"
+    [[ -n "${shown_cymatic[$_e1]:-}" ]] && continue
+    _psi1="${email_a5l[$_e1]}"
+    declare -a _wave_group=("$_e1")
+    for (( _ib=_ia+1; _ib < ${#a5l_emails[@]}; _ib++ )); do
+        _e2="${a5l_emails[$_ib]}"
+        [[ -n "${shown_cymatic[$_e2]:-}" ]] && continue
+        _psi2="${email_a5l[$_e2]}"
+        _delta=$(python3 -c "
+import sys
+diff = abs(float(sys.argv[1]) - float(sys.argv[2]))
+print('yes' if diff < 0.10 else 'no')
+" "$_psi1" "$_psi2" 2>/dev/null) || _delta="no"
+        [[ "$_delta" == "yes" ]] && _wave_group+=("$_e2")
+    done
+    (( ${#_wave_group[@]} < 2 )) && continue
+
+    # Vérifier que ce groupe n'est pas un simple swarm géographique déjà signalé
+    # (on garde si au moins 2 membres dans des zones distinctes)
+    _distinct_zones=0
+    _zone_ref=""
+    for _we in "${_wave_group[@]}"; do
+        _wgps="${email_gps[$_we]:-}"
+        _wlat=$(echo "$_wgps" | grep -oP '(?<=LAT=)[^;]+')
+        _wlon=$(echo "$_wgps" | grep -oP '(?<=LON=)[^;]+')
+        [[ -z "$_wlat" ]] && _distinct_zones=$((_distinct_zones+1)) && continue
+        _wzone=$(python3 -c "import sys; print(round(float(sys.argv[1]))+round(float(sys.argv[2])))" \
+            "$_wlat" "$_wlon" 2>/dev/null) || _wzone="?"
+        [[ -z "$_zone_ref" ]] && _zone_ref="$_wzone"
+        [[ "$_wzone" != "$_zone_ref" ]] && _distinct_zones=$((_distinct_zones+1))
+    done
+    (( _distinct_zones < 1 )) && continue  # tous dans la même zone → déjà couvert par swarm
+
+    for _we in "${_wave_group[@]}"; do shown_cymatic[$_we]=1; done
+    ((cymatic_count++)); ((found_groups++))
+
+    _psi_pct=$(python3 -c "print(int(float('$_psi1')*100))" 2>/dev/null) || _psi_pct="?"
+    printf "\n  🌊 Nœud Cymatique #%d — Ψ ≈ %s%% (%d membres)\n" \
+        "$cymatic_count" "$_psi_pct" "${#_wave_group[@]}"
+    for _we in "${_wave_group[@]}"; do
+        printf "    %s (Ψ=%s%%)\n" "$_we" "$(python3 -c "print(int(float('${email_a5l[$_we]:-0}')*100))" 2>/dev/null)"
+    done
+
+    # En mode --player : filtrer
+    if [[ -n "${TARGET_PLAYER:-}" ]]; then
+        _in_wave=false
+        for _we in "${_wave_group[@]}"; do [[ "$_we" == "$TARGET_PLAYER" ]] && _in_wave=true; done
+        [[ "$_in_wave" != "true" ]] && continue
+    fi
+    if [[ -n "${TARGET_PLAYER:-}" ]]; then
+        if ! _kin_type_enabled "cymatic" 2>/dev/null; then : ; fi
+    fi
+
+    # Construire le HTML de groupe
+    _MATCH_GROUP_HTML=""
+    declare -a _cymatic_ems=()
+    for _we in "${_wave_group[@]}"; do
+        local _wkin="${email_kin30078[$_we]:-${kin30078_from_30800[$_we]:-0}}"
+        _MATCH_GROUP_HTML+=$(_kin_member_card_rich "${_wkin:-0}" "${email_phi[$_we]:-}" \
+            "${email_omega[$_we]:-}" "$_we")
+        _cymatic_ems+=("$_we")
+    done
+
+    # Email HTML dédié aux Nœuds Cymatiques
+    declare -a _send_list=()
+    [[ -n "${TARGET_PLAYER:-}" ]] && _send_list=("$TARGET_PLAYER") || _send_list=("${_cymatic_ems[@]}")
+    for _dest in "${_send_list[@]}"; do
+        [[ -z "$_dest" ]] && continue
+        _tmp_cymatic=$(mktemp /tmp/kin_cymatic_XXXXXX.html)
+        _psi_dest_pct=$(python3 -c "print(int(float('${email_a5l[$_dest]:-0}')*100))" 2>/dev/null) || _psi_dest_pct="?"
+        cat << CYMAEOF > "$_tmp_cymatic"
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌊 Nœud Cymatique — Même ventre d'onde que vous</title>
+<style>
+body{margin:0;background:#0f0e17;font-family:-apple-system,sans-serif}
+.w{max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden}
+.ft{background:#f7f7fb;padding:1rem;text-align:center;font-size:.7rem;color:#9ca3af}
+a{color:#0ea5e9}
+</style></head><body><div class="w">
+<div style="background:linear-gradient(135deg,#0c4a6e,#0ea5e9);padding:1.4rem;color:#fff">
+  <div style="font-size:1.1rem;font-weight:700">🌊 Nœud Cymatique</div>
+  <div style="font-size:.85rem;opacity:.9;margin-top:.3rem">
+    Votre naissance a eu lieu sur le même <em>ventre d'onde planétaire</em> (Ψ = ${_psi_dest_pct}%)
+    que ${#_cymatic_ems[@]} autre(s) explorateur(s) — quelle que soit leur position sur le globe.
+  </div>
+</div>
+<div style="padding:1rem 1.2rem">
+  <div style="background:#f0f9ff;border-radius:10px;padding:.9rem;margin-bottom:1rem;font-size:.83rem;color:#0369a1;border-left:3px solid #0ea5e9">
+    <strong>🌍 Résonance sans frontières</strong><br>
+    La Terre vibre comme un bol chantant. Ses 12 pôles icosaédriques émettent des ondes
+    qui interfèrent en formant des <em>ventres</em> (amplitudes maximales) et des <em>nœuds</em>
+    (amplitudes nulles). Vous êtes nés sur le même antinode : indépendamment de la distance
+    géographique, votre champ vibratoire de naissance résonne à l'unisson.
+  </div>
+  ${_MATCH_GROUP_HTML}
+  <div style="text-align:center;margin-top:1rem">
+    <a href="https://u.copylaradio.com/apk/atom4love.apk"
+       style="background:#0ea5e9;color:#fff;padding:.5rem 1.2rem;border-radius:8px;
+              text-decoration:none;font-size:.85rem;font-weight:600">
+      ⚛ Ouvrir ATOM4LOVE
+    </a>
+  </div>
+</div>
+<div class="ft">ATOM4LOVE Alpha · G1FabLab · UPlanet ORIGIN</div>
+</div></body></html>
+CYMAEOF
+        if [[ -x "$MJ" ]]; then
+            "$MJ" "$_dest" "$_tmp_cymatic" \
+                "🌊 Nœud Cymatique — Votre onde planétaire résonne avec ${#_cymatic_ems[@]} explorateur(s)" 2>/dev/null && \
+                printf "    📧 Nœud Cymatique → %s\n" "$_dest"
+        fi
+        rm -f "$_tmp_cymatic"
+    done
+done
+[[ $cymatic_count -eq 0 ]] && echo "  ℹ️  Aucun nœud cymatique (a5l non encore renseigné — republier le certificat ATOM4LOVE)"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Bilan et marqueur
 # ─────────────────────────────────────────────────────────────────────────────
@@ -560,7 +693,7 @@ echo "========================================================================"
 printf "  🔮 %d groupe(s) traité(s)\n" "$found_groups"
 printf "     💎 Quatuors: %d  🌙 Occultes: %d  🌀 Analogues: %d  🎵 Conseils: %d\n" \
        "$quartet_count" "$occult_count" "$analog_count" "$council_count"
-printf "     🧭 Guides: %d  ⚡ Antipodes: %d\n" "$guide_count" "$antipode_count"
+printf "     🧭 Guides: %d  ⚡ Antipodes: %d  🌊 Cymatiques: %d\n" "$guide_count" "$antipode_count" "$cymatic_count"
 echo "========================================================================"
 
 # ─── Publication hebdo des tâches G1FabLab sur NOSTR ─────────────────────
