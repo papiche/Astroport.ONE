@@ -58,7 +58,7 @@ if [[ $REFRESH_MODE -eq 0 ]] && [[ -s "$HOME/.zen/tmp/${CACHE_FILE}" ]]; then
     if jq -e . "$HOME/.zen/tmp/${CACHE_FILE}" >/dev/null 2>&1; then
         CACHE_AGE=$(($(date +%s) - $(stat -c %Y "$HOME/.zen/tmp/${CACHE_FILE}")))
         echo "Serving cache (age: ${CACHE_AGE}s)" >&2
-        if [[ $CACHE_AGE -gt 43200 ]] && [[ ! -f "$LOCK_FILE" ]]; then
+        if [[ $CACHE_AGE -gt 3600 ]] && [[ ! -f "$LOCK_FILE" ]]; then
             echo "Cache stale, spawning background refresh..." >&2
             touch "$LOCK_FILE"
             nohup bash "$0" "$MLAT" "$MLON" "$MDEG" --refresh >>/tmp/Ustats_refresh.log 2>&1 &

@@ -3235,12 +3235,66 @@ EOF
 # Main Execution
 ################################################################################
 
+process_atom4love_welcomes() {
+    local _welcomed="$HOME/.zen/strfry/atom4love_welcomed.txt"
+    local _dm_tool="$MY_PATH/../tools/nostr_send_secure_dm.py"
+    [[ ! -x "$_dm_tool" ]] && log "⚠️  nostr_send_secure_dm.py manquant — skip welcomes" && return 1
+
+    touch "$_welcomed"
+
+    cd "$HOME/.zen/strfry" 2>/dev/null || return 1
+
+    local _count=0
+    while read -r _ev; do
+        local _pubkey _lat _lon _fmt_lat _fmt_lon _umap_nsec
+        _pubkey=$(echo "$_ev" | jq -r '.pubkey // empty' 2>/dev/null)
+        [[ -z "$_pubkey" ]] && continue
+
+        # Déjà accueilli par cette station — skip
+        grep -q "^${_pubkey}$" "$_welcomed" 2>/dev/null && continue
+
+        _lat=$(echo "$_ev" | jq -r '.tags[] | select(.[0]=="lat") | .[1]' 2>/dev/null | head -1)
+        _lon=$(echo "$_ev" | jq -r '.tags[] | select(.[0]=="lon") | .[1]' 2>/dev/null | head -1)
+        [[ -z "$_lat" || -z "$_lon" ]] && continue
+
+        _fmt_lat=$(awk "BEGIN {printf \"%.2f\", ${_lat}+0}" 2>/dev/null)
+        _fmt_lon=$(awk "BEGIN {printf \"%.2f\", ${_lon}+0}" 2>/dev/null)
+        [[ -z "$_fmt_lat" || -z "$_fmt_lon" ]] && continue
+
+        # Seule la station la plus proche de la zone UMAP envoie le DM
+        if ! is_closest_station "$_fmt_lat" "$_fmt_lon" 2>/dev/null; then
+            log "⏭️  Welcome: non-responsable de (${_fmt_lat},${_fmt_lon}) — skip ${_pubkey:0:8}..."
+            continue
+        fi
+
+        _umap_nsec=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr \
+            "${UPLANETNAME}${_fmt_lat}" "${UPLANETNAME}${_fmt_lon}" -s 2>/dev/null)
+        [[ -z "$_umap_nsec" ]] && continue
+
+        local _msg="🌍 Bienvenue dans la zone UPlanet (${_fmt_lat},${_fmt_lon}) ! Votre certificat ATOM4LOVE a bien été reçu. Retrouvez vos voisins sur atomic_map.html 🌿"
+        if python3 "$_dm_tool" "$_umap_nsec" "$_pubkey" "$_msg" "${myRELAY:-ws://127.0.0.1:7777}" \
+                >/dev/null 2>&1; then
+            echo "$_pubkey" >> "$_welcomed"
+            log "✅ Welcome DM → ${_pubkey:0:8}... (${_fmt_lat},${_fmt_lon})"
+            (( _count++ ))
+        else
+            log "❌ Welcome DM KO → ${_pubkey:0:8}... (${_fmt_lat},${_fmt_lon})"
+        fi
+    done < <(./strfry scan '{"kinds":[30078],"#d":["atom4love-home"]}' 2>/dev/null)
+
+    [[ $_count -gt 0 ]] && log_always "🌍 ${_count} welcome DM atom4love envoyé(s)"
+    return 0
+}
+
 main() {
     check_dependencies
     display_banner
 
     BLACKLIST_FILE="${HOME}/.zen/strfry/blacklist.txt"
     AMISOFAMIS_FILE="${HOME}/.zen/strfry/amisOfAmis.txt"
+
+    # Envoyer les DM de bienvenue UMAP aux nouveaux atom4love-home
+    process_atom4love_welcomes
 
     # Process UMAPs
     for hexline in $(ls ~/.zen/game/nostr/UMAP_*_*/HEX); do

@@ -315,6 +315,16 @@ ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
 ################## NOSTR Cards (Notes and Other Stuff Transmitted by Relays)
 rm "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null ## RESET Friends of Friends List
+
+## Nettoyage atom4love_certified.txt — supprime les entrées > 180 jours
+_a4l_cert="${HOME}/.zen/strfry/atom4love_certified.txt"
+if [[ -f "$_a4l_cert" ]]; then
+    _a4l_cutoff=$(( $(date +%s) - 180*86400 ))
+    awk -F: -v cut="$_a4l_cutoff" 'NF>=2 && $2+0 >= cut' "$_a4l_cert" > "${_a4l_cert}.tmp" \
+        && mv "${_a4l_cert}.tmp" "$_a4l_cert"
+    echo "[20h12] atom4love_certified.txt : $(wc -l < "$_a4l_cert") pubkeys actifs"
+fi
+
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 
 ######################################################### UPLANET ######
