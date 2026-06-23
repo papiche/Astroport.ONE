@@ -51,12 +51,12 @@ if [[ ! -f "$_ASTRO_COMPOSE" ]]; then
     echo "   → Vérifiez que Astroport.ONE est bien cloné"
 else
     echo "⏳ Démarrage NextCloud AIO (peut prendre 2-3 minutes)..."
-    (sg docker -c "docker compose -f '$_ASTRO_COMPOSE' --profile cloud up -d nextcloud-aio-mastercontainer" 2>/dev/null \
-        || sudo docker compose -f "$_ASTRO_COMPOSE" --profile cloud up -d nextcloud-aio-mastercontainer) 2>&1
+    (sg docker -c "docker compose -f '$_ASTRO_COMPOSE' --profile cloud up -d nextcloud" 2>/dev/null \
+        || sudo docker compose -f "$_ASTRO_COMPOSE" --profile cloud up -d nextcloud) 2>&1
     _nc_exit=$?
     if [[ $_nc_exit -eq 0 ]]; then
         NEXTCLOUD_ACTIVE=true
-        echo "✅ Conteneur nextcloud-aio-mastercontainer démarré"
+        echo "✅ Conteneur nextcloud démarré"
         ## Attendre que le conteneur soit prêt avant de relancer NPM
         echo "⏳ Attente NextCloud (30s pour initialisation)..."
         sleep 30
@@ -101,7 +101,7 @@ echo "║     Mot de passe : cat ~/.zen/nginx-proxy-manager/data/.admin_pass ║
 echo "║                                                               ║"
 echo "║  3. COMPTES ZEN CARD (1 compte = 1 abonné 128Go) :         ║"
 echo "║     Interface web NextCloud : Utilisateurs → Nouveau         ║"
-echo "║     CLI : docker exec -it nextcloud-aio-mastercontainer \   ║"
+echo "║     CLI : docker exec -it nextcloud \   ║"
 echo "║       bash                                                   ║"
 echo "║     # puis : su -s /bin/bash www-data -c                    ║"
 echo "║     # 'php /var/www/html/occ user:add --display-name U E'   ║"
