@@ -21,7 +21,7 @@ if [[ -n "$MY_WAN_IP" ]]; then
     # On autorise tout le trafic sur un serveur public
     ipfs config Swarm.AddrFilters --json "[]"
 else
-    if [[ -n "$isLAN" || $(hostname) == "nexus" ]]; then
+    if [[ -n "$isLAN" ]]; then
         echo "    Mode : DHT CLIENT (4G/Restreint)"
         ipfs config Routing.Type dhtclient
         # SYNTAXE CORRIGÉE : /ip6/::/ipcidr/0 pour bloquer l'IPv6 proprement
@@ -56,8 +56,8 @@ fi
 ipfs config --json Ipns.UsePubsub true
 ipfs config --json Experimental.Libp2pStreamMounting true
 ipfs config --json Experimental.P2pHttpProxy true
-ipfs config --json Swarm.ConnMgr.LowWater 20
-ipfs config --json Swarm.ConnMgr.HighWater 60
+ipfs config --json Swarm.ConnMgr.LowWater 40
+ipfs config --json Swarm.ConnMgr.HighWater 200
 
 # 4. CORS & API
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'
