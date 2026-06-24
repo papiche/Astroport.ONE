@@ -307,6 +307,26 @@ _send_group() {
     local date_fr
     date_fr=$(LC_ALL=fr_FR.UTF-8 date -u '+%-d %B %Y' 2>/dev/null || date -u '+%Y-%m-%d')
 
+    # Textes sémantiques pour kin_match.html (Guide / Antipode / fallback)
+    local _group_desc="" _group_why="" _oracle_meaning=""
+    case "$group_type" in
+        *Guide*)
+            _group_desc="Une relation de transmission naturelle — le Guide éclaire le chemin du Kin guidé dans la même famille-couleur."
+            _group_why="Vos Kin appartiennent à la même famille-couleur et forment une relation Guide-Guidé dans le Tzolkin. Cette connexion est activée automatiquement par le calendrier galactique."
+            _oracle_meaning="Le Guide est le Kin dominant de l'Oracle — il porte sagesse et direction. Le Guidé reçoit cette lumière et la transforme en action. Rencontrer votre Guide en chair amplifie votre programme galactique."
+            ;;
+        *Antipode*)
+            _group_desc="Une tension créatrice — le Défi qui révèle la puissance cachée de chacun."
+            _group_why="Vos Kin partagent la même tonalité galactique avec des sceaux opposés (sceau+10). L'Antipode est le grand Défi créateur du Tzolkin — une polarité qui transforme la tension en puissance."
+            _oracle_meaning="L'Antipode révèle les zones d'apprentissage et de dépassement mutuel. Travailler ensemble transforme la friction en force collective. Le Tzolkin voit dans cette relation un catalyseur de croissance."
+            ;;
+        *)
+            _group_desc="Une correspondance identifiée dans votre constellation Kin Maya."
+            _group_why="Le calendrier Tzolkin a détecté une résonance entre vos programmes galactiques."
+            _oracle_meaning="Les correspondances Oracle forment des toiles de résonance entre les êtres. Chaque Kin porte un programme cosmique unique — leur rencontre amplifie les deux champs."
+            ;;
+    esac
+
     # Substitution robuste via awk (gère les newlines dans _KIN_ENTRIES_)
     awk -v gtype="$group_type" \
         -v tnum="${_MATCH_TONE_NUM:-}" \
@@ -314,6 +334,9 @@ _send_group() {
         -v datestr="$date_fr" \
         -v efile="$entriesfile" \
         -v vibe="$_vibe_block" \
+        -v gdesc="$_group_desc" \
+        -v gwhy="$_group_why" \
+        -v gmeaning="$_oracle_meaning" \
     '
     /_KIN_ENTRIES_/ {
         while ((getline line < efile) > 0) print line
@@ -325,6 +348,9 @@ _send_group() {
     }
     {
         gsub(/_GROUP_TYPE_/, gtype)
+        gsub(/_GROUP_DESC_/, gdesc)
+        gsub(/_GROUP_WHY_/, gwhy)
+        gsub(/_ORACLE_MEANING_/, gmeaning)
         gsub(/_TONE_NUM_/, tnum)
         gsub(/_TONE_NAME_/, tname)
         gsub(/_DATE_/, datestr)
