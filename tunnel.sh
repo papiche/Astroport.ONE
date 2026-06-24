@@ -374,25 +374,48 @@ while $running; do
 
             $'\x0a'|$'\x0d') # CONNECT
                 port="${map_ports[$local_idx]}"
-                if echo "$active_p2p" | grep -qF "${map_protos[$local_idx]}"; then
+                alt_port="${map_alt_ports[$local_idx]}"
+                proto="${map_protos[$local_idx]}"
+                if echo "$active_p2p" | grep -qF "$proto"; then
                     add_log "Tunnel déjà actif sur P:${map_disp_ports[$cursor]:-$port}."
                 else
-                    add_log "Lancement ${map_names[$local_idx]}..."
+                    chosen_port="$port"
+                    if echo "$all_listening" | grep -qE ":$port "; then
+                        if [[ -n "$alt_port" && "$alt_port" != "$port" ]] && \
+                           ! echo "$all_listening" | grep -qE ":$alt_port "; then
+                            chosen_port="$alt_port"
+                            add_log "P:$port occupé → alt P:$alt_port"
+                        else
+                            add_log "P:$port occupé, alt P:${alt_port:-aucun} aussi pris."
+                        fi
+                    fi
+                    add_log "Lancement ${map_names[$local_idx]} (P:$chosen_port)..."
                     draw_ui
-                    bash "${map_scripts[$local_idx]}" >> "$LOG_FILE" 2>&1 &
+                    NATIVE_PORT="$chosen_port" bash "${map_scripts[$local_idx]}" >> "$LOG_FILE" 2>&1 &
                     sleep 1
                     add_log "Script lancé — attente réponse tunnel."
                 fi
                 ;;
 
             "r"|"R") # RESET
+                port="${map_ports[$local_idx]}"
+                alt_port="${map_alt_ports[$local_idx]}"
                 add_log "Reset ${map_names[$local_idx]}..."
                 draw_ui
-                kill_service "${map_ports[$local_idx]}" "${map_protos[$local_idx]}"
+                kill_service "$port" "${map_protos[$local_idx]}"
                 sleep 1
-                bash "${map_scripts[$local_idx]}" >> "$LOG_FILE" 2>&1 &
+                all_listening=$(lsof -Pi -sTCP:LISTEN 2>/dev/null)
+                chosen_port="$port"
+                if echo "$all_listening" | grep -qE ":$port "; then
+                    if [[ -n "$alt_port" && "$alt_port" != "$port" ]] && \
+                       ! echo "$all_listening" | grep -qE ":$alt_port "; then
+                        chosen_port="$alt_port"
+                        add_log "P:$port occupé → alt P:$alt_port"
+                    fi
+                fi
+                NATIVE_PORT="$chosen_port" bash "${map_scripts[$local_idx]}" >> "$LOG_FILE" 2>&1 &
                 sleep 1
-                add_log "Tunnel relancé sur P:${map_disp_ports[$cursor]}."
+                add_log "Tunnel relancé sur P:${chosen_port}."
                 ;;
 
             "x"|"X") # STOP
