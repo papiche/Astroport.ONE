@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import cv2
 import numpy as np
 import time
@@ -123,7 +124,14 @@ def detect_motion(room, player):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Détection de mouvement VDO.Ninja → publication NOSTR Tube'
+        description='Détection de mouvement VDO.Ninja → publication NOSTR Tube',
+        epilog=(
+            'Exemples:\n'
+            '  %(prog)s\n'
+            '  %(prog)s --room SALON\n'
+            '  %(prog)s --room SALON --player alice@uplanet.org\n'
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         '--room', default='UPLANET',
@@ -131,6 +139,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--player', default='',
+        metavar='EMAIL',
         help='Email du MULTIPASS pour publier (défaut: capitaine courant)'
     )
     args = parser.parse_args()
