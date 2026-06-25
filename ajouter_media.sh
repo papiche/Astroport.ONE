@@ -98,6 +98,13 @@ CHOICE="$3"
 echo ">>> RUNNING 'ajouter_media.sh' URL=$URL PLAYER=$PLAYER CHOICE=$CHOICE"
 echo ">>> Log file: $LOG_FILE"
 
+# Fichier local passé comme URL (appel non-interactif depuis vdo.ninja.motion.rec.py, etc.)
+LOCAL_VIDEO_FILE=""
+if [[ -n "$URL" && -f "$URL" && -n "$CHOICE" ]]; then
+    LOCAL_VIDEO_FILE="$URL"
+    URL=""
+fi
+
 # API endpoint
 API_URL="http://127.0.0.1:54321"
 
@@ -1347,10 +1354,15 @@ ${URL:+Source: $URL
 # CASE ## VIDEO (personal video)
 ########################################################################
     video)
-        espeak "Add your personal video"
-        FILE=$(zenity --file-selection --title="Sélectionner votre vidéo")
-        echo "${FILE}"
-        [[ -z "$FILE" ]] && exit 1
+        if [[ -n "${LOCAL_VIDEO_FILE:-}" && -f "$LOCAL_VIDEO_FILE" ]]; then
+            FILE="$LOCAL_VIDEO_FILE"
+            echo "Fichier local: $FILE"
+        else
+            espeak "Add your personal video"
+            FILE=$(zenity --file-selection --title="Sélectionner votre vidéo")
+            echo "${FILE}"
+            [[ -z "$FILE" ]] && exit 1
+        fi
         FILE_NAME="$(basename "${FILE}")"
         FILE_EXT="${FILE_NAME##*.}"
         FILE_TITLE="${FILE_NAME%.*}"
@@ -1369,9 +1381,13 @@ ${URL:+Source: $URL
             [[ "$TMDB_ENRICHMENT" == "Serie" ]] && tmdb_cat="serie"
             ask_tmdb_metadata "$tmdb_cat"
         else
-            TITLE=$(zenity --entry --width 600 --title "Titre" \
-                --text "Titre de cette vidéo" --entry-text="${FILE_TITLE}")
-            [[ -z "$TITLE" ]] && exit 1
+            if [[ -n "$2" ]]; then
+                TITLE="${FILE_TITLE}"
+            else
+                TITLE=$(zenity --entry --width 600 --title "Titre" \
+                    --text "Titre de cette vidéo" --entry-text="${FILE_TITLE}")
+                [[ -z "$TITLE" ]] && exit 1
+            fi
             TITLE=$(echo "${TITLE}" | _detox)
             TITLE_FOR_PUBLICATION="$TITLE"
             TITLE_FOR_FILENAME="$TITLE"
