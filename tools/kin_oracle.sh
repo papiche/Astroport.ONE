@@ -137,7 +137,7 @@ _kin_meeting_block() {
     else
         _room_suffix=$(echo "$*" | tr ' ' '\n' | sort -n | tr '\n' '_' | sed 's/_$//')
     fi
-    local _vdo_url="https://vdo.copylaradio.com/?room=kin_oracle_${_room_suffix}&effects&record"
+    local _vdo_url="${VDONINJA:-https://vdo.copylaradio.com}/?room=kin_oracle_${_room_suffix}&effects&record"
     local _cal_url="${myLIBRA}/ipns/copylaradio.com/calendars.html"
 
     # Prochain Kin synchrone : jour où le Kin du jour coïncide avec l'un des membres

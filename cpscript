@@ -79,7 +79,7 @@ show_help() {
     echo "                   Ex: --route /upload  --route geo  --route /api/v1"
     echo "    --exclude <f>     Exclure un fichier par basename (répétable)"
     echo "                      Ex: --exclude my.sh  --exclude config.py"
-    echo "    --well-known      Exclure les bibliothèques tierces répandues (jQuery,"
+    echo "    --well-known      Inclure les bibliothèques tierces répandues (jQuery,"
     echo "                      Bootstrap, Leaflet, nacl, scrypt, nostr.bundle, marked…)"
     echo "    --maxfilesize N   P3: Limite la taille par fichier en octets"
     echo "                      Tronque les fichiers volumineux (logs, minifiés...)"
@@ -120,7 +120,7 @@ CLEAN_MODE=false     # --clean : renommer .sh/.py → ._sh/._py dans les comment
 HUMAN_MODE=false     # --human : mode interactif - valider chaque dépendance
 DOC_MODE=false       # --doc : inclure les .md de docs/ qui référencent ce script
 TEMPLATES_MODE=false # --templates : inclure les templates HTML/tpl/j2 référencés dans les scripts
-WELL_KNOWN=false     # --well-known : exclure les bibliothèques tierces connues des IA
+WELL_KNOWN=true     # --well-known : exclure les bibliothèques tierces connues des IA
 declare -A EXCLUDED  # basenames à exclure (--exclude)
 declare -a EXCLUDE_PATTERNS=()  # patterns substring à exclure (--well-known)
 # Bibliothèques tierces répandues — liste centralisée dans tools/well_known_libs.sh
@@ -217,7 +217,7 @@ while [[ $# -gt 0 ]]; do
         --human)      HUMAN_MODE=true;     shift ;;
         --doc)        DOC_MODE=true;       shift ;;
         --templates)  TEMPLATES_MODE=true; shift ;;
-        --well-known) WELL_KNOWN=true;     shift ;;
+        --well-known) WELL_KNOWN=false;     shift ;;
         -*) echo "Option inconnue : $1"; show_help ;;
         *) POSITIONAL+=("$1"); shift ;;
     esac

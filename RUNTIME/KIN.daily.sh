@@ -128,7 +128,7 @@ _oracle_card() {
         _found=true
     done
     if [[ "$_found" == "true" ]]; then
-        local vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin_oracle_${my_kin}_${p_kin}&effects&record"
+        local vdo="${VDONINJA:-https://vdo.copylaradio.com}/?room=kin_oracle_${my_kin}_${p_kin}&effects&record"
         printf '<br><a href="%s" style="display:inline-block;background:%s;color:#fff;padding:.25rem .7rem;border-radius:6px;text-decoration:none;font-size:.78rem;margin-top:.3rem">🎥 Rencontrer</a>' "$vdo" "$phex"
     else
         printf '<span style="color:#9ca3af;font-size:.8rem">Pas encore dans le reseau</span>'
@@ -221,7 +221,7 @@ for DEST in "${RECIPIENTS[@]}"; do
             [[ -z "$_e" ]] && continue
             _pct=$(awk -v k="$_k" 'BEGIN{printf "%d",k*100}')
             _pk="${email_kin[$_e]:-?}"
-            _vdo="${myLIBRA:-https://vdo.copylaradio.com}/?room=kin_phi_${MY_KIN}_${_pk}&effects&record"
+            _vdo="${VDONINJA:-https://vdo.copylaradio.com}/?room=kin_phi_${MY_KIN}_${_pk}&effects&record"
             _hsc=$(_hexagon_shared_count "$DEST" "$_e")
             _hsc_txt=""; [[ "$_hsc" -gt 0 ]] && \
                 _hsc_txt="<br><small style=\"color:#059669\">⬡ ${_hsc} noeuds hexagonaux partages</small>"
@@ -323,6 +323,7 @@ for DEST in "${RECIPIENTS[@]}"; do
         -v date="$DATE_FR"     -v dest="$DEST"         -v score="$SCORE"      \
         -v phi_line="$PHI_LINE" -v bday_banner="$BDAY_BANNER" \
         -v omega_bio="${MY_OMEGA:-429.62}" \
+        -v vdoninja="${VDONINJA:-https://vdo.copylaradio.com}" \
         -v f_oracle="$_entries_oracle" -v f_game="$_entries_game" \
         -v f_phi="$_entries_phi"       -v f_hex="$_entries_hex"  \
         -v f_stats="$_entries_stats"   -v f_wave="$WAVE_HTML"    \
@@ -336,24 +337,25 @@ for DEST in "${RECIPIENTS[@]}"; do
     /_RESONANCE_QUESTION_/  { while((getline l < f_rq)>0)     print l; next }
     /_WAVE_PROGRESS_/       { gsub(/_WAVE_PROGRESS_/, f_wave) }
     {
-        gsub(/_KIN_NUM_/,       kn);   gsub(/_KIN_SEAL_/,       ks)
-        gsub(/_KIN_COLOR_/,     kc);   gsub(/_KIN_TONE_/,       kt)
-        gsub(/_KIN_HEX_COLOR_/, khex); gsub(/_KIN_BG_COLOR_/,   kbg)
-        gsub(/_KIN_COLOR_EMO_/, kemo); gsub(/_KIN_SEAL_EMO_/,   ksemo)
-        gsub(/_KIN_TONE_NUM_/,  ktnum); gsub(/_KIN_POWER_/,     kpower)
-        gsub(/_KIN_ACTION_/,    kaction); gsub(/_KIN_ESSENCE_/,  kessence)
         gsub(/_TODAY_KIN_NUM_/, today_kn); gsub(/_TODAY_KIN_SEAL_/, today_ks)
         gsub(/_TODAY_KIN_COLOR_/, today_kc); gsub(/_TODAY_KIN_TONE_/, today_kt)
         gsub(/_TODAY_KIN_EMO_/, today_emo)
         gsub(/_TODAY_KIN_POWER_/, today_power); gsub(/_TODAY_KIN_ACTION_/, today_action)
         gsub(/_TODAY_WS_NUM_/,  today_ws); gsub(/_TODAY_WS_POS_/, today_wpos)
-        gsub(/_MY_WS_NUM_/,     my_ws);   gsub(/_MY_WS_POS_/,    my_wpos)
-        gsub(/_DATE_/,          date);    gsub(/_DEST_/,          dest)
-        gsub(/_SCORE_/,         score);   gsub(/_PHI_LINE_/,      phi_line)
+        gsub(/_MY_WS_NUM_/,     my_ws);    gsub(/_MY_WS_POS_/,    my_wpos)
+        gsub(/_KIN_HEX_COLOR_/, khex);     gsub(/_KIN_BG_COLOR_/,  kbg)
+        gsub(/_KIN_COLOR_EMO_/, kemo);     gsub(/_KIN_SEAL_EMO_/,  ksemo)
+        gsub(/_KIN_TONE_NUM_/,  ktnum)
+        gsub(/_KIN_POWER_/,     kpower);   gsub(/_KIN_ACTION_/,    kaction)
+        gsub(/_KIN_ESSENCE_/,   kessence)
+        gsub(/_KIN_NUM_/,       kn);       gsub(/_KIN_SEAL_/,      ks)
+        gsub(/_KIN_COLOR_/,     kc);       gsub(/_KIN_TONE_/,      kt)
+        gsub(/_DATE_/,          date);     gsub(/_DEST_/,           dest)
+        gsub(/_SCORE_/,         score);    gsub(/_PHI_LINE_/,       phi_line)
         gsub(/_BIRTHDAY_BANNER_/, bday_banner)
         gsub(/_OMEGA_BIO_/,     omega_bio)
         gsub(/_SWARM_ALERT_/,   "")
-        gsub(/_VDO_URL_/, "https://vdo.copylaradio.com/?room=kin_birthday_&effects&record" kn)
+        gsub(/_VDO_URL_/, vdoninja "/?room=kin_birthday_" kn "&effects&record")
         print
     }' "$TMPL_USED" > "$_out"
 

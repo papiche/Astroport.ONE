@@ -219,16 +219,16 @@ _kin_resonance_question() {
 
     # 10 questions + options (ID|texte|optA|optB|optC|optD)
     local -a _POOL=(
-        "q7|Votre meilleure idée de la semaine vient de...|Une recherche méthodique|Une conversation inattendue|Un moment calme|Un rêve ou une image"
-        "q8|Quand vous aidez quelqu'un, c'est surtout parce que...|C'est utile|Ça crée du lien|Je sens que c'est le bon moment|Quelque chose en moi ne peut pas faire autrement"
-        "q9|Un cycle naturel que vous remarquez dans votre vie...|Les saisons climatiques|Les cycles de projets|Les phases d'inspiration et de repos|Le rythme de la Terre elle-même"
-        "q10|Votre rapport au silence...|Je le gère bien|Il me ressource|C'est là que l'essentiel devient audible|C'est la matière dont est faite la conscience"
-        "q11|La musique, pour vous, c'est d'abord...|Un art avec ses codes|Une émotion partagée|Un langage que les mots ne peuvent pas exprimer|Une vibration qui réorganise quelque chose en vous"
-        "q12|Face à quelque chose d'inexpliqué, vous...|Attendez des preuves|Restez ouvert|Explorez avec curiosité|Vous sentez invité à percevoir autrement"
-        "q13|Une forêt ancienne. Qu'y cherchez-vous ?|La beauté naturelle|Le ressourcement|Le sentiment d'appartenir à quelque chose de plus grand|Une présence qui vous connaît déjà"
-        "q14|Le corps humain, vous le percevez comme...|Un système biologique|Un instrument qui exprime qui je suis|Un condensé d'histoire et d'environnement|Une antenne dans le champ terrestre"
-        "q15|Vous lisez les nouvelles du monde et vous sentez...|Une réalité complexe à comprendre|De la préoccupation et l'envie d'agir|Que mon état intérieur compte dans le tableau|La Terre qui cherche son équilibre"
-        "q16|Votre vision du futur dans 100 ans...|Dépend de nos choix maintenant|Se construira dans les liens|Émergera d'une transformation de la perception du vivant|Se rêve déjà dans la conscience collective"
+        "q7|Votre meilleure idée de la semaine vient de...|Une recherche méthodique|Une conversation inattendue|Un moment calme où rien ne se passait|Un rêve ou une image qui s'est imposée"
+        "q8|Quand vous aidez quelqu'un, c'est surtout parce que...|C'est utile et ça fait avancer les choses|Ça crée du lien|Je sens que c'est le bon moment pour le faire|Quelque chose en moi ne peut pas faire autrement"
+        "q9|Un lieu que vous avez quitté mais qui vous habite encore. Qu'est-ce qui y est resté ?|Des souvenirs et des personnes|Une atmosphère particulière|Une énergie que je n'ai retrouvée nulle part ailleurs|Une partie de moi qui s'y est déposée"
+        "q10|Votre rapport au silence...|Je le gère bien mais je préfère l'activité|Il me ressource|C'est là que les choses essentielles deviennent audibles|C'est la matière dont est faite la conscience"
+        "q11|Quand quelque chose tourne mal, votre premier mouvement est...|Analyser ce qui s'est passé|Parler à quelqu'un de confiance|Prendre du recul pour voir le sens plus large|Faire confiance au mouvement — ça fait partie d'un cycle"
+        "q12|La musique, pour vous, c'est d'abord...|Un art structuré avec ses codes et son histoire|Une émotion partagée|Un langage qui dit ce que les mots ne peuvent pas|Une vibration qui réorganise quelque chose en vous"
+        "q13|Vous lisez les nouvelles du monde et vous sentez...|Une réalité complexe qu'il faut comprendre rationnellement|De la préoccupation et l'envie d'agir localement|Que tout est interconnecté et que mon état intérieur compte|La Terre qui cherche son équilibre à travers les événements"
+        "q14|Le corps humain, vous le percevez comme...|Un système biologique remarquablement complexe|Un instrument qui exprime qui je suis|Un condensé d'information sur mon histoire et mon environnement|Une antenne vivante dans le champ terrestre"
+        "q15|Une forêt ancienne. Qu'est-ce que vous y cherchez ?|La beauté naturelle et la tranquillité|Le ressourcement et la reconnexion|Le sentiment d'appartenir à quelque chose de plus grand|Une présence — quelque chose qui me connaît déjà"
+        "q16|Votre vision du futur dans 100 ans...|Dépend des choix technologiques et politiques que nous faisons maintenant|Se construira dans les liens entre les gens|Émergera d'une transformation profonde de la façon dont nous percevons le vivant|Est déjà en train de se rêver dans la conscience collective"
     )
 
     IFS='|' read -r _qid _qtxt _oa _ob _oc _od <<< "${_POOL[$_idx]}"
