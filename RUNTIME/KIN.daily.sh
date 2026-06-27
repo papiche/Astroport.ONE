@@ -292,7 +292,7 @@ for DEST in "${RECIPIENTS[@]}"; do
     [[ "$IS_BIRTHDAY" == "true" && -f "$TMPL_BD" ]] && TMPL_USED="$TMPL_BD"
 
     # Question de captation de vibe (rotation quotidienne)
-    _UNSUB_BASE="${uSPOT:-http://127.0.0.1:54321}/mailjet?email=${DEST}&token=$(printf '%s:%s' "$DEST" "$(cat "${HOME}/.zen/tmp/UPLANETNAME" 2>/dev/null || echo '')" | sha256sum | cut -c1-16)"
+    _UNSUB_BASE="${uSPOT:-http://127.0.0.1:54321}/mailjet?email=${DEST}&token=$(printf '%s:%s' "$DEST" "${UPLANETNAME}" | sha256sum | cut -c1-16)"
     RESONANCE_HTML=$(_kin_resonance_question "$DEST" "" "$_UNSUB_BASE")
 
     _entries_oracle=$(mktemp /tmp/kin_oracle_XXXXXX.html)
