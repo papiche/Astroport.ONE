@@ -400,13 +400,18 @@ while $running; do
             "r"|"R") # RESET
                 port="${map_ports[$local_idx]}"
                 alt_port="${map_alt_ports[$local_idx]}"
+                prev_port="${map_disp_ports[$cursor]}"   # port effectif avant le reset
                 add_log "Reset ${map_names[$local_idx]}..."
                 draw_ui
                 kill_service "$port" "${map_protos[$local_idx]}"
                 sleep 1
                 all_listening=$(lsof -Pi -sTCP:LISTEN 2>/dev/null)
+                # Préférer le port précédemment actif (ex: alt_port 21457) si disponible
                 chosen_port="$port"
-                if echo "$all_listening" | grep -qE ":$port "; then
+                if [[ -n "$prev_port" && "$prev_port" != "$port" ]] && \
+                   ! echo "$all_listening" | grep -qE ":$prev_port "; then
+                    chosen_port="$prev_port"
+                elif echo "$all_listening" | grep -qE ":$port "; then
                     if [[ -n "$alt_port" && "$alt_port" != "$port" ]] && \
                        ! echo "$all_listening" | grep -qE ":$alt_port "; then
                         chosen_port="$alt_port"
