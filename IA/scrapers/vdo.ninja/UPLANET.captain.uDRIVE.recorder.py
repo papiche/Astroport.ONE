@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+#!/bin/sh
+''''exec "$HOME/.astro/bin/python3" "$0" "$@"
+'''
 """
 UPLANET.captain.uDRIVE.recorder.py — Enregistreur de mouvement VDO.ninja
 
@@ -6,17 +8,19 @@ Capture le flux vidéo d'une room VDO.ninja, détecte les mouvements et
 sauvegarde automatiquement les séquences en MP4 dans uDRIVE/Videos.
 
 Usage:
-    python3 UPLANET.captain.uDRIVE.recorder.py <ROOM>       # démarrer
-    python3 UPLANET.captain.uDRIVE.recorder.py --list        # lister les rooms actives
-    python3 UPLANET.captain.uDRIVE.recorder.py --close <ROOM> # arrêter une room
-    python3 UPLANET.captain.uDRIVE.recorder.py --close all    # arrêter toutes les rooms
+    python3 UPLANET.captain.uDRIVE.recorder.py <ROOM>           # avant-plan
+    python3 UPLANET.captain.uDRIVE.recorder.py <ROOM> --daemon  # arrière-plan (démon)
+    python3 UPLANET.captain.uDRIVE.recorder.py --list           # lister les rooms actives
+    python3 UPLANET.captain.uDRIVE.recorder.py --close <ROOM>   # arrêter une room
+    python3 UPLANET.captain.uDRIVE.recorder.py --close all      # arrêter toutes les rooms
 
 Comportement:
     - Surveille en continu le flux de la room indiquée
     - Commence à enregistrer dès qu'un mouvement est détecté
-    - Sauvegarde la vidéo après 30s sans mouvement
-    - Fichier : ~/.zen/game/nostr/<CAPTAINEMAIL>/APP/uDRIVE/Videos/alerte_<ts>.mp4
+    - Sauvegarde la vidéo après 10s sans mouvement
+    - Fichier : ~/.zen/game/nostr/<CAPTAINEMAIL>/APP/uDRIVE/Videos/alerte_<ts>_seg01.mp4
     - Instance unique par room : un second lancement est ignoré
+    - En mode --daemon : logs dans ~/.zen/tmp/uplanet_udrive_<room>.log
 
 Dépendances:
     pip install playwright opencv-python numpy
@@ -27,6 +31,8 @@ import cv2
 import numpy as np
 import os
 import shutil
+import signal
+import subprocess
 import sys
 import tempfile
 import time
@@ -35,8 +41,19 @@ from playwright.sync_api import sync_playwright
 
 VDO_BASE = "https://vdo.copylaradio.com/?scene&cleanoutput&autoplay&room="
 
+
 def pid_file(room):
     return Path(tempfile.gettempdir()) / f"uplanet_udrive_recorder_{room.lower()}.pid"
+
+
+PYTHON = Path.home() / ".astro/bin/python3"
+
+
+def log_file(room):
+    log_dir = Path.home() / ".zen/tmp"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return log_dir / f"uplanet_udrive_{room.lower()}.log"
+
 
 def list_active():
     tmp = Path(tempfile.gettempdir())
@@ -44,8 +61,8 @@ def list_active():
     if not pids:
         print("Aucun enregistreur actif.")
         return
-    print(f"{'ROOM':<20} {'PID':<8} {'ÉTAT'}")
-    print("-" * 40)
+    print(f"{'ROOM':<20} {'PID':<8} {'ÉTAT':<20} LOGS")
+    print("-" * 70)
     for pf in pids:
         room = pf.stem.replace("uplanet_udrive_recorder_", "").upper()
         pid = int(pf.read_text().strip())
@@ -54,10 +71,12 @@ def list_active():
             state = "actif"
         except ProcessLookupError:
             state = "mort (PID obsolète)"
-        print(f"{room:<20} {pid:<8} {state}")
+        lf = log_file(room.lower())
+        log_info = str(lf) if lf.exists() else "(pas de log)"
+        print(f"{room:<20} {pid:<8} {state:<20} {log_info}")
+
 
 def close_room(room):
-    import signal
     targets = []
     if room.lower() == "all":
         tmp = Path(tempfile.gettempdir())
@@ -80,6 +99,7 @@ def close_room(room):
             print(f"[{name}] Process {pid} introuvable — nettoyage du PID file")
             pf.unlink()
 
+
 def acquire_pid_lock(room):
     pf = pid_file(room)
     if pf.exists():
@@ -89,39 +109,62 @@ def acquire_pid_lock(room):
             print(f"[{room}] Déjà en cours (PID {pid}) — arrêt.")
             sys.exit(0)
         except ProcessLookupError:
-            pass  # process mort, PID file obsolète
+            pass
     pf.write_text(str(os.getpid()))
+
 
 def release_pid_lock(room):
     pf = pid_file(room)
     if pf.exists():
         pf.unlink()
 
+
+def run_as_daemon(room):
+    lf = log_file(room)
+    cmd = [str(PYTHON), sys.argv[0], room]
+    with open(lf, 'a') as f:
+        proc = subprocess.Popen(cmd, stdout=f, stderr=f, start_new_session=True)
+    print(f"[{room}] Démon lancé (PID {proc.pid})")
+    print(f"[{room}] Logs : {lf}")
+    print(f"[{room}] Arrêt : python3 {sys.argv[0]} --close {room}")
+    sys.exit(0)
+
+
 def parse_args():
-    if len(sys.argv) < 2:
+    argv = [a for a in sys.argv[1:] if a != '--daemon']
+    daemon = '--daemon' in sys.argv[1:]
+
+    if not argv:
         print(__doc__)
         sys.exit(1)
-    if sys.argv[1] == "--list":
+    if argv[0] == "--list":
         list_active()
         sys.exit(0)
-    if sys.argv[1] == "--close":
-        if len(sys.argv) < 3:
+    if argv[0] == "--close":
+        if len(argv) < 2:
             print("Usage : --close <ROOM> ou --close all")
             sys.exit(1)
-        close_room(sys.argv[2])
+        close_room(argv[1])
         sys.exit(0)
-    return sys.argv[1]
+    return argv[0], daemon
+
 
 def get_captainemail():
     email = os.getenv("CAPTAINEMAIL", "")
-    if not email:
-        env_file = Path.home() / ".zen" / "Astroport.ONE" / ".env"
-        if env_file.exists():
-            for line in env_file.read_text().splitlines():
-                if line.startswith("CAPTAINEMAIL="):
-                    email = line.split("=", 1)[1].strip().strip("'\"")
-                    break
-    return email
+    if email:
+        print(f"[init] CAPTAINEMAIL via env : {email}")
+        return email
+    env_file = Path.home() / ".zen" / "Astroport.ONE" / ".env"
+    print(f"[init] CAPTAINEMAIL non défini, lecture de {env_file}")
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            if line.startswith("CAPTAINEMAIL="):
+                email = line.split("=", 1)[1].strip().strip("'\"")
+                print(f"[init] CAPTAINEMAIL trouvé dans .env : {email}")
+                return email
+    print(f"[init] CAPTAINEMAIL introuvable dans {env_file}")
+    return ""
+
 
 def get_output_dir():
     email = get_captainemail()
@@ -129,7 +172,9 @@ def get_output_dir():
         raise RuntimeError("CAPTAINEMAIL introuvable — source tools/my.sh ou définir la variable d'env")
     path = Path.home() / ".zen" / "game" / "nostr" / email / "APP" / "uDRIVE" / "Videos"
     path.mkdir(parents=True, exist_ok=True)
+    print(f"[init] Dossier de sortie : {path}")
     return path
+
 
 JS_CAPTURE = """() => {
     const v = document.querySelector('video');
@@ -141,14 +186,26 @@ JS_CAPTURE = """() => {
     return c.toDataURL('image/png').split(',')[1];
 }"""
 
+
 def capture_frame(page):
     b64 = page.evaluate(JS_CAPTURE)
     if not b64:
         return None
     return cv2.imdecode(np.frombuffer(base64.b64decode(b64), np.uint8), cv2.IMREAD_COLOR)
 
+
 def detect_motion(room):
     url = VDO_BASE + room
+
+    # Flag d'arrêt propre (SIGTERM depuis --close ou systemd)
+    shutdown = [False]
+
+    def _sigterm(signum, frame):
+        print(f"[{room}] SIGTERM reçu — arrêt propre en cours...")
+        shutdown[0] = True
+
+    signal.signal(signal.SIGTERM, _sigterm)
+
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
@@ -158,38 +215,42 @@ def detect_motion(room):
         print(f"[{room}] Connexion à {url}")
         page.goto(url)
 
-        print("Attente du flux vidéo...")
-        # aria-hidden="true" sur la vidéo => state="attached", pas "visible"
+        print(f"[{room}] Attente du sélecteur vidéo...")
         page.wait_for_selector("video", state="attached", timeout=60000)
 
-        # Attendre que videoWidth > 0 (flux WebRTC établi)
+        print(f"[{room}] Attente du flux WebRTC (videoWidth > 0)...")
         page.wait_for_function(
             "() => { const v = document.querySelector('video'); return v && v.videoWidth > 0; }",
             timeout=60000,
         )
-        print(f"[{room}] Flux actif. Analyse en cours... Appuyez sur Ctrl+C pour arrêter.")
+        print(f"[{room}] Flux actif.")
 
-        CALM_DELAY = 10        # secondes sans mouvement → sauvegarde et retour idle
-        SEGMENT_MAX = 60       # durée max d'un tronçon → rotation forcée
+        CALM_DELAY = 10        # secondes sans mouvement → sauvegarde
+        SEGMENT_MAX = 60       # durée max d'un tronçon → rotation
         MOTION_THRESHOLD = 10000
 
         output_dir = get_output_dir()
         prev_frame = None
-        # États : idle / recording
         recording = False
         out = None
         tmp_path = None
         start_ts = None
+        segment_num = 0
         segment_start = None
         last_motion_time = None
+        frame_count = 0
+        last_idle_log = 0.0
+        last_rec_log = 0.0
 
-        def save_segment():
+        def save_segment(forced=False):
             nonlocal out, tmp_path, recording, start_ts, segment_start, last_motion_time
             out.release()
             out = None
-            dest = output_dir / f"alerte_{start_ts}_{int(segment_start)}.mp4"
+            duration = int(time.time() - segment_start)
+            dest = output_dir / f"alerte_{start_ts}_seg{segment_num:02d}.mp4"
             shutil.move(tmp_path, dest)
-            print(f"[{room}] Tronçon sauvegardé : {dest.name}")
+            label = "Interrompu" if forced else "Segment"
+            print(f"[{room}] {label} sauvegardé : {dest.name} ({duration}s)")
             tmp_path = None
             recording = False
             start_ts = None
@@ -197,57 +258,81 @@ def detect_motion(room):
             last_motion_time = None
 
         def start_segment(now, h, w):
-            nonlocal out, tmp_path, recording, start_ts, segment_start
+            nonlocal out, tmp_path, recording, start_ts, segment_num, segment_start
             fd, tmp_path = tempfile.mkstemp(suffix=".mp4", prefix="uplanet_")
             os.close(fd)
             out = cv2.VideoWriter(tmp_path, cv2.VideoWriter_fourcc(*'mp4v'), 10.0, (w, h))
+            if not out.isOpened():
+                print(f"[{room}] ERREUR VideoWriter : impossible d'ouvrir {tmp_path} ({w}x{h})")
+                out = None
+                return
             start_ts = int(now)
+            segment_num += 1
             segment_start = now
             recording = True
-            print(f"[{room}] MOUVEMENT — enregistrement démarré")
+            print(f"[{room}] MOUVEMENT — enregistrement démarré "
+                  f"(segment {segment_num}, {w}x{h}, seuil={MOTION_THRESHOLD})")
 
         try:
-            while True:
+            while not shutdown[0]:
                 frame = capture_frame(page)
+                now = time.time()
+
                 if frame is None:
                     time.sleep(0.5)
                     continue
+
+                frame_count += 1
+                h, w = frame.shape[:2]
+
+                if frame_count == 1:
+                    print(f"[{room}] Première frame : {w}x{h}")
 
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
                 if prev_frame is None or prev_frame.shape != gray.shape:
+                    if prev_frame is not None:
+                        print(f"[{room}] Résolution changée → réinitialisation")
                     prev_frame = gray
                     continue
 
                 frame_delta = cv2.absdiff(prev_frame, gray)
                 thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
                 thresh = cv2.dilate(thresh, None, iterations=2)
-                motion = np.sum(thresh) > MOTION_THRESHOLD
-                now = time.time()
+                motion_score = int(np.sum(thresh))
+                motion = motion_score > MOTION_THRESHOLD
 
                 if not recording:
-                    # IDLE : on attend un mouvement pour démarrer
+                    # Log IDLE toutes les 15s
+                    if now - last_idle_log > 15.0:
+                        print(f"[{room}] [IDLE] score={motion_score} frames={frame_count}")
+                        last_idle_log = now
                     if motion:
-                        h, w, _ = frame.shape
                         start_segment(now, h, w)
-                        last_motion_time = now
-                        out.write(frame)
+                        if out:
+                            last_motion_time = now
+                            out.write(frame)
                 else:
-                    # RECORDING : on écrit la frame courante
-                    out.write(frame)
+                    if out:
+                        out.write(frame)
                     if motion:
                         last_motion_time = now
 
                     calm_elapsed = now - last_motion_time
                     seg_elapsed  = now - segment_start
 
+                    # Log REC toutes les 2s avec détail
+                    if now - last_rec_log > 2.0:
+                        mvt_label = "MOUVEMENT" if motion else f"calme {calm_elapsed:.1f}s/{CALM_DELAY}s"
+                        print(f"[{room}] [REC seg={segment_num} dur={seg_elapsed:.0f}s] "
+                              f"score={motion_score} {mvt_label}")
+                        last_rec_log = now
+
                     if calm_elapsed >= CALM_DELAY:
-                        # 10s sans mouvement → fin de séquence
                         print(f"[{room}] Calme depuis {CALM_DELAY}s → fin de séquence")
                         save_segment()
                     elif seg_elapsed >= SEGMENT_MAX:
-                        # Tronçon trop long → rotation, retour idle
                         print(f"[{room}] Rotation à {SEGMENT_MAX}s → retour idle")
                         save_segment()
 
@@ -255,9 +340,12 @@ def detect_motion(room):
                 time.sleep(0.1)
 
         except KeyboardInterrupt:
-            print(f"[{room}] Arrêt par l'utilisateur")
+            print(f"[{room}] Arrêt par l'utilisateur (Ctrl+C)")
         finally:
-            if out:
+            if recording and out:
+                print(f"[{room}] Sauvegarde du segment en cours...")
+                save_segment(forced=True)
+            elif out:
                 out.release()
             if tmp_path and Path(tmp_path).exists():
                 Path(tmp_path).unlink()
@@ -265,9 +353,13 @@ def detect_motion(room):
                 browser.close()
             except Exception:
                 pass
+        print(f"[{room}] Démon arrêté. Segments sauvegardés : {segment_num}")
+
 
 if __name__ == "__main__":
-    room = parse_args()
+    room, daemon = parse_args()
+    if daemon:
+        run_as_daemon(room)
     acquire_pid_lock(room)
     try:
         detect_motion(room)
