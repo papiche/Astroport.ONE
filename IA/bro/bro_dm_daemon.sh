@@ -1116,6 +1116,27 @@ _process_event() {
         return
     fi
 
+    ## ── Canaux inter-NODE : authentification par swarm (bypass level MULTIPASS) ──
+    ## bro_ia/vocals/webcam/zen_like/comfyui_* sont émis exclusivement par un NODE
+    ## constellation via bro_send_intercom(). Le sender est le NODEHEX de la station
+    ## émettrice, pas un MULTIPASS utilisateur — bro_user_level() retournerait 0.
+    ## On vérifie sa présence dans ~/.zen/tmp/swarm/*/HEX (même mécanisme que nostr_delete).
+    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_job|comfyui_result)$ ]]; then
+        if ! _is_swarm_node "$sender"; then
+            _log "WARN: canal inter-NODE '$channel' de ${sender:0:12}... non reconnu comme NODE swarm — ignoré"
+            return
+        fi
+        case "$channel" in
+            bro_ia)         _handle_bro_ia "$payload" ;;
+            vocals)         _handle_vocals "$payload" ;;
+            webcam)         _handle_webcam "$payload" ;;
+            zen_like)       _handle_zen_like "$payload" ;;
+            comfyui_job)    _handle_comfyui_job "$payload" "$sender" ;;
+            comfyui_result) _handle_comfyui_result "$payload" ;;
+        esac
+        return
+    fi
+
     ## ── Niveau d'accès BRO (atom4love + souscription ẐEN) ───────────────
     ## Levels : 0=anonyme 1=locataire 2=atome 3=satellite 4=constellation 5=capitaine
     local _USER_LEVEL
@@ -1261,6 +1282,15 @@ _process_event() {
     esac
 }
 
+## ── Dispatch sériel ─────────────────────────────────────────────────
+_dispatch_file() {
+    local _src="$1"
+    [[ -f "$_src" ]] || return
+    local _dst="${_src%.json}.dispatching"
+    mv "$_src" "$_dst" 2>/dev/null || return
+    _process_event "$_dst" || _alert_captain "Erreur traitement DM — $(basename "$_dst")"
+}
+
 ## ── Traiter les fichiers déjà présents dans la queue ─────────────────
 for _f in "$QUEUE_DIR"/*.json; do
     [[ -f "$_f" ]] && _dispatch_file "$_f"
@@ -1271,15 +1301,6 @@ _send_welcome_messages
 
 ## Attendre la fin des traitements initiaux avant la boucle inotifywait
 wait
-
-## ── Dispatch sériel ─────────────────────────────────────────────────
-_dispatch_file() {
-    local _src="$1"
-    [[ -f "$_src" ]] || return
-    local _dst="${_src%.json}.dispatching"
-    mv "$_src" "$_dst" 2>/dev/null || return
-    _process_event "$_dst" || _alert_captain "Erreur traitement DM — $(basename "$_dst")"
-}
 
 ## Sweep périodique (30s) — rattrape les events perdus si le kernel inotify queue déborde
 _sweep_loop() {
