@@ -920,6 +920,67 @@ _handle_udrive() {
     fi
 }
 
+## ── Vérifier si un expéditeur est un NODE constellation connu ────────
+## Parcourt ~/.zen/tmp/swarm/*/HEX (mis en cache depuis /ipns/{IPFSNODEID}/HEX)
+_is_swarm_node() {
+    local _hex="$1"
+    [[ -z "$_hex" || ${#_hex} -ne 64 ]] && return 1
+    local _f
+    for _f in "$HOME/.zen/tmp/swarm"/*/HEX; do
+        [[ ! -f "$_f" ]] && continue
+        local _stored
+        _stored=$(tr -d '[:space:]' < "$_f" 2>/dev/null)
+        [[ "$_stored" == "$_hex" ]] && return 0
+    done
+    ## Inclure aussi le NODE local lui-même (admin supprime en local → self-relay)
+    local _local_hex
+    _local_hex=$(grep -m1 '^HEX=' "$HOME/.zen/game/secret.nostr" 2>/dev/null \
+        | cut -d= -f2- | tr -d "[:space:]'\"")
+    [[ "$_local_hex" == "$_hex" ]] && return 0
+    return 1
+}
+
+## ── Canal "nostr_delete" : suppression strfry relayée depuis un autre NODE ─
+## Payload : author (pubkey hex), kind (optionnel), ids (CSV optionnel)
+## Authentification : expéditeur doit être un NODE constellation connu (swarm/HEX)
+_handle_nostr_delete() {
+    local payload="$1" sender="$2"
+    local _AUTHOR _KIND _IDS
+    _payload_get "$payload" author kind ids
+
+    local STRFRY_DIR="$HOME/.zen/strfry"
+    local STRFRY_BIN="$STRFRY_DIR/strfry"
+    [[ ! -x "$STRFRY_BIN" ]] && _log "WARN: nostr_delete: strfry introuvable" && return
+
+    local filter
+    if [[ -n "$_IDS" ]]; then
+        filter=$(python3 -c "
+import json,sys
+ids=[i.strip() for i in sys.argv[1].split(',') if len(i.strip())==64]
+print(json.dumps({'ids':ids}) if ids else '')
+" "$_IDS" 2>/dev/null)
+    elif [[ -n "$_AUTHOR" && ${#_AUTHOR} -eq 64 ]]; then
+        filter="{\"authors\":[\"$_AUTHOR\"]}"
+        [[ -n "$_KIND" && "$_KIND" =~ ^[0-9]+$ ]] && \
+            filter="{\"authors\":[\"$_AUTHOR\"],\"kinds\":[$_KIND]}"
+    fi
+
+    if [[ -z "$filter" ]]; then
+        _log "WARN: nostr_delete: filtre vide — ignoré"
+        return
+    fi
+
+    _log "🗑️ nostr_delete: filtre=$filter reçu de ${sender:0:12}..."
+    cd "$STRFRY_DIR" || return
+    ./strfry delete --filter="$filter" >> "$LOG_FILE" 2>&1
+    local _RC=$?
+    if [[ $_RC -eq 0 ]]; then
+        _log "🗑️ nostr_delete OK: filtre=$filter"
+    else
+        _log "WARN: nostr_delete ÉCHEC (rc=$_RC): filtre=$filter"
+    fi
+}
+
 ## ── Message de bienvenue aux MULTIPASS locaux ────────────────────────
 ## Envoyé une seule fois par MULTIPASS (tracé dans bro_dm_welcomed.txt).
 ## Présente les capacités BRO du node et sa clé de contact.
@@ -1043,6 +1104,17 @@ _process_event() {
     payload=$(jq -c '.payload // {}' <<< "$decoded" 2>/dev/null)
 
     [[ -z "$sender" ]] && return
+
+    ## ── Canal nostr_delete : inter-NODE, bypass level check ─────────────
+    ## Authentifié par présence du HEX expéditeur dans ~/.zen/tmp/swarm/*/HEX
+    if [[ "$channel" == "nostr_delete" ]]; then
+        if _is_swarm_node "$sender"; then
+            _handle_nostr_delete "$payload" "$sender"
+        else
+            _log "WARN: nostr_delete: ${sender:0:12}... non reconnu comme NODE constellation"
+        fi
+        return
+    fi
 
     ## ── Niveau d'accès BRO (atom4love + souscription ẐEN) ───────────────
     ## Levels : 0=anonyme 1=locataire 2=atome 3=satellite 4=constellation 5=capitaine
@@ -1177,6 +1249,11 @@ _process_event() {
             ;;
         comfyui_result)
             _handle_comfyui_result "$payload"
+            ;;
+        nostr_delete)
+            ## Traité avant le check de niveau (inter-NODE) — normalement jamais
+            ## atteint ici car _is_swarm_node retourne true mais au cas où:
+            _log "WARN: nostr_delete arrivé dans le case — expéditeur refusé (non swarm NODE)"
             ;;
         *)
             _log "Canal inconnu '$channel' de ${sender:0:12}... — ignoré"
