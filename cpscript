@@ -706,8 +706,10 @@ process_script() {
         return
     fi
     # --well-known : vérifier les patterns substring sur le chemin complet
+    # Uniquement pour les assets web (.js .css .html) — jamais sur .sh/.py
+    local _FILE_EXT="${FILE##*.}"
     for _wpat in "${EXCLUDE_PATTERNS[@]}"; do
-        if [[ "$FILE" == *${_wpat}* ]]; then
+        if [[ "$_FILE_EXT" =~ ^(js|css|html)$ ]] && [[ "$FILE" == *${_wpat}* ]]; then
             [ -z "${VISITED[$FILE]}" ] && {
                 $JSON_MODE && echo "  [WELL-KNOWN] $FILE" >&2 || echo "  [WELL-KNOWN] $FILE"
             }
