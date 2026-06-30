@@ -274,6 +274,26 @@ if [[ -z "$ISSUERPUB" ]]; then
 fi
 log "Adresse émettrice : $ISSUERPUB"
 
+# ── Lookup email destinataire depuis adresse SS58 (joueurs locaux) ───────────
+find_player_email() {
+    local target_ss58="$1"
+    [[ -z "$target_ss58" ]] && return 1
+    local dir pub_v1 ss58
+    for dir in "$HOME/.zen/game/nostr"/*/; do
+        pub_v1=$(grep -E '^pub:' "$dir/.secret.dunikey" 2>/dev/null | head -1 | awk '{print $2}')
+        [[ -z "$pub_v1" ]] && continue
+        ss58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$pub_v1" 2>/dev/null)
+        [[ "$ss58" == "$target_ss58" ]] && { basename "$dir"; return 0; }
+    done
+    for dir in "$HOME/.zen/game/players"/*/; do
+        pub_v1=$(grep -E '^pub:' "$dir/secret.dunikey" 2>/dev/null | head -1 | awk '{print $2}')
+        [[ -z "$pub_v1" ]] && continue
+        ss58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$pub_v1" 2>/dev/null)
+        [[ "$ss58" == "$target_ss58" ]] && { basename "$dir"; return 0; }
+    done
+    return 1
+}
+
 # ── Récupérer le solde via gcli (Duniter RPC) ─────────────────────────────────
 get_balance_gcli() {
     local addr="$1"
@@ -469,7 +489,7 @@ ZENDES=$(echo "($DES + $AMOUNT) * 10" | bc -l | awk '{printf "%.1f", $1}')
 
 HTML_FILE="${PENDINGDIR}/${MOATS}.result.html"
 TIMESTAMP=$(date '+%d/%m/%Y à %H:%M:%S')
-CESIUM="${CESIUMIPFS:-https://cesium.copylaradio.com}"
+MULTIPASS_BASE="https://u.${myDOMAIN:-copylaradio.com}"
 
 cat > "$HTML_FILE" << HTMLEOF
 <!DOCTYPE html>
@@ -477,7 +497,7 @@ cat > "$HTML_FILE" << HTMLEOF
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Transaction ZEN — ${COMMENT}</title>
+<title>Transaction Ẑen — ${COMMENT}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);
@@ -509,40 +529,36 @@ cat > "$HTML_FILE" << HTMLEOF
   .links a{display:inline-block;margin:4px 4px 0 0;padding:7px 14px;
            background:#4facfe;color:#fff;border-radius:20px;font-size:.85em;
            text-decoration:none}
-  .links a.sec{background:#6c757d}
   .foot{background:#f8f9fa;padding:15px;text-align:center;color:#666;font-size:.85em}
 </style>
 </head>
 <body>
 <div class="box">
-  <div class="head"><h1>🚀 Transaction ZEN</h1><p>Opération blockchain Duniter v2 réussie</p></div>
+  <div class="head"><h1>🚀 Transaction Ẑen</h1><p>Opération blockchain Duniter v2 réussie</p></div>
   <div class="body">
     <span class="badge">✅ Transaction confirmée</span>
-    <div class="amount"><div class="val">${ZENAMOUNT}</div><div>ZEN</div></div>
+    <div class="amount"><div class="val">${ZENAMOUNT}</div><div>Ẑen</div></div>
     <div class="comment"><strong>Référence :</strong> ${COMMENT}</div>
     <div class="flow">
       <div class="card src">
         <div class="label">💰 Source</div>
         <div class="addr">${ISSUERPUB}</div>
-        <div class="bal">${ZENCUR} ZEN</div>
-        <div class="links">
-          <a href="${CESIUM}/#/wot/tx/${ISSUERPUB}/" target="_blank">📊 Cesium</a>
-        </div>
+        <div class="bal">${ZENCUR} Ẑen</div>
       </div>
       <div class="arrow">➡️</div>
       <div class="card dst">
         <div class="label">🎯 Destination</div>
         <div class="addr">${G1PUB}</div>
-        <div class="bal">${ZENDES} ZEN</div>
+        <div class="bal">${ZENDES} Ẑen</div>
         <div class="links">
-          <a href="${CESIUM}/#/wot/tx/${G1PUB}/" target="_blank">📊 Cesium</a>
+          <a href="${MULTIPASS_BASE}/earth/multipass.html?g1pub=${G1PUB}" target="_blank">🌐 Mon Multipass</a>
         </div>
       </div>
     </div>
   </div>
   <div class="foot">
     <p>Transaction traitée le ${TIMESTAMP}</p>
-    <p>ID : ${MOATS} | Nœud v2 : Duniter v2s / Substrate</p>
+    <p>ID : ${MOATS} | Réseau : Duniter v2s / Substrate</p>
   </div>
 </div>
 </body>
@@ -551,9 +567,19 @@ HTMLEOF
 
 logok "Rapport HTML : $HTML_FILE"
 
+# Notification au capitaine
 if [[ -n "${CAPTAINEMAIL:-}" ]] && [[ -x "${MY_PATH}/mailjet.sh" ]]; then
     "${MY_PATH}/mailjet.sh" --template "$0" --expire 48h "$CAPTAINEMAIL" \
-        "$HTML_FILE" "${ZENAMOUNT} ZEN : ${COMMENT}" 2>/dev/null || true
+        "$HTML_FILE" "${ZENAMOUNT} Ẑen : ${COMMENT}" 2>/dev/null || true
+fi
+
+# Notification au destinataire s'il est joueur local
+RECIPIENT_EMAIL=$(find_player_email "$G1PUB" 2>/dev/null || true)
+if [[ -n "$RECIPIENT_EMAIL" && "$RECIPIENT_EMAIL" != "${CAPTAINEMAIL:-}" ]] \
+   && [[ -x "${MY_PATH}/mailjet.sh" ]]; then
+    log "Notification destinataire : $RECIPIENT_EMAIL"
+    "${MY_PATH}/mailjet.sh" --template "$0" --expire 48h "$RECIPIENT_EMAIL" \
+        "$HTML_FILE" "Vous avez reçu ${ZENAMOUNT} Ẑen" 2>/dev/null || true
 fi
 
 exit 0
