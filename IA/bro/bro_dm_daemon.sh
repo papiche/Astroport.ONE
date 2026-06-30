@@ -945,8 +945,8 @@ _is_swarm_node() {
 ## Authentification : expéditeur doit être un NODE constellation connu (swarm/HEX)
 _handle_nostr_delete() {
     local payload="$1" sender="$2"
-    local _AUTHOR _KIND _IDS
-    _payload_get "$payload" author kind ids
+    local _AUTHOR _AUTHORS _KIND _IDS
+    _payload_get "$payload" author authors kind ids
 
     local STRFRY_DIR="$HOME/.zen/strfry"
     local STRFRY_BIN="$STRFRY_DIR/strfry"
@@ -959,6 +959,15 @@ import json,sys
 ids=[i.strip() for i in sys.argv[1].split(',') if len(i.strip())==64]
 print(json.dumps({'ids':ids}) if ids else '')
 " "$_IDS" 2>/dev/null)
+    elif [[ -n "$_AUTHORS" ]]; then
+        # Multi-auteurs : "hex1,hex2,…" (envoyé par admin_constellation_delete)
+        filter=$(python3 -c "
+import json,sys
+authors=[a.strip() for a in sys.argv[1].split(',') if len(a.strip())==64]
+f={'authors':authors}
+if len(sys.argv)>2 and sys.argv[2].strip().isdigit(): f['kinds']=[int(sys.argv[2])]
+print(json.dumps(f) if authors else '')
+" "$_AUTHORS" "${_KIND:-}" 2>/dev/null)
     elif [[ -n "$_AUTHOR" && ${#_AUTHOR} -eq 64 ]]; then
         filter="{\"authors\":[\"$_AUTHOR\"]}"
         [[ -n "$_KIND" && "$_KIND" =~ ^[0-9]+$ ]] && \
