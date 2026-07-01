@@ -277,6 +277,34 @@ else
     fi
 fi
 
+## UPDATE zelkova (Ẑelkova — wallet ẐEN MULTIPASS)
+## APK téléchargé depuis GitHub Releases, servi par UPassport sur /zelkova-apk/zelkova.apk
+ZELKOVA_APK_DIR="$HOME/.zen/workspace/zelkova"
+ZELKOVA_APK="$ZELKOVA_APK_DIR/zelkova.apk"
+ZELKOVA_VERSION_FILE="$ZELKOVA_APK_DIR/.version"
+mkdir -p "$ZELKOVA_APK_DIR"
+
+ZELKOVA_LATEST=$(curl -fsSL "https://api.github.com/repos/papiche/zelkova/releases/latest" 2>/dev/null \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tag_name',''))" 2>/dev/null || echo "")
+ZELKOVA_CURRENT=$(cat "$ZELKOVA_VERSION_FILE" 2>/dev/null || echo "none")
+
+if [[ -n "$ZELKOVA_LATEST" && ( "$ZELKOVA_CURRENT" != "$ZELKOVA_LATEST" || ! -f "$ZELKOVA_APK" ) ]]; then
+    echo "📱 zelkova : nouvelle version $ZELKOVA_LATEST — téléchargement APK..."
+    ZELKOVA_APK_URL="https://github.com/papiche/zelkova/releases/download/${ZELKOVA_LATEST}/zelkova-production-release.apk"
+    if curl -fsSL --max-time 300 -o "${ZELKOVA_APK}.tmp" "$ZELKOVA_APK_URL"; then
+        mv "${ZELKOVA_APK}.tmp" "$ZELKOVA_APK"
+        echo "$ZELKOVA_LATEST" > "$ZELKOVA_VERSION_FILE"
+        echo "📱 zelkova APK $ZELKOVA_LATEST téléchargé : $ZELKOVA_APK"
+    else
+        rm -f "${ZELKOVA_APK}.tmp"
+        echo "⚠️  zelkova : échec téléchargement depuis $ZELKOVA_APK_URL"
+    fi
+elif [[ -z "$ZELKOVA_LATEST" ]]; then
+    echo "📱 zelkova : pas de release GitHub disponible — skip"
+else
+    echo "📱 zelkova à jour ($ZELKOVA_LATEST)"
+fi
+
 ## RUN OC2UPlanet monthly — recharge MULTIPASS des membres résidents
 ## Traite les transactions CREDIT du mois en cours via oc2uplanet.sh
 ## (cotisation cloud-usage + membre-resident → process_locataire)
