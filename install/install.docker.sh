@@ -7,6 +7,16 @@
 
 set -e
 
+# --- -1. IDEMPOTENCE : Docker déjà fonctionnel (ex: installé par OMV, une autre distro tool...) ---
+# Évite de désinstaller/recasser un Docker déjà en service (cf. incident OMV où ce script
+# a supprimé docker-ce géré par OpenMediaVault puis échoué à le réinstaller à cause d'un
+# conflit de clé GPG avec le dépôt Docker déjà déclaré par omvdocker.sources).
+if command -v docker >/dev/null 2>&1 && dpkg-query -W -f='${Status}' docker-ce 2>/dev/null | grep -q "ok installed"; then
+    echo -e "\033[0;32m✅ Docker est déjà installé et fonctionnel ($(docker --version)) — rien à faire.\033[0m"
+    echo -e "ℹ️  Pour forcer une réinstallation, désinstallez Docker manuellement puis relancez ce script."
+    exit 0
+fi
+
 # --- 0. DÉTECTION ARCH LINUX / STEAMOS ---
 if command -v pacman >/dev/null 2>&1; then
     echo -e "\033[0;36m--- Installation de Docker sur Arch Linux / SteamOS ---\033[0m"
@@ -60,16 +70,24 @@ echo -e "\033[0;36m--- Configuration du dépôt officiel Docker ---\033[0m"
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
 
-sudo install -m 0755 -d /etc/apt/keyrings
-# Suppression de l'ancienne clé si elle existe
-sudo rm -f /etc/apt/keyrings/docker.gpg
-curl -fsSL https://download.docker.com/linux/$OS_TYPE/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
+# Un dépôt download.docker.com est peut-être déjà déclaré ailleurs (ex: omvdocker.sources
+# sur OpenMediaVault) avec sa propre clé Signed-By. En créer un second avec une clé
+# différente fait planter apt entier ("valeurs conflictuelles pour Signed-By").
+_EXISTING_DOCKER_SRC=$(grep -rl "download\.docker\.com" /etc/apt/sources.list.d/ /etc/apt/sources.list 2>/dev/null | grep -v '^/etc/apt/sources.list.d/docker.list$' || true)
+if [[ -n "$_EXISTING_DOCKER_SRC" ]]; then
+    echo -e "\033[0;33mℹ️  Dépôt Docker déjà déclaré par : $_EXISTING_DOCKER_SRC — réutilisation, pas de second dépôt créé.\033[0m"
+else
+    sudo install -m 0755 -d /etc/apt/keyrings
+    # Suppression de l'ancienne clé si elle existe
+    sudo rm -f /etc/apt/keyrings/docker.gpg
+    curl -fsSL https://download.docker.com/linux/$OS_TYPE/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
-# Ajout du dépôt Docker officiel
-echo \
-  "deb [arch=$CURRENT_ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$OS_TYPE \
-  $CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    # Ajout du dépôt Docker officiel
+    echo \
+      "deb [arch=$CURRENT_ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$OS_TYPE \
+      $CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+fi
 
 # --- 4. INSTALLATION ---
 echo -e "\033[0;36m--- Installation de Docker & Compose V2 ---\033[0m"
