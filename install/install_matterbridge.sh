@@ -42,13 +42,15 @@ URL="http://127.0.0.1:4243/webhook"
 # [telegram.mon_bot]
 # Token="TON_TOKEN_BOTFATHER_ICI"
 
-[gateway]
-[gateway.inout]
-[[gateway.inout.inout]]
+[[gateway]]
+name="inout"
+enable=true
+
+[[gateway.inout]]
 account="api.local"
 channel="api"
 
-# [[gateway.inout.inout]]
+# [[gateway.inout]]
 # account="telegram.mon_bot"
 # channel="-100123456789" # ID du groupe, ou laisser vide pour les DMs
 EOF
