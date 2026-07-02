@@ -504,9 +504,12 @@ translate_pkg_name() {
         esac
     else
         # Debian : normaliser libsodium* (glob invalide pour dpkg-query)
+        # et corriger les noms de paquets qui n'existent que sous Ubuntu ≥ 24.04
+        # (transition time_t 64 bits) mais pas sur Debian 12 (bookworm).
         case "$pkg" in
-            libsodium*) echo "libsodium-dev" ;;
-            *)          echo "$pkg" ;;
+            libsodium*)    echo "libsodium-dev" ;;
+            libmagic1t64)  echo "libmagic1" ;;
+            *)             echo "$pkg" ;;
         esac
     fi
 }
