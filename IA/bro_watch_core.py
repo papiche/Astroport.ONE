@@ -1457,13 +1457,20 @@ def _recall_relevant_memories(owner_email, text, limit=3):
 
 
 def _remember_exchange(owner_email, text, answer):
-    """Persiste l'échange en mémoire épisodique locale + Qdrant sémantique
-    (memory_manager.py, même slot dédié — voir BRO_MEMORY_SLOT). Déclenche le
+    """Persiste EN MÉMOIRE UNIQUEMENT le message du propriétaire (fait
+    épisodique local + Qdrant sémantique — memory_manager.py, BRO_MEMORY_SLOT).
+    Ne mémorise volontairement PAS la réponse de BRO : un incident réel
+    (2026-07-03) a montré qu'une hallucination une fois répondue ("je ne
+    peux pas reconnaître d'images") devient, rappelée comme "souvenir
+    pertinent" au tour suivant, une fausse vérité que le LLM répète docilement
+    — même quand le contexte réel (ex: description d'image fraîche) est
+    présent dans le MÊME prompt juste après. Mémoriser uniquement ce que
+    l'utilisateur a dit élimine cette boucle de rétroaction. Déclenche le
     cycle RÊVE (compression épisodique → sémantique) au-delà du seuil.
     Dégradation silencieuse : ne doit jamais faire échouer la réponse."""
     try:
         from datetime import datetime
-        content = f"Moi : {text}\nBRO : {answer}"
+        content = text
         ts = datetime.utcnow().isoformat() + "Z"
 
         slot_file = _memory_slot_file(owner_email)
@@ -1895,7 +1902,8 @@ def _conversational_reply(owner_email, text, img_url=None):
     )
     try:
         result = subprocess.run(
-            ["python3", f"{BRO_IA_PATH}/question.py", prompt, "--temperature", "0.4", "--max-tokens", "300"],
+            ["python3", f"{BRO_IA_PATH}/question.py", prompt,
+             "--temperature", "0.4", "--max-tokens", "300", "--ctx", "8192"],
             capture_output=True, text=True, timeout=45,
         )
         answer = result.stdout.strip()
