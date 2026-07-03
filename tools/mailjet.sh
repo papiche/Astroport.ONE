@@ -463,13 +463,22 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
     fi
 
     # 4. Construction du JSON sécurisé via jq (Gère automatiquement l'échappement des guillemets et retours à la ligne du HTML)
+    # HTMLPart/TextPart passent par --rawfile (lecture fichier) plutôt que --arg
+    # (argument shell) : un contenu HTML volumineux dépasse sinon la limite ARG_MAX
+    # du système ("Liste d'arguments trop longue"), jq échoue silencieusement à
+    # l'exec, json_payload reste vide, et Mailjet répond "Malformed JSON" sur un
+    # corps de requête vide — sans que l'erreur réelle apparaisse dans les logs.
+    _mj_text_file="$(mktemp)"
+    _mj_html_file="$(mktemp)"
+    printf '%s' "$PLAIN_TEXT" > "$_mj_text_file"
+    printf '%s' "$FULL_HTML" > "$_mj_html_file"
     json_payload=$(jq -n \
         --arg sender_email "$SENDER_EMAIL" \
         --arg recipient_email "$RECIPIENT_EMAIL" \
         --arg pseudo "$pseudo" \
         --arg subject "$SUBJECT" \
-        --arg text_part "$PLAIN_TEXT" \
-        --arg html_part "$FULL_HTML" \
+        --rawfile text_part "$_mj_text_file" \
+        --rawfile html_part "$_mj_html_file" \
         '{
             "Messages": [
                 {
@@ -495,6 +504,7 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
                 }
             ]
         }')
+    rm -f "$_mj_text_file" "$_mj_html_file"
 
     # Verify the JSON structure (optional, good for logs)
     # echo "$json_payload" | jq .
