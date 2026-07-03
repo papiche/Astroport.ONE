@@ -222,6 +222,10 @@ COOKIE_FAILURE_FILE="$HOME/.zen/game/nostr/${PLAYER}/.youtube_cookie_failures"
 # Fichier de configuration optionnel des chaînes YouTube suivies :
 # une URL de chaîne par ligne (lignes vides ou commençant par # ignorées)
 CHANNELS_FILE="$HOME/.zen/game/nostr/${PLAYER}/.youtube.com.channels"
+# Profondeur du catalogue consultée les jours SANS nouvelle vidéo — permet de
+# combler avec une ancienne vidéo pas encore copiée plutôt que de ne rien
+# faire (voir sync_youtube_channels / _process_first_unprocessed_channel_video)
+CHANNEL_BACKFILL_DEPTH="${CHANNEL_BACKFILL_DEPTH:-30}"
 TODAY=$(date '+%Y-%m-%d')
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Today's date: $TODAY" >&2
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Last sync file: $LAST_SYNC_FILE" >&2
@@ -1412,6 +1416,69 @@ sync_youtube_likes() {
     return 0
 }
 
+# Scanne une liste de vidéos (format id&title&duration&uploader&url, une par
+# ligne, comme retourné par get_channel_videos) et traite la PREMIÈRE non
+# encore copiée. Retourne 0 si une vidéo a été téléchargée avec succès dans
+# ce lot, 1 si rien de neuf n'y a été trouvé (tout déjà traité, trop long, ou
+# échecs). Un "déjà en uDRIVE" (exit 2 de process_liked_video) ne compte pas
+# comme un succès mais ne fait pas non plus échouer le scan : on continue à
+# chercher une vraie nouveauté dans le reste du lot.
+_process_first_unprocessed_channel_video() {
+    local videos_list="$1" player="$2" processed_file="$3" max_duration="$4"
+
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+
+        # Parser les données de la vidéo (format id&title&duration&uploader&url)
+        local video_id=$(echo "$line" | cut -d '&' -f 1)
+        local title=$(echo "$line" | cut -d '&' -f 2)
+        local duration=$(echo "$line" | cut -d '&' -f 3)
+        local uploader=$(echo "$line" | cut -d '&' -f 4)
+        local url=$(echo "$line" | cut -d '&' -f 5)
+
+        # Nettoyer le titre (même normalisation que sync_youtube_likes)
+        title=$(echo "$title" | \
+            sed 's/[^a-zA-Z0-9._-]/_/g' | \
+            sed 's/__*/_/g' | \
+            sed 's/^_\|_$//g' | \
+            head -c 100)
+
+        if is_video_processed "$video_id" "$processed_file"; then
+            log_debug "Channel video already processed: $title (ID: $video_id)"
+            echo "⏭️ Skipping already processed: $title"
+            continue
+        fi
+
+        if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt "$max_duration" ]]; then
+            echo "⏭️ Skipping (too long for sync, $((duration / 60)) min > $((max_duration / 60)) min): $title"
+            log_debug "Skipping channel video $video_id (duration ${duration}s > ${max_duration}s)"
+            continue
+        fi
+
+        echo "🔄 Processing channel video: $title (ID: $video_id)"
+        process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player" "$processed_file"
+        local process_exit_code=$?
+        if [[ $process_exit_code -eq 0 ]]; then
+            echo "✅ New channel video published: $title"
+            log_debug "Channel video published: $title (ID: $video_id)"
+            return 0
+        elif [[ $process_exit_code -eq 2 ]]; then
+            echo "📁 Channel video already in uDRIVE: $title"
+            log_debug "Channel video already in uDRIVE: $video_id"
+        else
+            echo "❌ Channel video failed: $title"
+            log_debug "process_liked_video failed for channel video $video_id"
+        fi
+
+        # Pause anti-détection (comme sync_youtube_likes)
+        local delay_time=$((5 + RANDOM % 10))
+        log_debug "Waiting ${delay_time}s before next channel video"
+        sleep $delay_time
+    done <<< "$videos_list"
+
+    return 1
+}
+
 # Fonction de synchronisation des chaînes suivies (.youtube.com.channels)
 # Best-effort : ne fait JAMAIS échouer le script — toutes les erreurs sont
 # gérées en interne (log + continue) et la fonction retourne toujours 0.
@@ -1419,6 +1486,12 @@ sync_youtube_likes() {
 #   is_video_processed / process_liked_video / mark_video_processed
 # (génériques par video_id) et le MÊME processed_file (dédoublonnage global).
 # Limite : 1 NOUVELLE vidéo par chaîne et par exécution (léger pour un Pi).
+#
+# Rattrapage jours calmes : si les 3 dernières mises en ligne sont déjà
+# toutes copiées (pas de nouveauté aujourd'hui), on remonte plus loin dans le
+# catalogue de la chaîne (CHANNEL_BACKFILL_DEPTH) pour copier une ancienne
+# vidéo pas encore archivée — plutôt que de ne rien faire ce jour-là, la
+# chaîne finit par être intégralement archivée au fil des exécutions.
 sync_youtube_channels() {
     local player="$1"
     local cookie_file="$2"
@@ -1454,62 +1527,24 @@ sync_youtube_channels() {
             continue
         fi
 
-        # Traiter au plus 1 NOUVELLE vidéo par chaîne et par exécution
-        local downloaded_for_channel=0
-        while IFS= read -r line; do
-            [[ -z "$line" ]] && continue
-            if [[ $downloaded_for_channel -ge 1 ]]; then
-                log_debug "Already downloaded 1 new video for this channel, moving on"
-                break
+        local found=1
+        _process_first_unprocessed_channel_video "$channel_videos" "$player" "$processed_file" "$max_duration"
+        found=$?
+
+        if [[ $found -ne 0 ]]; then
+            # Rien de neuf parmi les dernières mises en ligne — jour calme :
+            # on comble en remontant dans le catalogue de la chaîne.
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] No new upload for $channel_url — backfilling older catalog (depth ${CHANNEL_BACKFILL_DEPTH})" >&2
+            log_debug "No new video for $channel_url, attempting backfill of older catalog"
+            local backfill_videos
+            backfill_videos=$(get_channel_videos "$channel_url" "$cookie_file" "$CHANNEL_BACKFILL_DEPTH")
+            if [[ -n "$backfill_videos" ]]; then
+                _process_first_unprocessed_channel_video "$backfill_videos" "$player" "$processed_file" "$max_duration"
+                found=$?
             fi
+        fi
 
-            # Parser les données de la vidéo (format id&title&duration&uploader&url)
-            local video_id=$(echo "$line" | cut -d '&' -f 1)
-            local title=$(echo "$line" | cut -d '&' -f 2)
-            local duration=$(echo "$line" | cut -d '&' -f 3)
-            local uploader=$(echo "$line" | cut -d '&' -f 4)
-            local url=$(echo "$line" | cut -d '&' -f 5)
-
-            # Nettoyer le titre (même normalisation que sync_youtube_likes)
-            title=$(echo "$title" | \
-                sed 's/[^a-zA-Z0-9._-]/_/g' | \
-                sed 's/__*/_/g' | \
-                sed 's/^_\|_$//g' | \
-                head -c 100)
-
-            if is_video_processed "$video_id" "$processed_file"; then
-                log_debug "Channel video already processed: $title (ID: $video_id)"
-                echo "⏭️ Skipping already processed: $title"
-                continue
-            fi
-
-            if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt "$max_duration" ]]; then
-                echo "⏭️ Skipping (too long for sync, $((duration / 60)) min > $((max_duration / 60)) min): $title"
-                log_debug "Skipping channel video $video_id (duration ${duration}s > ${max_duration}s)"
-                continue
-            fi
-
-            echo "🔄 Processing channel video: $title (ID: $video_id)"
-            process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player" "$processed_file"
-            local process_exit_code=$?
-            if [[ $process_exit_code -eq 0 ]]; then
-                downloaded_for_channel=1
-                channel_success=$((channel_success + 1))
-                echo "✅ New channel video published: $title"
-                log_debug "Channel video published: $title (ID: $video_id)"
-            elif [[ $process_exit_code -eq 2 ]]; then
-                echo "📁 Channel video already in uDRIVE: $title"
-                log_debug "Channel video already in uDRIVE: $video_id"
-            else
-                echo "❌ Channel video failed: $title"
-                log_debug "process_liked_video failed for channel video $video_id"
-            fi
-
-            # Pause anti-détection (comme sync_youtube_likes)
-            local delay_time=$((5 + RANDOM % 10))
-            log_debug "Waiting ${delay_time}s before next channel video"
-            sleep $delay_time
-        done <<< "$channel_videos"
+        [[ $found -eq 0 ]] && channel_success=$((channel_success + 1))
 
         # Petite pause entre chaînes pour éviter le rate limiting
         sleep 2
