@@ -38,6 +38,36 @@ if [ -s "$HOME/.astro/bin/activate" ]; then
 fi
 mkdir -p ~/.zen/game
 
+########################################################
+## IPFS AddrFilters sanity check
+## Retire /ip6/::/ipcidr/0 qui bloque toute connectivité IPv6 swarm
+########################################################
+IPFS_CONFIG="${IPFS_PATH:-${HOME}/.ipfs}/config"
+if [[ -f "$IPFS_CONFIG" ]]; then
+    BAD_FILTER=$(python3 -c "
+import json, sys
+c = json.load(open('$IPFS_CONFIG'))
+filters = c.get('Swarm', {}).get('AddrFilters') or []
+print('yes' if '/ip6/::/ipcidr/0' in filters else 'no')
+" 2>/dev/null)
+    if [[ "$BAD_FILTER" == "yes" ]]; then
+        echo "IPFS AddrFilters: /ip6/::/ipcidr/0 detecte — retrait du filtre IPv6 global..."
+        python3 - "$IPFS_CONFIG" <<'PYEOF'
+import json, sys
+p = sys.argv[1]
+c = json.load(open(p))
+f = c.get('Swarm', {}).get('AddrFilters') or []
+new_f = [x for x in f if x != '/ip6/::/ipcidr/0']
+c['Swarm']['AddrFilters'] = new_f if new_f else None
+open(p, 'w').write(json.dumps(c, indent=2))
+print("AddrFilters IPv6 corrige.")
+PYEOF
+        sudo systemctl restart ipfs 2>/dev/null \
+            || systemctl --user restart ipfs 2>/dev/null \
+            || echo "Redemarrer IPFS manuellement pour appliquer la correction."
+    fi
+fi
+
 ## CE SCRIPT ASSURE LA COHERENCE CRYPTO ENTRE USER SSH ET IPFSNODEID
 ## CAPTAIN ACTIVATING ASTROPORT / PLAYER joining DRAGON "ipfs p2p"
 ## Convert SSH key into IPFS key (Node ID) & USER NEW SSH ASTROPORT KEY
