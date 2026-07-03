@@ -98,6 +98,25 @@ def run_tool_routing(cases, verbose=False):
     return score
 
 
+def run_intent_routing(cases, verbose=False):
+    print("\n── Routage tags système (match_intent, corpus Qdrant) ──────────")
+    passed = 0
+    for case in cases:
+        explicit = bwc._detect_system_tag(case["text"])
+        intent = explicit or ((bwc.match_intent(case["text"]) or (None,))[0])
+        ok = intent == case["expected_target"]
+        passed += int(ok)
+        status = "✅" if ok else "❌"
+        if verbose or not ok:
+            print(f"{status} {case['text']!r}")
+            print(f"    attendu: {case['expected_target']!r}  obtenu: {intent!r}")
+            if not ok and case.get("origin"):
+                print(f"    ⚠️  régression : {case['origin']}")
+    score = passed / len(cases) if cases else 1.0
+    print(f"Score routage tags système : {passed}/{len(cases)} ({score:.0%})")
+    return score
+
+
 def run_hallucination_checks(cases, repeat=1, verbose=False):
     print(f"\n── Anti-hallucination conversationnelle (LLM, x{repeat}) ───────")
     total_runs, passed_runs = 0, 0
@@ -139,15 +158,16 @@ def main():
     restore = _patch_fixed_context(data)
     try:
         routing_score = run_tool_routing(data["tool_routing_cases"], verbose=args.verbose)
+        intent_score = run_intent_routing(data["intent_routing_cases"], verbose=args.verbose)
         halluc_score = 1.0
         if not args.skip_llm:
             halluc_score = run_hallucination_checks(data["hallucination_cases"], repeat=args.repeat, verbose=args.verbose)
     finally:
         restore()
 
-    print(f"\n══ Score global : routage {routing_score:.0%}"
+    print(f"\n══ Score global : routage outils {routing_score:.0%} · routage tags {intent_score:.0%}"
           + (f" · anti-hallucination {halluc_score:.0%}" if not args.skip_llm else " (LLM sauté)"))
-    sys.exit(0 if (routing_score == 1.0 and halluc_score == 1.0) else 1)
+    sys.exit(0 if (routing_score == 1.0 and intent_score == 1.0 and halluc_score == 1.0) else 1)
 
 
 if __name__ == "__main__":

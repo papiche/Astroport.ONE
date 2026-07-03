@@ -70,6 +70,22 @@ DIGEST_PREFIX = "📋 Rapport quotidien BRO"
 # cette boucle : à ne JAMAIS retirer sans un mécanisme de remplacement.
 BOT_REPLY_MARKERS = ("📋", "✅", "🤔", "💬", "🔔")
 
+# ─── Pont BRO ↔ UPlanet_IA_Responder.sh ───────────────────────────────────────
+# Regex pour extraire les URLs d'image depuis les messages BRO (self-DM).
+# Doit matcher /uploads/xxx.jpg (UPassport local) et les URLs IPFS avec extension.
+_IA_IMG_URL_RE = re.compile(
+    r'https?://[^\s#"\'<>]+\.(?:jpg|jpeg|png|gif|webp)(?:[?][^\s#]*)?',
+    re.IGNORECASE
+)
+# Tags à nettoyer du prompt avant d'appeler un générateur
+_IA_CLEAN_RE = re.compile(
+    r'#(?:bro|bot|image|video|vid[ée]o|music(?:ue)?|search|recherche'
+    r'|plant(?:net|e)?|botanique|flora|insect(?:e)?|animal|person(?:ne)?'
+    r'|objet?|place|lieu|inventory|inventaire|describe|d[ée]crire'
+    r'|pierre|am[ée]lie)\b',
+    re.IGNORECASE
+)
+
 # ── Correspondance sémantique (Qdrant + Ollama) ─────────────────────────
 QDRANT_HOST = "localhost"
 QDRANT_PORT = 6333
@@ -352,19 +368,22 @@ def send_dm_to_owner(owner_email, message, ttl_days=DM_TTL_DAYS):
         print(f"[BRO_WATCH] DM impossible pour {owner_email} : nsec ou HEX manquant.")
         return False
     script = os.path.join(TOOLS_PATH, "nostr_send_secure_dm.py")
-    sent = False
-    for relay in RELAYS:
-        try:
-            proc = subprocess.run(
-                ["python3", script, "--nsec-stdin", recipient_hex, message, relay,
-                 "--ttl-days", str(ttl_days), "--extra-tags", json.dumps([BRO_ORIGIN_TAG])],
-                input=nsec + "\n", capture_output=True, text=True, timeout=15
-            )
-            if proc.returncode == 0:
-                sent = True
-        except Exception as e:
-            print(f"[BRO_WATCH] Erreur envoi DM à {owner_email} via {relay} : {e}")
-    return sent
+    # Un SEUL relais : nostr_send_secure_dm.py signe un event neuf à chaque
+    # appel (created_at différent → id différent), donc boucler sur RELAYS[]
+    # publierait le même message comme plusieurs events distincts (bug constaté
+    # en prod le 2026-07-03 : chaque réponse de BRO affichée deux fois dans
+    # atomic_chat.html). La propagation vers les autres relais de la
+    # constellation passe par backfill_constellation.sh (même event, même id).
+    try:
+        proc = subprocess.run(
+            ["python3", script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
+             "--ttl-days", str(ttl_days), "--extra-tags", json.dumps([BRO_ORIGIN_TAG])],
+            input=nsec + "\n", capture_output=True, text=True, timeout=15
+        )
+        return proc.returncode == 0
+    except Exception as e:
+        print(f"[BRO_WATCH] Erreur envoi DM à {owner_email} via {RELAYS[0]} : {e}")
+        return False
 
 
 # ── Apprentissage / correspondance mots-clés ────────────────────────────
@@ -472,6 +491,141 @@ def semantic_match(owner_email, account, channel, entry, text, threshold=SEMANTI
     except Exception as e:
         print(f"[BRO_WATCH] Qdrant/Ollama indisponible pour matching sémantique : {e}")
         return False
+
+
+# ── Routage d'intention vers les tags système réels (corpus Qdrant) ────────
+# Source de vérité : docs/how-to/BRO_HELP_COMMANDS.md — les tags media/vision
+# (#image #video #music #plant #inventory #pierre #amelie) sont un système
+# séparé déjà géré en amont par _handle_ia_responder_tags (regex déterministe
+# sur le hashtag exact) ; ce corpus couvre le reste, qui n'a AUCUNE couverture
+# dans le canal self-DM (bro_watch_core.py) — incident réel (2026-07-03) :
+# "#reset" a répondu à côté du sujet, "#help" a halluciné une confirmation
+# de reset, faute de reconnaître ces commandes.
+#
+# Comparer le texte à UNE SEULE phrase de description par cible (comme
+# match_tool le fait pour les outils Arbor) s'est avéré insuffisant pour
+# séparer des intentions proches ("météo à Lyon" vs "messages Mastodon"
+# scoraient à 0.007 d'écart, cf. bro_conversation_eval — aucun seuil fixe
+# n'est robuste sur un tel écart). Une collection Qdrant à PLUSIEURS exemples
+# positifs par cible aggrave même le problème (le max sur K exemples élève
+# aussi les faux positifs). Le score qui sépare proprement les deux groupes
+# sur les données testées est la MARGE : meilleur score positif − meilleur
+# score négatif, avec des négatifs génériques partagés entre toutes les
+# cibles (questions méta + cas de veille déjà identifiés comme pièges).
+QDRANT_INTENT_COLLECTION = "bro_intent_routing"
+INTENT_MARGIN_THRESHOLD = 0.05
+
+# Négatifs partagés — jamais liés à une cible précise, servent à repousser
+# TOUTES les cibles (tags système ET outils Arbor). Alimentés par les
+# incidents réels constatés en production.
+INTENT_SHARED_NEGATIVES = [
+    "à quels outils as-tu accès ?",
+    "que sais-tu faire ?",
+    "quelles commandes puis-je utiliser ?",
+    "désactive mastodon.social",
+    "ajoute le mot-clé jardin sur le fil mastodon",
+    "quels sont les derniers messages publié sur Mastodon ?",
+    "il fait beau aujourd'hui",
+    "bonjour, comment ça va ?",
+    "montre-moi une vidéo de permaculture",
+    "identifie cette plante sur la photo",
+]
+
+# Tags système réels (docs/how-to/BRO_HELP_COMMANDS.md) avec quelques
+# formulations positives représentatives, y compris les formulations EXACTES
+# suggérées par la doc pour "help" ("help", "aide", "commandes BRO",
+# "quelles sont les commandes"). "craft"/"badge" nécessitent un niveau
+# d'accès (atom4love / satellite ẐEN) que ce canal ne vérifie pas encore —
+# _execute_system_tag répond honnêtement plutôt que d'exécuter à tort.
+SYSTEM_TAG_CORPUS = {
+    "help": ["help", "aide", "commandes BRO", "quelles sont les commandes",
+             "que peux-tu faire ?", "liste tes commandes"],
+    "mem": ["montre-moi mes souvenirs", "qu'est-ce que tu as retenu de moi ?",
+            "rappelle-moi ce qu'on s'est dit", "voir toutes mes mémoires", "#mem"],
+    "reset": ["oublie tout ce qu'on s'est dit", "efface toutes mes mémoires", "#reset"],
+    "rec": ["retiens que j'aime le jardinage", "mémorise ça pour plus tard", "note ça",
+            "#rec", "#rec j'adore le compost et les légumes anciens"],
+    "craft": ["décompose ce tutoriel en recette", "transforme ce lien en étapes", "#craft"],
+    "badge": ["génère un badge pour cette compétence", "crée mon badge de compétence", "#badge"],
+    "scraper": ["lance le scraper mastodon maintenant", "exécute la surveillance mastodon.social",
+                "relance la synchro de mon cookie", "vérifie mes mentions tout de suite", "#scraper"],
+}
+
+
+def _intent_point_id(kind, target, text):
+    h = hashlib.sha256(f"{kind}:{target}:{text}".encode()).hexdigest()
+    return int(h[:15], 16) % (2 ** 63)
+
+
+def _seed_intent_corpus():
+    """Peuple (idempotent) la collection Qdrant de routage d'intention avec
+    le corpus figé ci-dessus. Appelé paresseusement au premier match_intent()
+    — pas de coût au chargement du module, dégradation silencieuse si
+    Qdrant/Ollama indisponible."""
+    from qdrant_client.models import Distance, VectorParams, PointStruct
+
+    client = _qdrant_client()
+    existing_collections = [c.name for c in client.get_collections().collections]
+    if QDRANT_INTENT_COLLECTION not in existing_collections:
+        client.create_collection(
+            collection_name=QDRANT_INTENT_COLLECTION,
+            vectors_config=VectorParams(size=QDRANT_VECTOR_SIZE, distance=Distance.COSINE),
+        )
+
+    points = []
+    for target, examples in SYSTEM_TAG_CORPUS.items():
+        for ex in examples:
+            pid = _intent_point_id("positive", target, ex)
+            existing = client.retrieve(collection_name=QDRANT_INTENT_COLLECTION, ids=[pid])
+            if existing:
+                continue
+            points.append(PointStruct(id=pid, vector=_qdrant_embed(ex),
+                                       payload={"label": "positive", "target": target, "text": ex}))
+    for ex in INTENT_SHARED_NEGATIVES:
+        pid = _intent_point_id("negative", "shared", ex)
+        existing = client.retrieve(collection_name=QDRANT_INTENT_COLLECTION, ids=[pid])
+        if existing:
+            continue
+        points.append(PointStruct(id=pid, vector=_qdrant_embed(ex),
+                                   payload={"label": "negative", "target": "shared", "text": ex}))
+
+    if points:
+        client.upsert(collection_name=QDRANT_INTENT_COLLECTION, points=points)
+        print(f"[BRO_WATCH] Corpus d'intention : {len(points)} nouvel(le)s exemple(s) indexé(s)")
+
+
+def match_intent(text, margin_threshold=INTENT_MARGIN_THRESHOLD):
+    """Route vers un tag système réel par marge sémantique (meilleur positif
+    − meilleur négatif partagé) — voir le commentaire d'architecture ci-dessus
+    pour la justification de la marge plutôt qu'un seuil absolu. Retourne
+    (target, margin) ou None. Dégradation silencieuse si Qdrant/Ollama
+    indisponible : ne doit jamais bloquer la réponse à l'utilisateur."""
+    try:
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+
+        _seed_intent_corpus()
+        client = _qdrant_client()
+        text_vec = _qdrant_embed(text)
+
+        pos_hits = client.query_points(
+            collection_name=QDRANT_INTENT_COLLECTION, query=text_vec, limit=1,
+            query_filter=Filter(must=[FieldCondition(key="label", match=MatchValue(value="positive"))]),
+        ).points
+        neg_hits = client.query_points(
+            collection_name=QDRANT_INTENT_COLLECTION, query=text_vec, limit=1,
+            query_filter=Filter(must=[FieldCondition(key="label", match=MatchValue(value="negative"))]),
+        ).points
+        if not pos_hits:
+            return None
+        best_pos = pos_hits[0]
+        best_neg_score = neg_hits[0].score if neg_hits else 0.0
+        margin = best_pos.score - best_neg_score
+        if margin >= margin_threshold:
+            return best_pos.payload["target"], margin
+        return None
+    except Exception as e:
+        print(f"[BRO_WATCH] match_intent indisponible : {e}")
+        return None
 
 
 def matches_keywords(entry, text, owner_email=None, account=None, channel=None):
@@ -1181,6 +1335,9 @@ _META_CAPABILITY_PHRASES = (
     "que sais-tu faire", "qu'est-ce que tu sais faire", "à quels outils",
     "a quels outils", "quelles sont tes capacités", "que peux-tu faire",
     "tes fonctionnalités", "c'est quoi tes commandes", "quelles commandes",
+    # Questions temporelles — ne jamais router vers un outil (ex: tool_meteo)
+    "quelle heure", "il est quelle heure", "quelle heure est-il",
+    "quelle heure est il", "l'heure", "donne moi l'heure", "what time",
 )
 
 
@@ -1248,6 +1405,17 @@ def _bro_capabilities_description(owner_email):
         "- Surveillance de sources web (Mastodon, forums Discourse, chaînes YouTube).",
         "- Mémoire de vos échanges précédents (rappelée automatiquement quand pertinent) — "
         "« #oublie » pour l'effacer.",
+        "- Notes explicites : « #rec TEXTE » pour mémoriser un fait précis, "
+        "« #mem » pour voir vos notes, « #reset » pour les effacer (« #rec #2 » / #mem #2 / #reset #2 "
+        "pour un autre slot que le slot 0 par défaut).",
+        "- « #help » ou « aide » affiche cette même liste.",
+        "- « lance le scraper DOMAINE » (ou « #scraper DOMAINE ») exécute immédiatement la surveillance "
+        "d'une source dont vous avez déjà déposé le cookie, au lieu d'attendre le cycle quotidien.",
+        "- Reconnaissance d'image : envoie une image (URL .jpg/.png/etc.) — "
+        "BRO la décrit automatiquement. Tags spéciaux : "
+        "#plant (botanique PlantNet), #inventory (inventaire).",
+        "- Génération de contenu : #image PROMPT (image ComfyUI), "
+        "#video PROMPT (vidéo), #music PROMPT (musique).",
     ]
     if _is_captain(owner_email):
         lines.append("- #arbor : lance l'auto-amélioration du prompt d'interprétation (réservé capitaine).")
@@ -1338,7 +1506,370 @@ def _forget_memory(owner_email):
     return "🗑️ Mémoire de nos échanges effacée."
 
 
-def _conversational_reply(owner_email, text):
+def _extract_image_url(text):
+    """Extrait la première URL d'image avec extension depuis un message BRO."""
+    m = _IA_IMG_URL_RE.search(text)
+    return m.group(0) if m else None
+
+
+def _describe_image_url(image_url):
+    """Appelle describe_image.py via le venv ~/.astro/.
+    Retourne la description textuelle ou '' si Ollama indisponible."""
+    script = os.path.join(BRO_IA_PATH, "describe_image.py")
+    if not os.path.isfile(script):
+        return ""
+    venv_py = os.path.expanduser("~/.astro/bin/python3")
+    py = venv_py if os.path.isfile(venv_py) else "python3"
+    try:
+        result = subprocess.run(
+            [py, script, image_url, "--json"],
+            capture_output=True, text=True, timeout=90,
+        )
+        data = json.loads(result.stdout.strip())
+        return data.get("description", "")
+    except Exception:
+        return ""
+
+
+def _call_generator(script_name, prompt):
+    """Appelle generators/<script_name> avec le prompt.
+    Retourne l'URL produite (stdout) ou None si ComfyUI indisponible."""
+    script = os.path.join(BRO_IA_PATH, "generators", script_name)
+    if not os.path.isfile(script):
+        return None
+    try:
+        result = subprocess.run(
+            ["bash", script, prompt],
+            capture_output=True, text=True, timeout=300,
+        )
+        url = result.stdout.strip()
+        return url if url.startswith("http") else None
+    except Exception:
+        return None
+
+
+def _handle_ia_responder_tags(owner_email, text, img_url=None):
+    """Pont BRO ↔ UPlanet_IA_Responder.sh : reconnaît les #tags media/vision
+    dans le canal self-DM et délègue aux générateurs/reconnaisseurs Python/bash.
+    Retourne la réponse ou None (→ repli conversationnel gérant img_url en contexte)."""
+    lowered = text.lower()
+    clean = _IA_CLEAN_RE.sub("", text).strip()
+
+    # ── Génération d'image (ComfyUI) ──────────────────────────────────────
+    if re.search(r'#image\b', lowered):
+        url = _call_generator("generate_image.sh", clean or "abstract artwork")
+        if url:
+            return f"🖼️ Image générée :\n{url}"
+        return "⚠️ Génération d'image indisponible (ComfyUI non accessible — demandez à la constellation)."
+
+    # ── Génération de vidéo ────────────────────────────────────────────────
+    if re.search(r'#vid[ée]o\b', lowered):
+        url = _call_generator("generate_video.sh", clean or "abstract motion")
+        if url:
+            return f"🎬 Vidéo générée :\n{url}"
+        return "⚠️ Génération vidéo indisponible (ComfyUI non accessible)."
+
+    # ── Génération de musique ──────────────────────────────────────────────
+    if re.search(r'#music(?:ue)?\b', lowered):
+        url = _call_generator("generate_music.sh", clean or "ambient music")
+        if url:
+            return f"🎵 Musique générée :\n{url}"
+        return "⚠️ Génération musicale indisponible sur cette station."
+
+    # ── Reconnaissance botanique (PlantNet) ────────────────────────────────
+    if re.search(r'#(?:plant(?:net|e)?|botanique|flora)\b', lowered):
+        if not img_url:
+            return "🌿 Envoie une photo de plante avec #plant pour l'identification botanique."
+        script = os.path.join(BRO_IA_PATH, "plantnet_recognition.py")
+        if not os.path.isfile(script):
+            return "⚠️ PlantNet non installé sur cette station."
+        venv_py = os.path.expanduser("~/.astro/bin/python3")
+        py = venv_py if os.path.isfile(venv_py) else "python3"
+        try:
+            result = subprocess.run([py, script, img_url], capture_output=True, text=True, timeout=60)
+            out = result.stdout.strip()
+            return out or "⚠️ PlantNet n'a pas identifié de plante sur cette image."
+        except Exception:
+            return "⚠️ Service PlantNet indisponible."
+
+    # ── Inventaire automatique ─────────────────────────────────────────────
+    if re.search(r'#(?:inventory|inventaire)\b', lowered):
+        if not img_url:
+            return "📦 Envoie une photo avec #inventory pour l'inventaire automatique."
+        script = os.path.join(BRO_IA_PATH, "inventory_recognition.py")
+        if not os.path.isfile(script):
+            return "⚠️ Inventaire non disponible sur cette station."
+        venv_py = os.path.expanduser("~/.astro/bin/python3")
+        py = venv_py if os.path.isfile(venv_py) else "python3"
+        try:
+            result = subprocess.run([py, script, img_url], capture_output=True, text=True, timeout=60)
+            out = result.stdout.strip()
+            return out or "⚠️ Inventaire vide ou non reconnu."
+        except Exception:
+            return "⚠️ Service inventaire indisponible."
+
+    # ── Synthèse vocale (#pierre / #amelie) ───────────────────────────────
+    if re.search(r'#(?:pierre|am[ée]lie)\b', lowered):
+        voice = "amelie" if re.search(r'#am[ée]lie\b', lowered) else "pierre"
+        # Texte épuré de tous les tags commandes pour la question et pour le TTS
+        clean_question = re.sub(
+            r'#(?:bro|bot|pierre|am[ée]lie)\b', '', text, flags=re.IGNORECASE
+        ).strip()
+        if clean_question:
+            text_reply = _conversational_reply(owner_email, clean_question, img_url)
+            text_for_tts = re.sub(r'^[💬📋✅🤔🔔]\s*', '', text_reply).strip()
+        else:
+            text_for_tts = "BRO à votre service."
+            text_reply = f"💬 {text_for_tts}"
+        speech_script = os.path.join(BRO_IA_PATH, "generators", "generate_speech.sh")
+        audio_url = ""
+        if os.path.isfile(speech_script):
+            try:
+                result = subprocess.run(
+                    ["bash", speech_script, text_for_tts, voice],
+                    capture_output=True, text=True, timeout=120,
+                )
+                audio_url = result.stdout.strip()
+            except Exception as exc:
+                print(f"[BRO_WATCH] TTS échoué ({voice}) : {exc}")
+        if audio_url:
+            return f"{text_reply}\n\n🔊 Audio ({voice}) : {audio_url}"
+        return text_reply
+
+    # Pas de tag spécifique → repli vers _conversational_reply (avec img_url en contexte)
+    return None
+
+
+def _slots_from_text(text):
+    """Détecte les tags #1..#12 dans le texte (cohérent avec bro_dm_daemon.sh
+    et UPlanet_IA_Responder.sh) — retourne la liste des slots visés, ou [0]
+    (personnel) par défaut si aucun n'est mentionné."""
+    slots = [i for i in range(1, 13) if re.search(rf"#{i}\b", text)]
+    return slots or [0]
+
+
+def _generic_slot_file(owner_email, slot):
+    return os.path.expanduser(f"~/.zen/flashmem/{owner_email}/slot{slot}.json")
+
+
+def _persist_slot_content(owner_email, slot, content):
+    """#rec — mémorise EXPLICITEMENT une note dans le slot demandé (0-12,
+    système documenté dans BRO_HELP_COMMANDS.md), distinct du rappel
+    automatique de conversation (BRO_MEMORY_SLOT). Même mécanique que
+    _remember_exchange : fichier local (lu par question.py --slot) + Qdrant
+    (memory_manager.py, pour la recherche sémantique)."""
+    try:
+        from datetime import datetime
+        ts = datetime.utcnow().isoformat() + "Z"
+        slot_file = _generic_slot_file(owner_email, slot)
+        os.makedirs(os.path.dirname(slot_file), exist_ok=True)
+        if os.path.isfile(slot_file):
+            with open(slot_file, encoding="utf-8") as f:
+                slot_mem = json.load(f)
+        else:
+            slot_mem = {"user_id": owner_email, "slot": slot, "messages": []}
+        slot_mem["messages"].append({"timestamp": ts, "content": content})
+        slot_mem["messages"] = slot_mem["messages"][-200:]
+        with open(slot_file, "w", encoding="utf-8") as f:
+            json.dump(slot_mem, f, indent=2, ensure_ascii=False)
+
+        import sys
+        sys.path.insert(0, BRO_IA_PATH)
+        import memory_manager as mm
+        mm.upsert_user_slot(owner_email, slot, content, timestamp=ts)
+        if len(slot_mem["messages"]) >= 170:
+            mm.reve_compress_slot(owner_email, slot, slot_file=slot_file)
+        return True
+    except Exception as e:
+        print(f"[BRO_WATCH] #rec indisponible pour {owner_email} slot {slot} : {e}")
+        return False
+
+
+def _format_slot_summary(owner_email, slot, limit=5):
+    slot_file = _generic_slot_file(owner_email, slot)
+    try:
+        with open(slot_file, encoding="utf-8") as f:
+            messages = json.load(f).get("messages", [])
+    except Exception:
+        return None
+    if not messages:
+        return None
+    lines = [f"- {m.get('content', '')}" for m in messages[-limit:]]
+    return "\n".join(lines)
+
+
+def _clear_slot(owner_email, slot):
+    slot_file = _generic_slot_file(owner_email, slot)
+    try:
+        if os.path.isfile(slot_file):
+            os.remove(slot_file)
+    except Exception:
+        pass
+    try:
+        import sys
+        sys.path.insert(0, BRO_IA_PATH)
+        import memory_manager as mm
+        mm.delete_user_slot(owner_email, slot)
+    except Exception:
+        pass
+
+
+# Détection déterministe du tag explicite — prioritaire sur le routage
+# sémantique (match_intent). Nécessaire pour #rec : le contenu variable après
+# le tag ("#rec j'adore le compost" vs "#rec je pars en vacances le 12
+# juillet") pollue l'embedding de la phrase entière et fait rater le match
+# sémantique, alors que le tag lui-même est un marqueur non ambigu — pas
+# besoin d'IA pour le reconnaître (même logique que _handle_hashtag_command
+# et _handle_ia_responder_tags, tags déterministes ailleurs dans ce fichier).
+_SYSTEM_TAG_RE = re.compile(r"#(mem|reset|rec|help|craft|badge|scraper)\b", re.IGNORECASE)
+
+
+def _detect_system_tag(text):
+    m = _SYSTEM_TAG_RE.search(text)
+    return m.group(1).lower() if m else None
+
+
+SCRAPER_RUN_TIMEOUT_SEC = 180
+
+
+def _cookie_file_path(owner_email, domain):
+    return os.path.join(_owner_dir(owner_email), f".{domain}.cookie")
+
+
+def _find_scraper_script(domain):
+    """Même résolution que NOSTRCARD.refresh.sh : IA/scrapers/*/DOMAIN.sh en
+    priorité, repli sur IA/DOMAIN.sh (legacy)."""
+    scrapers_dir = os.path.join(BRO_IA_PATH, "scrapers")
+    try:
+        for sub in sorted(os.listdir(scrapers_dir)):
+            candidate = os.path.join(scrapers_dir, sub, f"{domain}.sh")
+            if os.path.isfile(candidate):
+                return candidate
+    except Exception:
+        pass
+    legacy = os.path.join(BRO_IA_PATH, f"{domain}.sh")
+    return legacy if os.path.isfile(legacy) else None
+
+
+def _available_scraper_domains(owner_email):
+    """Domaines pour lesquels le propriétaire a déposé un cookie ET dont le
+    fichier cookie en clair existe encore localement (condition réelle
+    d'exécution, pas seulement la présence dans le manifest)."""
+    manifest = _load_manifest(owner_email)
+    return [d for d in manifest if os.path.isfile(_cookie_file_path(owner_email, d))]
+
+
+def _extract_scraper_domain(owner_email, text):
+    """Cherche lequel des domaines déjà déposés (cookie réel présent) est
+    mentionné dans le texte — match sur le domaine complet ou son premier
+    label (ex: 'mastodon' matche 'mastodon.social')."""
+    lowered = text.lower()
+    for domain in _available_scraper_domains(owner_email):
+        if domain.lower() in lowered or domain.split(".")[0].lower() in lowered:
+            return domain
+    return None
+
+
+def _run_scraper_now(owner_email, domain):
+    """Exécute un scraper à la demande du capitaine (hors cycle cron
+    quotidien — ignore volontairement le fichier .done journalier, une
+    demande explicite doit toujours s'exécuter) et renvoie un résumé
+    exploitable directement en réponse DM, plutôt que de faire attendre le
+    prochain passage de NOSTRCARD.refresh.sh."""
+    if not is_scraper_enabled(owner_email, domain):
+        return f"🔒 Le scraper {domain} est désactivé (voir /mailjet pour le réactiver)."
+    cookie_file = _cookie_file_path(owner_email, domain)
+    if not os.path.isfile(cookie_file):
+        return f"🍪 Aucun cookie déposé pour {domain} — déposez-en un sur /cookie."
+    script = _find_scraper_script(domain)
+    if not script:
+        return f"⚠️ Aucun scraper disponible pour {domain} sur cette station."
+
+    log_path = os.path.expanduser(f"~/.zen/tmp/{domain}_sync_{owner_email}.log")
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    try:
+        result = subprocess.run(
+            ["bash", script, owner_email, cookie_file],
+            capture_output=True, text=True, timeout=SCRAPER_RUN_TIMEOUT_SEC,
+        )
+        output = (result.stdout or "") + (result.stderr or "")
+    except subprocess.TimeoutExpired:
+        return f"⏱️ Le scraper {domain} n'a pas terminé sous {SCRAPER_RUN_TIMEOUT_SEC}s — réessayez plus tard."
+    except Exception as e:
+        return f"⚠️ Échec du lancement du scraper {domain} : {e}"
+
+    try:
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write(output)
+        store_log(owner_email, domain, output)
+    except Exception:
+        pass
+
+    # Dernière ligne informative du log (les scrapers impriment un résumé
+    # type "Terminé — N nouvelle(s) mention(s)…") plutôt que tout le log brut.
+    summary_lines = [l for l in output.strip().splitlines() if l.strip()]
+    summary = summary_lines[-1] if summary_lines else "(aucune sortie)"
+    if result.returncode == 0:
+        return f"✅ Scraper {domain} exécuté :\n{summary}"
+    return f"⚠️ Scraper {domain} terminé avec une erreur (code {result.returncode}) :\n{summary}"
+
+
+def _execute_system_tag(target, owner_email, text):
+    """Exécute une commande système reconnue par match_intent (voir
+    SYSTEM_TAG_CORPUS) — jamais de réponse LLM inventée pour ces cas,
+    contrairement à l'incident du 2026-07-03. Retourne None si la cible
+    n'a pas (encore) d'implémentation réelle sur ce canal, pour repli
+    honnête côté appelant plutôt qu'une exécution hasardeuse."""
+    if target == "help":
+        lines = _bro_capabilities_description(owner_email).split("\n")
+        lines.append("")
+        lines.append("Voir aussi : #mem (souvenirs), #reset (les effacer), #rec <texte> (en noter un).")
+        return "\n".join(lines)
+
+    if target == "mem":
+        slots = _slots_from_text(text)
+        parts = []
+        for slot in slots:
+            summary = _format_slot_summary(owner_email, slot)
+            parts.append(f"Slot {slot} :\n{summary}" if summary else f"Slot {slot} : (vide)")
+        return "🧠 " + "\n\n".join(parts)
+
+    if target == "reset":
+        slots = _slots_from_text(text)
+        for slot in slots:
+            _clear_slot(owner_email, slot)
+        slots_str = ", ".join(str(s) for s in slots)
+        return f"🗑️ Mémoire effacée (slot{'s' if len(slots) > 1 else ''} {slots_str})."
+
+    if target == "rec":
+        slots = _slots_from_text(text)
+        # Texte à mémoriser : le message débarrassé des tags #rec/#N eux-mêmes.
+        content = re.sub(r"#rec\b", "", text, flags=re.IGNORECASE)
+        content = re.sub(r"#\d{1,2}\b", "", content).strip()
+        if not content:
+            return "🤔 Dites-moi quoi mémoriser, par exemple « #rec j'aime le jardinage »."
+        ok = all(_persist_slot_content(owner_email, slot, content) for slot in slots)
+        slots_str = ", ".join(str(s) for s in slots)
+        return f"✅ Noté dans le slot{'s' if len(slots) > 1 else ''} {slots_str}." if ok else \
+            "⚠️ Échec de la mémorisation (Qdrant indisponible ?)."
+
+    if target == "scraper":
+        domain = _extract_scraper_domain(owner_email, text)
+        if domain:
+            return _run_scraper_now(owner_email, domain)
+        available = _available_scraper_domains(owner_email)
+        if not available:
+            return "🍪 Aucun cookie déposé pour l'instant — déposez-en un sur /cookie pour activer un scraper."
+        return "🤔 Quel domaine ? " + ", ".join(available)
+
+    if target in ("craft", "badge"):
+        return (f"🔒 #{target} nécessite un profil/niveau d'accès non encore vérifiable sur ce canal self-DM — "
+                "utilisez ce tag en DM classique adressé à BRO (#BRO) plutôt qu'en self-DM.")
+
+    return None
+
+
+def _conversational_reply(owner_email, text, img_url=None):
     """Réponse en langage naturel quand le message ne correspond à aucune
     commande de surveillance reconnue — pour que le canal self-DM avec BRO
     reste vivant même hors commande (BRO reste son clone numérique, jamais
@@ -1347,10 +1878,16 @@ def _conversational_reply(owner_email, text):
     context_summary = _watch_context_summary(owner_email)
     memory_context = _recall_relevant_memories(owner_email, text)
     memory_block = f"Souvenirs pertinents de vos échanges précédents :\n{memory_context}\n\n" if memory_context else ""
+
+    # Si une URL image est présente, décrire l'image et l'injecter dans le prompt
+    img_desc = _describe_image_url(img_url) if img_url else ""
+    image_block = f"[Image reçue — description visuelle IA] : {img_desc}\n\n" if img_desc else ""
+
     prompt = (
         f"{_bro_capabilities_description(owner_email)}\n\n"
         f"Sources actuellement configurées :\n{context_summary or '(aucune pour le moment)'}\n\n"
         f"{memory_block}"
+        f"{image_block}"
         "Réponds brièvement (3-5 lignes max), en français, de façon chaleureuse et directe, à son "
         f"message : « {text} »"
     )
@@ -1384,6 +1921,33 @@ def _handle_command_text(owner_email, text):
             return _trigger_arbor_self_improve(owner_email)
         return "🔒 L'auto-amélioration est réservée au capitaine de la station."
 
+    # Extraire l'URL image une seule fois (partagée entre les handlers)
+    img_url = _extract_image_url(text)
+
+    # Tags media/vision de UPlanet_IA_Responder.sh (#image, #video, #music, #plant…)
+    ia_reply = _handle_ia_responder_tags(owner_email, text, img_url)
+    if ia_reply:
+        if not ia_reply.startswith(BOT_REPLY_MARKERS):
+            ia_reply = f"💬 {ia_reply}"
+        _log_tool_request(owner_email, text, ia_reply)
+        _remember_exchange(owner_email, text, ia_reply)
+        return ia_reply
+
+    # Tags système de docs/how-to/BRO_HELP_COMMANDS.md (#mem, #reset, #rec,
+    # #help, #craft, #badge) — hashtag exact détecté en déterministe, langage
+    # naturel équivalent reconnu via corpus Qdrant (match_intent). Jamais de
+    # réponse LLM inventée pour ces cas (incident du 2026-07-03).
+    explicit_tag = _detect_system_tag(text)
+    intent_target = explicit_tag or (match_intent(text) or (None,))[0]
+    if intent_target:
+        sys_reply = _execute_system_tag(intent_target, owner_email, text)
+        if sys_reply:
+            if not sys_reply.startswith(BOT_REPLY_MARKERS):
+                sys_reply = f"💬 {sys_reply}"
+            _log_tool_request(owner_email, text, sys_reply)
+            _remember_exchange(owner_email, text, sys_reply)
+            return sys_reply
+
     action = _interpret_natural_command(owner_email, text)
     if action and action.get("action") not in (None, "none"):
         if _sanity_check_action(text, action):
@@ -1403,7 +1967,7 @@ def _handle_command_text(owner_email, text):
             tool_result = f"💬 {tool_result}"
         return tool_result
 
-    return _conversational_reply(owner_email, text)
+    return _conversational_reply(owner_email, text, img_url)
 
 
 def process_incoming_commands(owner_email):

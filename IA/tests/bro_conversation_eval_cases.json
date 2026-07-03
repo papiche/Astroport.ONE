@@ -56,6 +56,50 @@
       "note": "Mentionne 'météo' mais c'est une plainte, pas une demande — cas limite volontairement difficile"
     }
   ],
+  "intent_routing_cases": [
+    {
+      "text": "help",
+      "expected_target": "help",
+      "note": "Formulation exacte suggérée par docs/how-to/BRO_HELP_COMMANDS.md"
+    },
+    {"text": "aide", "expected_target": "help"},
+    {"text": "commandes BRO", "expected_target": "help"},
+    {"text": "quelles sont les commandes", "expected_target": "help"},
+    {
+      "text": "#help",
+      "expected_target": "help",
+      "origin": "Incident réel 2026-07-03 : #help a halluciné une confirmation de reset (canal self-DM ne connaissait pas ce tag)"
+    },
+    {"text": "montre-moi mes souvenirs", "expected_target": "mem"},
+    {"text": "#mem", "expected_target": "mem"},
+    {
+      "text": "#reset",
+      "expected_target": "reset",
+      "origin": "Incident réel 2026-07-03 : #reset a répondu complètement à côté du sujet (canal self-DM ne connaissait pas ce tag)"
+    },
+    {"text": "oublie tout ce qu'on s'est dit", "expected_target": "reset"},
+    {"text": "#rec j'adore le compost et les légumes anciens", "expected_target": "rec"},
+    {
+      "text": "retiens que j'habite à Lyon",
+      "expected_target": "rec",
+      "note": "Cas limite : marge faible (~0.06) sur le corpus initial — à surveiller si le corpus grandit"
+    },
+    {"text": "décompose ce tutoriel", "expected_target": "craft"},
+    {"text": "génère un badge pour cette compétence", "expected_target": "badge"},
+    {"text": "lance le scraper mastodon maintenant", "expected_target": "scraper"},
+    {"text": "#scraper mastodon.social", "expected_target": "scraper"},
+    {"text": "vérifie mes mentions tout de suite", "expected_target": "scraper"},
+    {"text": "quel temps fait-il à Lyon ?", "expected_target": null},
+    {
+      "text": "quels sont les derniers messages publié sur Mastodon ?",
+      "expected_target": null,
+      "note": "Ne doit matcher ni un tag système ni tool_meteo (voir tool_routing_cases)"
+    },
+    {"text": "désactive mastodon.social", "expected_target": null},
+    {"text": "bonjour ça va ?", "expected_target": null},
+    {"text": "que sais-tu faire ?", "expected_target": null}
+  ],
+
   "hallucination_cases": [
     {
       "text": "que sais-tu faire ?",
