@@ -1812,11 +1812,17 @@ def _extract_scraper_domain(owner_email, text):
 
 
 def _run_scraper_now(owner_email, domain):
-    """Exécute un scraper à la demande du capitaine (hors cycle cron
-    quotidien — ignore volontairement le fichier .done journalier, une
-    demande explicite doit toujours s'exécuter) et renvoie un résumé
-    exploitable directement en réponse DM, plutôt que de faire attendre le
-    prochain passage de NOSTRCARD.refresh.sh."""
+    """Lance un scraper à la demande du capitaine EN TÂCHE DÉTACHÉE (symétrique
+    à _trigger_arbor_self_improve) et répond immédiatement — ne bloque JAMAIS
+    process_incoming_commands. Incident réel (2026-07-03) : la version
+    précédente exécutait le scraper de façon SYNCHRONE (jusqu'à
+    SCRAPER_RUN_TIMEOUT_SEC=180s) directement dans _handle_command_text ;
+    toute interférence externe pendant ce blocage prolongé (watchdog,
+    kill, etc.) empêchait la persistance finale de last_check/dédup dans
+    process_incoming_commands, et la commande — ainsi que TOUTES celles du
+    même lot — étaient rejouées à l'infini (des centaines de "le scraper n'a
+    pas terminé sous 180s" envoyés en boucle). Le résultat réel est envoyé
+    par un second DM une fois le scraper terminé (_run_scraper_background)."""
     if not is_scraper_enabled(owner_email, domain):
         return f"🔒 Le scraper {domain} est désactivé (voir /mailjet pour le réactiver)."
     cookie_file = _cookie_file_path(owner_email, domain)
@@ -1826,6 +1832,21 @@ def _run_scraper_now(owner_email, domain):
     if not script:
         return f"⚠️ Aucun scraper disponible pour {domain} sur cette station."
 
+    try:
+        subprocess.Popen(
+            ["python3", os.path.abspath(__file__), "run-scraper-background",
+             owner_email, domain, script, cookie_file],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+        )
+    except Exception as e:
+        return f"⚠️ Échec du lancement du scraper {domain} : {e}"
+    return (f"🚀 Scraper {domain} lancé en arrière-plan — je vous enverrai le résultat "
+            f"dès qu'il aura terminé (jusqu'à {SCRAPER_RUN_TIMEOUT_SEC}s).")
+
+
+def _run_scraper_background(owner_email, domain, script, cookie_file):
+    """Exécute réellement le scraper (appelé en sous-processus détaché par
+    _run_scraper_now — voir sa docstring) et notifie le résultat par DM."""
     log_path = os.path.expanduser(f"~/.zen/tmp/{domain}_sync_{owner_email}.log")
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
     try:
@@ -1834,10 +1855,15 @@ def _run_scraper_now(owner_email, domain):
             capture_output=True, text=True, timeout=SCRAPER_RUN_TIMEOUT_SEC,
         )
         output = (result.stdout or "") + (result.stderr or "")
+        returncode = result.returncode
     except subprocess.TimeoutExpired:
-        return f"⏱️ Le scraper {domain} n'a pas terminé sous {SCRAPER_RUN_TIMEOUT_SEC}s — réessayez plus tard."
+        send_dm_to_owner(owner_email,
+                          f"⏱️ Le scraper {domain} n'a pas terminé sous {SCRAPER_RUN_TIMEOUT_SEC}s.",
+                          ttl_days=1)
+        return
     except Exception as e:
-        return f"⚠️ Échec du lancement du scraper {domain} : {e}"
+        send_dm_to_owner(owner_email, f"⚠️ Échec du scraper {domain} : {e}", ttl_days=1)
+        return
 
     try:
         with open(log_path, "w", encoding="utf-8") as f:
@@ -1850,9 +1876,11 @@ def _run_scraper_now(owner_email, domain):
     # type "Terminé — N nouvelle(s) mention(s)…") plutôt que tout le log brut.
     summary_lines = [l for l in output.strip().splitlines() if l.strip()]
     summary = summary_lines[-1] if summary_lines else "(aucune sortie)"
-    if result.returncode == 0:
-        return f"✅ Scraper {domain} exécuté :\n{summary}"
-    return f"⚠️ Scraper {domain} terminé avec une erreur (code {result.returncode}) :\n{summary}"
+    if returncode == 0:
+        msg = f"✅ Scraper {domain} exécuté :\n{summary}"
+    else:
+        msg = f"⚠️ Scraper {domain} terminé avec une erreur (code {returncode}) :\n{summary}"
+    send_dm_to_owner(owner_email, msg, ttl_days=1)
 
 
 def _execute_system_tag(target, owner_email, text):
@@ -2245,6 +2273,13 @@ if __name__ == "__main__":
             print("Aucun outil actif.")
         for name, info in tools.items():
             print(f"{name}: {info.get('description', '?')} (activé {info.get('activated_at', '?')})")
+        sys.exit(0)
+
+    elif len(sys.argv) >= 6 and sys.argv[1] == "run-scraper-background":
+        # Point d'entrée du sous-processus détaché lancé par _run_scraper_now —
+        # jamais appelé directement par un humain.
+        _, _, email, domain, script, cookie_file = sys.argv[:6]
+        _run_scraper_background(email, domain, script, cookie_file)
         sys.exit(0)
 
     else:
