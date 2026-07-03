@@ -368,21 +368,23 @@ def send_dm_to_owner(owner_email, message, ttl_days=DM_TTL_DAYS):
         print(f"[BRO_WATCH] DM impossible pour {owner_email} : nsec ou HEX manquant.")
         return False
     script = os.path.join(TOOLS_PATH, "nostr_send_secure_dm.py")
-    # Un SEUL relais : nostr_send_secure_dm.py signe un event neuf à chaque
-    # appel (created_at différent → id différent), donc boucler sur RELAYS[]
-    # publierait le même message comme plusieurs events distincts (bug constaté
-    # en prod le 2026-07-03 : chaque réponse de BRO affichée deux fois dans
-    # atomic_chat.html). La propagation vers les autres relais de la
-    # constellation passe par backfill_constellation.sh (même event, même id).
+    # Un SEUL event signé, republié tel quel (même id) vers TOUS les relais
+    # via --extra-relays — jamais une resignature par relais (qui produirait
+    # des events distincts pour le même contenu, bug constaté en prod le
+    # 2026-07-03 : chaque réponse affichée deux fois). Publier vers un seul
+    # relais choisi arbitrairement est tout aussi cassé dans l'autre sens :
+    # atomic_chat.html se connecte au relais LOCAL (ws://127.0.0.1:7777) en
+    # dev mais au relais public en production — un choix fixe rate l'un des
+    # deux cas (régression constatée le même jour, corrigée dans la foulée).
+    cmd = ["python3", script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
+           "--ttl-days", str(ttl_days), "--extra-tags", json.dumps([BRO_ORIGIN_TAG])]
+    if len(RELAYS) > 1:
+        cmd += ["--extra-relays", ",".join(RELAYS[1:])]
     try:
-        proc = subprocess.run(
-            ["python3", script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
-             "--ttl-days", str(ttl_days), "--extra-tags", json.dumps([BRO_ORIGIN_TAG])],
-            input=nsec + "\n", capture_output=True, text=True, timeout=15
-        )
+        proc = subprocess.run(cmd, input=nsec + "\n", capture_output=True, text=True, timeout=20)
         return proc.returncode == 0
     except Exception as e:
-        print(f"[BRO_WATCH] Erreur envoi DM à {owner_email} via {RELAYS[0]} : {e}")
+        print(f"[BRO_WATCH] Erreur envoi DM à {owner_email} via {RELAYS} : {e}")
         return False
 
 
@@ -1997,14 +1999,26 @@ def process_incoming_commands(owner_email):
         # où des centaines de réponses ont été générées en boucle).
         if list(BRO_ORIGIN_TAG) in ev.get("tags", []):
             continue
-        text = _decrypt_self_dm(owner_email, ev)
-        if not text or text.strip().startswith(BOT_REPLY_MARKERS):
-            continue  # échec de déchiffrement, ou repli pour events sans le tag (legacy)
-        reply = _handle_command_text(owner_email, text)
-        if reply:
-            handled += 1
-            send_dm_to_owner(owner_email, reply, ttl_days=1)
-            print(f"[BRO_WATCH] Commande traitée pour {owner_email} : {text[:60]!r}")
+        try:
+            text = _decrypt_self_dm(owner_email, ev)
+            if not text or text.strip().startswith(BOT_REPLY_MARKERS):
+                continue  # échec de déchiffrement, ou repli pour events sans le tag (legacy)
+            reply = _handle_command_text(owner_email, text)
+            if reply:
+                handled += 1
+                if send_dm_to_owner(owner_email, reply, ttl_days=1):
+                    print(f"[BRO_WATCH] Commande traitée pour {owner_email} : {text[:60]!r}")
+                else:
+                    print(f"[BRO_WATCH] ⚠️ Envoi de la réponse échoué pour {owner_email} "
+                          f"(commande : {text[:60]!r}) — la commande reste marquée traitée.")
+        except Exception as e:
+            # Une commande qui plante (ex: description d'image indisponible)
+            # ne doit JAMAIS empêcher la mise à jour de last_check ci-dessous
+            # ni le traitement des autres commandes du lot — sinon le même
+            # message est re-fetché et re-traité en boucle à chaque cycle
+            # (incident réel du 2026-07-03 : "salut que puis-je te demander ?"
+            # traité 3 fois en 2 minutes après l'échec d'une autre commande).
+            print(f"[BRO_WATCH] Commande en erreur pour {owner_email} ({ev.get('id', '?')[:12]}…) : {e}")
 
     manifest = _load_manifest(owner_email)
     manifest.setdefault(COMMAND_LAST_CHECK_KEY, {})["last_check"] = now_ts

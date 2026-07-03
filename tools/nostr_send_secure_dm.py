@@ -359,12 +359,39 @@ def nip04_encrypt(message: str, sender_private_key: str, recipient_public_key: s
     return base64.b64encode(ct).decode() + "?iv=" + base64.b64encode(iv).decode()
 
 
+def _publish_event_to_relay(event_dict: dict, relay_url: str) -> bool:
+    """Publie un event DÉJÀ SIGNÉ vers un relais — pas de nouvelle signature,
+    donc réutilisable tel quel vers plusieurs relais (même id NOSTR partout).
+    Séparé de send_secure_direct_message pour ça : publier le même event vers
+    N relais ne doit jamais produire N events distincts (bug constaté en
+    prod le 2026-07-03 : boucler sur une liste de relais en resignant à
+    chaque fois faisait apparaître chaque réponse de BRO en double dans
+    atomic_chat.html)."""
+    client = SecureNostrWebSocketClient(relay_url, enable_rate_limiting=True)
+    try:
+        if not client.connect():
+            return False
+        event_json = json.dumps(["EVENT", event_dict])
+        if not client.send_event(event_json):
+            return False
+        return client.wait_for_response()
+    except Exception as e:
+        print(f"⚠️ Publication vers {relay_url} échouée : {e}")
+        return False
+    finally:
+        try:
+            client.close()
+        except Exception:
+            pass
+
+
 def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: str,
                                relay_url: str = DEFAULT_RELAY, gift_wrap: bool = False,
                                metadata_protection: bool = False,
                                use_nip04: bool = False,
                                expire_seconds: int = None,
-                               extra_tags: list = None) -> bool:
+                               extra_tags: list = None,
+                               extra_relays: list = None) -> bool:
     """
     Send a secure encrypted direct message to a NOSTR user with enhanced security.
 
@@ -384,9 +411,14 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
                     un contenu utilisateur légitime peut ressembler à une
                     réponse automatique). Additif, n'affecte aucun appelant
                     existant qui ne le fournit pas.
+        extra_relays: Relais additionnels vers lesquels republier le MÊME
+                      event signé (même id partout) — utile quand le lecteur
+                      peut se connecter à l'un ou l'autre relais (ex: station
+                      locale en dev vs relais public en production) sans
+                      dupliquer visuellement le message.
 
     Returns:
-        bool: True if message was sent successfully, False otherwise
+        bool: True if message was sent successfully to at least one relay
     """
     client = None
     try:
@@ -445,21 +477,11 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
         print(f"   - Gift wrapped: {gift_wrap}")
         print(f"   - Metadata protection: {metadata_protection}")
 
-        # Create WebSocket client and connect
-        client = SecureNostrWebSocketClient(relay_url, enable_rate_limiting=True)
-        if not client.connect():
-            return False
-        
-        # Send the event
-        event_json = json.dumps(["EVENT", event_dict])
-        if not client.send_event(event_json):
-            return False
-        
-        # Wait for response
-        success = client.wait_for_response()
-        
+        # Publie le MÊME event signé vers relay_url puis chaque extra_relays —
+        # jamais de re-signature par relais (voir _publish_event_to_relay).
+        success = _publish_event_to_relay(event_dict, relay_url)
         if success:
-            print(f"\n✅ Secure message sent successfully!")
+            print(f"\n✅ Secure message sent successfully to {relay_url}!")
             print(f"   - Event ID: {event_dict.get('id', 'N/A')}")
             print(f"   - Security features: NIP-44 encryption, rate limiting")
             if gift_wrap:
@@ -467,8 +489,15 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
             if metadata_protection:
                 print(f"   - Privacy features: Metadata protection")
         else:
-            print(f"\n❌ Failed to send secure message")
-        
+            print(f"\n❌ Failed to send secure message to {relay_url}")
+
+        for relay in (extra_relays or []):
+            if relay == relay_url:
+                continue
+            ok = _publish_event_to_relay(event_dict, relay)
+            print(f"{'✅' if ok else '❌'} Republication vers {relay} : {'ok' if ok else 'échec'}")
+            success = success or ok
+
         return success
 
     except KeyboardInterrupt:
@@ -522,6 +551,10 @@ def main():
                        help="Tags additionnels au format JSON, ex: '[[\"client\",\"bro\"]]' — "
                             "permet à un automate de marquer ses propres envois sans dépendre "
                             "du contenu du message")
+    parser.add_argument("--extra-relays", type=str, default=None,
+                       help="Relais additionnels séparés par des virgules — republie le MÊME "
+                            "event signé (même id) vers chacun, sans dupliquer visuellement "
+                            "le message pour un lecteur abonné à un seul de ces relais")
 
     args = parser.parse_args()
 
@@ -560,6 +593,8 @@ def main():
             print(f"Error: --extra-tags n'est pas du JSON valide: {e}", file=sys.stderr)
             sys.exit(1)
 
+    extra_relays = [r.strip() for r in args.extra_relays.split(",") if r.strip()] if args.extra_relays else None
+
     # Send the secure message
     success = send_secure_direct_message(
         sender_nsec,
@@ -571,6 +606,7 @@ def main():
         use_nip04=args.nip04,
         expire_seconds=int(args.ttl_days * 86400) if args.ttl_days is not None else None,
         extra_tags=extra_tags,
+        extra_relays=extra_relays,
     )
     
     sys.exit(0 if success else 1)
