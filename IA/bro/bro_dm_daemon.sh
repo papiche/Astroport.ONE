@@ -304,6 +304,109 @@ _handle_bro() {
         || _log "WARN: BRO échec envoi DM à ${sender:0:12}..."
 }
 
+## ── Canal "plain" avec image chiffrée (_uenc_img) ──────────────────────────
+## Déclenché quand le texte DM déchiffré est un JSON {"_uenc_img":{cid,enc_key,…}}
+## envoyé par atomic_chat.html ou Zelkova.
+##
+## Modes sélectionnables par le champ hint (texte tapé par l'utilisateur) :
+##   #plant / #plante    → plantnet_recognition.py  (Level ≥ 2)
+##   #cure  / #soin      → a_quoi_ca_sert.py --cure (Level ≥ 2)
+##   défaut              → a_quoi_ca_sert.py         (Level ≥ 1)
+_handle_bro_image() {
+    local sender="$1" img_json="$2" hint="$3" level="$4"
+
+    local cid enc_key iv_hex filename
+    cid=$(jq -r '._uenc_img.cid      // ""' <<< "$img_json" 2>/dev/null)
+    enc_key=$(jq -r '._uenc_img.enc_key // ""' <<< "$img_json" 2>/dev/null)
+    iv_hex=$(jq -r '._uenc_img.iv      // ""' <<< "$img_json" 2>/dev/null)
+    filename=$(jq -r '._uenc_img.filename // "image.jpg"' <<< "$img_json" 2>/dev/null)
+
+    if [[ -z "$cid" || -z "$enc_key" ]]; then
+        _send_dm "$sender" "❌ Payload image invalide (CID ou clé manquants)." "${_RELAYS[0]}"
+        return 1
+    fi
+
+    _log "🖼️  BRO image de ${sender:0:12}… CID=${cid:0:12}… hint='${hint:-auto}'"
+    _send_dm "$sender" "⏳ Analyse de l'image en cours…" "${_RELAYS[0]}"
+
+    local tmp_enc tmp_img
+    tmp_enc=$(mktemp -p "${HOME}/.zen/tmp" "bro_img_enc_XXXXXX")
+    tmp_img=$(mktemp -p "${HOME}/.zen/tmp" "bro_img_XXXXXX.jpg")
+
+    ## Télécharger le fichier UENC depuis IPFS
+    if ! timeout 30 ipfs get "/ipfs/${cid}" -o "$tmp_enc" 2>/dev/null; then
+        _log "WARN: ipfs get échoué pour $cid"
+        _send_dm "$sender" "❌ Image inaccessible sur IPFS. Réessayez." "${_RELAYS[0]}"
+        rm -f "$tmp_enc" "$tmp_img"
+        return 1
+    fi
+
+    ## Déchiffrement AES-GCM — format UENC : magic[4] ver[1] enc_type[1] iv[12] ciphertext+tag
+    if ! ~/.astro/bin/python3 - "$tmp_enc" "$enc_key" "$tmp_img" 2>/dev/null <<'PYEOF'
+import sys
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+enc_file, key_hex, out_file = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(enc_file, 'rb') as f:
+    data = f.read()
+if data[:4] != b'UENC':
+    sys.exit(1)
+iv = data[6:18]
+ciphertext = data[18:]
+plaintext = AESGCM(bytes.fromhex(key_hex)).decrypt(iv, ciphertext, None)
+with open(out_file, 'wb') as f:
+    f.write(plaintext)
+PYEOF
+    then
+        _log "WARN: déchiffrement AES-GCM échoué pour CID ${cid:0:12}…"
+        _send_dm "$sender" "❌ Échec du déchiffrement de l'image." "${_RELAYS[0]}"
+        rm -f "$tmp_enc" "$tmp_img"
+        return 1
+    fi
+    rm -f "$tmp_enc"
+
+    ## Router selon le hint utilisateur
+    local result
+    local hint_lower="${hint,,}"
+    if [[ "$_USER_LEVEL" -ge 2 ]] && echo "$hint_lower" | grep -qiE '#plant|#plante|#botanique|#flora'; then
+        _log "🌿 Plantnet pour ${sender:0:12}…"
+        result=$(~/.astro/bin/python3 "$MY_PATH/../plantnet_recognition.py" \
+            "$tmp_img" 2>/dev/null)
+
+    elif [[ "$_USER_LEVEL" -ge 2 ]] && echo "$hint_lower" | grep -qiE '#cure|#soin|#médecin|#remède|#herbe|#thérap'; then
+        _log "🧪 a_quoi_ca_sert --cure pour ${sender:0:12}…"
+        result=$(~/.astro/bin/python3 "$MY_PATH/../a_quoi_ca_sert.py" \
+            "$tmp_img" --cure 2>/dev/null)
+
+    else
+        _log "🔍 a_quoi_ca_sert pour ${sender:0:12}…"
+        result=$(~/.astro/bin/python3 "$MY_PATH/../a_quoi_ca_sert.py" \
+            "$tmp_img" 2>/dev/null)
+    fi
+
+    rm -f "$tmp_img"
+
+    if [[ -z "$result" ]]; then
+        _send_dm "$sender" \
+            "⚠️ Identification échouée — Ollama ou PlantNet indisponible. Réessayez dans quelques minutes." \
+            "${_RELAYS[0]}"
+        return 1
+    fi
+
+    ## Ajouter rappel des modes disponibles si level ≥ 2
+    if [[ "$_USER_LEVEL" -ge 2 ]]; then
+        result+="
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+💡 Envoie l'image avec un mot-clé :
+  #plant → reconnaissance botanique (PlantNet)
+  #cure  → propriétés médicinales détaillées"
+    fi
+
+    _send_dm "$sender" "$result" "${_RELAYS[0]}" \
+        && _log "🖼️  BRO image réponse envoyée à ${sender:0:12}…" \
+        || _log "WARN: BRO image échec envoi DM à ${sender:0:12}…"
+}
+
 ## ── Résoudre email depuis sender hex → délégué à bro_common_lib.sh ──
 _sender_email() { bro_resolve_email "$1"; }
 
@@ -1268,6 +1371,15 @@ _process_event() {
         plain)
             local question
             question=$(jq -r '.text // ""' <<< "$payload" 2>/dev/null | tr '\n' ' ')
+
+            ## ── Détection image chiffrée envoyée par atomic_chat.html / Zelkova ──
+            ## Le texte déchiffré est un JSON {"_uenc_img":{cid,enc_key,iv,filename,hint}}
+            if jq -e '._uenc_img' <<< "$question" >/dev/null 2>&1; then
+                local _img_hint
+                _img_hint=$(jq -r '._uenc_img.hint // ""' <<< "$question" 2>/dev/null)
+                _handle_bro_image "$sender" "$question" "$_img_hint" "$_USER_LEVEL"
+                return
+            fi
 
             ## Collecter TOUS les slots #N (1-12) mentionnés — ex: "#1 #5" → slots=(1 5)
             ## Cohérent avec UPlanet_IA_Responder.sh (slot détecté par tag standalone)

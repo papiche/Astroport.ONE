@@ -114,13 +114,14 @@ def filter_think_tags(text):
     return text.strip()
 
 
-def get_ollama_answer(prompt: str, model_name: str = "gemma3:latest",
+def get_ollama_answer(prompt: str, model_name: str = "gemma3:12b",
                       system_prompt: str = None,
                       temperature: float = None,
                       num_ctx: int = None,
                       num_predict: int = None,
                       top_p: float = None,
-                      repeat_penalty: float = None) -> str | None:
+                      repeat_penalty: float = None,
+                      format_json: bool = False) -> str | None:
     """Génère une réponse Ollama avec le prompt final."""
     _system = system_prompt or (
         "RÉPONDS EN FRANÇAIS UNIQUEMENT.\n\n"
@@ -151,6 +152,11 @@ def get_ollama_answer(prompt: str, model_name: str = "gemma3:latest",
     )
     if options:
         kwargs['options'] = options
+    if format_json:
+        # Contraint Ollama à générer un JSON syntaxiquement valide — rend
+        # obsolète toute extraction/réparation regex côté appelant (voir
+        # interpret_command_with_context dans bro_watch_core.py).
+        kwargs['format'] = 'json'
     try:
         ai_response = ollama.chat(**kwargs)
         return filter_think_tags(ai_response['message']['content'])
@@ -165,7 +171,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("question",      nargs="?", default=None)
     parser.add_argument("--prompt-file", type=str)
-    parser.add_argument("-m", "--model", dest="ollama_model_name", default="gemma3:latest")
+    parser.add_argument("-m", "--model", dest="ollama_model_name", default="gemma3:12b")
     parser.add_argument("--skill",       type=str, default="",
                         help="Skill actif — charge flashmem+Qdrant pour ce skill")
     parser.add_argument("--npub",        type=str, default="",
@@ -186,6 +192,11 @@ if __name__ == "__main__":
                         help="Nucleus sampling top_p (ex: 0.9). Défaut: modèle Ollama.")
     parser.add_argument("--repeat-penalty",  type=float, default=None, dest="repeat_penalty",
                         help="Pénalité répétition repeat_penalty (ex: 1.1). Défaut: modèle Ollama.")
+    parser.add_argument("--format-json",     action="store_true", dest="format_json",
+                        help="Force Ollama à générer un JSON syntaxiquement valide "
+                             "(paramètre API format=json) — pour les prompts qui exigent "
+                             "une sortie structurée (PlantNet, Craft, Inventory, interprétation "
+                             "de commandes). Sans effet sur les réponses en texte libre.")
 
     args = parser.parse_args()
 
@@ -257,7 +268,8 @@ if __name__ == "__main__":
                                num_ctx=args.ctx,
                                num_predict=args.max_tokens,
                                top_p=args.top_p,
-                               repeat_penalty=args.repeat_penalty)
+                               repeat_penalty=args.repeat_penalty,
+                               format_json=args.format_json)
 
     if answer:
         with open(log_file_path, "a") as lf:

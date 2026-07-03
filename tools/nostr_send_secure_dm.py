@@ -363,7 +363,8 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
                                relay_url: str = DEFAULT_RELAY, gift_wrap: bool = False,
                                metadata_protection: bool = False,
                                use_nip04: bool = False,
-                               expire_seconds: int = None) -> bool:
+                               expire_seconds: int = None,
+                               extra_tags: list = None) -> bool:
     """
     Send a secure encrypted direct message to a NOSTR user with enhanced security.
 
@@ -376,6 +377,13 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
         metadata_protection: Enable metadata protection features
         expire_seconds: Si défini, ajoute un tag NIP-40 "expiration" — les
                         relays compatibles purgent l'event après ce délai
+        extra_tags: Tags NOSTR additionnels ([[cle,valeur],...]), ajoutés tels
+                    quels à l'event — permet par ex. à un automate de marquer
+                    ses propres envois (ex: [["client","bro"]]) pour se
+                    reconnaître sans dépendre du contenu du message (fragile :
+                    un contenu utilisateur légitime peut ressembler à une
+                    réponse automatique). Additif, n'affecte aucun appelant
+                    existant qui ne le fournit pas.
 
     Returns:
         bool: True if message was sent successfully, False otherwise
@@ -402,6 +410,8 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
             tags.append(["wrapped", "true"])
         if expire_seconds is not None:
             tags.append(["expiration", str(int(time.time()) + expire_seconds)])
+        if extra_tags:
+            tags.extend(extra_tags)
         
         base_event = {
             "kind": EventKind.ENCRYPTED_DIRECT_MESSAGE,
@@ -508,6 +518,10 @@ def main():
                        help="Répondre en NIP-04 (AES-256-CBC) — requis pour les clients navigateur (NIP-07)")
     parser.add_argument("--ttl-days", type=float, default=None,
                        help="Ajoute un tag NIP-40 'expiration' (jours) — purge côté relay compatible")
+    parser.add_argument("--extra-tags", type=str, default=None,
+                       help="Tags additionnels au format JSON, ex: '[[\"client\",\"bro\"]]' — "
+                            "permet à un automate de marquer ses propres envois sans dépendre "
+                            "du contenu du message")
 
     args = parser.parse_args()
 
@@ -538,6 +552,14 @@ def main():
         args.gift_wrap = True
         args.metadata_protection = True
 
+    extra_tags = None
+    if args.extra_tags:
+        try:
+            extra_tags = json.loads(args.extra_tags)
+        except Exception as e:
+            print(f"Error: --extra-tags n'est pas du JSON valide: {e}", file=sys.stderr)
+            sys.exit(1)
+
     # Send the secure message
     success = send_secure_direct_message(
         sender_nsec,
@@ -548,6 +570,7 @@ def main():
         metadata_protection=args.metadata_protection,
         use_nip04=args.nip04,
         expire_seconds=int(args.ttl_days * 86400) if args.ttl_days is not None else None,
+        extra_tags=extra_tags,
     )
     
     sys.exit(0 if success else 1)

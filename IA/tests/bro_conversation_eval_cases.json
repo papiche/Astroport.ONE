@@ -1,0 +1,75 @@
+{
+  "_comment": "Jeu de test pour la conversation libre et le routage vers les outils de BRO. Contexte fixé (sources surveillées + registre d'outils actifs) pour reproductibilité — voir bro_conversation_eval.py. Certains cas sont des régressions directes d'incidents réels observés en production (voir 'origin').",
+  "context": [
+    {"account": "mastodon.social", "channel": "notifications", "keywords": [], "always_alert": true},
+    {"account": "mastodon.social", "channel": "timeline", "keywords": []},
+    {"account": "forum.duniter.org", "channel": "new_topics", "keywords": []}
+  ],
+  "active_tools": {
+    "tool_meteo": {
+      "description": "Outil météo autonome : récupère la météo actuelle d'une ville via l'API publique wttr.in (aucune clé d'API requise).",
+      "activated_at": "2026-07-03T00:00:00+00:00"
+    }
+  },
+  "tool_routing_cases": [
+    {
+      "text": "Quel temps fait-il à Lyon ?",
+      "expected_tool": "tool_meteo",
+      "note": "Requête directe, doit router vers l'outil météo"
+    },
+    {
+      "text": "Donne-moi la météo de Marseille",
+      "expected_tool": "tool_meteo"
+    },
+    {
+      "text": "Il fait combien de degrés à Tokyo en ce moment ?",
+      "expected_tool": "tool_meteo",
+      "note": "Reformulation sans le mot 'météo' explicite"
+    },
+    {
+      "text": "à quels outils as-tu accès ?",
+      "expected_tool": null,
+      "origin": "Régression incident 2026-07-03 : matchait tool_meteo à 0.67 (le mot 'outils' recoupe toute description d'outil)"
+    },
+    {
+      "text": "que sais-tu faire ?",
+      "expected_tool": null,
+      "origin": "Question méta — ne doit jamais router vers un outil spécifique"
+    },
+    {
+      "text": "quelles commandes puis-je utiliser ?",
+      "expected_tool": null
+    },
+    {
+      "text": "désactive mastodon.social",
+      "expected_tool": null,
+      "note": "Commande structurée — ne doit pas être captée par le routage outil (testé en isolation ici ; dans le pipeline complet, l'interprétation structurée intercepte avant)"
+    },
+    {
+      "text": "il fait beau aujourd'hui",
+      "expected_tool": null,
+      "note": "Remarque anodine, vrai négatif attendu"
+    },
+    {
+      "text": "j'aime pas la météo en ce moment, tout est gris",
+      "expected_tool": null,
+      "note": "Mentionne 'météo' mais c'est une plainte, pas une demande — cas limite volontairement difficile"
+    }
+  ],
+  "hallucination_cases": [
+    {
+      "text": "que sais-tu faire ?",
+      "forbidden_terms": ["/activate_source", "/désactiver_source", "/add_keyword", "/remove_keyword", "/learn_style", "/validate_response", "/correct_response"],
+      "origin": "Incident réel 2026-07-03 : BRO avait inventé ces commandes slash inexistantes"
+    },
+    {
+      "text": "quelles commandes puis-je utiliser ?",
+      "forbidden_terms": ["/activate_source", "/désactiver_source", "/add_keyword", "/remove_keyword", "/learn_style", "/validate_response", "/correct_response"]
+    },
+    {
+      "text": "donne moi tous les tag que je peux utiliser pour te demander de réaliser une commande",
+      "forbidden_terms": ["/activate_source", "/désactiver_source", "/add_keyword", "/remove_keyword"],
+      "note": "Formulation exacte de l'incident réel rapporté"
+    }
+  ]
+}

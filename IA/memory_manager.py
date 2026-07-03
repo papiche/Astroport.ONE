@@ -23,6 +23,7 @@ Usage bash :
   python3 memory_manager.py upsert-slot  --user-id email --slot 0 --content "..."
   python3 memory_manager.py upsert-skill --skill devops --content "..." --npub hex
   python3 memory_manager.py reve         --user-id email --slot 0
+  python3 memory_manager.py delete-slot  --user-id email --slot 0
   python3 memory_manager.py reve-geo     --lat 43.6 --lon 1.4
   python3 memory_manager.py skill-hash   --skill devops
   python3 memory_manager.py backup       --output /tmp/qdrant_backup.json
@@ -39,9 +40,27 @@ if os.path.exists(_venv):
     if os.path.exists(_sp):
         sys.path.insert(0, _sp)
 
+def _load_qdrant_api_key() -> str:
+    """Env var en priorité, sinon ~/.zen/ai-company/.env (même repli que
+    bro_watch_core.py::_qdrant_client — Qdrant refuse toute requête sans clé
+    dès que la stack IA a été installée avec authentification)."""
+    key = os.environ.get("QDRANT_API_KEY", "")
+    if key:
+        return key
+    env_file = os.path.expanduser("~/.zen/ai-company/.env")
+    try:
+        with open(env_file) as f:
+            for line in f:
+                if line.startswith("QDRANT_API_KEY="):
+                    return line.strip().split("=", 1)[1]
+    except Exception:
+        pass
+    return ""
+
+
 # ── Configuration (overridable via env) ──────────────────────────────────────
 QDRANT_URL     = os.environ.get("QDRANT_URL",     "http://127.0.0.1:6333")
-QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "")
+QDRANT_API_KEY = _load_qdrant_api_key()
 OLLAMA_URL     = os.environ.get("OLLAMA_URL",     "http://127.0.0.1:11434")
 EMBED_MODEL    = "nomic-embed-text"
 OLLAMA_MODEL   = os.environ.get("OLLAMA_MODEL",   "llama3.2")
@@ -194,14 +213,25 @@ def upsert_user_slot(user_id: str, slot: int, content: str,
     return bool(r)
 
 
+def delete_user_slot(user_id: str, slot: int) -> bool:
+    """Supprime tous les points Qdrant d'un slot donné (les autres slots du
+    même utilisateur, dans la même collection memory_{hex}, ne sont pas
+    affectés — filtrage strict par le champ payload 'slot')."""
+    cname = f"memory_{_user_hex(user_id)}"
+    r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/delete", {
+        "filter": {"must": [{"key": "slot", "match": {"value": slot}}]}
+    })
+    return bool(r)
+
+
 def search_user_slot(user_id: str, query: str, slots: list = None,
-                     limit: int = 5) -> list:
+                     limit: int = 5, score_threshold: float = 0.3) -> list:
     """Recherche sémantique dans les slots mémoire d'un utilisateur."""
     vec = _embed(query)
     if not vec:
         return []
     cname = f"memory_{_user_hex(user_id)}"
-    body: dict = {"vector": vec, "limit": limit, "score_threshold": 0.3,
+    body: dict = {"vector": vec, "limit": limit, "score_threshold": score_threshold,
                   "with_payload": True}
     if slots:
         body["filter"] = {"must": [{"key": "slot",
@@ -475,6 +505,10 @@ if __name__ == "__main__":
     pk.add_argument("--npub",    default="")
     pk.add_argument("--node-id", default="")
 
+    pd = sub.add_parser("delete-slot")
+    pd.add_argument("--user-id", required=True)
+    pd.add_argument("--slot",    type=int, required=True)
+
     pr = sub.add_parser("reve")
     pr.add_argument("--user-id", required=True)
     pr.add_argument("--slot",    type=int, default=0)
@@ -524,6 +558,10 @@ if __name__ == "__main__":
     elif args.cmd == "upsert-skill":
         ok = upsert_skill(args.skill, args.content, args.npub,
                           getattr(args, "node_id", ""))
+        sys.exit(0 if ok else 1)
+
+    elif args.cmd == "delete-slot":
+        ok = delete_user_slot(args.user_id, args.slot)
         sys.exit(0 if ok else 1)
 
     elif args.cmd == "reve":

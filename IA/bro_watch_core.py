@@ -60,11 +60,15 @@ MANIFEST_FILENAME = ".cookie_manifest.json"
 MANIFEST_NOSTR_KIND = 31903
 MANIFEST_NOSTR_DTAG = "cookies"
 DIGEST_PREFIX = "📋 Rapport quotidien BRO"
-# Tout message sortant de BRO (rapports ET confirmations de commande) commence
-# par un de ces marqueurs — sert à les ignorer en écoutant les commandes
-# entrantes, sinon une confirmation ("✅ Surveillance désactivée") serait elle-
-# même réinterprétée comme une nouvelle commande au cycle suivant.
-BOT_REPLY_MARKERS = ("📋", "✅", "🤔")
+# Tout message sortant de BRO (rapports, confirmations de commande, réponses
+# conversationnelles libres) commence par un de ces marqueurs — sert à les
+# ignorer en écoutant les commandes entrantes, sinon un message de BRO serait
+# relu comme une nouvelle question et générerait une réponse à sa propre
+# réponse, indéfiniment (boucle confirmée en production : des centaines de
+# messages générés en quelques minutes). 💬 = réponse conversationnelle libre
+# (_conversational_reply) — initialement absent d'ici, c'est la cause de
+# cette boucle : à ne JAMAIS retirer sans un mécanisme de remplacement.
+BOT_REPLY_MARKERS = ("📋", "✅", "🤔", "💬", "🔔")
 
 # ── Correspondance sémantique (Qdrant + Ollama) ─────────────────────────
 QDRANT_HOST = "localhost"
@@ -326,11 +330,22 @@ def _load_relays():
 RELAYS = _load_relays()
 
 
+# Tag NOSTR (pas le contenu du message) marquant tout event self-DM émis par
+# BRO — signal structurel, pas de collision possible avec un texte utilisateur
+# légitime (contrairement à un préfixe emoji dans le contenu, cf.
+# BOT_REPLY_MARKERS : un vrai message commençant par "✅" serait alors, à tort,
+# traité comme une réponse de BRO). Source de vérité pour le filtrage anti-
+# boucle dans _fetch_self_dms_since ; BOT_REPLY_MARKERS reste un repli pour
+# les events publiés avant ce changement ou par un chemin qui l'omettrait.
+BRO_ORIGIN_TAG = ["client", "bro"]
+
+
 def send_dm_to_owner(owner_email, message, ttl_days=DM_TTL_DAYS):
     """Publie un DM NOSTR chiffré 'à soi-même' : signé et adressé par la
     propre clé MULTIPASS du propriétaire (jamais la clé NODE de la station).
     Le message apparaît comme une note personnelle chiffrée dans son propre
-    historique NOSTR, déchiffrable uniquement par lui."""
+    historique NOSTR, déchiffrable uniquement par lui. Marqué BRO_ORIGIN_TAG
+    (tag NOSTR, pas le texte) pour que BRO reconnaisse ses propres envois."""
     nsec = _owner_nsec(owner_email)
     recipient_hex = _owner_hex(owner_email)
     if not nsec or not recipient_hex:
@@ -342,7 +357,7 @@ def send_dm_to_owner(owner_email, message, ttl_days=DM_TTL_DAYS):
         try:
             proc = subprocess.run(
                 ["python3", script, "--nsec-stdin", recipient_hex, message, relay,
-                 "--ttl-days", str(ttl_days)],
+                 "--ttl-days", str(ttl_days), "--extra-tags", json.dumps([BRO_ORIGIN_TAG])],
                 input=nsec + "\n", capture_output=True, text=True, timeout=15
             )
             if proc.returncode == 0:
@@ -846,10 +861,18 @@ def interpret_command_with_context(text, context_summary, pending_line="", model
         result = subprocess.run([
             "python3", f"{BRO_IA_PATH}/question.py", prompt,
             "--temperature", "0.1", "--model", model or COMMAND_INTERPRETATION_MODEL,
+            "--format-json",
         ], capture_output=True, text=True, timeout=60)
     except Exception:
         return None
 
+    # --format-json contraint Ollama à ne produire QUE du JSON valide — parse
+    # direct en priorité ; la regex ne sert plus que de repli pour un modèle
+    # qui ignorerait la contrainte ou une sortie stdout parasite (log, etc.).
+    try:
+        return json.loads(result.stdout.strip())
+    except Exception:
+        pass
     match = re.search(r"\{.*\}", result.stdout, re.DOTALL)
     if not match:
         return None
@@ -981,6 +1004,10 @@ def _handle_hashtag_command(owner_email, text):
                             learned_keywords=[], learn_messages=[])
         return f"✅ {domain}/{channel} apprendra désormais depuis @{handle}."
 
+    # #oublie / #oubli → efface la mémoire des échanges self-DM (voir BRO_MEMORY_SLOT)
+    if lowered in ("#oublie", "#oubli", "#forget"):
+        return _forget_memory(owner_email)
+
     return None
 
 
@@ -1044,6 +1071,273 @@ def _log_tool_request(owner_email, text, reply):
         pass
 
 
+# ── Mémoire épisodique/sémantique du canal self-DM — voir memory_manager.py ──
+# Réutilise l'infra Qdrant + cycle RÊVE déjà en production (flux NOSTR.UMAP,
+# slots 0-12 des sociétaires) plutôt qu'un nouveau système : slot dédié hors
+# de cette plage pour ne jamais mélanger avec la mémoire "société".
+BRO_MEMORY_SLOT = 13
+
+# Calibré empiriquement (2026-07-03, nomic-embed-text) : sur un corpus de test
+# à 2 souvenirs, les vrais rappels scorent ≥0.777 et les faux positifs (sujet
+# différent, parfois avec un mot en commun type nom de ville) plafonnent à
+# 0.679 — même écart déjà observé sur TOOL_MATCH_THRESHOLD. À recalibrer si le
+# volume réel de mémoire par utilisateur change sensiblement ce comportement.
+MEMORY_RECALL_THRESHOLD = 0.72
+
+
+# ── Registre des outils Arbor activés — voir arbor_tool_forge.py ────────────
+# État RUNTIME (pas versionné dans le dépôt, cohérent avec la convention
+# ~/.zen/ = données runtime, dépôt = code). Séparé volontairement du code des
+# outils eux-mêmes (IA/tools_generated/*.py, ajoutés par des branches Arbor) :
+# l'activation reste une décision explicite du capitaine, jamais automatique
+# à la fusion d'une branche.
+ACTIVE_TOOLS_FILE = os.path.expanduser("~/.zen/flashmem/bro_active_tools.json")
+TOOLS_GENERATED_DIR = os.path.join(BRO_IA_PATH, "tools_generated")
+
+
+def list_active_tools():
+    try:
+        with open(ACTIVE_TOOLS_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _extract_tool_docstring(module_name):
+    """Repli d'auto-description : premier PARAGRAPHE du docstring du module
+    (jusqu'à la première ligne vide), si le capitaine n'a pas fourni de
+    description explicite à l'activation. Une seule ligne tronquerait des
+    phrases écrites sur plusieurs lignes (cas courant du code généré)."""
+    tool_path = os.path.join(TOOLS_GENERATED_DIR, f"{module_name}.py")
+    try:
+        with open(tool_path, encoding="utf-8") as f:
+            content = f.read()
+        match = re.match(r'^\s*"""(.*?)(?:\n\n|""")', content, re.DOTALL)
+        if match:
+            paragraph = " ".join(line.strip() for line in match.group(1).strip().splitlines())
+            return re.sub(r"\s+", " ", paragraph).strip()
+    except Exception:
+        pass
+    return module_name
+
+
+def activate_tool(module_name, description=None):
+    tool_path = os.path.join(TOOLS_GENERATED_DIR, f"{module_name}.py")
+    if not os.path.isfile(tool_path):
+        return False, f"Fichier introuvable : {tool_path} — la branche a-t-elle été mergée ?"
+    tools = list_active_tools()
+    tools[module_name] = {
+        "description": description or _extract_tool_docstring(module_name),
+        "activated_at": _now_iso(),
+    }
+    os.makedirs(os.path.dirname(ACTIVE_TOOLS_FILE), exist_ok=True)
+    with open(ACTIVE_TOOLS_FILE, "w", encoding="utf-8") as f:
+        json.dump(tools, f, ensure_ascii=False, indent=2)
+    return True, f"Outil '{module_name}' activé : {tools[module_name]['description']}"
+
+
+def deactivate_tool(module_name):
+    tools = list_active_tools()
+    if module_name not in tools:
+        return False, f"'{module_name}' n'est pas actif."
+    del tools[module_name]
+    with open(ACTIVE_TOOLS_FILE, "w", encoding="utf-8") as f:
+        json.dump(tools, f, ensure_ascii=False, indent=2)
+    return True, f"Outil '{module_name}' désactivé."
+
+
+def _call_tool(module_name, query):
+    """Charge et exécute un outil généré (contrat : def run(query: str) -> str).
+    Échoue silencieusement (None) — l'appelant retombe alors sur la conversation
+    normale plutôt que de planter le canal self-DM pour un outil défaillant."""
+    tool_path = os.path.join(TOOLS_GENERATED_DIR, f"{module_name}.py")
+    if not os.path.isfile(tool_path):
+        return None
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(module_name, tool_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.run(query)
+    except Exception as e:
+        print(f"[BRO_WATCH] Appel outil '{module_name}' échoué : {e}")
+        return None
+
+
+# Calibré empiriquement via bro_conversation_eval.py (dans le même esprit que
+# SEMANTIC_THRESHOLD) : vrais positifs à 0.64-0.70 ("météo à Lyon"), faux
+# positifs à 0.58-0.62 ("il fait beau aujourd'hui", plainte météo sans
+# demande) — 0.63 sépare proprement les deux sur le jeu de test actuel.
+TOOL_MATCH_THRESHOLD = 0.63
+
+
+# Questions méta sur les capacités de BRO — jamais routées vers un outil,
+# toujours vers _conversational_reply (qui a déjà la liste réelle des outils
+# dans son prompt). Trouvé en test réel : "à quels outils as-tu accès ?"
+# matchait l'outil météo à 0.67 (le mot "outils" recoupe la description de
+# n'importe quel outil) — séparation trop faible pour se fier au seul score
+# sémantique sur ce type de question.
+_META_CAPABILITY_PHRASES = (
+    "que sais-tu faire", "qu'est-ce que tu sais faire", "à quels outils",
+    "a quels outils", "quelles sont tes capacités", "que peux-tu faire",
+    "tes fonctionnalités", "c'est quoi tes commandes", "quelles commandes",
+)
+
+
+def match_tool(text):
+    """Détermine quel outil actif correspond sémantiquement à la requête,
+    SANS l'exécuter — séparé de _try_registered_tools pour permettre de
+    tester le ROUTAGE seul (déterministe, pas d'appel réseau à une API
+    tierce). Retourne (module_name, score) ou None."""
+    lowered = text.strip().lower()
+    if any(phrase in lowered for phrase in _META_CAPABILITY_PHRASES):
+        return None
+    tools = list_active_tools()
+    if not tools:
+        return None
+    try:
+        text_vec = _qdrant_embed(text)
+    except Exception:
+        return None
+    best_module, best_score = None, 0.0
+    for module_name, info in tools.items():
+        try:
+            score = _cosine(text_vec, _qdrant_embed(info.get("description", module_name)))
+        except Exception:
+            continue
+        if score > best_score:
+            best_module, best_score = module_name, score
+    if best_module and best_score >= TOOL_MATCH_THRESHOLD:
+        return best_module, best_score
+    return None
+
+
+def _try_registered_tools(text):
+    """Route vers un outil activé si sa description matche sémantiquement la
+    requête. Retourne None (repli conversation normale) si aucun outil ne
+    matche, ou si l'outil matché échoue à répondre."""
+    match = match_tool(text)
+    if not match:
+        return None
+    best_module, best_score = match
+    result = _call_tool(best_module, text)
+    if result:
+        print(f"[BRO_WATCH] Requête routée vers l'outil '{best_module}' (score {best_score:.2f})")
+        return result
+    return None
+
+
+def _bro_capabilities_description(owner_email):
+    """Description ANCRÉE dans le code réel — jamais de commande/tag/outil
+    inventé. Corrige un incident constaté (2026-07-03) : le prompt générique
+    précédent poussait le LLM à halluciner des commandes slash inexistantes
+    (/activate_source, etc.) faute de contexte réel sur ce que BRO sait
+    vraiment faire."""
+    lines = [
+        "Tu es BRO, l'assistant IA personnel (clone numérique) du propriétaire de ce compte UPlanet.",
+        "Il te parle en messages privés NOSTR chiffrés (canal self-DM).",
+        "",
+        "CE QUE TU SAIS RÉELLEMENT FAIRE (ne jamais inventer d'autre commande, tag ou outil) :",
+        "- Langage naturel direct, pas de syntaxe spéciale requise. Exemples réels : "
+        "« désactive mastodon.social », « ajoute le mot-clé X sur le fil mastodon », "
+        "« apprends mon style depuis @compte », « #ok » pour valider une suggestion, "
+        "« non, dis plutôt : ... » pour la corriger.",
+        "- Syntaxe #hashtag de secours si le langage naturel échoue : "
+        "#watch DOMAINE on|off — #watch DOMAINE CANAL keywords mot1,mot2 — "
+        "#watch DOMAINE CANAL learn_from @compte — #ok — #plutôt TEXTE.",
+        "- Surveillance de sources web (Mastodon, forums Discourse, chaînes YouTube).",
+        "- Mémoire de vos échanges précédents (rappelée automatiquement quand pertinent) — "
+        "« #oublie » pour l'effacer.",
+    ]
+    if _is_captain(owner_email):
+        lines.append("- #arbor : lance l'auto-amélioration du prompt d'interprétation (réservé capitaine).")
+
+    tools = list_active_tools()
+    if tools:
+        lines.append("")
+        lines.append("OUTILS SUPPLÉMENTAIRES DISPONIBLES (pose directement ta question, utilisés automatiquement) :")
+        for info in tools.values():
+            lines.append(f"- {info.get('description', '?')}")
+
+    lines.append("")
+    lines.append("Si on te demande ce que tu sais faire, réponds à partir de CETTE liste uniquement. "
+                 "Si une capacité n'y figure pas, dis clairement que tu ne l'as pas plutôt que d'improviser.")
+    return "\n".join(lines)
+
+
+def _memory_slot_file(owner_email):
+    return os.path.expanduser(f"~/.zen/flashmem/{owner_email}/slot{BRO_MEMORY_SLOT}.json")
+
+
+def _recall_relevant_memories(owner_email, text, limit=3):
+    """Recherche sémantique dans la mémoire self-DM (Qdrant, memory_manager.py).
+    Dégradation silencieuse (chaîne vide) si Qdrant/Ollama indisponible — ne
+    doit jamais bloquer la réponse à l'utilisateur."""
+    try:
+        import sys
+        sys.path.insert(0, BRO_IA_PATH)
+        import memory_manager as mm
+        results = mm.search_user_slot(owner_email, text, slots=[BRO_MEMORY_SLOT], limit=limit,
+                                       score_threshold=MEMORY_RECALL_THRESHOLD)
+    except Exception:
+        return ""
+    facts = [r.get("payload", {}).get("content", "") for r in results]
+    facts = [f for f in facts if f]
+    return "\n".join(f"- {f}" for f in facts)
+
+
+def _remember_exchange(owner_email, text, answer):
+    """Persiste l'échange en mémoire épisodique locale + Qdrant sémantique
+    (memory_manager.py, même slot dédié — voir BRO_MEMORY_SLOT). Déclenche le
+    cycle RÊVE (compression épisodique → sémantique) au-delà du seuil.
+    Dégradation silencieuse : ne doit jamais faire échouer la réponse."""
+    try:
+        from datetime import datetime
+        content = f"Moi : {text}\nBRO : {answer}"
+        ts = datetime.utcnow().isoformat() + "Z"
+
+        slot_file = _memory_slot_file(owner_email)
+        os.makedirs(os.path.dirname(slot_file), exist_ok=True)
+        if os.path.isfile(slot_file):
+            with open(slot_file, encoding="utf-8") as f:
+                slot_mem = json.load(f)
+        else:
+            slot_mem = {"user_id": owner_email, "slot": BRO_MEMORY_SLOT, "messages": []}
+        slot_mem["messages"].append({"timestamp": ts, "content": content})
+        slot_mem["messages"] = slot_mem["messages"][-200:]
+        with open(slot_file, "w", encoding="utf-8") as f:
+            json.dump(slot_mem, f, indent=2, ensure_ascii=False)
+
+        import sys
+        sys.path.insert(0, BRO_IA_PATH)
+        import memory_manager as mm
+        mm.upsert_user_slot(owner_email, BRO_MEMORY_SLOT, content, timestamp=ts)
+        if len(slot_mem["messages"]) >= 170:
+            mm.reve_compress_slot(owner_email, BRO_MEMORY_SLOT, slot_file=slot_file)
+    except Exception as e:
+        print(f"[BRO_WATCH] Mémoire self-DM indisponible pour {owner_email} : {e}")
+
+
+def _forget_memory(owner_email):
+    """#oublie — efface la mémoire self-DM (fichier local + points Qdrant du
+    slot dédié). Contrôle explicite de l'utilisateur sur sa propre mémoire,
+    symétrique au #reset des slots société (bro_dm_daemon.sh)."""
+    slot_file = _memory_slot_file(owner_email)
+    try:
+        if os.path.isfile(slot_file):
+            os.remove(slot_file)
+    except Exception:
+        pass
+    try:
+        import sys
+        sys.path.insert(0, BRO_IA_PATH)
+        import memory_manager as mm
+        mm.delete_user_slot(owner_email, BRO_MEMORY_SLOT)
+    except Exception:
+        pass
+    return "🗑️ Mémoire de nos échanges effacée."
+
+
 def _conversational_reply(owner_email, text):
     """Réponse en langage naturel quand le message ne correspond à aucune
     commande de surveillance reconnue — pour que le canal self-DM avec BRO
@@ -1051,16 +1345,14 @@ def _conversational_reply(owner_email, text):
     silencieux sans raison). Chaque repli ici est aussi un signal de "besoin
     non couvert" — journalisé pour l'analyse Arbor continue multi-utilisateurs."""
     context_summary = _watch_context_summary(owner_email)
+    memory_context = _recall_relevant_memories(owner_email, text)
+    memory_block = f"Souvenirs pertinents de vos échanges précédents :\n{memory_context}\n\n" if memory_context else ""
     prompt = (
-        "Tu es BRO, l'assistant IA personnel (clone numérique) du propriétaire de ce compte UPlanet. "
-        "Il te parle en messages privés NOSTR chiffrés (canal self-DM). Tu gères la surveillance de "
-        "ses sources web (Mastodon, forums) : activer/désactiver, mots-clés, apprentissage de style, "
-        "validation/correction de suggestions de réponse.\n\n"
+        f"{_bro_capabilities_description(owner_email)}\n\n"
         f"Sources actuellement configurées :\n{context_summary or '(aucune pour le moment)'}\n\n"
+        f"{memory_block}"
         "Réponds brièvement (3-5 lignes max), en français, de façon chaleureuse et directe, à son "
-        f"message : « {text} »\n"
-        "Si sa question porte sur tes capacités, mentionne : activer/désactiver une source, "
-        "définir des mots-clés, apprendre son style depuis un compte, valider/corriger tes suggestions."
+        f"message : « {text} »"
     )
     try:
         result = subprocess.run(
@@ -1070,8 +1362,13 @@ def _conversational_reply(owner_email, text):
         answer = result.stdout.strip()
     except Exception:
         answer = ""
-    answer = answer or "🤔 Je n'ai pas bien compris — dites-moi par exemple « désactive mastodon.social »."
+    answer = answer or "Je n'ai pas bien compris — dites-moi par exemple « désactive mastodon.social »."
+    # Marqueur BOT_REPLY_MARKERS obligatoire (voir sa définition) : sans lui,
+    # cette réponse serait relue comme un nouveau message au prochain cycle.
+    if not answer.startswith(BOT_REPLY_MARKERS):
+        answer = f"💬 {answer}"
     _log_tool_request(owner_email, text, answer)
+    _remember_exchange(owner_email, text, answer)
     return answer
 
 
@@ -1100,6 +1397,12 @@ def _handle_command_text(owner_email, text):
     if reply:
         return reply
 
+    tool_result = _try_registered_tools(text)
+    if tool_result:
+        if not tool_result.startswith(BOT_REPLY_MARKERS):
+            tool_result = f"💬 {tool_result}"
+        return tool_result
+
     return _conversational_reply(owner_email, text)
 
 
@@ -1123,9 +1426,16 @@ def process_incoming_commands(owner_email):
 
     handled = 0
     for ev in sorted(events, key=lambda e: e.get("created_at", 0)):
+        # Filtre anti-boucle PRIMAIRE : tag structurel BRO_ORIGIN_TAG sur
+        # l'event brut, avant tout déchiffrement — ne dépend pas du contenu,
+        # ne peut pas confondre un vrai message utilisateur avec une réponse
+        # de BRO (contrairement à un préfixe emoji, cf. incident du 2026-07-03
+        # où des centaines de réponses ont été générées en boucle).
+        if list(BRO_ORIGIN_TAG) in ev.get("tags", []):
+            continue
         text = _decrypt_self_dm(owner_email, ev)
         if not text or text.strip().startswith(BOT_REPLY_MARKERS):
-            continue  # échec de déchiffrement ou c'est un de nos propres messages
+            continue  # échec de déchiffrement, ou repli pour events sans le tag (legacy)
         reply = _handle_command_text(owner_email, text)
         if reply:
             handled += 1
@@ -1138,6 +1448,105 @@ def process_incoming_commands(owner_email):
 
     if handled:
         print(f"[BRO_WATCH] {handled} commande(s) traitée(s) pour {owner_email}.")
+
+    check_proactive_alerts(owner_email)
+
+
+# ── Agentivité proactive : BRO initie la conversation sans sollicitation ──
+# préalable quand un détecteur d'anomalie se déclenche (ex: solde bas).
+# Chaque type d'alerte est rate-limité indépendamment pour ne jamais spammer
+# le propriétaire pour la même anomalie persistante (1x/PROACTIVE_ALERT_COOLDOWN_SEC).
+
+PROACTIVE_ALERTS_FILENAME = ".proactive_alerts.json"
+PROACTIVE_ALERT_COOLDOWN_SEC = 86400  # 1 alerte max par jour et par type
+LOW_G1_BALANCE_THRESHOLD_CENTIMES = 100  # 1 G1 = 10 Ẑen (mode ORIGIN) ou 1€ (mode ZEN)
+
+
+def _load_proactive_alert_state(owner_email):
+    path = os.path.join(_owner_dir(owner_email), PROACTIVE_ALERTS_FILENAME)
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _save_proactive_alert_state(owner_email, state):
+    path = os.path.join(_owner_dir(owner_email), PROACTIVE_ALERTS_FILENAME)
+    try:
+        with open(path, "w") as f:
+            json.dump(state, f)
+    except Exception:
+        pass
+
+
+def _check_low_g1_balance(owner_email):
+    """Détecteur : solde Ğ1 transférable sous LOW_G1_BALANCE_THRESHOLD_CENTIMES.
+    Retourne un message d'alerte, ou None si le solde est correct ou la
+    requête RPC/squid indisponible (dégradation gracieuse — jamais d'alerte
+    sur une donnée non fiable)."""
+    g1_pubkey = _owner_g1_pubkey(owner_email)
+    if not g1_pubkey:
+        return None
+    script = os.path.join(TOOLS_PATH, "G1wallet_v2.sh")
+    try:
+        result = subprocess.run(
+            ["bash", script, "balance", g1_pubkey, "--json"],
+            capture_output=True, text=True, timeout=20,
+        )
+    except Exception:
+        return None
+    match = re.search(r"\{.*\}", result.stdout, re.DOTALL)
+    if not match:
+        return None
+    try:
+        data = json.loads(match.group(0))
+    except Exception:
+        return None
+    if not data.get("rpc_ok"):
+        return None  # source non fiable — ne jamais alerter sur une donnée douteuse
+    transferable = data.get("rpc_transferable", 0)
+    if transferable < LOW_G1_BALANCE_THRESHOLD_CENTIMES:
+        return (f"Votre solde Ğ1 est bas : {transferable / 100:.2f} G1 restants "
+                f"({transferable / 10:.1f} Ẑen). Pensez à réapprovisionner votre compte.")
+    return None
+
+
+# Détecteurs actifs — chacun : owner_email -> message d'alerte | None.
+# Ajouter un nouveau détecteur = ajouter une entrée ici, rien d'autre à câbler.
+PROACTIVE_ALERT_DETECTORS = {
+    "low_g1_balance": _check_low_g1_balance,
+}
+
+
+def check_proactive_alerts(owner_email):
+    """Point d'entrée agentivité proactive — appelé à chaque passage de
+    process_incoming_commands (temps réel + cycle quotidien). BRO initie la
+    conversation sans attendre d'être sollicité si un détecteur se déclenche.
+    Retourne la liste des types d'alerte effectivement envoyés."""
+    import time as _time
+    now = int(_time.time())
+    state = _load_proactive_alert_state(owner_email)
+    fired = []
+
+    for alert_type, detector in PROACTIVE_ALERT_DETECTORS.items():
+        last_sent = state.get(alert_type, 0)
+        if now - last_sent < PROACTIVE_ALERT_COOLDOWN_SEC:
+            continue
+        try:
+            message = detector(owner_email)
+        except Exception as e:
+            print(f"[BRO_WATCH] Détecteur proactif '{alert_type}' a échoué pour {owner_email} : {e}")
+            continue
+        if message:
+            if send_dm_to_owner(owner_email, f"🔔 {message}", ttl_days=3):
+                state[alert_type] = now
+                fired.append(alert_type)
+                print(f"[BRO_WATCH] Alerte proactive '{alert_type}' envoyée à {owner_email}")
+
+    if fired:
+        _save_proactive_alert_state(owner_email, state)
+    return fired
 
 
 # ── CLI (pour appel depuis bash — NOSTRCARD.refresh.sh) ─────────────────
@@ -1178,10 +1587,37 @@ if __name__ == "__main__":
             print(url)
         sys.exit(0)
 
+    elif len(sys.argv) >= 3 and sys.argv[1] == "activate-tool":
+        # Étape manuelle du capitaine après avoir mergé une branche Arbor
+        # (arbor_tool_forge.py) : le fichier IA/tools_generated/MODULE.py
+        # doit déjà exister sur master. Description optionnelle — sinon
+        # reprise depuis le docstring du module.
+        module_name = sys.argv[2]
+        description = " ".join(sys.argv[3:]) if len(sys.argv) > 3 else None
+        ok_, msg = activate_tool(module_name, description)
+        print(msg)
+        sys.exit(0 if ok_ else 1)
+
+    elif len(sys.argv) >= 3 and sys.argv[1] == "deactivate-tool":
+        ok_, msg = deactivate_tool(sys.argv[2])
+        print(msg)
+        sys.exit(0 if ok_ else 1)
+
+    elif len(sys.argv) >= 2 and sys.argv[1] == "list-tools":
+        tools = list_active_tools()
+        if not tools:
+            print("Aucun outil actif.")
+        for name, info in tools.items():
+            print(f"{name}: {info.get('description', '?')} (activé {info.get('activated_at', '?')})")
+        sys.exit(0)
+
     else:
         print("Usage:")
         print("  python3 bro_watch_core.py store-log EMAIL ACCOUNT LOGFILE")
         print("  python3 bro_watch_core.py is-enabled EMAIL ACCOUNT")
         print("  python3 bro_watch_core.py check-commands EMAIL")
         print("  python3 bro_watch_core.py get-channels EMAIL ACCOUNT")
+        print("  python3 bro_watch_core.py activate-tool MODULE [DESCRIPTION]")
+        print("  python3 bro_watch_core.py deactivate-tool MODULE")
+        print("  python3 bro_watch_core.py list-tools")
         sys.exit(1)
