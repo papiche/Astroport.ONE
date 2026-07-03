@@ -218,9 +218,12 @@ LAST_SYNC_FILE="$HOME/.zen/game/nostr/${PLAYER}/.last_youtube_sync"
 PROCESSED_VIDEOS_FILE="$HOME/.zen/game/nostr/${PLAYER}/.processed_youtube_videos"
 # Fichier de comptage des échecs cookie consécutifs (suppression après 3 échecs)
 COOKIE_FAILURE_FILE="$HOME/.zen/game/nostr/${PLAYER}/.youtube_cookie_failures"
-# Fichier de configuration optionnel des chaînes YouTube suivies :
-# une URL de chaîne par ligne (lignes vides ou commençant par # ignorées)
+# Fichier LEGACY (repli uniquement) — la liste des chaînes suivies vit
+# maintenant dans le manifest cookie (.cookie_manifest.json, sous-canal
+# "channel_watch"), gérée via /mailjet (UI) et sauvegardée automatiquement
+# en NOSTR comme le reste du manifest. Voir get_watched_channels() plus bas.
 CHANNELS_FILE="$HOME/.zen/game/nostr/${PLAYER}/.youtube.com.channels"
+BRO_WATCH_CORE_PY="$HOME/.zen/Astroport.ONE/IA/bro_watch_core.py"
 # Profondeur du catalogue consultée les jours SANS nouvelle vidéo — permet de
 # combler avec une ancienne vidéo pas encore copiée plutôt que de ne rien
 # faire (voir sync_youtube_channels / _process_first_unprocessed_channel_video)
@@ -1500,7 +1503,29 @@ _process_first_unprocessed_channel_video() {
     return 1
 }
 
-# Fonction de synchronisation des chaînes suivies (.youtube.com.channels)
+# Retourne la liste des chaînes suivies (une URL par ligne). Source de
+# vérité : le manifest cookie (.cookie_manifest.json, sous-canal
+# "channel_watch") géré via /mailjet — sauvegardé automatiquement en NOSTR.
+# Repli sur l'ancien fichier plat .youtube.com.channels si le manifest est
+# vide (config antérieure à l'intégration UI, ou station sans bro_watch_core).
+get_watched_channels() {
+    local player="$1"
+    if [[ -f "$BRO_WATCH_CORE_PY" ]]; then
+        local from_manifest
+        from_manifest=$(python3 "$BRO_WATCH_CORE_PY" get-channels "$player" "youtube.com" 2>/dev/null)
+        if [[ -n "$from_manifest" ]]; then
+            printf '%s\n' "$from_manifest"
+            return 0
+        fi
+    fi
+    local legacy_file="${CHANNELS_FILE:-$HOME/.zen/game/nostr/${player}/.youtube.com.channels}"
+    if [[ -s "$legacy_file" ]]; then
+        grep -v '^\s*#' "$legacy_file" | grep -v '^\s*$'
+    fi
+}
+
+# Fonction de synchronisation des chaînes suivies (config /mailjet, manifest
+# cookie — voir get_watched_channels).
 # Best-effort : ne fait JAMAIS échouer le script — toutes les erreurs sont
 # gérées en interne (log + continue) et la fonction retourne toujours 0.
 # Réutilise le même pipeline vidéo que sync_youtube_likes :
@@ -1518,13 +1543,14 @@ sync_youtube_channels() {
     local cookie_file="$2"
     local processed_file="$3"
 
-    local channels_file="${CHANNELS_FILE:-$HOME/.zen/game/nostr/${player}/.youtube.com.channels}"
-    if [[ ! -s "$channels_file" ]]; then
-        log_debug "No channels file for $player ($channels_file), skipping channel sync"
+    local channels_list
+    channels_list=$(get_watched_channels "$player")
+    if [[ -z "$channels_list" ]]; then
+        log_debug "No watched channels for $player (manifest and legacy file both empty), skipping channel sync"
         return 0
     fi
 
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube channels sync for $player (config: $channels_file)" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube channels sync for $player" >&2
     log_debug "Starting YouTube channels sync for $player"
 
     local max_duration="${MAX_SYNC_VIDEO_DURATION_SEC:-5400}"
@@ -1579,7 +1605,7 @@ sync_youtube_channels() {
 
         # Petite pause entre chaînes pour éviter le rate limiting
         sleep 2
-    done < "$channels_file"
+    done <<< "$channels_list"
 
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Channels sync completed: $channel_success new video(s) from $channel_count channel(s)" >&2
     log_debug "YouTube channels sync completed for $player: $channel_success new from $channel_count channels"
