@@ -186,8 +186,7 @@ if [[ -z "$YT_PLAYLIST_EXTRACTOR_ARGS" ]]; then
         # session honored: web/mweb are the clients designed for that, while
         # tv_embedded/tv/android are anonymous-extraction clients. Put web/mweb
         # first for authenticated resources; keep tv/android as fallback in
-        # case web is blocked by anti-bot detection. (Validated 2026-07-03 on a
-        # live station: LL listing works with this order and a fresh cookie.)
+        # case web is blocked by anti-bot detection.
         YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args youtube:player_client=web,mweb,tv_embedded,tv,android'
     fi
 fi
@@ -645,6 +644,18 @@ get_channel_videos() {
         return 1
     fi
 
+    # Sécurité : channel_url vient d'un fichier de config texte libre
+    # (.youtube.com.channels) potentiellement copié depuis un lien reçu d'un
+    # tiers. Sans validation, une ligne commençant par "-" serait interprétée
+    # par yt-dlp comme une OPTION (ex: --exec=...) et non comme une URL —
+    # exécution de commande arbitraire. On exige un format de chaîne YouTube
+    # reconnu avant tout usage.
+    if [[ ! "$channel_url" =~ ^https://(www\.)?youtube\.com/(channel/|c/|@|user/) ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: invalid channel URL format, refusing: ${channel_url:0:80}" >&2
+        log_debug "Rejected malformed/suspicious channel URL: $channel_url"
+        return 1
+    fi
+
     # Cibler l'onglet /videos (uploads publics), sauf si déjà précisé dans l'URL
     local uploads_url="$channel_url"
     if [[ "$uploads_url" != */videos && "$uploads_url" != */streams && "$uploads_url" != */shorts ]]; then
@@ -657,14 +668,24 @@ get_channel_videos() {
 
     local yt_dlp_stderr_file="$HOME/.zen/tmp/yt_dlp_channel_stderr_$$.txt"
     local videos_json
-    videos_json=$(yt-dlp \
+    # --flat-playlist : liste id/titre/uploader depuis la page playlist elle-même,
+    # sans requête individuelle par vidéo (~10x moins de requêtes HTTP vers
+    # YouTube) — nécessaire ici car le rattrapage peut demander jusqu'à
+    # CHANNEL_BACKFILL_DEPTH entrées ; duration revient souvent vide en flat,
+    # géré sans risque par le garde ^[0-9]+$ déjà en place plus loin.
+    # timeout 60 : un appel yt-dlp bloqué ne doit jamais geler tout le script.
+    # "--" avant l'URL : défense en profondeur (au cas où la validation
+    # ci-dessus serait un jour affaiblie), interdit toute interprétation en
+    # option yt-dlp au-delà de ce point.
+    videos_json=$(timeout 60 yt-dlp \
         $YT_CHANNEL_EXTRACTOR_ARGS \
         "${cookie_args[@]}" \
+        --flat-playlist \
         --print '%(id)s&%(title)s&%(duration)s&%(uploader)s&%(webpage_url)s' \
         --playlist-end "$max_results" \
         --no-warnings \
         --ignore-errors \
-        "$uploads_url" 2>"$yt_dlp_stderr_file")
+        -- "$uploads_url" 2>"$yt_dlp_stderr_file")
     local exit_code=$?
 
     if [[ $exit_code -ne 0 && -s "$yt_dlp_stderr_file" ]]; then
@@ -1509,12 +1530,22 @@ sync_youtube_channels() {
     local max_duration="${MAX_SYNC_VIDEO_DURATION_SEC:-5400}"
     local channel_count=0
     local channel_success=0
+    # Plafond de chaînes traitées par exécution — un fichier de config avec
+    # des dizaines d'entrées ne doit pas transformer un run quotidien en
+    # dizaines d'appels yt-dlp bloquants successifs sur une petite machine.
+    local max_channels="${MAX_CHANNELS_PER_RUN:-10}"
 
     while IFS= read -r channel_url || [[ -n "$channel_url" ]]; do
         # Nettoyer la ligne (CR Windows, espaces) puis ignorer vides/commentaires
         channel_url="${channel_url//$'\r'/}"
         channel_url="$(echo "$channel_url" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
         [[ -z "$channel_url" || "$channel_url" == \#* ]] && continue
+
+        if [[ $channel_count -ge $max_channels ]]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Reached max channels per run ($max_channels) — remaining channels will be processed on the next run" >&2
+            log_debug "Channel sync capped at $max_channels for $player, deferring the rest"
+            break
+        fi
         channel_count=$((channel_count + 1))
 
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Channel #$channel_count: $channel_url" >&2
@@ -1552,6 +1583,15 @@ sync_youtube_channels() {
 
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Channels sync completed: $channel_success new video(s) from $channel_count channel(s)" >&2
     log_debug "YouTube channels sync completed for $player: $channel_success new from $channel_count channels"
+
+    # Parité minimale avec sync_youtube_likes : au moins prévenir le
+    # sociétaire quand une vidéo de chaîne a bien été publiée (jusqu'ici,
+    # sync_youtube_channels était totalement silencieuse côté notification —
+    # un échec de fetch n'émettait qu'un warning en log serveur, jamais vu
+    # par l'utilisateur). Le détail fin succès/échec/skip par chaîne n'est
+    # pas encore remonté ici — amélioration possible ultérieure.
+    [[ $channel_success -gt 0 ]] && send_sync_notification "$player" "$channel_success" 0 0
+
     return 0
 }
 
