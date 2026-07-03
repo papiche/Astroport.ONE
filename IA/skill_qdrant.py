@@ -42,9 +42,25 @@ VECTOR_SIZE = 768                 # nomic-embed-text output size
 TOP_K       = 5
 
 
+def _load_qdrant_api_key():
+    env_file = os.path.expanduser("~/.zen/ai-company/.env")
+    try:
+        with open(env_file) as f:
+            for line in f:
+                if line.startswith("QDRANT_API_KEY="):
+                    return line.strip().split("=", 1)[1]
+    except Exception:
+        pass
+    return None
+
+
 def _client():
+    import warnings
     from qdrant_client import QdrantClient
-    return QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        return QdrantClient(url=f"http://{QDRANT_HOST}:{QDRANT_PORT}",
+                             api_key=_load_qdrant_api_key(), check_compatibility=False)
 
 
 def _embed(text: str) -> list:
@@ -166,12 +182,12 @@ def search_resources(skill: str, question: str = "", limit: int = TOP_K) -> list
         query = f"{skill} {question}".strip()
         vec = _embed(query)
         client = _client()
-        hits = client.search(
+        hits = client.query_points(
             collection_name=COLLECTION,
-            query_vector=vec,
+            query=vec,
             limit=limit,
             score_threshold=0.3,
-        )
+        ).points
         results = []
         for h in hits:
             p = h.payload

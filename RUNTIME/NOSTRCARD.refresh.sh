@@ -1497,12 +1497,24 @@ ERRHTML
                 [[ -z "$DOMAIN_SCRIPT" ]] && DOMAIN_SCRIPT="${IA_DIR}/${DOMAIN}.sh"
                 
                 if [[ -f "$DOMAIN_SCRIPT" && -x "$DOMAIN_SCRIPT" ]]; then
+                    # Vérifier que le scraper n'a pas été désactivé via /mailjet (manifest
+                    # cookie unifié, défaut: activé) — bro_watch_core.py fait autorité.
+                    BRO_WATCH_CORE="${IA_DIR}/bro_watch_core.py"
+                    SCRAPER_ENABLED="true"
+                    if [[ -f "$BRO_WATCH_CORE" ]]; then
+                        SCRAPER_ENABLED=$(python3 "$BRO_WATCH_CORE" is-enabled "$PLAYER" "$DOMAIN" 2>/dev/null)
+                    fi
+                    if [[ "$SCRAPER_ENABLED" != "true" ]]; then
+                        log "DEBUG" "${DOMAIN} scraper désactivé via /mailjet pour ${PLAYER} — skip"
+                        continue
+                    fi
+
                     log "INFO" "🚀 Running scraper for ${DOMAIN}: ${DOMAIN_SCRIPT}"
-                    
+
                     # Create dedicated log file to avoid broken pipe errors
                     DOMAIN_SYNC_LOG="$HOME/.zen/tmp/${DOMAIN}_sync_${PLAYER}.log"
                     mkdir -p "$(dirname "$DOMAIN_SYNC_LOG")"
-                    
+
                     # Launch domain-specific script in background
                     (
                         "${DOMAIN_SCRIPT}" "${PLAYER}" "$COOKIE_FILE" > "$DOMAIN_SYNC_LOG" 2>&1
@@ -1512,6 +1524,8 @@ ERRHTML
                         else
                             log "WARN" "⚠️ ${DOMAIN} scraper completed with exit code $sync_exit_code for ${PLAYER}"
                         fi
+                        # Sauvegarde chiffrée du log dans le manifest cookie (IPFS) — best-effort
+                        [[ -f "$BRO_WATCH_CORE" ]] && python3 "$BRO_WATCH_CORE" store-log "$PLAYER" "$DOMAIN" "$DOMAIN_SYNC_LOG" >/dev/null 2>&1
                     ) 200>&- &
                     DOMAIN_SYNC_PID=$!
                     

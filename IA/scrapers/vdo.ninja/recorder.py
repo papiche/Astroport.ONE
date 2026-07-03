@@ -1,30 +1,50 @@
 #!/bin/sh
 ''''exec "$HOME/.astro/bin/python3" "$0" "$@"
 '''
-"""
-UPLANET.captain.uDRIVE.recorder.py — Enregistreur de mouvement VDO.ninja
+__usage__ = """
+recorder.py — Surveillance vidéo VDO.ninja → uDRIVE
 
-Capture le flux vidéo d'une room VDO.ninja, détecte les mouvements et
-sauvegarde automatiquement les séquences en MP4 dans uDRIVE/Videos.
+  Ouvre une room VDO.ninja dans un navigateur Chromium headless (Playwright),
+  capture les frames WebRTC, détecte les mouvements par différence d'image
+  (OpenCV) et sauvegarde automatiquement les séquences en MP4 dans le uDRIVE
+  du Capitaine de la station.
 
-Usage:
-    python3 UPLANET.captain.uDRIVE.recorder.py <ROOM>           # avant-plan
-    python3 UPLANET.captain.uDRIVE.recorder.py <ROOM> --daemon  # arrière-plan (démon)
-    python3 UPLANET.captain.uDRIVE.recorder.py --list           # lister les rooms actives
-    python3 UPLANET.captain.uDRIVE.recorder.py --close <ROOM>   # arrêter une room
-    python3 UPLANET.captain.uDRIVE.recorder.py --close all      # arrêter toutes les rooms
+USAGE
+  recorder.py <ROOM>              Lancer en avant-plan (Ctrl+C pour arrêter)
+  recorder.py <ROOM> --daemon     Lancer en arrière-plan (démon détaché)
+  recorder.py --list              Lister les rooms surveillées et leur état
+  recorder.py --close <ROOM>      Arrêter la surveillance d'une room
+  recorder.py --close all         Arrêter toutes les rooms actives
+  recorder.py --help | -h         Afficher cette aide
 
-Comportement:
-    - Surveille en continu le flux de la room indiquée
-    - Commence à enregistrer dès qu'un mouvement est détecté
-    - Sauvegarde la vidéo après 10s sans mouvement
-    - Fichier : ~/.zen/game/nostr/<CAPTAINEMAIL>/APP/uDRIVE/Videos/alerte_<ts>_seg01.mp4
-    - Instance unique par room : un second lancement est ignoré
-    - En mode --daemon : logs dans ~/.zen/tmp/uplanet_udrive_<room>.log
+ARGUMENTS
+  <ROOM>    Nom de la room VDO.ninja (ex: maRoom42).
+            URL résolue : https://vdo.copylaradio.com/?scene&cleanoutput&autoplay&room=<ROOM>
 
-Dépendances:
-    pip install playwright opencv-python numpy
-    playwright install chromium
+DÉTECTION DE MOUVEMENT
+  Seuil     10 000 pixels activés après blur + seuillage (MOTION_THRESHOLD)
+  Calme     10 s sans mouvement → fin de séquence et sauvegarde (CALM_DELAY)
+  Rotation  60 s max par segment → nouveau fichier automatiquement (SEGMENT_MAX)
+  FPS       ~10 fps (capture canvas JS toutes les 100 ms)
+
+FICHIERS DE SORTIE
+  ~/.zen/game/nostr/<CAPTAINEMAIL>/APP/uDRIVE/Videos/alerte_<ts>_seg<NN>.mp4
+  <ts>  = timestamp Unix du début de la séquence
+  <NN>  = numéro de segment (01, 02…) en cas de rotation
+
+  CAPTAINEMAIL est lu depuis $CAPTAINEMAIL ou ~/.zen/Astroport.ONE/.env
+
+DÉMON (--daemon)
+  Lance le processus en arrière-plan avec start_new_session.
+  Logs  : ~/.zen/tmp/uplanet_udrive_<room>.log
+  PID   : /tmp/uplanet_udrive_recorder_<room>.pid
+  Arrêt : recorder.py --close <ROOM>  (SIGTERM propre, sauvegarde le segment en cours)
+  Un second lancement sur la même room est silencieusement ignoré (verrou PID).
+
+DÉPENDANCES
+  pip install playwright opencv-python numpy
+  playwright install chromium
+  Python : ~/.astro/bin/python3  (venv Astroport)
 """
 import base64
 import cv2
@@ -135,8 +155,11 @@ def parse_args():
     daemon = '--daemon' in sys.argv[1:]
 
     if not argv:
-        print(__doc__)
+        print(__usage__)
         sys.exit(1)
+    if argv[0] in ("--help", "-h"):
+        print(__usage__)
+        sys.exit(0)
     if argv[0] == "--list":
         list_active()
         sys.exit(0)

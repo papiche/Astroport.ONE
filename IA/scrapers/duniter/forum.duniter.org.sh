@@ -1,17 +1,16 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.2
+# Version: 0.1
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
-# forum.monnaie-libre.fr.sh — Surveillance des nouveaux sujets sur le forum
-# Discourse forum.monnaie-libre.fr
+# forum.duniter.org.sh — Surveillance des nouveaux sujets sur le forum
+# Discourse forum.duniter.org
 #
 # Déclenché automatiquement par NOSTRCARD.refresh.sh quand
-# ~/.zen/game/nostr/EMAIL/.forum.monnaie-libre.fr.cookie est détecté.
-# Ne publie plus de blog NOSTR (kind 30023) — signale au PROPRIÉTAIRE du
-# cookie (DM NOSTR, multi-tenant) les nouveaux sujets pertinents via
-# bro_watch_core.py (voir IA/forum_watch.py).
+# ~/.zen/game/nostr/EMAIL/.forum.duniter.org.cookie est détecté.
+# Signale au PROPRIÉTAIRE du cookie (DM NOSTR, multi-tenant) les nouveaux
+# sujets pertinents via bro_watch_core.py (voir IA/forum_watch.py).
 ################################################################################
 
 PLAYER="$1"
@@ -22,9 +21,9 @@ COOKIE_FILE="$2"
 MY_PATH="$(dirname "$(realpath "$0")")"
 IA_DIR="$(cd "${MY_PATH}/../.." && pwd)"
 PLAYER_DIR="$HOME/.zen/game/nostr/${PLAYER}"
-SEEN_FILE="${PLAYER_DIR}/.forum.monnaie-libre.fr.seen.json"
+SEEN_FILE="${PLAYER_DIR}/.forum.duniter.org.seen.json"
 
-FORUM_URL="${FORUM_MONNAIE_LIBRE_URL:-https://forum.monnaie-libre.fr}"
+FORUM_URL="${FORUM_DUNITER_URL:-https://forum.duniter.org}"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📰 Surveillance forum Discourse (${FORUM_URL}) pour ${PLAYER}"
 

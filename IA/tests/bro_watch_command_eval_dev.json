@@ -1,0 +1,51 @@
+{
+  "_comment": "Jeu de test tenu à l'écart pour l'interprétation en langage naturel des commandes bro_watch_core (_interpret_natural_command). Contexte fixe (sources) pour reproductibilité — voir eval_command_interpretation.py.",
+  "context": [
+    {"account": "mastodon.social", "channel": "notifications", "keywords": [], "always_alert": true},
+    {"account": "mastodon.social", "channel": "timeline", "keywords": []},
+    {"account": "forum.monnaie-libre.fr", "channel": "new_topics", "keywords": []},
+    {"account": "forum.duniter.org", "channel": "new_topics", "keywords": []}
+  ],
+  "cases": [
+    {
+      "text": "Arrête de surveiller mastodon.social",
+      "expected_action": "toggle",
+      "expected_fields": {"domain": "mastodon.social", "enabled": false}
+    },
+    {
+      "text": "Réactive mastodon.social s'il te plaît",
+      "expected_action": "toggle",
+      "expected_fields": {"domain": "mastodon.social", "enabled": true}
+    },
+    {
+      "text": "Surveille aussi les mots ẐEN et Ğ1 sur les nouveaux sujets du forum monnaie-libre",
+      "expected_action": "set_keywords",
+      "expected_fields": {"domain": "forum.monnaie-libre.fr", "channel": "new_topics"}
+    },
+    {
+      "text": "Apprends mes centres d'intérêt depuis mon propre compte @qoop sur le fil mastodon",
+      "expected_action": "set_learn_from",
+      "expected_fields": {"domain": "mastodon.social", "channel": "timeline", "handle": "@qoop"}
+    },
+    {
+      "text": "Il fait beau aujourd'hui",
+      "expected_action": "none",
+      "expected_fields": {}
+    },
+    {
+      "text": "Coupe la surveillance de forum.duniter.org",
+      "expected_action": "toggle",
+      "expected_fields": {"domain": "forum.duniter.org", "enabled": false}
+    },
+    {
+      "text": "#ok",
+      "expected_action": "confirm_suggestion",
+      "expected_fields": {}
+    },
+    {
+      "text": "Non, dis plutôt : merci beaucoup pour ta contribution !",
+      "expected_action": "correct_suggestion",
+      "expected_fields": {}
+    }
+  ]
+}

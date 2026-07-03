@@ -32,16 +32,21 @@ source "$MY_PATH/bro_common_lib.sh" 2>/dev/null || true
 source "$MY_PATH/love_handler.sh" 2>/dev/null || true
 
 QUEUE_DIR="$HOME/.zen/tmp/bro_dm_queue"
+## Self-DM (canal BRO personnel propriétaire↔clone, voir bro_watch_core.py) —
+## déposé par filter/4.sh, séparé de QUEUE_DIR car non déchiffrable avec
+## NODE_NSEC (seule la clé propre du propriétaire le peut).
+SELF_DM_QUEUE_DIR="$HOME/.zen/tmp/bro_self_dm_queue"
 PID_FILE="$HOME/.zen/tmp/bro_dm_daemon.pid"
 LOG_FILE="$HOME/.zen/tmp/bro_dm_daemon.log"
 INTERCOM="${HOME}/.zen/Astroport.ONE/tools/nostr_node_intercom.py"
 SECURE_DM="${HOME}/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py"
 MAILJET="${HOME}/.zen/Astroport.ONE/tools/mailjet.sh"
 BRO_SYNC="$MY_PATH/nextcloud_bro_sync.sh"
+BRO_WATCH_CORE="$MY_PATH/../bro_watch_core.py"
 ## Déduplication inter-sources (filter/4.sh + constellation subscriber)
 _DEDUP_DIR="$HOME/.zen/tmp/bro_dm_dedup"
 
-mkdir -p "$QUEUE_DIR" "$_DEDUP_DIR"
+mkdir -p "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" "$_DEDUP_DIR"
 mkdir -p "$HOME/.zen/flashmem"
 
 ## Traitement sériel : un seul job à la fois (pas de parallélisme)
@@ -751,6 +756,45 @@ _handle_bro_ia() {
     fi
 }
 
+## ── check-commands verrouillé par email ─────────────────────────────
+## Plusieurs déclenchements peuvent arriver quasi simultanément pour le même
+## propriétaire (event dupliqué sur plusieurs relais, inotify + sweep
+## périodique qui se chevauchent) : sans verrou, process_incoming_commands
+## pourrait tourner deux fois en parallèle sur la même fenêtre de messages
+## non lus (deux appels LLM, deux réponses envoyées pour la même chose).
+## flock -n : si déjà verrouillé, on abandonne silencieusement (l'autre
+## exécution en cours traitera de toute façon les mêmes messages).
+_check_commands_locked() {
+    local _email="$1"
+    local _lock_dir="$HOME/.zen/tmp/bro_check_commands_locks"
+    mkdir -p "$_lock_dir"
+    (
+        flock -n 9 || { _log "ℹ️  check-commands déjà en cours pour $_email — passe son tour"; exit 0; }
+        python3 "$BRO_WATCH_CORE" check-commands "$_email" >> "$LOG_FILE" 2>&1
+    ) 9>"$_lock_dir/$(echo -n "$_email" | md5sum | cut -d' ' -f1).lock"
+}
+
+## ── Canal "self_command_relay" : self-DM utilisateur roaming relayé par sa
+## station visiteuse (B) vers ici, sa home station (A) ─────────────────────
+## La station visiteuse ne peut pas déchiffrer le self-DM (seule la clé
+## propre du propriétaire le peut) — elle relaie juste "vérifie les commandes
+## de cet email", et c'est ici, avec le vrai .secret.nostr, que ça se fait.
+## Payload : {"email": "..."}
+_handle_self_command_relay() {
+    local payload="$1"
+    local _EMAIL
+    _payload_get "$payload" email
+    [[ -z "$_EMAIL" ]] && _log "WARN: ✈️ self_command_relay: payload sans email" && return
+
+    if ! bro_user_is_local "$_EMAIL"; then
+        _log "WARN: ✈️ self_command_relay: $_EMAIL non hébergé ici (ou roaming ici aussi) — ignoré"
+        return
+    fi
+
+    _log "✈️ self_command_relay: vérification des commandes self-DM pour $_EMAIL"
+    _check_commands_locked "$_EMAIL"
+}
+
 ## ── GPU lock global : sérialise les générations vidéo sur ce Brain ─────────
 _GPU_LOCK="$HOME/.zen/tmp/comfyui_brain.lock"
 
@@ -1062,6 +1106,56 @@ Ma clé de contact : ${NODE_NPUB:-NODE}
     done
 }
 
+## ── Events self-DM (kind4, author==#p==clé MULTIPASS) déposés par filter/4.sh ──
+## Non déchiffrables ici (NODE_NSEC ≠ clé propre du propriétaire) : on résout
+## juste l'email depuis le sender hex, puis :
+##   • local ici           → check-commands direct (fetch+déchiffrement propres)
+##   • roaming ici (visitor)→ relais NODE-to-NODE vers la home station
+##     (même schéma que UPlanet_IA_Responder.sh pour bro_ia — cf. home.station)
+##   • inconnu ici          → ignoré silencieusement
+_handle_self_dm_event() {
+    local event_file="$1"
+    local sender_hex
+    sender_hex=$(jq -r '.event.pubkey // ""' < "$event_file" 2>/dev/null)
+    [[ ${#sender_hex} -ne 64 ]] && return
+
+    local email
+    email=$(_sender_email "$sender_hex")
+    if [[ -z "$email" ]]; then
+        _log "ℹ️  self-DM de ${sender_hex:0:12}… — utilisateur inconnu sur cette station, ignoré"
+        return
+    fi
+
+    if bro_user_is_local "$email"; then
+        _log "🧠 self-DM commande pour $email (local)"
+        _check_commands_locked "$email"
+        return
+    fi
+
+    if bro_is_roaming "$email"; then
+        local home_hex=""
+        [[ -f "$HOME/.zen/game/nostr/$email/home.station" ]] && \
+            home_hex=$(cut -d: -f2 < "$HOME/.zen/game/nostr/$email/home.station" | tr -d '[:space:]')
+        if [[ ${#home_hex} -eq 64 ]]; then
+            _log "✈️ self-DM $email en roaming ici → relais vers home station ${home_hex:0:12}..."
+            local _payload _r _ok=false
+            _payload=$(python3 -c "import json,sys; print(json.dumps({'email':sys.argv[1]}))" "$email" 2>/dev/null)
+            for _r in "${_RELAYS[@]}"; do
+                printf '%s\n' "$NODE_NSEC" | python3 "$INTERCOM" send \
+                    --nsec-stdin --to "$home_hex" --channel self_command_relay \
+                    --payload "$_payload" --relays "$_r" 2>/dev/null && _ok=true
+            done
+            $_ok && _log "✈️ self-DM relais OK → ${home_hex:0:12}..." \
+                || _log "WARN: ✈️ self-DM relais FAILED pour $email (tous relais)"
+        else
+            _log "WARN: self-DM $email marqué roaming mais home.station introuvable/invalide sur cette station"
+        fi
+        return
+    fi
+
+    _log "ℹ️  self-DM $email ni local ni roaming ici — ignoré"
+}
+
 ## ── Traitement d'un event JSON ───────────────────────────────────────
 _process_event() {
     local event_file="$1"
@@ -1085,6 +1179,16 @@ _process_event() {
         fi
         ## Nettoyage automatique : supprimer les marqueurs > 24h
         find "$_DEDUP_DIR" -maxdepth 1 -mmin +1440 -delete 2>/dev/null &
+    fi
+
+    ## ── Self-DM (canal BRO personnel propriétaire↔clone) déposé par filter/4.sh ──
+    ## Format {"self_dm":true,"event":{...}} — troisième format de queue, à part
+    ## des deux gérés plus bas. Pas de déchiffrement ici (NODE_NSEC ne peut pas
+    ## déchiffrer un self-DM) : juste résolution email + routage local/roaming.
+    if jq -e '.self_dm == true' "$event_file" >/dev/null 2>&1; then
+        _handle_self_dm_event "$event_file"
+        rm -f "$event_file"
+        return
     fi
 
     local decoded
@@ -1130,18 +1234,19 @@ _process_event() {
     ## constellation via bro_send_intercom(). Le sender est le NODEHEX de la station
     ## émettrice, pas un MULTIPASS utilisateur — bro_user_level() retournerait 0.
     ## On vérifie sa présence dans ~/.zen/tmp/swarm/*/HEX (même mécanisme que nostr_delete).
-    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_job|comfyui_result)$ ]]; then
+    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_job|comfyui_result|self_command_relay)$ ]]; then
         if ! _is_swarm_node "$sender"; then
             _log "WARN: canal inter-NODE '$channel' de ${sender:0:12}... non reconnu comme NODE swarm — ignoré"
             return
         fi
         case "$channel" in
-            bro_ia)         _handle_bro_ia "$payload" ;;
-            vocals)         _handle_vocals "$payload" ;;
-            webcam)         _handle_webcam "$payload" ;;
-            zen_like)       _handle_zen_like "$payload" ;;
-            comfyui_job)    _handle_comfyui_job "$payload" "$sender" ;;
-            comfyui_result) _handle_comfyui_result "$payload" ;;
+            bro_ia)             _handle_bro_ia "$payload" ;;
+            vocals)             _handle_vocals "$payload" ;;
+            webcam)             _handle_webcam "$payload" ;;
+            zen_like)           _handle_zen_like "$payload" ;;
+            comfyui_job)        _handle_comfyui_job "$payload" "$sender" ;;
+            comfyui_result)     _handle_comfyui_result "$payload" ;;
+            self_command_relay) _handle_self_command_relay "$payload" ;;
         esac
         return
     fi
@@ -1301,7 +1406,7 @@ _dispatch_file() {
 }
 
 ## ── Traiter les fichiers déjà présents dans la queue ─────────────────
-for _f in "$QUEUE_DIR"/*.json; do
+for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json; do
     [[ -f "$_f" ]] && _dispatch_file "$_f"
 done
 
@@ -1315,7 +1420,7 @@ wait
 _sweep_loop() {
     while [[ "$_BRO_CLEAN_STOP" != true ]]; do
         sleep 30
-        for _f in "$QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
     done
 }
 _sweep_loop &
@@ -1428,21 +1533,23 @@ command -v inotifywait &>/dev/null && _inotify_ok=true
 
 while [[ "$_BRO_CLEAN_STOP" != true ]]; do
     if $_inotify_ok; then
-        inotifywait -m -e close_write -e moved_to --format '%f' "$QUEUE_DIR" 2>/dev/null | \
-        while IFS= read -r _fname; do
+        ## %w%f = chemin complet (répertoire surveillé + nom de fichier) — nécessaire
+        ## puisqu'on surveille maintenant deux répertoires (QUEUE_DIR + SELF_DM_QUEUE_DIR).
+        inotifywait -m -e close_write -e moved_to --format '%w%f' "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" 2>/dev/null | \
+        while IFS= read -r _fpath; do
             [[ "$_BRO_CLEAN_STOP" == true ]] && break
-            [[ "$_fname" == *.json ]] || continue
-            _dispatch_file "$QUEUE_DIR/$_fname"
+            [[ "$_fpath" == *.json ]] || continue
+            _dispatch_file "$_fpath"
         done
         # inotifywait a terminé (dépassement inotify, remontage FS, SIGPIPE…)
         [[ "$_BRO_CLEAN_STOP" == true ]] && break
         _log "⚠️  inotifywait terminé — retry dans 5s"
         # Traiter les fichiers arrivés pendant la coupure
-        for _f in "$QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
         sleep 5
     else
         # Fallback polling : move atomique garantit un seul traitement par fichier
-        for _f in "$QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
         sleep 10
     fi
 done

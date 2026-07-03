@@ -12,57 +12,70 @@ import requests
 import json
 import argparse
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from http.cookiejar import MozillaCookieJar
+from urllib.parse import urlparse
 
 # Discourse API endpoints
 LATEST_POSTS_URL = "/latest.json"
 TOPICS_URL = "/topics.json"
 POSTS_URL = "/posts.json"
 
-# Headers to simulate a real browser
-BASE_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/html, */*",
-    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Referer": "https://forum.monnaie-libre.fr/",
-    "Origin": "https://forum.monnaie-libre.fr",
-}
 
-def read_cookie_from_file(file_path):
+def get_domain_from_url(url):
+    """Extrait le nom de domaine (netloc) d'une URL de forum, ex: forum.duniter.org."""
+    return urlparse(url).netloc
+
+
+def build_base_headers(base_url):
+    """Construit les headers HTTP en fonction du forum Discourse ciblé (Referer/Origin dynamiques)."""
+    return {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/html, */*",
+        "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+        # Pas de "br" (Brotli) : le paquet python 'brotli' n'est pas garanti
+        # présent dans le venv ~/.astro/ — requests ne peut alors pas
+        # décompresser la réponse, ce qui casse le parsing JSON.
+        "Accept-Encoding": "gzip, deflate",
+        "Referer": f"{base_url}/",
+        "Origin": base_url,
+    }
+
+def read_cookie_from_file(file_path, domain_filter):
     """
     Reads cookie from file - supports both Netscape cookie format and raw cookie string.
+    domain_filter: domaine du forum (ex: forum.monnaie-libre.fr) utilisé pour filtrer
+    les cookies pertinents dans un fichier Netscape multi-domaines.
     Returns a requests.Session with cookies loaded.
     """
     session = requests.Session()
-    
+
     try:
         with open(file_path, 'r') as f:
             content = f.read().strip()
-        
+
         # Check if it's a Netscape format cookie file
         if '\t' in content and ('# Netscape HTTP Cookie File' in content or '# HTTP Cookie File' in content or content.count('\t') > 5):
-            print(f"Detected Netscape cookie format, extracting forum.monnaie-libre.fr cookies...", file=sys.stderr)
-            
+            print(f"Detected Netscape cookie format, extracting {domain_filter} cookies...", file=sys.stderr)
+
             # Try to use MozillaCookieJar for proper cookie handling
             try:
                 cookie_jar = MozillaCookieJar(file_path)
                 cookie_jar.load(ignore_discard=True, ignore_expires=True)
-                
-                # Filter cookies for forum.monnaie-libre.fr domain
+
+                # Filter cookies for the target forum domain
                 forum_cookies = {}
                 for cookie in cookie_jar:
-                    if 'monnaie-libre.fr' in cookie.domain:
+                    if domain_filter in cookie.domain:
                         forum_cookies[cookie.name] = cookie.value
-                
+
                 if forum_cookies:
                     session.cookies.update(forum_cookies)
-                    print(f"Extracted {len(forum_cookies)} cookies for forum.monnaie-libre.fr using cookie jar", file=sys.stderr)
+                    print(f"Extracted {len(forum_cookies)} cookies for {domain_filter} using cookie jar", file=sys.stderr)
                     return session
             except Exception as e:
                 print(f"Warning: Could not use MozillaCookieJar, falling back to manual parsing: {e}", file=sys.stderr)
-            
+
             # Fallback: manual parsing
             cookies = {}
             lines = content.split('\n')
@@ -75,13 +88,13 @@ def read_cookie_from_file(file_path):
                     domain = parts[0].strip()
                     cookie_name = parts[5].strip()
                     cookie_value = parts[6].strip()
-                    
-                    if 'monnaie-libre.fr' in domain:
+
+                    if domain_filter in domain:
                         cookies[cookie_name] = cookie_value
-            
+
             if cookies:
                 session.cookies.update(cookies)
-                print(f"Extracted {len(cookies)} cookies for forum.monnaie-libre.fr", file=sys.stderr)
+                print(f"Extracted {len(cookies)} cookies for {domain_filter}", file=sys.stderr)
                 return session
         
         # Raw cookie string format
@@ -111,10 +124,11 @@ def get_today_posts(session, base_url, days_back=1):
     Fetch posts from Discourse forum published today (or last N days).
     Returns a list of posts with their details.
     """
-    session.headers.update(BASE_HEADERS)
+    session.headers.update(build_base_headers(base_url))
     
-    # Calculate date threshold (today minus days_back)
-    threshold_date = datetime.now() - timedelta(days=days_back)
+    # Calculate date threshold (today minus days_back) — UTC pour rester
+    # comparable aux dates ISO8601 ("...Z") renvoyées par l'API Discourse.
+    threshold_date = datetime.now(timezone.utc) - timedelta(days=days_back)
     
     try:
         print(f"Fetching latest posts from {base_url}...", file=sys.stderr)
@@ -230,21 +244,24 @@ def get_today_posts(session, base_url, days_back=1):
             # Use the most recent date among created_at, bumped_at, and last_posted_at
             # This ensures we catch topics that were created earlier but had recent activity
             
-            # Helper function to parse a date string
+            # Helper function to parse a date string.
+            # Toujours renvoyer un datetime "aware" en UTC (l'API Discourse
+            # renvoie des dates UTC en ISO8601 "...Z") pour rester comparable
+            # à threshold_date sans lever de TypeError naive/aware.
             def parse_date(date_str):
                 if not date_str:
                     return None
                 try:
                     if isinstance(date_str, (int, float)):
-                        return datetime.fromtimestamp(date_str)
+                        return datetime.fromtimestamp(date_str, tz=timezone.utc)
                     elif 'T' in date_str:
                         date_str_clean = date_str.replace('Z', '+00:00')
                         if '+' in date_str_clean or date_str_clean.count('-') >= 3:
                             return datetime.fromisoformat(date_str_clean)
                         else:
-                            return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
+                            return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
                     else:
-                        return datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+                        return datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
                 except (ValueError, TypeError, OSError):
                     return None
             
@@ -410,9 +427,10 @@ def main():
     
     # Normalize forum URL (remove trailing slash)
     base_url = args.forum_url.rstrip('/')
-    
-    # Read cookie from file
-    session = read_cookie_from_file(args.cookie_file)
+    domain_filter = get_domain_from_url(base_url)
+
+    # Read cookie from file (filtré sur le domaine du forum ciblé)
+    session = read_cookie_from_file(args.cookie_file, domain_filter)
     
     # Fetch today's posts
     posts = get_today_posts(session, base_url, days_back=args.days)

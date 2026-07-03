@@ -820,6 +820,7 @@ export PATH=$HOME/.local/bin:$PATH
     matplotlib readability-lxml duniterpy cachetools pydantic-settings \
     robohash substrate-interface websocket-client websockets imap_tools \
     fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot \
+    qdrant-client \
     2>> "$_ERROR_LOG" \
     && echo "✅ Paquets Python installés/mis à jour" \
     || echo "⚠️  pip batch: certains paquets ont échoué — voir $_ERROR_LOG"
@@ -836,6 +837,10 @@ echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
 ~/.astro/bin/python -m playwright install firefox 2>> "$_ERROR_LOG" \
     && echo "✅ playwright firefox prêt (git.notebook.sh)" \
     || echo "⚠️  playwright firefox install FAILED — git.notebook.sh utilisera le fallback chromium"
+## playwright-stealth : contourne la détection d'automatisation (ex: scrapers/mastodon)
+~/.astro/bin/pip install -U playwright-stealth 2>> "$_ERROR_LOG" \
+    && echo "✅ playwright-stealth installé" \
+    || echo "⚠️  playwright-stealth install FAILED — voir ~/.zen/install.errors.log"
 
 
 ####################################################################
@@ -963,10 +968,6 @@ echo "##  ADDING lazydocker ================"
 echo "## INSTALL yt-dlp (youtube copier, sans anti-bot) ##############"
 # Anti-bot optionnel : astrosystemctl local install youtube-antibot
 ~/.zen/Astroport.ONE/install/youtube-dl.sh
-
-###############################################################
-echo "## INSTALL Matterbridge & BRO Omni-Channel ##############"
-~/.zen/Astroport.ONE/install/install_matterbridge.sh
 
 ###############################################################
 echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"

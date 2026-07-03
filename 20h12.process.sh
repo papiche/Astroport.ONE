@@ -662,6 +662,21 @@ else
     echo "ℹ️  Qdrant absent ou codebase_index.sh introuvable — skip codebase index"
 fi
 
+########################################################################
+## BRO ARBOR — Détection continue de besoins Web2 récurrents (tous comptes)
+## N'écrit ni ne génère aucun code : signale au capitaine par DM NODE les
+## patterns de demandes non satisfaites par BRO (voir arbor_self_improve.py).
+########################################################################
+ARBOR_MINER="${MY_PATH}/IA/tests/arbor_self_improve.py"
+if [[ -f "$ARBOR_MINER" ]]; then
+    echo "🔍 BRO Arbor : analyse des besoins récurrents (tous comptes)..."
+    python3 "$ARBOR_MINER" --mine-requests --notify-captain >> "$LOG_FILE" 2>&1 \
+        && echo "✅ arbor_self_improve --mine-requests OK" \
+        || echo "⚠️  arbor_self_improve --mine-requests échoué (non bloquant)"
+else
+    echo "ℹ️  arbor_self_improve.py introuvable — skip mining BRO"
+fi
+
 ## MAIL LOG : support@qo-op.com ##
 # Send email with power consumption report if available (report is written to /tmp/)
 POWER_REPORT_HTML="/tmp/20h12_power_report.html"

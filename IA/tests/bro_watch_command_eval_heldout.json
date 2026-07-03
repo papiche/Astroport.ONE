@@ -1,0 +1,65 @@
+{
+  "_comment": "Jeu HELD-OUT — jamais consulté pendant l'itération sur le prompt/modèle (discipline Arbor : évite le surapprentissage sur bro_watch_command_eval_dev.json). Contient des paraphrases inédites et des pièges anti-hallucination. Ne l'utiliser que pour la validation finale d'une hypothèse déjà gagnante sur le jeu dev — voir arbor_self_improve.py.",
+  "context": [
+    {"account": "mastodon.social", "channel": "notifications", "keywords": [], "always_alert": true},
+    {"account": "mastodon.social", "channel": "timeline", "keywords": []},
+    {"account": "forum.monnaie-libre.fr", "channel": "new_topics", "keywords": []},
+    {"account": "forum.duniter.org", "channel": "new_topics", "keywords": []}
+  ],
+  "cases": [
+    {
+      "text": "Peux-tu stopper la veille sur duniter.org stp ?",
+      "expected_action": "toggle",
+      "expected_fields": {"domain": "forum.duniter.org", "enabled": false}
+    },
+    {
+      "text": "Remets en route mastodon.social",
+      "expected_action": "toggle",
+      "expected_fields": {"domain": "mastodon.social", "enabled": true}
+    },
+    {
+      "text": "Ajoute Ğ1 et monnaie libre comme mots clés pour les nouveaux sujets sur forum.monnaie-libre.fr",
+      "expected_action": "set_keywords",
+      "expected_fields": {"domain": "forum.monnaie-libre.fr", "channel": "new_topics"}
+    },
+    {
+      "text": "Base-toi sur mes posts du compte @fred pour apprendre ce qui m'intéresse dans le fil mastodon",
+      "expected_action": "set_learn_from",
+      "expected_fields": {"domain": "mastodon.social", "channel": "timeline", "handle": "@fred"}
+    },
+    {
+      "text": "Le ciel est gris aujourd'hui à Paris",
+      "expected_action": "none",
+      "expected_fields": {}
+    },
+    {
+      "_comment": "Piège anti-hallucination : domaine mentionné n'est PAS surveillé (twitter.com absent du contexte). Le modèle ne doit pas substituer un domaine connu (ex: mastodon.social) à la place.",
+      "text": "Désactive twitter.com",
+      "expected_action": "toggle",
+      "expected_fields": {"domain": "twitter.com", "enabled": false}
+    },
+    {
+      "text": "Merci d'arrêter de suivre le forum.monnaie-libre.fr, ça spam trop",
+      "expected_action": "toggle",
+      "expected_fields": {"domain": "forum.monnaie-libre.fr", "enabled": false}
+    },
+    {
+      "_comment": "Confirmation fluide sans hashtag ni emoji — exigence explicite de l'utilisateur (conversation naturelle).",
+      "text": "Ok pour moi",
+      "expected_action": "confirm_suggestion",
+      "expected_fields": {}
+    },
+    {
+      "_comment": "Correction fluide sans le mot 'plutôt' (seul déclencheur couvert par _ACTION_SANITY_HINTS['correct_suggestion']) — teste la couverture du garde-fou autant que le modèle.",
+      "text": "Non, mets à la place : à bientôt !",
+      "expected_action": "correct_suggestion",
+      "expected_fields": {}
+    },
+    {
+      "_comment": "Piège anti-hallucination : mot-clé 'mastodon' présent mais aucune commande réelle — ne doit déclencher ni toggle ni set_keywords.",
+      "text": "mastodon c'est vraiment nul comme réseau social",
+      "expected_action": "none",
+      "expected_fields": {}
+    }
+  ]
+}

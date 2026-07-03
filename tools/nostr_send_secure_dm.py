@@ -362,10 +362,11 @@ def nip04_encrypt(message: str, sender_private_key: str, recipient_public_key: s
 def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: str,
                                relay_url: str = DEFAULT_RELAY, gift_wrap: bool = False,
                                metadata_protection: bool = False,
-                               use_nip04: bool = False) -> bool:
+                               use_nip04: bool = False,
+                               expire_seconds: int = None) -> bool:
     """
     Send a secure encrypted direct message to a NOSTR user with enhanced security.
-    
+
     Args:
         sender_nsec: NSEC private key of the sender
         recipient_hex: Hex public key of the recipient
@@ -373,7 +374,9 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
         relay_url: NOSTR relay URL
         gift_wrap: Enable NIP-17 gift wrapping for additional privacy
         metadata_protection: Enable metadata protection features
-        
+        expire_seconds: Si défini, ajoute un tag NIP-40 "expiration" — les
+                        relays compatibles purgent l'event après ce délai
+
     Returns:
         bool: True if message was sent successfully, False otherwise
     """
@@ -397,6 +400,8 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
         tags = [["p", recipient_hex]]
         if gift_wrap:
             tags.append(["wrapped", "true"])
+        if expire_seconds is not None:
+            tags.append(["expiration", str(int(time.time()) + expire_seconds)])
         
         base_event = {
             "kind": EventKind.ENCRYPTED_DIRECT_MESSAGE,
@@ -501,6 +506,8 @@ def main():
                        help="Read NSEC from first line of stdin (avoids cmdline exposure)")
     parser.add_argument("--nip04", action="store_true",
                        help="Répondre en NIP-04 (AES-256-CBC) — requis pour les clients navigateur (NIP-07)")
+    parser.add_argument("--ttl-days", type=float, default=None,
+                       help="Ajoute un tag NIP-40 'expiration' (jours) — purge côté relay compatible")
 
     args = parser.parse_args()
 
@@ -540,6 +547,7 @@ def main():
         gift_wrap=args.gift_wrap,
         metadata_protection=args.metadata_protection,
         use_nip04=args.nip04,
+        expire_seconds=int(args.ttl_days * 86400) if args.ttl_days is not None else None,
     )
     
     sys.exit(0 if success else 1)
