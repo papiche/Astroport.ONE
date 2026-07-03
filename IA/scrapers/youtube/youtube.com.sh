@@ -13,6 +13,7 @@
 #
 # Fonctionnalités:
 # - Récupère les vidéos likées depuis la dernière synchronisation (max 3 par run)
+# - Suit les chaînes listées dans .youtube.com.channels (1 nouvelle vidéo/chaîne/run)
 # - Utilise les cookies du sociétaire pour l'authentification YouTube
 # - Télécharge les nouvelles vidéos via process_youtube.sh (download-only)
 # - Upload via /api/fileupload (UPlanet_FILE_CONTRACT.md compliant)
@@ -122,9 +123,14 @@ if [[ ! -f "$COOKIE_FILE" || -z "$COOKIE_FILE" ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] No disk cookie — attempting restore from NOSTR DID via /cookie/youtube.com" >&2
     UPASSPORT_URL="${myUPASSPORT:-http://127.0.0.1:54321}"
     PLAYER_NPUB=""
-    [[ -f "$USER_DIR/npub.nostr" ]] && PLAYER_NPUB=$(cat "$USER_DIR/npub.nostr" | tr -d '\n')
+    # 1) Fichier NPUB (source standard, utilisée aussi par process_liked_video)
+    [[ -f "$USER_DIR/NPUB" ]] && PLAYER_NPUB=$(tr -d ' \n' < "$USER_DIR/NPUB")
+    # 2) Legacy npub.nostr
+    [[ -z "$PLAYER_NPUB" && -f "$USER_DIR/npub.nostr" ]] && PLAYER_NPUB=$(tr -d ' \n' < "$USER_DIR/npub.nostr")
+    # 3) .secret.nostr au format "NSEC=...; NPUB=...; HEX=..." (une seule ligne :
+    #    'cut -d= -f2' renvoyait "nsec...; NPUB" — extraire le npub par motif)
     [[ -z "$PLAYER_NPUB" && -f "$USER_DIR/.secret.nostr" ]] && \
-        PLAYER_NPUB=$(grep "NPUB=" "$USER_DIR/.secret.nostr" 2>/dev/null | cut -d= -f2 | tr -d '\n')
+        PLAYER_NPUB=$(grep -o 'npub1[a-z0-9]*' "$USER_DIR/.secret.nostr" 2>/dev/null | head -1)
 
     if [[ -n "$PLAYER_NPUB" ]]; then
         RESTORED_COOKIE=$(curl -s --max-time 15 \
@@ -176,9 +182,19 @@ if [[ -z "$YT_PLAYLIST_EXTRACTOR_ARGS" ]]; then
         YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args youtube:player_client=default,mweb'
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using PO Token Provider (bgutil) on 127.0.0.1:4416 (mweb client)" >&2
     else
-        YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
+        # Private/account-bound playlists (list=LL liked videos) need the cookie
+        # session honored: web/mweb are the clients designed for that, while
+        # tv_embedded/tv/android are anonymous-extraction clients. Put web/mweb
+        # first for authenticated resources; keep tv/android as fallback in
+        # case web is blocked by anti-bot detection.
+        YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args youtube:player_client=web,mweb,tv_embedded,tv,android'
     fi
 fi
+
+# Channel uploads (<channel_url>/videos) are PUBLIC playlists: the anonymous
+# extraction clients are fine there (same family as process_youtube.sh) and
+# less likely to trip anti-bot checks than web.
+YT_CHANNEL_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
 
 # Vérifier l'existence du répertoire uDRIVE
 UDRIVE_PATH="$HOME/.zen/game/nostr/${PLAYER}/APP/uDRIVE"
@@ -202,6 +218,16 @@ LAST_SYNC_FILE="$HOME/.zen/game/nostr/${PLAYER}/.last_youtube_sync"
 PROCESSED_VIDEOS_FILE="$HOME/.zen/game/nostr/${PLAYER}/.processed_youtube_videos"
 # Fichier de comptage des échecs cookie consécutifs (suppression après 3 échecs)
 COOKIE_FAILURE_FILE="$HOME/.zen/game/nostr/${PLAYER}/.youtube_cookie_failures"
+# Fichier LEGACY (repli uniquement) — la liste des chaînes suivies vit
+# maintenant dans le manifest cookie (.cookie_manifest.json, sous-canal
+# "channel_watch"), gérée via /mailjet (UI) et sauvegardée automatiquement
+# en NOSTR comme le reste du manifest. Voir get_watched_channels() plus bas.
+CHANNELS_FILE="$HOME/.zen/game/nostr/${PLAYER}/.youtube.com.channels"
+BRO_WATCH_CORE_PY="$HOME/.zen/Astroport.ONE/IA/bro_watch_core.py"
+# Profondeur du catalogue consultée les jours SANS nouvelle vidéo — permet de
+# combler avec une ancienne vidéo pas encore copiée plutôt que de ne rien
+# faire (voir sync_youtube_channels / _process_first_unprocessed_channel_video)
+CHANNEL_BACKFILL_DEPTH="${CHANNEL_BACKFILL_DEPTH:-30}"
 TODAY=$(date '+%Y-%m-%d')
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Today's date: $TODAY" >&2
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Last sync file: $LAST_SYNC_FILE" >&2
@@ -600,6 +626,91 @@ get_liked_videos() {
         log_debug "All URL attempts failed for $player"
         return 1
     fi
+}
+
+# Fonction pour récupérer les dernières vidéos publiques d'une chaîne YouTube
+# Miroir de get_liked_videos() mais cible la playlist PUBLIQUE des uploads
+# (<channel_url>/videos) : pas besoin de client cookie-authentifié, on utilise
+# YT_CHANNEL_EXTRACTOR_ARGS (tv_embedded,tv,android,web).
+# Sortie : lignes au format id&title&duration&uploader&url (comme get_liked_videos)
+get_channel_videos() {
+    local channel_url="$1"
+    local cookie_file="$2"
+    local max_results="${3:-3}"
+
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] get_channel_videos: Starting for $channel_url (max: $max_results)" >&2
+    log_debug "Fetching channel videos from $channel_url (max: $max_results)"
+
+    # Vérifier que yt-dlp est disponible
+    if ! command -v yt-dlp &> /dev/null; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: yt-dlp command not found" >&2
+        return 1
+    fi
+
+    # Sécurité : channel_url vient d'un fichier de config texte libre
+    # (.youtube.com.channels) potentiellement copié depuis un lien reçu d'un
+    # tiers. Sans validation, une ligne commençant par "-" serait interprétée
+    # par yt-dlp comme une OPTION (ex: --exec=...) et non comme une URL —
+    # exécution de commande arbitraire. On exige un format de chaîne YouTube
+    # reconnu avant tout usage.
+    if [[ ! "$channel_url" =~ ^https://(www\.)?youtube\.com/(channel/|c/|@|user/) ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: invalid channel URL format, refusing: ${channel_url:0:80}" >&2
+        log_debug "Rejected malformed/suspicious channel URL: $channel_url"
+        return 1
+    fi
+
+    # Cibler l'onglet /videos (uploads publics), sauf si déjà précisé dans l'URL
+    local uploads_url="$channel_url"
+    if [[ "$uploads_url" != */videos && "$uploads_url" != */streams && "$uploads_url" != */shorts ]]; then
+        uploads_url="${uploads_url%/}/videos"
+    fi
+
+    # Cookie optionnel ici (contenu public) — passé s'il existe, par cohérence
+    local cookie_args=()
+    [[ -n "$cookie_file" && -f "$cookie_file" ]] && cookie_args=(--cookies "$cookie_file")
+
+    local yt_dlp_stderr_file="$HOME/.zen/tmp/yt_dlp_channel_stderr_$$.txt"
+    local videos_json
+    # --flat-playlist : liste id/titre/uploader depuis la page playlist elle-même,
+    # sans requête individuelle par vidéo (~10x moins de requêtes HTTP vers
+    # YouTube) — nécessaire ici car le rattrapage peut demander jusqu'à
+    # CHANNEL_BACKFILL_DEPTH entrées ; duration revient souvent vide en flat,
+    # géré sans risque par le garde ^[0-9]+$ déjà en place plus loin.
+    # timeout 60 : un appel yt-dlp bloqué ne doit jamais geler tout le script.
+    # "--" avant l'URL : défense en profondeur (au cas où la validation
+    # ci-dessus serait un jour affaiblie), interdit toute interprétation en
+    # option yt-dlp au-delà de ce point.
+    videos_json=$(timeout 60 yt-dlp \
+        $YT_CHANNEL_EXTRACTOR_ARGS \
+        "${cookie_args[@]}" \
+        --flat-playlist \
+        --print '%(id)s&%(title)s&%(duration)s&%(uploader)s&%(webpage_url)s' \
+        --playlist-end "$max_results" \
+        --no-warnings \
+        --ignore-errors \
+        -- "$uploads_url" 2>"$yt_dlp_stderr_file")
+    local exit_code=$?
+
+    if [[ $exit_code -ne 0 && -s "$yt_dlp_stderr_file" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp channel error output:" >&2
+        tail -10 "$yt_dlp_stderr_file" | sed 's/^/  /' >&2
+        log_debug "yt-dlp channel stderr: $(cat "$yt_dlp_stderr_file")"
+    fi
+    rm -f "$yt_dlp_stderr_file"
+
+    # Accepter la sortie partielle (--ignore-errors), comme get_liked_videos
+    if [[ -n "$videos_json" ]]; then
+        local entry_count
+        entry_count=$(echo "$videos_json" | grep -c '^[a-zA-Z0-9_-]\{11\}&' || echo 0)
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Fetched $entry_count entries from $uploads_url" >&2
+        log_debug "Successfully fetched channel videos from: $uploads_url"
+        echo "$videos_json"
+        return 0
+    fi
+
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] No videos returned for channel: $uploads_url (exit_code: $exit_code)" >&2
+    log_debug "Channel fetch returned nothing for $uploads_url"
+    return 1
 }
 
 # Fonction pour encoder un titre en URL-safe
@@ -1329,6 +1440,187 @@ sync_youtube_likes() {
     return 0
 }
 
+# Scanne une liste de vidéos (format id&title&duration&uploader&url, une par
+# ligne, comme retourné par get_channel_videos) et traite la PREMIÈRE non
+# encore copiée. Retourne 0 si une vidéo a été téléchargée avec succès dans
+# ce lot, 1 si rien de neuf n'y a été trouvé (tout déjà traité, trop long, ou
+# échecs). Un "déjà en uDRIVE" (exit 2 de process_liked_video) ne compte pas
+# comme un succès mais ne fait pas non plus échouer le scan : on continue à
+# chercher une vraie nouveauté dans le reste du lot.
+_process_first_unprocessed_channel_video() {
+    local videos_list="$1" player="$2" processed_file="$3" max_duration="$4"
+
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+
+        # Parser les données de la vidéo (format id&title&duration&uploader&url)
+        local video_id=$(echo "$line" | cut -d '&' -f 1)
+        local title=$(echo "$line" | cut -d '&' -f 2)
+        local duration=$(echo "$line" | cut -d '&' -f 3)
+        local uploader=$(echo "$line" | cut -d '&' -f 4)
+        local url=$(echo "$line" | cut -d '&' -f 5)
+
+        # Nettoyer le titre (même normalisation que sync_youtube_likes)
+        title=$(echo "$title" | \
+            sed 's/[^a-zA-Z0-9._-]/_/g' | \
+            sed 's/__*/_/g' | \
+            sed 's/^_\|_$//g' | \
+            head -c 100)
+
+        if is_video_processed "$video_id" "$processed_file"; then
+            log_debug "Channel video already processed: $title (ID: $video_id)"
+            echo "⏭️ Skipping already processed: $title"
+            continue
+        fi
+
+        if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt "$max_duration" ]]; then
+            echo "⏭️ Skipping (too long for sync, $((duration / 60)) min > $((max_duration / 60)) min): $title"
+            log_debug "Skipping channel video $video_id (duration ${duration}s > ${max_duration}s)"
+            continue
+        fi
+
+        echo "🔄 Processing channel video: $title (ID: $video_id)"
+        process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player" "$processed_file"
+        local process_exit_code=$?
+        if [[ $process_exit_code -eq 0 ]]; then
+            echo "✅ New channel video published: $title"
+            log_debug "Channel video published: $title (ID: $video_id)"
+            return 0
+        elif [[ $process_exit_code -eq 2 ]]; then
+            echo "📁 Channel video already in uDRIVE: $title"
+            log_debug "Channel video already in uDRIVE: $video_id"
+        else
+            echo "❌ Channel video failed: $title"
+            log_debug "process_liked_video failed for channel video $video_id"
+        fi
+
+        # Pause anti-détection (comme sync_youtube_likes)
+        local delay_time=$((5 + RANDOM % 10))
+        log_debug "Waiting ${delay_time}s before next channel video"
+        sleep $delay_time
+    done <<< "$videos_list"
+
+    return 1
+}
+
+# Retourne la liste des chaînes suivies (une URL par ligne). Source de
+# vérité : le manifest cookie (.cookie_manifest.json, sous-canal
+# "channel_watch") géré via /mailjet — sauvegardé automatiquement en NOSTR.
+# Repli sur l'ancien fichier plat .youtube.com.channels si le manifest est
+# vide (config antérieure à l'intégration UI, ou station sans bro_watch_core).
+get_watched_channels() {
+    local player="$1"
+    if [[ -f "$BRO_WATCH_CORE_PY" ]]; then
+        local from_manifest
+        from_manifest=$(python3 "$BRO_WATCH_CORE_PY" get-channels "$player" "youtube.com" 2>/dev/null)
+        if [[ -n "$from_manifest" ]]; then
+            printf '%s\n' "$from_manifest"
+            return 0
+        fi
+    fi
+    local legacy_file="${CHANNELS_FILE:-$HOME/.zen/game/nostr/${player}/.youtube.com.channels}"
+    if [[ -s "$legacy_file" ]]; then
+        grep -v '^\s*#' "$legacy_file" | grep -v '^\s*$'
+    fi
+}
+
+# Fonction de synchronisation des chaînes suivies (config /mailjet, manifest
+# cookie — voir get_watched_channels).
+# Best-effort : ne fait JAMAIS échouer le script — toutes les erreurs sont
+# gérées en interne (log + continue) et la fonction retourne toujours 0.
+# Réutilise le même pipeline vidéo que sync_youtube_likes :
+#   is_video_processed / process_liked_video / mark_video_processed
+# (génériques par video_id) et le MÊME processed_file (dédoublonnage global).
+# Limite : 1 NOUVELLE vidéo par chaîne et par exécution (léger pour un Pi).
+#
+# Rattrapage jours calmes : si les 3 dernières mises en ligne sont déjà
+# toutes copiées (pas de nouveauté aujourd'hui), on remonte plus loin dans le
+# catalogue de la chaîne (CHANNEL_BACKFILL_DEPTH) pour copier une ancienne
+# vidéo pas encore archivée — plutôt que de ne rien faire ce jour-là, la
+# chaîne finit par être intégralement archivée au fil des exécutions.
+sync_youtube_channels() {
+    local player="$1"
+    local cookie_file="$2"
+    local processed_file="$3"
+
+    local channels_list
+    channels_list=$(get_watched_channels "$player")
+    if [[ -z "$channels_list" ]]; then
+        log_debug "No watched channels for $player (manifest and legacy file both empty), skipping channel sync"
+        return 0
+    fi
+
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube channels sync for $player" >&2
+    log_debug "Starting YouTube channels sync for $player"
+
+    local max_duration="${MAX_SYNC_VIDEO_DURATION_SEC:-5400}"
+    local channel_count=0
+    local channel_success=0
+    # Plafond de chaînes traitées par exécution — un fichier de config avec
+    # des dizaines d'entrées ne doit pas transformer un run quotidien en
+    # dizaines d'appels yt-dlp bloquants successifs sur une petite machine.
+    local max_channels="${MAX_CHANNELS_PER_RUN:-10}"
+
+    while IFS= read -r channel_url || [[ -n "$channel_url" ]]; do
+        # Nettoyer la ligne (CR Windows, espaces) puis ignorer vides/commentaires
+        channel_url="${channel_url//$'\r'/}"
+        channel_url="$(echo "$channel_url" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        [[ -z "$channel_url" || "$channel_url" == \#* ]] && continue
+
+        if [[ $channel_count -ge $max_channels ]]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Reached max channels per run ($max_channels) — remaining channels will be processed on the next run" >&2
+            log_debug "Channel sync capped at $max_channels for $player, deferring the rest"
+            break
+        fi
+        channel_count=$((channel_count + 1))
+
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Channel #$channel_count: $channel_url" >&2
+
+        local channel_videos
+        channel_videos=$(get_channel_videos "$channel_url" "$cookie_file" 3)
+        if [[ $? -ne 0 || -z "$channel_videos" ]]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Could not fetch videos for channel: $channel_url — continuing" >&2
+            log_debug "Channel fetch failed for $channel_url, continuing with next channel"
+            continue
+        fi
+
+        local found=1
+        _process_first_unprocessed_channel_video "$channel_videos" "$player" "$processed_file" "$max_duration"
+        found=$?
+
+        if [[ $found -ne 0 ]]; then
+            # Rien de neuf parmi les dernières mises en ligne — jour calme :
+            # on comble en remontant dans le catalogue de la chaîne.
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] No new upload for $channel_url — backfilling older catalog (depth ${CHANNEL_BACKFILL_DEPTH})" >&2
+            log_debug "No new video for $channel_url, attempting backfill of older catalog"
+            local backfill_videos
+            backfill_videos=$(get_channel_videos "$channel_url" "$cookie_file" "$CHANNEL_BACKFILL_DEPTH")
+            if [[ -n "$backfill_videos" ]]; then
+                _process_first_unprocessed_channel_video "$backfill_videos" "$player" "$processed_file" "$max_duration"
+                found=$?
+            fi
+        fi
+
+        [[ $found -eq 0 ]] && channel_success=$((channel_success + 1))
+
+        # Petite pause entre chaînes pour éviter le rate limiting
+        sleep 2
+    done <<< "$channels_list"
+
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Channels sync completed: $channel_success new video(s) from $channel_count channel(s)" >&2
+    log_debug "YouTube channels sync completed for $player: $channel_success new from $channel_count channels"
+
+    # Parité minimale avec sync_youtube_likes : au moins prévenir le
+    # sociétaire quand une vidéo de chaîne a bien été publiée (jusqu'ici,
+    # sync_youtube_channels était totalement silencieuse côté notification —
+    # un échec de fetch n'émettait qu'un warning en log serveur, jamais vu
+    # par l'utilisateur). Le détail fin succès/échec/skip par chaîne n'est
+    # pas encore remonté ici — amélioration possible ultérieure.
+    [[ $channel_success -gt 0 ]] && send_sync_notification "$player" "$channel_success" 0 0
+
+    return 0
+}
+
 # Fonction d'envoi de notification par email
 send_sync_notification() {
     local player="$1"
@@ -1593,8 +1885,9 @@ if ! check_disk_space "$UDRIVE_PATH"; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Insufficient disk space, skipping YouTube sync for $PLAYER" >&2
     log_debug "Insufficient disk space, skipping YouTube sync for $PLAYER"
     # Récupérer l'espace disponible pour la notification
-    local available_space=$(df "$UDRIVE_PATH" 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
-    local available_mb="unknown"
+    # (pas de 'local' ici : scope principal du script, pas une fonction)
+    available_space=$(df "$UDRIVE_PATH" 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
+    available_mb="unknown"
     if [[ "$available_space" =~ ^[0-9]+$ ]]; then
         available_mb=$((available_space / 1024))
     fi
@@ -1608,6 +1901,12 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube likes synchronization..." 
 # Lancer la synchronisation
 sync_youtube_likes "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE"
 sync_exit_code=$?
+
+# Synchronisation des chaînes suivies (.youtube.com.channels) — best-effort :
+# ne modifie JAMAIS le code de sortie du script (les likes restent la référence)
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube channels synchronization (best-effort)..." >&2
+sync_youtube_channels "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE" || \
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: channels sync encountered errors (ignored)" >&2
 
 if [[ $sync_exit_code -eq 0 ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: YouTube likes sync completed successfully for $PLAYER" >&2

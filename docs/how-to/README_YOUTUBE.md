@@ -55,6 +55,27 @@ The UPlanet video management system provides **three modes** for creating and ma
 3. Generated cookies: ~/.zen/tmp/youtube_cookies.txt (fallback)
 ```
 
+### Channel Watch — Suivi automatique de chaînes (optionnel)
+
+En plus des vidéos likées, le cycle quotidien peut surveiller des chaînes YouTube et copier leurs nouvelles vidéos. Créez le fichier de configuration (une URL de chaîne par ligne, `#` pour commenter) :
+
+```bash
+# ~/.zen/game/nostr/<email>/.youtube.com.channels
+https://www.youtube.com/@ARTEfr
+# https://www.youtube.com/@Blender     <- ligne ignorée (commentaire)
+```
+
+Fonctionnement (`sync_youtube_channels` dans `youtube.com.sh`, exécuté juste après la sync des likes) :
+
+- Interroge l'onglet public `/videos` de chaque chaîne (pas besoin de cookie pour cette étape — la playlist est publique)
+- Télécharge **au maximum 1 nouvelle vidéo par chaîne et par jour** (léger, adapté Raspberry Pi)
+- Réutilise le même pipeline que les likes : téléchargement `process_youtube.sh`, upload `/api/fileupload`, publication NOSTR NIP-71 (kind 21/22), rangement dans `uDRIVE/Videos/`
+- Dédoublonnage global par `video_id` dans `.processed_youtube_videos` (une vidéo likée ET publiée par une chaîne suivie n'est copiée qu'une fois)
+- Best-effort : un échec sur une chaîne n'interrompt ni les autres chaînes ni la synchronisation des likes
+- Les vidéos de plus de 90 minutes sont ignorées (même règle que les likes)
+
+Sans fichier `.youtube.com.channels`, rien ne change : seule la sync des likes s'exécute.
+
 ## 📼 Mode 4 — Voeu TW `CopierYoutube` (chaîne complète, dans le TiddlyWiki)
 
 Ce mode est le plus puissant : il permet d'archiver une **chaîne YouTube entière** (ou une playlist) en formulant un voeu directement dans le TiddlyWiki personnel. L'ASTROBOT traite le voeu à chaque cycle `PLAYER.refresh.sh`.
