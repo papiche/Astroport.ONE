@@ -345,7 +345,11 @@ if [ "$AUTO_MODE" = "true" ]; then
     UPLOAD_DATA=$(cat "$AUTO_FILE")
     
     # Extract fields (only if not already provided via command line)
-    [ -z "$IPFS_CID" ] && IPFS_CID=$(echo "$UPLOAD_DATA" | jq -r '.new_cid // .cid // empty')
+    # .file_cid = CID du fichier lui-même (toujours correct) ; .new_cid peut valoir
+    # le CID racine du uDRIVE régénéré pour un utilisateur local (voir
+    # UPassport/routers/media_upload.py) — l'utiliser en priorité publie une URL
+    # cassée (404). Même bug confirmé et corrigé dans youtube.com.sh.
+    [ -z "$IPFS_CID" ] && IPFS_CID=$(echo "$UPLOAD_DATA" | jq -r '.file_cid // .cid // .new_cid // empty')
     [ -z "$FILENAME" ] && FILENAME=$(echo "$UPLOAD_DATA" | jq -r '.fileName // empty')
     [ -z "$FILE_HASH" ] && FILE_HASH=$(echo "$UPLOAD_DATA" | jq -r '.fileHash // empty')
     [ -z "$MIME_TYPE" ] && MIME_TYPE=$(echo "$UPLOAD_DATA" | jq -r '.mimeType // "audio/mp4"')

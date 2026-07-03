@@ -1017,7 +1017,14 @@ process_liked_video() {
         
         if echo "$upload_response" | jq -e '.success' >/dev/null 2>&1; then
             upload_success=1
-            ipfs_cid=$(echo "$upload_response" | jq -r '.new_cid // empty' 2>/dev/null)
+            # IMPORTANT : .file_cid est TOUJOURS le CID du fichier vidéo lui-même
+            # (wrapper-dir contenant la vidéo). .new_cid, lui, vaut selon le cas soit
+            # ce même CID (utilisateur roaming) soit le CID RACINE de tout le uDRIVE
+            # régénéré (utilisateur local, cf. UPassport/routers/media_upload.py) —
+            # utiliser .new_cid seul publie une URL NOSTR pointant vers le mauvais
+            # répertoire (404 : la vidéo n'y est pas à la racine). Confirmé sur une
+            # publication réelle (event 9c4248...) : .new_cid → 404, .file_cid → 200.
+            ipfs_cid=$(echo "$upload_response" | jq -r '.file_cid // .new_cid // empty' 2>/dev/null)
             info_cid=$(echo "$upload_response" | jq -r '.info // empty' 2>/dev/null)
             thumbnail_cid=$(echo "$upload_response" | jq -r '.thumbnail_ipfs // empty' 2>/dev/null)
             gifanim_cid=$(echo "$upload_response" | jq -r '.gifanim_ipfs // empty' 2>/dev/null)
@@ -1077,7 +1084,7 @@ process_liked_video() {
         local upload_output_file="$HOME/.zen/tmp/youtube_upload_$(date +%s)_$$.json"
         local adapted_json=$(echo "$upload_response" | jq --arg filename "$(basename "$file_path")" --arg duration "$final_duration" '
             {
-                cid: (.new_cid // .cid // ""),
+                cid: (.file_cid // .cid // .new_cid // ""),
                 fileName: (.fileName // .filename // $filename),
                 fileHash: (.fileHash // ""),
                 mimeType: (.mimeType // "video/mp4"),
