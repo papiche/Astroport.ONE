@@ -839,34 +839,58 @@ def process_watch_digest(owner_email, account, channel, items, context_label=Non
 COMMAND_LAST_CHECK_KEY = "_bro_commands"  # section top-level du manifest (pas liée à un domaine)
 
 # Déduplication par event ID — filet de sécurité INDÉPENDANT du timestamp
-# last_check. Incident réel (2026-07-03) : chaque message traité deux fois
-# malgré le flock de bro_dm_daemon.sh (qui ne protège que contre le
-# chevauchement temporel, pas contre deux détections séquentielles du même
-# event — ex: le même self-DM vu sur deux relais avec quelques secondes
-# d'écart). Le since_ts seul est fragile : le created_at NOSTR n'a qu'une
+# last_check. Le since_ts seul est fragile : le created_at NOSTR n'a qu'une
 # granularité à la seconde, donc un event dont created_at == nouveau
 # last_check reste retrouvé par un fetch "since" suivant (borne inclusive).
-# L'ID d'un event est stable et unique — le filtrer élimine la classe
-# entière de bugs de resynchronisation/multi-relais, quelle qu'en soit la
-# cause exacte.
-PROCESSED_COMMAND_IDS_FILENAME = ".processed_command_ids.json"
-PROCESSED_COMMAND_IDS_MAX = 500
+#
+# Marqueur de fichier ATOMIQUE (os.O_CREAT|O_EXCL) plutôt qu'un JSON
+# read-modify-write : incident réel (2026-07-04) où "lance le scraper
+# mastodon" a généré DEUX réponses distinctes (id/sig/created_at différents,
+# donc deux processus check-commands séparés, pas juste deux relais du même
+# event) malgré le flock de bro_dm_daemon.sh ET une première version de
+# cette dédup basée sur un fichier JSON unique — un read-modify-write sur un
+# fichier partagé n'est pas atomique entre deux processus qui liraient tous
+# les deux AVANT que l'un des deux n'ait écrit, aussi improbable que semble
+# cette fenêtre. La création exclusive d'un fichier est, elle, garantie
+# atomique par le système de fichiers même dans ce cas — même mécanisme que
+# _DEDUP_DIR côté bash (bro_dm_daemon.sh::_process_event).
+PROCESSED_COMMAND_IDS_DIR = os.path.expanduser("~/.zen/tmp/bro_command_dedup")
+PROCESSED_COMMAND_IDS_MAX_AGE_SEC = 7 * 86400  # nettoyage des marqueurs > 7 jours
 
 
-def _load_processed_command_ids(owner_email):
-    path = os.path.join(_owner_dir(owner_email), PROCESSED_COMMAND_IDS_FILENAME)
+def _claim_event_id(owner_email, ev_id):
+    """Réserve atomiquement le droit de traiter cet event pour ce
+    propriétaire. Retourne True si CE processus a gagné la réservation
+    (jamais traité avant), False si un autre l'a déjà pris."""
+    os.makedirs(PROCESSED_COMMAND_IDS_DIR, exist_ok=True)
+    marker = os.path.join(PROCESSED_COMMAND_IDS_DIR,
+                           f"{hashlib.sha256(owner_email.encode()).hexdigest()[:16]}_{ev_id}")
     try:
-        with open(path) as f:
-            return list(json.load(f))
+        fd = os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+        return True
+    except FileExistsError:
+        return False
     except Exception:
-        return []
+        # Dégradation gracieuse : en cas d'erreur imprévue, ne bloque jamais
+        # le traitement (mieux vaut un risque de doublon qu'un silence total).
+        return True
 
 
-def _save_processed_command_ids(owner_email, ids):
-    path = os.path.join(_owner_dir(owner_email), PROCESSED_COMMAND_IDS_FILENAME)
+def _cleanup_old_command_markers():
+    """Purge les marqueurs de dédup plus vieux que PROCESSED_COMMAND_IDS_MAX_AGE_SEC
+    — best-effort, appelée en fin de process_incoming_commands (peu coûteux,
+    le dossier reste petit à l'échelle d'une station)."""
     try:
-        with open(path, "w") as f:
-            json.dump(ids[-PROCESSED_COMMAND_IDS_MAX:], f)
+        import time as _time
+        cutoff = _time.time() - PROCESSED_COMMAND_IDS_MAX_AGE_SEC
+        for name in os.listdir(PROCESSED_COMMAND_IDS_DIR):
+            p = os.path.join(PROCESSED_COMMAND_IDS_DIR, name)
+            try:
+                if os.path.getmtime(p) < cutoff:
+                    os.remove(p)
+            except Exception:
+                pass
     except Exception:
         pass
 
@@ -2058,10 +2082,6 @@ def process_incoming_commands(owner_email):
         print(f"[BRO_WATCH] Écoute des commandes indisponible pour {owner_email} : {e}")
         return
 
-    processed_ids = _load_processed_command_ids(owner_email)
-    processed_set = set(processed_ids)
-    new_ids = []
-
     handled = 0
     for ev in sorted(events, key=lambda e: e.get("created_at", 0)):
         # Filtre anti-boucle PRIMAIRE : tag structurel BRO_ORIGIN_TAG sur
@@ -2072,20 +2092,15 @@ def process_incoming_commands(owner_email):
         if list(BRO_ORIGIN_TAG) in ev.get("tags", []):
             continue
         ev_id = ev.get("id")
-        if ev_id and ev_id in processed_set:
-            continue  # déjà traité — voir PROCESSED_COMMAND_IDS_* ci-dessus
         try:
             text = _decrypt_self_dm(owner_email, ev)
             if not text or text.strip().startswith(BOT_REPLY_MARKERS):
                 continue  # échec de déchiffrement, ou repli pour events sans le tag (legacy)
-            # Marqué "vu" avant l'exécution : même si _handle_command_text
-            # échoue ensuite, cette commande précise ne doit plus jamais être
-            # rejouée — sinon une commande qui a RÉUSSI une première fois
-            # (détectée en double via un autre relais/canal quelques
-            # secondes plus tard) serait exécutée deux fois.
-            if ev_id:
-                processed_set.add(ev_id)
-                new_ids.append(ev_id)
+            # Réservation ATOMIQUE juste avant l'exécution — voir
+            # _claim_event_id pour l'incident réel qui a motivé ce mécanisme
+            # (fichier marker O_EXCL, pas un JSON read-modify-write).
+            if ev_id and not _claim_event_id(owner_email, ev_id):
+                continue  # un autre passage a déjà réservé cet event
             reply = _handle_command_text(owner_email, text)
             if reply:
                 handled += 1
@@ -2103,9 +2118,6 @@ def process_incoming_commands(owner_email):
             # traité 3 fois en 2 minutes après l'échec d'une autre commande).
             print(f"[BRO_WATCH] Commande en erreur pour {owner_email} ({ev.get('id', '?')[:12]}…) : {e}")
 
-    if new_ids:
-        _save_processed_command_ids(owner_email, processed_ids + new_ids)
-
     manifest = _load_manifest(owner_email)
     manifest.setdefault(COMMAND_LAST_CHECK_KEY, {})["last_check"] = now_ts
     _save_manifest(owner_email, manifest)
@@ -2113,6 +2125,7 @@ def process_incoming_commands(owner_email):
     if handled:
         print(f"[BRO_WATCH] {handled} commande(s) traitée(s) pour {owner_email}.")
 
+    _cleanup_old_command_markers()
     check_proactive_alerts(owner_email)
 
 
