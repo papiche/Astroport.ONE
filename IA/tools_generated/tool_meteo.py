@@ -7,7 +7,6 @@ Usage :
     print(run("Quelle est la météo à Marseille en ce moment ?"))
 """
 
-import json
 import re
 from urllib.parse import quote
 
@@ -74,8 +73,8 @@ def run(query: str) -> str:
     Récupère la météo actuelle d'une ville mentionnée dans `query`.
 
     Retourne toujours une chaîne :
-      - en cas de succès : un JSON avec ville, temperature_c, condition,
-        humidite_pct, vent_kmh
+      - en cas de succès : une phrase en français (ville, température,
+        condition, humidité, vent)
       - en cas d'échec : un message d'erreur texte incluant le détail
         technique réel (exception ou code HTTP)
     """
@@ -118,15 +117,10 @@ def run(query: str) -> str:
     except (ValueError, KeyError, IndexError, TypeError) as e:
         return f"Erreur API : réponse wttr.in inattendue - {e}"
 
-    resultat = {
-        "ville": ville,
-        "temperature_c": temperature_c,
-        "condition": condition,
-        "humidite_pct": humidite_pct,
-        "vent_kmh": vent_kmh,
-    }
-
-    return json.dumps(resultat, ensure_ascii=False)
+    return (
+        f"À {ville}, il fait {temperature_c}°C ({condition}). "
+        f"Humidité : {humidite_pct}%, vent : {vent_kmh} km/h."
+    )
 
 
 if __name__ == "__main__":
