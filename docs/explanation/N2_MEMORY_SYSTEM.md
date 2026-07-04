@@ -111,15 +111,15 @@ The NOSTR event also includes an `["e", "rec_id", "", "reply"]` tag (NIP-10 comp
 
 Each event uses these tags for filtering:
 
-| Tag | Purpose | Example |
-|-----|---------|---------|
-| `d` | Unique identifier | `ai_20260107143025_1_a3f2b1` |
-| `t` | Type filter | `n2-todo`, `ai_recommendation`, `captain_todo` |
-| `status` | Current status | `proposed`, `accepted`, `rejected`, `done` |
-| `priority` | Priority level | `high`, `medium`, `low` |
-| `station` | Origin station | `12D3KooWABC...` |
-| `captain` | Author email | `captain@copylaradio.com` |
-| `created` | Creation date | `20260107` |
+| Tag        | Purpose           | Example                                        |
+| ---------- | ----------------- | ---------------------------------------------- |
+| `d`        | Unique identifier | `ai_20260107143025_1_a3f2b1`                   |
+| `t`        | Type filter       | `n2-todo`, `ai_recommendation`, `captain_todo` |
+| `status`   | Current status    | `proposed`, `accepted`, `rejected`, `done`     |
+| `priority` | Priority level    | `high`, `medium`, `low`                        |
+| `station`  | Origin station    | `12D3KooWABC...`                               |
+| `captain`  | Author email      | `captain@copylaradio.com`                      |
+| `created`  | Creation date     | `20260107`                                     |
 
 ## Status Lifecycle
 
@@ -135,10 +135,10 @@ Each event uses these tags for filtering:
      └───────────────────────────────────────────────┘
 ```
 
-- **proposed**: Initial state (AI or captain created)
-- **accepted**: Human validated (will be implemented)
-- **rejected**: Human refused (AI learns to avoid similar)
-- **done**: Implemented (closes the loop)
+* **proposed**: Initial state (AI or captain created)
+* **accepted**: Human validated (will be implemented)
+* **rejected**: Human refused (AI learns to avoid similar)
+* **done**: Implemented (closes the loop)
 
 ## Commands Reference
 
@@ -273,18 +273,19 @@ Station 1 (Paris)        Station 2 (Toulouse)      Station 3 (Lyon)
 
 ### Required Files
 
-| File | Purpose |
-|------|---------|
-| `~/.zen/game/uplanet.G1.nostr` | Shared constellation key |
-| `~/.zen/game/todo_last_run.marker` | Tracks last execution |
-| `~/.zen/Astroport.ONE/.env` | Environment variables |
+| File                               | Purpose                  |
+| ---------------------------------- | ------------------------ |
+| `~/.zen/game/uplanet.G1.nostr`     | Shared constellation key |
+| `~/.zen/game/todo_last_run.marker` | Tracks last execution    |
+| `~/.zen/Astroport.ONE/.env`        | Environment variables    |
 
 ### Creating the Shared Key (Ğ1 Central Bank)
 
 The `uplanet.G1.nostr` key is the **Ğ1 Central Bank** key for the UPlanet constellation. It's shared between:
-- **Oracle System**: Signs credentials (kind 30503), NIP-42 auth
-- **N² Memory System**: Signs development recommendations (kind 31910)
-- **Economy**: Central authority for Ẑen transactions
+
+* **Oracle System**: Signs credentials (kind 30503), NIP-42 auth
+* **N² Memory System**: Signs development recommendations (kind 31910)
+* **Economy**: Central authority for Ẑen transactions
 
 All stations in the constellation must use the **same** key:
 
@@ -331,9 +332,9 @@ TODOs are published to Open Collective as development updates:
 
 ### Future Integrations
 
-| System | Purpose | Status |
-|--------|---------|--------|
-| **Radicle** | Decentralized code hosting | Planned |
+| System        | Purpose                           | Status  |
+| ------------- | --------------------------------- | ------- |
+| **Radicle**   | Decentralized code hosting        | Planned |
 | **NextGraph** | CRDT-based document collaboration | Planned |
 
 ## AI Learning Context
@@ -354,6 +355,7 @@ _Les recommandations 'accepted' ont été validées par un humain,
 ```
 
 This enables the AI to:
+
 1. Suggest similar ideas to those accepted
 2. Avoid patterns that were rejected
 3. Build on completed work
@@ -403,19 +405,20 @@ Kind: 31910 (N² Development Memory)
 
 ## Related Documentation
 
-- [NIP-101 N² Constellation Sync](../../nostr-nips/101-n2-constellation-sync-extension.md)
-- [ZEN Economy](./ZEN.ECONOMY.readme.md)
-- [Oracle System](./ORACLE_SYSTEM.md)
-- [ORE System](./ORE_SYSTEM.md)
+* [NIP-101 N² Constellation Sync](https://github.com/papiche/Astroport.ONE/blob/master/nostr-nips/101-n2-constellation-sync-extension.md)
+* [ZEN Economy](../archive/ZEN.ECONOMY.readme.md)
+* [Oracle System](ORACLE_SYSTEM.md)
+* [ORE System](ORE_SYSTEM.md)
 
----
+***
 
-*Documentation generated: 2026-01-07*  
-*System version: 2.1*
+_Documentation generated: 2026-01-07_\
+&#xNAN;_&#x53;ystem version: 2.1_
 
 ## Changelog
 
 ### v2.1 (2026-01-07)
-- **Vote linking**: Votes now include `reference_id` field and `["e", rec_id]` tag for aggregation
-- **ID collision fix**: Hash extended from 6-8 to 12 characters (281 trillion combinations)
-- **Key setup docs**: Added instructions for creating `uplanet.G1.nostr` shared key
+
+* **Vote linking**: Votes now include `reference_id` field and `["e", rec_id]` tag for aggregation
+* **ID collision fix**: Hash extended from 6-8 to 12 characters (281 trillion combinations)
+* **Key setup docs**: Added instructions for creating `uplanet.G1.nostr` shared key

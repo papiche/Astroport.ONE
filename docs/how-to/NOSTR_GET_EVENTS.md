@@ -1,4 +1,4 @@
-# 📡 nostr_get_events.sh - NOSTR Event Query Tool
+# 📡 nostr\_get\_events.sh - NOSTR Event Query Tool
 
 ## 📋 Overview
 
@@ -8,17 +8,17 @@
 
 **Purpose**: Query the local strfry NOSTR relay database for events matching specific criteria (kind, author, tags, timestamps, etc.)
 
----
+***
 
 ## 🎯 Key Features
 
-- **Multiple Filter Options**: Search by kind, author, tags (`d`, `p`, `e`), timestamps
-- **Flexible Output**: JSON (one event per line) or count mode
-- **Efficient Querying**: Direct strfry database access for fast results
-- **Integration Ready**: Designed for use by `oracle_system.py` and other scripts
-- **Parameterized Queries**: Support for complex multi-criteria searches
+* **Multiple Filter Options**: Search by kind, author, tags (`d`, `p`, `e`), timestamps
+* **Flexible Output**: JSON (one event per line) or count mode
+* **Efficient Querying**: Direct strfry database access for fast results
+* **Integration Ready**: Designed for use by `oracle_system.py` and other scripts
+* **Parameterized Queries**: Support for complex multi-criteria searches
 
----
+***
 
 ## 🔧 Usage
 
@@ -30,19 +30,19 @@
 
 ### Command-Line Options
 
-| Option | Description | Example |
-|--------|-------------|---------|
-| `--kind KIND` | Filter by event kind | `--kind 30500` |
-| `--author HEX` | Filter by author public key (hex) | `--author abc123...` |
-| `--tag-d VALUE` | Filter by 'd' tag | `--tag-d did` |
-| `--tag-p HEX` | Filter by 'p' tag (person) | `--tag-p abc123...` |
-| `--tag-e ID` | Filter by 'e' tag (event reference) | `--tag-e event123...` |
-| `--since TIMESTAMP` | Events created after this Unix timestamp | `--since 1698000000` |
-| `--until TIMESTAMP` | Events created before this Unix timestamp | `--until 1699000000` |
-| `--limit N` | Maximum number of events to return | `--limit 100` |
-| `--output MODE` | Output mode: `json` (default) or `count` | `--output count` |
+| Option              | Description                               | Example               |
+| ------------------- | ----------------------------------------- | --------------------- |
+| `--kind KIND`       | Filter by event kind                      | `--kind 30500`        |
+| `--author HEX`      | Filter by author public key (hex)         | `--author abc123...`  |
+| `--tag-d VALUE`     | Filter by 'd' tag                         | `--tag-d did`         |
+| `--tag-p HEX`       | Filter by 'p' tag (person)                | `--tag-p abc123...`   |
+| `--tag-e ID`        | Filter by 'e' tag (event reference)       | `--tag-e event123...` |
+| `--since TIMESTAMP` | Events created after this Unix timestamp  | `--since 1698000000`  |
+| `--until TIMESTAMP` | Events created before this Unix timestamp | `--until 1699000000`  |
+| `--limit N`         | Maximum number of events to return        | `--limit 100`         |
+| `--output MODE`     | Output mode: `json` (default) or `count`  | `--output count`      |
 
----
+***
 
 ## 📖 Examples
 
@@ -53,6 +53,7 @@
 ```
 
 **Output**: JSON events (one per line)
+
 ```json
 {"id":"...","pubkey":"...","created_at":1698000000,"kind":30500,"tags":[...],"content":"...","sig":"..."}
 {"id":"...","pubkey":"...","created_at":1698000100,"kind":30500,"tags":[...],"content":"...","sig":"..."}
@@ -73,6 +74,7 @@
 ```
 
 **Output**:
+
 ```
 127
 ```
@@ -96,9 +98,9 @@ SINCE=$(date -d '7 days ago' +%s)
 ./nostr_get_events.sh --tag-e event123abc... --limit 10
 ```
 
----
+***
 
-## 🔌 Integration with oracle_system.py
+## 🔌 Integration with oracle\_system.py
 
 The `oracle_system.py` module uses `nostr_get_events.sh` as its primary method for querying NOSTR events:
 
@@ -153,7 +155,7 @@ attestations = oracle.fetch_nostr_events(
 )
 ```
 
----
+***
 
 ## 🧪 Testing
 
@@ -177,6 +179,7 @@ done
 ```
 
 **Expected Output**:
+
 ```
 Kind 30500:
 5
@@ -198,7 +201,7 @@ MY_PUB=$(cat ~/.zen/game/nostr/$(cat ~/.zen/game/players/.current)/secret.nostr 
 ./nostr_get_events.sh --author $MY_PUB --limit 5
 ```
 
----
+***
 
 ## 🔍 How It Works
 
@@ -232,24 +235,24 @@ echo '{"kinds":[30500],"limit":10}' | strfry scan /path/to/strfry-db
 }
 ```
 
----
+***
 
 ## 📊 Performance
 
-- **Speed**: Direct database access (no WebSocket overhead)
-- **Scalability**: Can handle millions of events in strfry
-- **Limits**: Default limit is 100 events (can be increased with `--limit`)
-- **Timeout**: No built-in timeout (controlled by calling script)
+* **Speed**: Direct database access (no WebSocket overhead)
+* **Scalability**: Can handle millions of events in strfry
+* **Limits**: Default limit is 100 events (can be increased with `--limit`)
+* **Timeout**: No built-in timeout (controlled by calling script)
 
----
+***
 
 ## 🔐 Security
 
-- **Local Access Only**: Queries local strfry database (no external network calls)
-- **Read-Only**: Only reads events, does not modify the database
-- **No Authentication**: Assumes local trusted environment
+* **Local Access Only**: Queries local strfry database (no external network calls)
+* **Read-Only**: Only reads events, does not modify the database
+* **No Authentication**: Assumes local trusted environment
 
----
+***
 
 ## 🚨 Troubleshooting
 
@@ -280,12 +283,14 @@ find ~ -name "strfry-db" 2>/dev/null
 ### No Results Returned
 
 **Possible Causes**:
+
 1. No events match the filter criteria
 2. Wrong kind number
 3. Incorrect author hex (use hex, not npub)
 4. Timestamp filters too restrictive
 
 **Debug**:
+
 ```bash
 # Check total event count
 ./nostr_get_events.sh --output count
@@ -294,15 +299,15 @@ find ~ -name "strfry-db" 2>/dev/null
 ./nostr_get_events.sh --kind 1 --limit 1
 ```
 
----
+***
 
 ## 🔗 Related Documentation
 
-- **[ORACLE_SYSTEM.md](./ORACLE_SYSTEM.md)**: Oracle permit management system - 100% Dynamic System with auto-proclaimed professions and unlimited progression
-- **[ORACLE_NOSTR_FLOW.md](./ORACLE_NOSTR_FLOW.md)**: NOSTR event flow details
-- **[DID_IMPLEMENTATION.md](../DID_IMPLEMENTATION.md)**: DID and NOSTR integration
+* [**ORACLE\_SYSTEM.md**](../explanation/ORACLE_SYSTEM.md): Oracle permit management system - 100% Dynamic System with auto-proclaimed professions and unlimited progression
+* [**ORACLE\_NOSTR\_FLOW.md**](https://github.com/papiche/Astroport.ONE/blob/master/docs/ORACLE_NOSTR_FLOW.md): NOSTR event flow details
+* [**DID\_IMPLEMENTATION.md**](https://github.com/papiche/Astroport.ONE/blob/master/DID_IMPLEMENTATION.md): DID and NOSTR integration
 
----
+***
 
 ## 🎓 Advanced Usage
 
@@ -354,42 +359,43 @@ echo "  New Attestations: $(./nostr_get_events.sh --kind 30502 --since $SINCE --
 echo "  New Credentials:  $(./nostr_get_events.sh --kind 30503 --since $SINCE --output count)"
 ```
 
----
+***
 
 ## 📝 Notes
 
-- **Hex vs Npub**: Always use **hex** public keys (not npub/nsec) for filters
-- **Line-by-Line JSON**: Output is newline-delimited JSON (NDJSON), not a JSON array
-- **Filter Logic**: Multiple filters use AND logic (all must match)
-- **Case Sensitivity**: All hex strings are case-insensitive
-- **Tag Filters**: Only `d`, `p`, and `e` tags are currently supported
+* **Hex vs Npub**: Always use **hex** public keys (not npub/nsec) for filters
+* **Line-by-Line JSON**: Output is newline-delimited JSON (NDJSON), not a JSON array
+* **Filter Logic**: Multiple filters use AND logic (all must match)
+* **Case Sensitivity**: All hex strings are case-insensitive
+* **Tag Filters**: Only `d`, `p`, and `e` tags are currently supported
 
----
+***
 
 ## 🤝 Contributing
 
 This script is part of the Astroport.ONE project. Contributions and improvements are welcome!
 
 **Areas for Enhancement**:
-- Additional tag filters (`a`, `t`, etc.)
-- Regex pattern matching
-- Output formatting options (table, CSV)
-- Connection pooling for multiple queries
-- Cache layer for frequent queries
 
----
+* Additional tag filters (`a`, `t`, etc.)
+* Regex pattern matching
+* Output formatting options (table, CSV)
+* Connection pooling for multiple queries
+* Cache layer for frequent queries
+
+***
 
 ## 📜 License
 
 AGPL-3.0 - https://choosealicense.com/licenses/agpl-3.0/
 
----
+***
 
 ## 👨‍💻 Author
 
 Fred (support@qo-op.com)
 
----
+***
 
-**Last Updated**: October 30, 2025  
+**Last Updated**: October 30, 2025\
 **Version**: 1.0

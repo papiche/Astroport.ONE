@@ -3,17 +3,17 @@
 ## 📦 Option 1 : VirtualBox + Vagrant (plus simple, pour tester)
 
 ### Qu'est-ce que Vagrant ?
+
 Vagrant est un outil qui **automatise la création de VMs VirtualBox**. Pas besoin de configurer VirtualBox manuellement, d'installer un OS, etc. — Une commande suffit.
 
 ### Installation (à faire une seule fois)
 
-1. **Installez VirtualBox** :  
-   https://www.virtualbox.org/wiki/Downloads  
-   *(Version 7.x recommandée — Windows, Mac, Linux)*
-
-2. **Installez Vagrant** :  
-   https://developer.hashicorp.com/vagrant/install  
-   *(Version 2.4.x)*
+1. **Installez VirtualBox** :\
+   https://www.virtualbox.org/wiki/Downloads\
+   &#xNAN;_(Version 7.x recommandée — Windows, Mac, Linux)_
+2. **Installez Vagrant** :\
+   https://developer.hashicorp.com/vagrant/install\
+   &#xNAN;_(Version 2.4.x)_
 
 ### Utilisation
 
@@ -32,6 +32,7 @@ vagrant up
 ```
 
 **Accès aux services** depuis votre navigateur sur la machine hôte :
+
 ```
 http://localhost:12345   Astroport (carte de l'essaim)
 http://localhost:54321   UPassport (créer votre MULTIPASS)
@@ -77,21 +78,22 @@ Machine Hôte (Windows/Mac/Linux)
 
 > ⚠️ **Pour IPFS P2P** : avec le réseau NAT par défaut, votre nœud peut trouver des pairs mais les connexions entrantes seront bloquées. Utilisez `VM_NETWORK=bridge` pour une connectivité complète.
 
----
+***
 
 ## 🏗️ Option 2 : Proxmox VE (recommandé pour production)
 
 ### Qu'est-ce que Proxmox VE ?
+
 Proxmox est un **hyperviseur de type 1** (direct sur le matériel, sans OS hôte). Il est bien plus performant que VirtualBox et conçu pour la production. Interface web sur `https://IP_PROXMOX:8006`.
 
 ### Choix du type de VM
 
-| | **VM KVM** | **Conteneur LXC** |
-|---|---|---|
-| Performance | ✅ Très bonne | ⭐ Excellente (quasi-native) |
-| Isolation | ✅ Complète | ⚠️ Partagée |
-| Docker support | ✅ Natif | ⚠️ Nécessite config spéciale |
-| Recommandé pour | Production standard | Serveurs légers sans Docker |
+|                 | **VM KVM**          | **Conteneur LXC**            |
+| --------------- | ------------------- | ---------------------------- |
+| Performance     | ✅ Très bonne        | ⭐ Excellente (quasi-native)  |
+| Isolation       | ✅ Complète          | ⚠️ Partagée                  |
+| Docker support  | ✅ Natif             | ⚠️ Nécessite config spéciale |
+| Recommandé pour | Production standard | Serveurs légers sans Docker  |
 
 **Recommandation : VM KVM** pour Astroport.ONE (utilise Docker).
 
@@ -105,21 +107,24 @@ bash <(curl -sL https://raw.githubusercontent.com/papiche/Astroport.ONE/master/d
 Ou manuellement :
 
 **1. Télécharger l'ISO Ubuntu 22.04** dans Proxmox :
+
 ```
 Datacenter → VOTRE_NODE → local → ISO Images → Download from URL
 URL: https://releases.ubuntu.com/22.04/ubuntu-22.04.3-live-server-amd64.iso
 ```
 
 **2. Créer la VM** (interface web) :
-- RAM : 4096 Mo minimum (8192 recommandé)
-- Disque : 80 Go minimum (200 Go recommandé pour IPFS + NextCloud)
-- CPU : 2 cœurs minimum, 4 recommandés
-- Réseau : Bridge sur votre interface réseau principale (vmbr0)
-- Cocher "QEMU Guest Agent"
+
+* RAM : 4096 Mo minimum (8192 recommandé)
+* Disque : 80 Go minimum (200 Go recommandé pour IPFS + NextCloud)
+* CPU : 2 cœurs minimum, 4 recommandés
+* Réseau : Bridge sur votre interface réseau principale (vmbr0)
+* Cocher "QEMU Guest Agent"
 
 **3. Installer Ubuntu Server** (sans interface graphique)
 
 **4. Installer Astroport** dans la VM :
+
 ```bash
 # Dans la VM Ubuntu
 bash <(curl -sL https://install.astroport.com)
@@ -189,23 +194,23 @@ Proxmox VE (bare-metal)
 # docker/proxmox-setup.sh — voir ce fichier pour l'automatisation complète
 ```
 
----
+***
 
 ## 💡 Comparaison des méthodes d'installation
 
-| | VirtualBox+Vagrant | Proxmox VM | Proxmox LXC | Direct Linux |
-|---|---|---|---|---|
-| **Facilité** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐ |
-| **Performance** | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Isolation** | ✅ | ✅ | ⚠️ | ❌ |
-| **IPFS P2P** | Bridge requis | ✅ | ✅ | ✅ |
-| **Docker** | ✅ | ✅ | ⚠️ Privilégié | ✅ |
-| **Usage recommandé** | Test/Dev | Production | Avancé | Production |
+|                      | VirtualBox+Vagrant | Proxmox VM | Proxmox LXC   | Direct Linux |
+| -------------------- | ------------------ | ---------- | ------------- | ------------ |
+| **Facilité**         | ⭐⭐⭐⭐⭐              | ⭐⭐⭐        | ⭐⭐            | ⭐⭐⭐⭐         |
+| **Performance**      | ⭐⭐⭐                | ⭐⭐⭐⭐       | ⭐⭐⭐⭐⭐         | ⭐⭐⭐⭐⭐        |
+| **Isolation**        | ✅                  | ✅          | ⚠️            | ❌            |
+| **IPFS P2P**         | Bridge requis      | ✅          | ✅             | ✅            |
+| **Docker**           | ✅                  | ✅          | ⚠️ Privilégié | ✅            |
+| **Usage recommandé** | Test/Dev           | Production | Avancé        | Production   |
 
----
+***
 
 ## 📞 Support
 
-- Email : support@qo-op.com
-- Forum : forum.monnaie-libre.fr
-- Code : github.com/papiche/Astroport.ONE
+* Email : support@qo-op.com
+* Forum : forum.monnaie-libre.fr
+* Code : github.com/papiche/Astroport.ONE

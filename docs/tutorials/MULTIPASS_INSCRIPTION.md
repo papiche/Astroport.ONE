@@ -1,24 +1,24 @@
 # 🎟️ Créer son MULTIPASS UPlanet
 
-**Public :** Tout utilisateur souhaitant rejoindre l'écosystème UPlanet.  
-**Résultat :** Un MULTIPASS actif, un Kin Maya intégré à votre DID, et votre identité NOSTR reconnue dans la barre UPH.  
-**Durée :** 5 à 10 minutes.  
+**Public :** Tout utilisateur souhaitant rejoindre l'écosystème UPlanet.\
+**Résultat :** Un MULTIPASS actif, un Kin Maya intégré à votre DID, et votre identité NOSTR reconnue dans la barre UPH.\
+**Durée :** 5 à 10 minutes.\
 **Prérequis :** Un navigateur web, une adresse email, être connecté à une station UPlanet (`http://127.0.0.1:54321` en local ou `https://u.votre-domaine.tld`).
 
----
+***
 
 ## Ce que vous allez obtenir
 
 À la fin de ce tutoriel :
 
-- ✅ Une identité NOSTR (`nsec` / `npub`) générée de façon déterministe
-- ✅ Un portefeuille Ẑen dédié à votre activité UPlanet
-- ✅ Un espace de stockage personnel IPFS (uDRIVE — 10 Go)
-- ✅ Un QR code MULTIPASS sécurisé par SSSS (2-sur-3)
-- ✅ Votre **Kin Maya Tzolkin** dans votre DID (si vous renseignez votre date de naissance)
-- ✅ Votre identité reconnue dans la barre UPlanet Header (🌀)
+* ✅ Une identité NOSTR (`nsec` / `npub`) générée de façon déterministe
+* ✅ Un portefeuille Ẑen dédié à votre activité UPlanet
+* ✅ Un espace de stockage personnel IPFS (uDRIVE — 10 Go)
+* ✅ Un QR code MULTIPASS sécurisé par SSSS (2-sur-3)
+* ✅ Votre **Kin Maya Tzolkin** dans votre DID (si vous renseignez votre date de naissance)
+* ✅ Votre identité reconnue dans la barre UPlanet Header (🌀)
 
----
+***
 
 ## Étape 1 — Ouvrir la page d'inscription
 
@@ -34,7 +34,7 @@ Vous arrivez sur la page **🌐️ MULTIPASS DISCO Respawn**.
 
 > 💡 Si vous venez depuis la barre UPlanet Header (🔑 Accès → ✨ Créer un MULTIPASS), votre identifiant G1v1 et mot de passe sont pré-remplis dans les champs cachés — votre portefeuille Ẑen éventuel sera versé au collectif (crowdfunding coopératif).
 
----
+***
 
 ## Étape 2 — Saisir votre email
 
@@ -46,24 +46,25 @@ exemple : alice@example.com
 
 > ⚠️ Utilisez une adresse que vous contrôlez. En cas de perte, c'est le seul moyen de récupérer votre MULTIPASS via le mécanisme SSSS.
 
----
+***
 
 ## Étape 3 — Choisir votre localisation GPS
 
 La carte interactive affiche votre position actuelle (géolocalisation automatique).
 
 **Options :**
-- **Cliquez sur la carte** pour ajuster votre position manuellement
-- **Glissez le marqueur** vers l'emplacement souhaité
-- Cliquez **Ma position** pour utiliser le GPS de votre appareil
+
+* **Cliquez sur la carte** pour ajuster votre position manuellement
+* **Glissez le marqueur** vers l'emplacement souhaité
+* Cliquez **Ma position** pour utiliser le GPS de votre appareil
 
 Les coordonnées (Lat / Lon arrondies à 0.01°) déterminent votre **cellule UMAP** — votre territoire coopératif sur la grille UPlanet.
 
 > 💡 Précision suffisante : 0.01° ≈ 1 km². Vous pouvez affiner plus tard depuis votre profil.
 
----
+***
 
-## Étape 4 — Découvrir votre Kin Maya *(optionnel)*
+## Étape 4 — Découvrir votre Kin Maya _(optionnel)_
 
 Cliquez sur l'accordéon **🌀 Kin Maya — Empreinte Natale** pour le déplier.
 
@@ -79,19 +80,19 @@ Dès la saisie, le **Kin Maya** s'affiche en temps réel :
 
 Votre Kin est un numéro entre 1 et 260, calculé selon le calendrier **Tzolkin** (Dreamspell). Il exprime votre Sceau Solaire 🦎 et votre Tonalité Galactique 🔔.
 
-→ [En savoir plus sur le système Kin Maya](/earth/kin.html)
+→ [En savoir plus sur le système Kin Maya](https://github.com/papiche/Astroport.ONE/blob/master/earth/kin.html)
 
-### 4b. Renseigner votre lieu de naissance *(optionnel)*
+### 4b. Renseigner votre lieu de naissance _(optionnel)_
 
 Entrez une ville ou des coordonnées GPS — conservées dans votre espace chiffré uniquement.
 
-### 4c. Renseigner votre poids de naissance *(optionnel)*
+### 4c. Renseigner votre poids de naissance _(optionnel)_
 
 En kilogrammes — donnée personnelle stockée localement, jamais publiée.
 
 > 🔐 Ces données restent dans `~/.zen/game/nostr/<email>/` sur votre station. Seul le numéro Kin apparaît dans votre DID public (kind 30800 NOSTR).
 
----
+***
 
 ## Étape 5 — Soumettre le formulaire
 
@@ -106,25 +107,27 @@ Le serveur lance la génération de votre MULTIPASS — comptez **30 à 90 secon
 3. Si une date de naissance est fournie, `kin.sh` calcule le Kin Maya et le badge est inclus dans le DID (kind 30800)
 4. Le résultat est renvoyé comme page HTML (ZenCard / NOSTR Zine)
 
----
+***
 
 ## Étape 6 — Récupérer votre MULTIPASS
 
 La **modal résultat** s'ouvre avec votre page MULTIPASS.
 
 Elle contient :
-- 🎴 Votre **ZenCard** avec QR code(s) SSSS
-- 👤 Votre profil NOSTR (nom, avatar, npub)
-- 🌀 Votre **Kin Maya** (si date de naissance fournie)
-- 💳 L'adresse de votre portefeuille Ẑen
+
+* 🎴 Votre **ZenCard** avec QR code(s) SSSS
+* 👤 Votre profil NOSTR (nom, avatar, npub)
+* 🌀 Votre **Kin Maya** (si date de naissance fournie)
+* 💳 L'adresse de votre portefeuille Ẑen
 
 **Actions possibles :**
-- **Ouvrir** — ouvre dans un nouvel onglet pour imprimer ou sauvegarder
-- → [Imprimer votre ZenCard](../how-to/print_multipass_cards.md)
+
+* **Ouvrir** — ouvre dans un nouvel onglet pour imprimer ou sauvegarder
+* → [Imprimer votre ZenCard](../how-to/print_multipass_cards.md)
 
 > 💾 **Sauvegardez votre ZenCard dès maintenant.** Elle contient les parts SSSS de votre clé privée — sans elle, la récupération en cas de perte de session est impossible.
 
----
+***
 
 ## Étape 7 — Se connecter à UPlanet Header (UPH)
 
@@ -136,11 +139,11 @@ Cliquez sur **🔑 Accès** dans la barre UPH pour ouvrir le panneau de connexio
 
 Dans la section **⚡ Dériver depuis G1v1** :
 
-| Champ | Valeur |
-|-------|--------|
-| Login G1v1 | Le salt utilisé lors de l'inscription (ou votre email) |
-| Mot de passe G1 | Le pepper utilisé lors de l'inscription |
-| Email *(optionnel)* | Nom du compte sauvegardé dans votre navigateur |
+| Champ               | Valeur                                                 |
+| ------------------- | ------------------------------------------------------ |
+| Login G1v1          | Le salt utilisé lors de l'inscription (ou votre email) |
+| Mot de passe G1     | Le pepper utilisé lors de l'inscription                |
+| Email _(optionnel)_ | Nom du compte sauvegardé dans votre navigateur         |
 
 Cliquez **Dériver G1v1 →**.
 
@@ -154,11 +157,11 @@ Dans la section **🗝 Importer une nsec**, collez votre nsec et cliquez **Impor
 
 ### Ce que vous voyez après connexion
 
-- La barre UPH affiche votre **nom** et votre **solde ẐEN** 💰
-- Le bouton **🔑 Accès** disparaît
-- Le widget **🌀** affiche votre numéro de Kin (ex : `🌀42`) si votre date de naissance était renseignée
+* La barre UPH affiche votre **nom** et votre **solde ẐEN** 💰
+* Le bouton **🔑 Accès** disparaît
+* Le widget **🌀** affiche votre numéro de Kin (ex : `🌀42`) si votre date de naissance était renseignée
 
----
+***
 
 ## Étape 8 — Explorer votre Kin Maya
 
@@ -181,26 +184,27 @@ Votre profil NOSTR (nom, avatar) s'affiche en bas si le relay est accessible.
 
 ### Onglet "Debug"
 
-- **Kind 0** — événement NOSTR brut de votre profil (JSON)
-- **Kind 30800** — votre document DID complet (JSON), y compris le badge MayaKin
-- **Kin extrait** — le badge Kin tel que parsé par le widget
+* **Kind 0** — événement NOSTR brut de votre profil (JSON)
+* **Kind 30800** — votre document DID complet (JSON), y compris le badge MayaKin
+* **Kin extrait** — le badge Kin tel que parsé par le widget
 
 > La console du navigateur (`F12 → Console`) contient les logs groupés `[kin.js]` avec le détail complet des événements NOSTR reçus.
 
----
+***
 
 ## Étape 9 — Rejoindre votre constellation
 
 Pour accéder aux fonctionnalités complètes du MULTIPASS (publication NOSTR, paiements ẐEN, uDRIVE…), vous devez être **ami avec au moins un astronaute** UPlanet (membre du réseau N² — amis d'amis).
 
 **Comment trouver un astronaute :**
-- Demandez à un membre existant de vous suivre sur NOSTR
-- Rejoignez le relay `relay.copylaradio.com` et publiez un kind 1 de présentation
-- Contactez `support@qo-op.com` pour un parrainage
+
+* Demandez à un membre existant de vous suivre sur NOSTR
+* Rejoignez le relay `relay.copylaradio.com` et publiez un kind 1 de présentation
+* Contactez `support@qo-op.com` pour un parrainage
 
 > 🌐 Votre MULTIPASS est actif dès la création — le réseau N² détermine vos droits d'accès aux services coopératifs (voir [WoTx2](../reference/WOTX2_SYSTEM.md)).
 
----
+***
 
 ## Récapitulatif des fichiers créés
 
@@ -224,7 +228,7 @@ Sur votre station, votre MULTIPASS génère les fichiers suivants :
 └── .nostr.zine.html       # Page MULTIPASS (retournée au navigateur)
 ```
 
----
+***
 
 ## Dépannage
 
@@ -248,14 +252,14 @@ Le badge Kin est publié dans le DID (kind 30800) lors de la génération du MUL
 
 Le champ salt ou pepper dépasse 56 caractères (limite SSSS DISCO). Raccourcissez vos identifiants G1v1.
 
----
+***
 
 ## Référence rapide
 
-| Document | Description |
-|----------|-------------|
-| [IDENTITY_MULTIPASS.md](../reference/IDENTITY_MULTIPASS.md) | Référence technique du MULTIPASS |
-| [DID_IMPLEMENTATION.md](../explanation/DID_IMPLEMENTATION.md) | Architecture DID + badge Kin Maya |
-| [print_multipass_cards.md](../how-to/print_multipass_cards.md) | Imprimer et distribuer les ZenCards |
-| [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) | Système de Web of Trust N² |
-| [kin.html](/earth/kin.html) | Page interactive Kin Maya |
+| Document                                                                        | Description                         |
+| ------------------------------------------------------------------------------- | ----------------------------------- |
+| [IDENTITY\_MULTIPASS.md](../reference/IDENTITY_MULTIPASS.md)                    | Référence technique du MULTIPASS    |
+| [DID\_IMPLEMENTATION.md](../explanation/DID_IMPLEMENTATION.md)                  | Architecture DID + badge Kin Maya   |
+| [print\_multipass\_cards.md](../how-to/print_multipass_cards.md)                | Imprimer et distribuer les ZenCards |
+| [WOTX2\_SYSTEM.md](../reference/WOTX2_SYSTEM.md)                                | Système de Web of Trust N²          |
+| [kin.html](https://github.com/papiche/Astroport.ONE/blob/master/earth/kin.html) | Page interactive Kin Maya           |

@@ -1,18 +1,16 @@
 # Docker pour stations Astroport
 
-**Auteur** : toto (support+toto@qo-op.com)  
-**Skill** : docker  
-**Niveau** : X1 — Fondamentaux  
+**Auteur** : toto (support+toto@qo-op.com)\
+**Skill** : docker\
+**Niveau** : X1 — Fondamentaux
 
----
+***
 
 ## Pourquoi Docker sur une station Astroport ?
 
-La stack complète d'Astroport tourne dans Docker : Qdrant (vectoriel), Ollama (IA),
-Open WebUI (chat), Mirofish (opinions), rnostr (relay NOSTR), Nextcloud.
-Comprendre Docker, c'est maîtriser la mise à l'échelle et la mise à jour de la station.
+La stack complète d'Astroport tourne dans Docker : Qdrant (vectoriel), Ollama (IA), Open WebUI (chat), Mirofish (opinions), rnostr (relay NOSTR), Nextcloud. Comprendre Docker, c'est maîtriser la mise à l'échelle et la mise à jour de la station.
 
----
+***
 
 ## 1. La stack Astroport Docker
 
@@ -31,12 +29,11 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml \
     --profile ai up -d
 ```
 
----
+***
 
 ## 2. Réseau dragon-net
 
-Tous les services Astroport partagent le réseau bridge `dragon-net`.
-Les services se joignent **par nom de conteneur** (pas par IP) :
+Tous les services Astroport partagent le réseau bridge `dragon-net`. Les services se joignent **par nom de conteneur** (pas par IP) :
 
 ```bash
 # Depuis un conteneur, accéder à Qdrant
@@ -49,7 +46,7 @@ curl http://astroport-ollama:11434/api/tags
 curl http://127.0.0.1:6333/healthz
 ```
 
----
+***
 
 ## 3. Profils et variables d'environnement
 
@@ -66,13 +63,14 @@ MIROFISH_MODEL=gemma3:12b
 ```
 
 Passer l'env-file à docker compose :
+
 ```bash
 docker compose \
     --env-file ~/.zen/ai-company/.env \
     --profile ai up -d
 ```
 
----
+***
 
 ## 4. Volumes et données persistantes
 
@@ -90,12 +88,11 @@ docker run --rm \
     alpine tar czf /backup/qdrant_backup.tar.gz /data
 ```
 
----
+***
 
 ## 5. Mise à jour des conteneurs (Watchtower)
 
-Astroport utilise Watchtower pour les mises à jour automatiques des images
-marquées `com.centurylinklabs.watchtower.enable=true` :
+Astroport utilise Watchtower pour les mises à jour automatiques des images marquées `com.centurylinklabs.watchtower.enable=true` :
 
 ```bash
 # Démarrer avec auto-update
@@ -108,7 +105,7 @@ docker compose pull && docker compose up -d
 docker logs astroport-watchtower --tail 20
 ```
 
----
+***
 
 ## 6. Diagnostics courants
 
@@ -129,7 +126,7 @@ docker exec -it astroport bash
 docker inspect astroport-qdrant --format '{{.State.Health.Status}}'
 ```
 
----
+***
 
 ## 7. Exercice — Vérifier la stack complète
 
@@ -153,11 +150,11 @@ curl -sf http://localhost:11434/api/tags && echo "✓ Ollama OK"
 curl -sf http://localhost:12345/station  && echo "✓ Astroport OK"
 ```
 
----
+***
 
 ## Ressources complémentaires
 
-- `Astroport.ONE/docker/docker-compose.yml` — compose principal
-- `Astroport.ONE/docker/docker-compose.gpu.yml` — overlay GPU NVIDIA
-- `Astroport.ONE/install/install-ai-company.docker.sh` — génération des secrets IA
-- [ASTROSYSTEMCTL.md](../../docs/how-to/ASTROSYSTEMCTL.md) — télécommande P2P des services
+* `Astroport.ONE/docker/docker-compose.yml` — compose principal
+* `Astroport.ONE/docker/docker-compose.gpu.yml` — overlay GPU NVIDIA
+* `Astroport.ONE/install/install-ai-company.docker.sh` — génération des secrets IA
+* [ASTROSYSTEMCTL.md](https://github.com/papiche/Astroport.ONE/blob/master/tests/docs/how-to/ASTROSYSTEMCTL.md) — télécommande P2P des services

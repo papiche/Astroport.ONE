@@ -1,29 +1,29 @@
 # 🔐 UPlanet Oracle System - Documentation Complète
 
-**Version**: 3.1 - Oracle Officiel + WoTx2 P2P  
-**Date**: Mai 2026  
-**Status**: Production — Permits Officiels (Oracle) + Maîtrises Folksonomiques (Client Flutter P2P)  
+**Version**: 3.1 - Oracle Officiel + WoTx2 P2P\
+**Date**: Mai 2026\
+**Status**: Production — Permits Officiels (Oracle) + Maîtrises Folksonomiques (Client Flutter P2P)\
 **License**: AGPL-3.0
 
-> **Séparation des rôles (v3.1)** : L'Oracle (`ORACLE.refresh.sh`) gère désormais **uniquement les Permits Officiels Statiques** (ex : Permis de l'Astroport, droits d'administration). La progression des **Maîtrises Auto-Proclamées (WoTx2)** est entièrement déportée vers le client Flutter lourd, qui calcule le consensus P2P localement et auto-émet les Skill Achievements (Kind 30503) avec preuves cryptographiques intégrées. Voir [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) pour le protocole WoTx2 complet.
+> **Séparation des rôles (v3.1)** : L'Oracle (`ORACLE.refresh.sh`) gère désormais **uniquement les Permits Officiels Statiques** (ex : Permis de l'Astroport, droits d'administration). La progression des **Maîtrises Auto-Proclamées (WoTx2)** est entièrement déportée vers le client Flutter lourd, qui calcule le consensus P2P localement et auto-émet les Skill Achievements (Kind 30503) avec preuves cryptographiques intégrées. Voir [WOTX2\_SYSTEM.md](../reference/WOTX2_SYSTEM.md) pour le protocole WoTx2 complet.
 
----
+***
 
 ## 📖 Table des Matières
 
-1. [Vue d'Ensemble](#1-vue-densemble)
-2. [Architecture Dynamique](#2-architecture-dynamique)
-3. [Système WoTx2 - Maîtrises Auto-Proclamées](#3-système-wotx2---maîtrises-auto-proclamées)
-4. [Workflow Complet](#4-workflow-complet)
-5. [Événements NOSTR](#5-événements-nostr)
-6. [Authentification NIP-42](#6-authentification-nip-42)
-7. [API Reference](#7-api-reference)
-8. [Maintenance Quotidienne](#8-maintenance-quotidienne)
-9. [Interfaces Utilisateur](#9-interfaces-utilisateur)
-10. [Exemples Concrets](#10-exemples-concrets)
-11. [Troubleshooting](#11-troubleshooting)
+1. [Vue d'Ensemble](ORACLE_SYSTEM.md#1-vue-densemble)
+2. [Architecture Dynamique](ORACLE_SYSTEM.md#2-architecture-dynamique)
+3. [Système WoTx2 - Maîtrises Auto-Proclamées](ORACLE_SYSTEM.md#3-système-wotx2---maîtrises-auto-proclamées)
+4. [Workflow Complet](ORACLE_SYSTEM.md#4-workflow-complet)
+5. [Événements NOSTR](ORACLE_SYSTEM.md#5-événements-nostr)
+6. [Authentification NIP-42](ORACLE_SYSTEM.md#6-authentification-nip-42)
+7. [API Reference](ORACLE_SYSTEM.md#7-api-reference)
+8. [Maintenance Quotidienne](ORACLE_SYSTEM.md#8-maintenance-quotidienne)
+9. [Interfaces Utilisateur](ORACLE_SYSTEM.md#9-interfaces-utilisateur)
+10. [Exemples Concrets](ORACLE_SYSTEM.md#10-exemples-concrets)
+11. [Troubleshooting](ORACLE_SYSTEM.md#11-troubleshooting)
 
----
+***
 
 ## 1. Vue d'Ensemble
 
@@ -35,41 +35,43 @@ Le **Système Oracle** est un système décentralisé de gestion de permits/lice
 
 Le Système Oracle transforme la certification traditionnelle d'autorités centralisées vers une **certification validée par les pairs** :
 
-- **Demande de Permit** : Un candidat demande publiquement un permit
-- **Attestation par les Pairs** : Des experts certifiés attestent la compétence du candidat (validation multi-signature)
-- **Émission de Credential** : Une fois suffisamment d'attestations collectées, un Verifiable Credential (VC) est émis
-- **Signature d'Autorité** : Le VC final est signé par l'autorité UPlanet (clé UPLANETNAME.G1)
-- **Badge NIP-58** : Un badge visuel est automatiquement émis pour matérialiser la compétence validée (gamification)
+* **Demande de Permit** : Un candidat demande publiquement un permit
+* **Attestation par les Pairs** : Des experts certifiés attestent la compétence du candidat (validation multi-signature)
+* **Émission de Credential** : Une fois suffisamment d'attestations collectées, un Verifiable Credential (VC) est émis
+* **Signature d'Autorité** : Le VC final est signé par l'autorité UPlanet (clé UPLANETNAME.G1)
+* **Badge NIP-58** : Un badge visuel est automatiquement émis pour matérialiser la compétence validée (gamification)
 
 ### 1.3. Système 100% Dynamique
 
 Le système Oracle v3.0 est **100% dynamique** :
 
-- ✅ **Création libre** : N'importe qui peut créer une maîtrise auto-proclamée
-- ✅ **Progression automatique** : X1 → X2 → X3 → ... → X144 → ... (illimité)
-- ✅ **Compétences révélées** : Les compétences sont découvertes progressivement lors des attestations
-- ✅ **Aucun bootstrap requis** : Démarre avec 1 signature (vs N+1 pour les permits officiels)
-- ✅ **Évolution continue** : Le système crée automatiquement les niveaux suivants
+* ✅ **Création libre** : N'importe qui peut créer une maîtrise auto-proclamée
+* ✅ **Progression automatique** : X1 → X2 → X3 → ... → X144 → ... (illimité)
+* ✅ **Compétences révélées** : Les compétences sont découvertes progressivement lors des attestations
+* ✅ **Aucun bootstrap requis** : Démarre avec 1 signature (vs N+1 pour les permits officiels)
+* ✅ **Évolution continue** : Le système crée automatiquement les niveaux suivants
 
----
+***
 
 ## 2. Architecture Dynamique
 
 ### 2.1. Deux Types de Permits
 
 #### Permits Officiels (Statiques)
-- Créés par `UPLANETNAME_G1` (admin)
-- ID fixe (ex: `PERMIT_ORE_V1`, `PERMIT_DRIVER`)
-- Bootstrap requis (N+1 membres pour N signatures)
-- Compétences définies à la création
-- Exemples : Permis de conduire, Vérificateur ORE, etc.
+
+* Créés par `UPLANETNAME_G1` (admin)
+* ID fixe (ex: `PERMIT_ORE_V1`, `PERMIT_DRIVER`)
+* Bootstrap requis (N+1 membres pour N signatures)
+* Compétences définies à la création
+* Exemples : Permis de conduire, Vérificateur ORE, etc.
 
 #### Maîtrises Auto-Proclamées (Dynamiques - WoTx2)
-- Créés par n'importe quel utilisateur
-- ID dynamique : `PERMIT_[NOM]_X1`
-- Aucun bootstrap requis (démarre avec 1 signature)
-- Compétences révélées progressivement
-- Progression automatique illimitée : X1 → X2 → ... → X144 → ...
+
+* Créés par n'importe quel utilisateur
+* ID dynamique : `PERMIT_[NOM]_X1`
+* Aucun bootstrap requis (démarre avec 1 signature)
+* Compétences révélées progressivement
+* Progression automatique illimitée : X1 → X2 → ... → X144 → ...
 
 ### 2.2. Schéma d'Architecture
 
@@ -113,7 +115,7 @@ Client Flutter (TrocZen) — WoTx2 uniquement :
     → publishSkillAchievement() → Kind 30503 auto-signé avec justifications
 ```
 
----
+***
 
 ## 3. Système WoTx2 - Maîtrises Auto-Proclamées
 
@@ -121,7 +123,7 @@ Client Flutter (TrocZen) — WoTx2 uniquement :
 
 Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui évoluent de niveau en niveau par consensus décentralisé. La progression est calculée **côté client Flutter** (TrocZen), non par l'Oracle.
 
-Voir le protocole complet dans [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) (Règle A : consensus, Règle B : adoubement).
+Voir le protocole complet dans [WOTX2\_SYSTEM.md](../reference/WOTX2_SYSTEM.md) (Règle A : consensus, Règle B : adoubement).
 
 ### 3.2. Workflow de Progression (Client Flutter)
 
@@ -168,13 +170,13 @@ Voir le protocole complet dans [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) (
 
 ### 3.3. Labels Dynamiques
 
-| Niveau | Label | Exigences |
-|--------|-------|-----------|
-| X1-X4 | Niveau Xn | N signatures, N compétences |
-| X5-X10 | Niveau Xn (Expert) | N signatures, N compétences |
-| X11-X50 | Niveau Xn (Maître) | N signatures, N compétences |
-| X51-X100 | Niveau Xn (Grand Maître) | N signatures, N compétences |
-| X101+ | Niveau Xn (Maître Absolu) | N signatures, N compétences |
+| Niveau   | Label                     | Exigences                   |
+| -------- | ------------------------- | --------------------------- |
+| X1-X4    | Niveau Xn                 | N signatures, N compétences |
+| X5-X10   | Niveau Xn (Expert)        | N signatures, N compétences |
+| X11-X50  | Niveau Xn (Maître)        | N signatures, N compétences |
+| X51-X100 | Niveau Xn (Grand Maître)  | N signatures, N compétences |
+| X101+    | Niveau Xn (Maître Absolu) | N signatures, N compétences |
 
 ### 3.4. Cycle de Vie Complet
 
@@ -223,7 +225,7 @@ Voir le protocole complet dans [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) (
    └─────────────────────────────────────┘
 ```
 
----
+***
 
 ## 4. Workflow Complet
 
@@ -232,109 +234,97 @@ Voir le protocole complet dans [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) (
 **Interface**: `/wotx2` → "Créer une Nouvelle Maîtrise WoTx2"
 
 1. **Formulaire** :
-   - ✅ Cocher "Maîtrise Auto-Proclamée"
-   - Saisir le nom de la maîtrise (ex: "Maître Nageur")
-   - L'ID est généré automatiquement : `PERMIT_MAITRE_NAGEUR_X1`
-   - Ajouter une description
-
+   * ✅ Cocher "Maîtrise Auto-Proclamée"
+   * Saisir le nom de la maîtrise (ex: "Maître Nageur")
+   * L'ID est généré automatiquement : `PERMIT_MAITRE_NAGEUR_X1`
+   * Ajouter une description
 2. **Publication** :
-   - Événement kind 30500 publié sur Nostr
-   - Signé par `UPLANETNAME_G1`
-   - `min_attestations: 1` (démarrage X1)
-
+   * Événement kind 30500 publié sur Nostr
+   * Signé par `UPLANETNAME_G1`
+   * `min_attestations: 1` (démarrage X1)
 3. **Résultat** :
-   - Le permit apparaît dans `/oracle` et `/wotx2`
-   - Les utilisateurs peuvent créer des demandes 30501
+   * Le permit apparaît dans `/oracle` et `/wotx2`
+   * Les utilisateurs peuvent créer des demandes 30501
 
 ### 4.2. Demande d'Apprentissage (30501)
 
 **Interface**: `/wotx2` → "Devenir Apprenti"
 
 1. **Sélection du permit** :
-   - Choisir parmi tous les permits disponibles (officiels ou auto-proclamés)
-   - Voir le niveau si c'est une maîtrise Xn
-
+   * Choisir parmi tous les permits disponibles (officiels ou auto-proclamés)
+   * Voir le niveau si c'est une maîtrise Xn
 2. **Formulaire** :
-   - Déclaration d'apprentissage (minimum 20 caractères)
-   - **Compétence réclamée** (obligatoire) : ex: "Natation", "Sauvetage"
-   - Preuves de motivation (liens IPFS, optionnel)
-   - Géolocalisation (automatique si autorisée)
-
+   * Déclaration d'apprentissage (minimum 20 caractères)
+   * **Compétence réclamée** (obligatoire) : ex: "Natation", "Sauvetage"
+   * Preuves de motivation (liens IPFS, optionnel)
+   * Géolocalisation (automatique si autorisée)
 3. **Publication** :
-   - Événement kind 30501 publié sur Nostr
-   - Signé par le MULTIPASS de l'apprenti
-   - Apparaît dans "Apprentis Cherchant un Maître"
+   * Événement kind 30501 publié sur Nostr
+   * Signé par le MULTIPASS de l'apprenti
+   * Apparaît dans "Apprentis Cherchant un Maître"
 
 ### 4.3. Attestation (30502)
 
 **Interface**: `/wotx2` → "Apprentis Cherchant un Maître" → Bouton "Attester"
 
 1. **Conditions** :
-   - L'attesteur doit avoir un credential 30503 pour ce permit (ou un niveau supérieur)
-   - L'attesteur ne peut pas s'attester lui-même
-
+   * L'attesteur doit avoir un credential 30503 pour ce permit (ou un niveau supérieur)
+   * L'attesteur ne peut pas s'attester lui-même
 2. **Formulaire** :
-   - Déclaration d'attestation
-   - Compétences à transférer (si l'attesteur en a)
-   - Compétences révélées (nouvelles compétences découvertes)
-   - Géolocalisation (optionnel)
-
+   * Déclaration d'attestation
+   * Compétences à transférer (si l'attesteur en a)
+   * Compétences révélées (nouvelles compétences découvertes)
+   * Géolocalisation (optionnel)
 3. **Publication** :
-   - Événement kind 30502 publié sur Nostr
-   - Signé par le MULTIPASS de l'attesteur
-   - Référence la demande 30501 (tag `e`)
+   * Événement kind 30502 publié sur Nostr
+   * Signé par le MULTIPASS de l'attesteur
+   * Référence la demande 30501 (tag `e`)
 
 ### 4.4. Validation et Émission de Credential (30503)
 
 **Processus automatique** : `ORACLE.refresh.sh` (exécuté quotidiennement)
 
 1. **Vérification** :
-   - Récupère toutes les demandes 30501 depuis Nostr
-   - Compte les attestations 30502 pour chaque demande
-   - Vérifie si le seuil est atteint (`attestations_count >= min_attestations`)
-
+   * Récupère toutes les demandes 30501 depuis Nostr
+   * Compte les attestations 30502 pour chaque demande
+   * Vérifie si le seuil est atteint (`attestations_count >= min_attestations`)
 2. **Émission** :
-   - Si seuil atteint → Appelle `/api/permit/issue/${request_id}`
-   - L'API émet un événement kind 30503 (Verifiable Credential)
-   - Signé par `UPLANETNAME_G1`
-   - Le credential est un W3C Verifiable Credential standard
-   - **Badge NIP-58** : Un badge (kind 30009 + kind 8) est automatiquement émis
-
+   * Si seuil atteint → Appelle `/api/permit/issue/${request_id}`
+   * L'API émet un événement kind 30503 (Verifiable Credential)
+   * Signé par `UPLANETNAME_G1`
+   * Le credential est un W3C Verifiable Credential standard
+   * **Badge NIP-58** : Un badge (kind 30009 + kind 8) est automatiquement émis
 3. **Nettoyage** :
-   - Supprime le fichier 30501 du répertoire MULTIPASS
-   - La demande disparaît de "Apprentis Cherchant un Maître"
-   - L'utilisateur apparaît dans "Maîtres Certifiés"
+   * Supprime le fichier 30501 du répertoire MULTIPASS
+   * La demande disparaît de "Apprentis Cherchant un Maître"
+   * L'utilisateur apparaît dans "Maîtres Certifiés"
 
 ### 4.5. Progression Automatique (WoTx2 uniquement)
 
 **Processus automatique** : `ORACLE.refresh.sh` (après émission 30503)
 
 1. **Détection** :
-   - Détecte si le permit est auto-proclamé : `PERMIT_*_X{n}`
-   - Extrait le niveau actuel (X1, X2, X3, ...)
-
+   * Détecte si le permit est auto-proclamé : `PERMIT_*_X{n}`
+   * Extrait le niveau actuel (X1, X2, X3, ...)
 2. **Calcul du niveau suivant** :
-   - `next_level = current_level + 1`
-   - `next_permit_id = PERMIT_[NOM]_X{next_level}`
-   - `min_attestations = next_level`
-
+   * `next_level = current_level + 1`
+   * `next_permit_id = PERMIT_[NOM]_X{next_level}`
+   * `min_attestations = next_level`
 3. **Authentification NIP-42** :
-   - Charge la clé `UPLANETNAME_G1` depuis `~/.zen/game/uplanet.G1.nostr`
-   - Envoie un événement kind 22242 (NIP-42) via `nostr_send_note.py`
-   - Attend 1 seconde pour le traitement par le relay
-
+   * Charge la clé `UPLANETNAME_G1` depuis `~/.zen/game/uplanet.G1.nostr`
+   * Envoie un événement kind 22242 (NIP-42) via `nostr_send_note.py`
+   * Attend 1 seconde pour le traitement par le relay
 4. **Création du niveau suivant** :
-   - Appelle `/api/permit/define` avec authentification NIP-42
-   - Header `X-Nostr-Auth: ${UPLANETNAME_G1_NPUB}`
-   - Crée le nouveau permit 30500 avec métadonnées de progression
-
+   * Appelle `/api/permit/define` avec authentification NIP-42
+   * Header `X-Nostr-Auth: ${UPLANETNAME_G1_NPUB}`
+   * Crée le nouveau permit 30500 avec métadonnées de progression
 5. **Résultat** :
-   - Le nouveau niveau apparaît dans `/oracle` et `/wotx2`
-   - Les utilisateurs peuvent créer des demandes pour ce niveau
-   - Le cycle recommence
-   - **Badge automatique** : Un badge définition (kind 30009) est créé pour le nouveau niveau
+   * Le nouveau niveau apparaît dans `/oracle` et `/wotx2`
+   * Les utilisateurs peuvent créer des demandes pour ce niveau
+   * Le cycle recommence
+   * **Badge automatique** : Un badge définition (kind 30009) est créé pour le nouveau niveau
 
----
+***
 
 ## 5. Événements NOSTR
 
@@ -452,8 +442,9 @@ Voir le protocole complet dans [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) (
 ### 5.4. Kind 30503 - Skill Achievement / Verifiable Credential
 
 **Publié par** :
-- **Permits Officiels** : `UPLANETNAME_G1` (après validation par ORACLE.refresh.sh)
-- **WoTx2 / Folksonomie** : L'utilisateur lui-même (auto-signé, avec preuves dans les tags `e`)
+
+* **Permits Officiels** : `UPLANETNAME_G1` (après validation par ORACLE.refresh.sh)
+* **WoTx2 / Folksonomie** : L'utilisateur lui-même (auto-signé, avec preuves dans les tags `e`)
 
 ```json
 {
@@ -513,60 +504,61 @@ Voir le protocole complet dans [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) (
 }
 ```
 
----
+***
 
 ## 6. Authentification NIP-42
 
 ### 6.1. Pourquoi NIP-42 ?
 
 L'API `/api/permit/define` nécessite une authentification NIP-42 pour :
-- ✅ Vérifier que l'appelant est autorisé (UPLANETNAME_G1)
-- ✅ Prévenir les abus et les créations non autorisées
-- ✅ Assurer la traçabilité des opérations
+
+* ✅ Vérifier que l'appelant est autorisé (UPLANETNAME\_G1)
+* ✅ Prévenir les abus et les créations non autorisées
+* ✅ Assurer la traçabilité des opérations
 
 ### 6.2. Processus d'Authentification
 
 1. **Génération de la clé** :
-   - Si `~/.zen/game/uplanet.G1.nostr` n'existe pas, il est généré automatiquement
-   - Utilise `keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"`
+   * Si `~/.zen/game/uplanet.G1.nostr` n'existe pas, il est généré automatiquement
+   * Utilise `keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"`
+2.  **Envoi de l'événement NIP-42** :
 
-2. **Envoi de l'événement NIP-42** :
-   ```bash
-   nostr_send_note.py \
-     --keyfile ~/.zen/game/uplanet.G1.nostr \
-     --content "oracle_refresh_$(date +%s)_${permit_id}" \
-     --kind 22242 \
-     --relays ws://127.0.0.1:7777
-   ```
-
+    ```bash
+    nostr_send_note.py \
+      --keyfile ~/.zen/game/uplanet.G1.nostr \
+      --content "oracle_refresh_$(date +%s)_${permit_id}" \
+      --kind 22242 \
+      --relays ws://127.0.0.1:7777
+    ```
 3. **Attente** :
-   - Le script attend 1 seconde pour que le relay traite l'événement
+   * Le script attend 1 seconde pour que le relay traite l'événement
+4.  **Appel API avec header** :
 
-4. **Appel API avec header** :
-   ```bash
-   curl -X POST "${ORACLE_BASE}/api/permit/define" \
-     -H "Content-Type: application/json" \
-     -H "X-Nostr-Auth: ${UPLANETNAME_G1_NPUB}" \
-     -d '{...}'
-   ```
-
+    ```bash
+    curl -X POST "${ORACLE_BASE}/api/permit/define" \
+      -H "Content-Type: application/json" \
+      -H "X-Nostr-Auth: ${UPLANETNAME_G1_NPUB}" \
+      -d '{...}'
+    ```
 5. **Vérification côté API** :
-   - L'API vérifie qu'un événement kind 22242 récent existe pour cette npub
-   - Si valide → Traite la requête
-   - Si invalide → Retourne 401 Unauthorized
+   * L'API vérifie qu'un événement kind 22242 récent existe pour cette npub
+   * Si valide → Traite la requête
+   * Si invalide → Retourne 401 Unauthorized
 
----
+***
 
 ## 7. API Reference
 
 ### 7.1. Endpoints Principaux
 
-**Contextes JSON-LD** : L’API (54321.py) sert les contextes référencés dans les credentials et les DIDs : **GET** `/credentials/v1` et **GET** `/credentials/v1/` (termes UPlanetLicense, license, licenseName, holderNpub, attestationsCount, status) ; **GET** `/ns/v1` et **GET** `/ns/v1/` (termes DID : CooperativeWallet, IPFSGateway, etc.). Réponses en `application/ld+json`. Voir [DID_IMPLEMENTATION.md](../DID_IMPLEMENTATION.md) (section « Contextes JSON-LD et API Astroport (u) »).
+**Contextes JSON-LD** : L’API (54321.py) sert les contextes référencés dans les credentials et les DIDs : **GET** `/credentials/v1` et **GET** `/credentials/v1/` (termes UPlanetLicense, license, licenseName, holderNpub, attestationsCount, status) ; **GET** `/ns/v1` et **GET** `/ns/v1/` (termes DID : CooperativeWallet, IPFSGateway, etc.). Réponses en `application/ld+json`. Voir [DID\_IMPLEMENTATION.md](https://github.com/papiche/Astroport.ONE/blob/master/docs/DID_IMPLEMENTATION.md) (section « Contextes JSON-LD et API Astroport (u) »).
 
 #### GET `/api/permit/definitions`
+
 Récupère toutes les définitions de permits (30500)
 
 **Réponse** :
+
 ```json
 {
   "success": true,
@@ -584,11 +576,13 @@ Récupère toutes les définitions de permits (30500)
 ```
 
 #### POST `/api/permit/define`
+
 Crée une nouvelle définition de permit (30500)
 
 **Authentification** : NIP-42 requise
 
 **Body** :
+
 ```json
 {
   "permit": {
@@ -603,15 +597,18 @@ Crée une nouvelle définition de permit (30500)
 ```
 
 **Headers** :
-- `Content-Type: application/json`
-- `X-Nostr-Auth: npub1...` (NIP-42 authenticated npub)
+
+* `Content-Type: application/json`
+* `X-Nostr-Auth: npub1...` (NIP-42 authenticated npub)
 
 #### POST `/api/permit/issue/{request_id}`
+
 Émet un credential (30503) pour une demande validée
 
 **Authentification** : Automatique (ORACLE.refresh.sh)
 
 **Réponse** :
+
 ```json
 {
   "success": true,
@@ -621,13 +618,15 @@ Crée une nouvelle définition de permit (30500)
 ```
 
 #### GET `/api/permit/list`
+
 Liste les demandes, credentials, ou attestations
 
 **Query params** :
-- `type=requests|credentials|attestations`
-- `permit_id=PERMIT_XXX` (optionnel)
 
----
+* `type=requests|credentials|attestations`
+* `permit_id=PERMIT_XXX` (optionnel)
+
+***
 
 ## 8. Maintenance Quotidienne
 
@@ -638,35 +637,29 @@ Liste les demandes, credentials, ou attestations
 **Fonctions** :
 
 1. **Détection de la Station Primaire (ORACLE des ORACLES)** :
-   - Vérifie si `IPFSNODEID` correspond au premier node dans `A_boostrap_nodes.txt`
-   - Si station primaire détectée → Mode "ORACLE des ORACLES" activé
-   - En mode primaire : Traite **tous les permits de toutes les stations** de la constellation
-   - En mode standard : Filtre uniquement les événements de cette station par `IPFSNODEID`
-
+   * Vérifie si `IPFSNODEID` correspond au premier node dans `A_boostrap_nodes.txt`
+   * Si station primaire détectée → Mode "ORACLE des ORACLES" activé
+   * En mode primaire : Traite **tous les permits de toutes les stations** de la constellation
+   * En mode standard : Filtre uniquement les événements de cette station par `IPFSNODEID`
 2. **Vérification des demandes 30501** :
-   - Récupère toutes les demandes depuis Nostr
-   - Filtre par `IPFSNODEID` (sauf si station primaire)
-   - Compte les attestations 30502 pour chaque demande
-   - Émet 30503 si seuil atteint
-
+   * Récupère toutes les demandes depuis Nostr
+   * Filtre par `IPFSNODEID` (sauf si station primaire)
+   * Compte les attestations 30502 pour chaque demande
+   * Émet 30503 si seuil atteint
 3. **Progression automatique WoTx2** : ~~Déprécié — désormais géré côté client Flutter (TrocZen).~~ `ORACLE.refresh.sh` ne crée plus les niveaux suivants (Xn+1) pour les maîtrises auto-proclamées. Cette charge a été déportée vers le client mobile lourd.
-
 4. **Vérification des credentials expirés** :
-   - Liste tous les credentials
-   - Signale ceux qui ont expiré
-
+   * Liste tous les credentials
+   * Signale ceux qui ont expiré
 5. **Génération de statistiques** :
-   - Compte demandes et credentials par permit
-   - Sauvegarde dans `~/.zen/tmp/${IPFSNODEID}/ORACLE/`
-   - En mode primaire : Statistiques globales de toutes les stations
-
+   * Compte demandes et credentials par permit
+   * Sauvegarde dans `~/.zen/tmp/${IPFSNODEID}/ORACLE/`
+   * En mode primaire : Statistiques globales de toutes les stations
 6. **Publication sur Nostr** :
-   - Publie un rapport quotidien (kind 1)
-   - Signé par UPLANETNAME_G1
-   - En mode primaire : Rapport global de toutes les stations
-
+   * Publie un rapport quotidien (kind 1)
+   * Signé par UPLANETNAME\_G1
+   * En mode primaire : Rapport global de toutes les stations
 7. **Nettoyage** :
-   - Supprime fichiers temporaires > 7 jours
+   * Supprime fichiers temporaires > 7 jours
 
 ### 8.2. Configuration Cron
 
@@ -675,7 +668,7 @@ Liste les demandes, credentials, ou attestations
 0 2 * * * /path/to/ORACLE.refresh.sh >> /var/log/oracle_refresh.log 2>&1
 ```
 
----
+***
 
 ## 9. Interfaces Utilisateur
 
@@ -684,39 +677,43 @@ Liste les demandes, credentials, ou attestations
 **URL** : `http://127.0.0.1:54321/oracle` ou `https://u.copylaradio.com/oracle`
 
 **Fonctionnalités** :
-- ✅ Liste tous les permits (officiels et auto-proclamés)
-- ✅ Statistiques globales
-- ✅ Graphiques de répartition
-- ✅ Distinction visuelle entre permits officiels et WoTx2
-- ✅ Workflow de progression visible
-- ✅ Liens vers `/wotx2` pour créer des maîtrises
-- ✅ **Badges NIP-58** : Affichage des badges pour chaque permit et dans "Mes Permits"
+
+* ✅ Liste tous les permits (officiels et auto-proclamés)
+* ✅ Statistiques globales
+* ✅ Graphiques de répartition
+* ✅ Distinction visuelle entre permits officiels et WoTx2
+* ✅ Workflow de progression visible
+* ✅ Liens vers `/wotx2` pour créer des maîtrises
+* ✅ **Badges NIP-58** : Affichage des badges pour chaque permit et dans "Mes Permits"
 
 ### 9.2. `/wotx2` - Interface WoTx2
 
 **URL** : `http://127.0.0.1:54321/wotx2` ou `https://u.copylaradio.com/wotx2`
 
 **Fonctionnalités** :
-- ✅ Création de maîtrises auto-proclamées
-- ✅ Sélection de permit pour créer une demande
-- ✅ Formulaire de demande avec compétence réclamée
-- ✅ Liste "Maîtres Certifiés" (30503)
-- ✅ Liste "Apprentis Cherchant un Maître" (30501 sans 30503)
-- ✅ Modal d'attestation
-- ✅ Affichage des niveaux (X1, X2, X3, ...)
-- ✅ Workflow de progression visible
-- ✅ **Badges NIP-58** : Affichage des badges pour chaque maître certifié
+
+* ✅ Création de maîtrises auto-proclamées
+* ✅ Sélection de permit pour créer une demande
+* ✅ Formulaire de demande avec compétence réclamée
+* ✅ Liste "Maîtres Certifiés" (30503)
+* ✅ Liste "Apprentis Cherchant un Maître" (30501 sans 30503)
+* ✅ Modal d'attestation
+* ✅ Affichage des niveaux (X1, X2, X3, ...)
+* ✅ Workflow de progression visible
+* ✅ **Badges NIP-58** : Affichage des badges pour chaque maître certifié
 
 **Paramètres URL** :
-- `?permit_id=PERMIT_XXX` : Affiche les détails d'un permit spécifique
 
----
+* `?permit_id=PERMIT_XXX` : Affiche les détails d'un permit spécifique
+
+***
 
 ## 10. Exemples Concrets
 
 ### 10.1. Exemple Complet : "Maître Nageur"
 
 #### Jour 1 : Création de la Maîtrise
+
 ```
 Alice crée "Maître Nageur" via /wotx2
   └─> PERMIT_MAITRE_NAGEUR_X1 créé
@@ -725,6 +722,7 @@ Alice crée "Maître Nageur" via /wotx2
 ```
 
 #### Jour 2 : Première Demande
+
 ```
 Bob crée demande 30501 pour X1
   └─> Compétence réclamée: "Natation"
@@ -733,6 +731,7 @@ Bob crée demande 30501 pour X1
 ```
 
 #### Jour 3 : Attestation
+
 ```
 Alice (créatrice) atteste Bob (30502)
   └─> Bob reçoit 1 attestation
@@ -741,6 +740,7 @@ Alice (créatrice) atteste Bob (30502)
 ```
 
 #### Jour 4 : Validation Automatique
+
 ```
 ORACLE.refresh.sh s'exécute
   └─> Détecte que Bob a 1 attestation (seuil atteint)
@@ -757,6 +757,7 @@ ORACLE.refresh.sh s'exécute
 ```
 
 #### Jour 5 : Demande pour X2
+
 ```
 Carol crée demande 30501 pour X2
   └─> Compétence réclamée: "Sauvetage"
@@ -764,6 +765,7 @@ Carol crée demande 30501 pour X2
 ```
 
 #### Jour 6-7 : Attestations pour X2
+
 ```
 Bob et Alice attestent Carol (2×30502)
   └─> Carol reçoit 2 attestations
@@ -771,6 +773,7 @@ Bob et Alice attestent Carol (2×30502)
 ```
 
 #### Jour 8 : Validation X2
+
 ```
 ORACLE.refresh.sh s'exécute
   └─> Émet 30503 pour Carol
@@ -781,6 +784,7 @@ ORACLE.refresh.sh s'exécute
 ```
 
 #### Progression Continue
+
 ```
 X3 → X4 → X5 → ... → X10 (Expert)
   └─> X11 → X50 (Maître)
@@ -791,46 +795,52 @@ X3 → X4 → X5 → ... → X10 (Expert)
 
 ### 10.2. Comparaison : Permits Officiels vs WoTx2 (Folksonomie P2P)
 
-| Aspect | Permits Officiels (Oracle) | WoTx2 (Folksonomie P2P) |
-|--------|---------------------------|------------------------|
-| **Création** | Par administrateur (`UPLANETNAME_G1`) | Auto-déclaration par l'utilisateur (Kind 30500 auto-signé) |
-| **Tags** | Définis à la création | Libres (folksonomie — émergence par usage) |
-| **Validation** | Script centralisé `ORACLE.refresh.sh` | Client Flutter lourd (`checkLevelUpgrade()`) |
-| **Émission Kind 30503** | Signé par la clé Oracle | Auto-signé par l'utilisateur (preuves dans tags `e`) |
-| **Philosophie** | Top-Down (Autorité) | Bottom-Up (Consensus des pairs) |
-| **Progression** | Statique (1 niveau) | Dynamique : Règle A (3 pairs) ou Règle B (Adoubement) |
-| **Bootstrap requis** | Oui (N+1 membres) | Non (démarre avec 1 auto-déclaration) |
-| **Auth NIP-42** | Oui (pour `/api/permit/define`) | Non (pas d'appel API Oracle) |
-| **Dislikes (bifurcations)** | N/A | Collectés (Kind 7 `-`), traitement algorithmique planifié |
+| Aspect                      | Permits Officiels (Oracle)            | WoTx2 (Folksonomie P2P)                                    |
+| --------------------------- | ------------------------------------- | ---------------------------------------------------------- |
+| **Création**                | Par administrateur (`UPLANETNAME_G1`) | Auto-déclaration par l'utilisateur (Kind 30500 auto-signé) |
+| **Tags**                    | Définis à la création                 | Libres (folksonomie — émergence par usage)                 |
+| **Validation**              | Script centralisé `ORACLE.refresh.sh` | Client Flutter lourd (`checkLevelUpgrade()`)               |
+| **Émission Kind 30503**     | Signé par la clé Oracle               | Auto-signé par l'utilisateur (preuves dans tags `e`)       |
+| **Philosophie**             | Top-Down (Autorité)                   | Bottom-Up (Consensus des pairs)                            |
+| **Progression**             | Statique (1 niveau)                   | Dynamique : Règle A (3 pairs) ou Règle B (Adoubement)      |
+| **Bootstrap requis**        | Oui (N+1 membres)                     | Non (démarre avec 1 auto-déclaration)                      |
+| **Auth NIP-42**             | Oui (pour `/api/permit/define`)       | Non (pas d'appel API Oracle)                               |
+| **Dislikes (bifurcations)** | N/A                                   | Collectés (Kind 7 `-`), traitement algorithmique planifié  |
 
----
+***
 
 ## 11. Troubleshooting
 
 ### 11.1. Problèmes Courants
 
 #### L'authentification NIP-42 échoue
+
 **Symptôme** : `ORACLE.refresh.sh` affiche "NIP-42 authentication may have failed"
 
 **Solutions** :
+
 1. Vérifier que `~/.zen/game/uplanet.G1.nostr` existe
 2. Vérifier que `nostr_send_note.py` est accessible
 3. Vérifier que le relay Nostr est accessible (`ws://127.0.0.1:7777`)
 4. Vérifier les logs du relay pour voir si l'événement 22242 est reçu
 
 #### Le niveau suivant n'est pas créé
+
 **Symptôme** : X1 validé mais X2 n'apparaît pas
 
 **Solutions** :
+
 1. Vérifier les logs de `ORACLE.refresh.sh` pour voir les erreurs
 2. Vérifier que l'API `/api/permit/define` est accessible
 3. Vérifier que l'authentification NIP-42 a réussi
 4. Vérifier que le permit ID correspond au pattern `PERMIT_*_X{n}`
 
 #### Les demandes ne disparaissent pas après validation
+
 **Symptôme** : 30501 toujours visible dans "Apprentis Cherchant un Maître" après émission 30503
 
 **Solutions** :
+
 1. Vérifier que le fichier 30501 a été supprimé du répertoire MULTIPASS
 2. Recharger la page `/wotx2`
 3. Vérifier que le credential 30503 existe bien pour cette demande
@@ -838,12 +848,14 @@ X3 → X4 → X5 → ... → X10 (Expert)
 ### 11.2. Logs et Debugging
 
 #### Logs ORACLE.refresh.sh
+
 ```bash
 # Exécuter manuellement avec sortie détaillée
 ./ORACLE.refresh.sh 2>&1 | tee /tmp/oracle_refresh.log
 ```
 
 #### Vérifier les événements Nostr
+
 ```bash
 # Vérifier les permits 30500
 ./nostr_get_events.sh --kind 30500
@@ -859,6 +871,7 @@ X3 → X4 → X5 → ... → X10 (Expert)
 ```
 
 #### Vérifier l'API
+
 ```bash
 # Vérifier que l'API est accessible
 curl -s http://127.0.0.1:54321/api/permit/definitions | jq
@@ -867,80 +880,92 @@ curl -s http://127.0.0.1:54321/api/permit/definitions | jq
 curl -s http://127.0.0.1:54321/api/permit/stats | jq
 ```
 
----
+***
 
 ## 12. Références et Liens
 
 ### 12.1. Interfaces Web
-- **Oracle** : `/oracle` - Vue d'ensemble de tous les permits
-- **WoTx2** : `/wotx2` - Création et gestion des maîtrises auto-proclamées
-- **API Dev** : `/dev` - Documentation interactive de l'API
+
+* **Oracle** : `/oracle` - Vue d'ensemble de tous les permits
+* **WoTx2** : `/wotx2` - Création et gestion des maîtrises auto-proclamées
+* **API Dev** : `/dev` - Documentation interactive de l'API
 
 ### 12.2. Scripts
-- **ORACLE.refresh.sh** : Maintenance quotidienne automatique
-- **oracle_init_permit_definitions.sh** : Gestion interactive des permits officiels
-- **nostr_send_note.py** : Publication d'événements Nostr
-- **nostr_get_events.sh** : Récupération d'événements Nostr
+
+* **ORACLE.refresh.sh** : Maintenance quotidienne automatique
+* **oracle\_init\_permit\_definitions.sh** : Gestion interactive des permits officiels
+* **nostr\_send\_note.py** : Publication d'événements Nostr
+* **nostr\_get\_events.sh** : Récupération d'événements Nostr
 
 ### 12.3. Fichiers de Configuration
-- **Clés NOSTR** : `~/.zen/game/uplanet.G1.nostr` (UPLANETNAME_G1)
-- **Statistiques** : `~/.zen/tmp/${IPFSNODEID}/ORACLE/`
-- **Templates** : `Astroport.ONE/templates/NOSTR/permit_definitions.json`
-- **Badge Images** : Génération automatique via `Astroport.ONE/IA/generate_badge_image.sh`
-  - Images générées automatiquement lors de la création de badge definition
-  - Utilise AI (question.py) + ComfyUI + ImageMagick + IPFS
-  - Stockage permanent sur IPFS
+
+* **Clés NOSTR** : `~/.zen/game/uplanet.G1.nostr` (UPLANETNAME\_G1)
+* **Statistiques** : `~/.zen/tmp/${IPFSNODEID}/ORACLE/`
+* **Templates** : `Astroport.ONE/templates/NOSTR/permit_definitions.json`
+* **Badge Images** : Génération automatique via `Astroport.ONE/IA/generate_badge_image.sh`
+  * Images générées automatiquement lors de la création de badge definition
+  * Utilise AI (question.py) + ComfyUI + ImageMagick + IPFS
+  * Stockage permanent sur IPFS
 
 ### 12.4. Documentation Technique
-- **NIP-42** : Authentification Nostr
-- **NIP-33** : Parameterized Replaceable Events (pour 30500)
-- **W3C Verifiable Credentials** : Standard pour les credentials 30503
 
----
+* **NIP-42** : Authentification Nostr
+* **NIP-33** : Parameterized Replaceable Events (pour 30500)
+* **W3C Verifiable Credentials** : Standard pour les credentials 30503
+
+***
 
 ## 13. FAQ
 
 ### Q1 : Puis-je créer plusieurs maîtrises auto-proclamées ?
+
 **R** : Oui, il n'y a aucune limite. Chaque maîtrise démarre à X1 et progresse indépendamment.
 
 ### Q2 : Que se passe-t-il si personne n'atteste ma demande ?
+
 **R** : Votre demande reste dans "Apprentis Cherchant un Maître". Après 90 jours, un avertissement est affiché, mais la demande reste active.
 
 ### Q3 : Puis-je attester ma propre demande ?
+
 **R** : Non, vous ne pouvez pas vous attester vous-même. Seuls les maîtres certifiés peuvent attester.
 
 ### Q4 : Combien de niveaux maximum peut-on atteindre ?
+
 **R** : Aucune limite ! Le système peut progresser jusqu'à X144, X200, X1000... selon les validations.
 
 ### Q5 : Les compétences sont-elles obligatoires ?
+
 **R** : Oui, lors de la création d'une demande 30501, vous devez indiquer la compétence que vous souhaitez acquérir.
 
 ### Q6 : Comment supprimer une maîtrise auto-proclamée ?
+
 **R** : Seul le créateur peut supprimer un permit (kind 5) si aucun credential 30503 n'a été émis pour ce permit.
 
 ### Q7 : L'authentification NIP-42 est-elle obligatoire ?
+
 **R** : Oui, pour créer des permits via l'API, l'authentification NIP-42 est requise. `ORACLE.refresh.sh` gère cela automatiquement.
 
 ### Q8 : Qu'est-ce que le mode "ORACLE des ORACLES" ?
+
 **R** : Le mode "ORACLE des ORACLES" est activé automatiquement sur la station primaire (premier node dans `A_boostrap_nodes.txt`). Cette station traite tous les permits de toutes les stations de la constellation, offrant une vue globale et centralisée. Les autres stations filtrent uniquement leurs propres événements par `IPFSNODEID`.
 
----
+***
 
 ## 14. Conclusion
 
 Le Système Oracle v3.1 assure une **séparation claire des responsabilités** :
 
-- ✅ **Oracle (Astroport)** : Gestion des Permits Officiels Statiques (top-down, NIP-42, `UPLANETNAME_G1`)
-- ✅ **Client Flutter (TrocZen)** : Gestion des Maîtrises WoTx2 (bottom-up, P2P, folksonomie)
-- ✅ La progression WoTx2 est calculée localement par le client (Règle A / Règle B)
-- ✅ Les Kind 30503 WoTx2 sont auto-signés avec preuves cryptographiques intégrées
-- ✅ L'authentification NIP-42 reste requise pour les seuls Permits Officiels
+* ✅ **Oracle (Astroport)** : Gestion des Permits Officiels Statiques (top-down, NIP-42, `UPLANETNAME_G1`)
+* ✅ **Client Flutter (TrocZen)** : Gestion des Maîtrises WoTx2 (bottom-up, P2P, folksonomie)
+* ✅ La progression WoTx2 est calculée localement par le client (Règle A / Règle B)
+* ✅ Les Kind 30503 WoTx2 sont auto-signés avec preuves cryptographiques intégrées
+* ✅ L'authentification NIP-42 reste requise pour les seuls Permits Officiels
 
-**Roadmap WoTx2** : traitement algorithmique des dislikes (Kind 7 `-`) pour la bifurcation des toiles de confiance. Voir [../reference/WOTX2_SYSTEM.md](../../TrocZen/docs/WOTX2_SYSTEM.md).
+**Roadmap WoTx2** : traitement algorithmique des dislikes (Kind 7 `-`) pour la bifurcation des toiles de confiance. Voir [../reference/WOTX2\_SYSTEM.md](https://github.com/papiche/Astroport.ONE/blob/master/TrocZen/docs/WOTX2_SYSTEM.md).
 
----
+***
 
----
+***
 
 ## 15. Scripts et Outils
 
@@ -949,67 +974,66 @@ Le Système Oracle v3.1 assure une **séparation claire des responsabilités** :
 **Localisation** : `Astroport.ONE/RUNTIME/ORACLE.refresh.sh`
 
 **Description** : Script de maintenance quotidienne qui :
-- Vérifie les demandes 30501 et émet les credentials 30503
-- Gère la progression automatique WoTx2 (X1 → X2 → ... → X144 → ...)
-- Authentifie avec NIP-42 avant chaque création de permit
-- Génère des statistiques
-- Publie un rapport quotidien sur Nostr
+
+* Vérifie les demandes 30501 et émet les credentials 30503
+* Gère la progression automatique WoTx2 (X1 → X2 → ... → X144 → ...)
+* Authentifie avec NIP-42 avant chaque création de permit
+* Génère des statistiques
+* Publie un rapport quotidien sur Nostr
 
 **Exécution** : Quotidienne via cron (recommandé : 2h du matin)
 
-**Voir** : Description complète dans la section [8. Maintenance Quotidienne](#8-maintenance-quotidienne)
+**Voir** : Description complète dans la section [8. Maintenance Quotidienne](ORACLE_SYSTEM.md#8-maintenance-quotidienne)
 
-### 15.2. oracle_init_permit_definitions.sh
+### 15.2. oracle\_init\_permit\_definitions.sh
 
 **Localisation** : `Astroport.ONE/tools/oracle_init_permit_definitions.sh`
 
 **Description** : Script interactif pour gérer les **permits officiels uniquement**
 
-**⚠️ Important** : Ce script est pour les permits officiels (PERMIT_ORE_V1, PERMIT_DRIVER, etc.)
-- Pour les maîtrises auto-proclamées (WoTx2), utilisez `/wotx2` via le navigateur
+**⚠️ Important** : Ce script est pour les permits officiels (PERMIT\_ORE\_V1, PERMIT\_DRIVER, etc.)
+
+* Pour les maîtrises auto-proclamées (WoTx2), utilisez `/wotx2` via le navigateur
 
 **Fonctionnalités** :
-- Ajouter des permits officiels depuis le template JSON
-- Éditer des permits existants
-- Supprimer des permits (avec vérification d'utilisation)
-- Lister tous les permits (officiels et WoTx2)
+
+* Ajouter des permits officiels depuis le template JSON
+* Éditer des permits existants
+* Supprimer des permits (avec vérification d'utilisation)
+* Lister tous les permits (officiels et WoTx2)
 
 **Usage** :
+
 ```bash
 cd Astroport.ONE/tools
 ./oracle_init_permit_definitions.sh
 ```
 
----
+***
 
 ## 16. Migration depuis l'Ancien Système
 
 ### 16.1. Changements Majeurs v3.0
 
-| Aspect | Ancien Système | Nouveau Système (v3.0) |
-|--------|---------------|------------------------|
-| **Création permits** | Script uniquement | Interface web `/wotx2` + Script |
-| **Progression** | Statique | Automatique illimitée |
-| **Limite niveaux** | X4 maximum | Illimité (X144+) |
-| **Authentification API** | Optionnelle | NIP-42 requise |
-| **Compétences** | Définies à la création | Révélées progressivement |
-| **Bootstrap** | Toujours requis | Non requis pour WoTx2 |
+| Aspect                   | Ancien Système         | Nouveau Système (v3.0)          |
+| ------------------------ | ---------------------- | ------------------------------- |
+| **Création permits**     | Script uniquement      | Interface web `/wotx2` + Script |
+| **Progression**          | Statique               | Automatique illimitée           |
+| **Limite niveaux**       | X4 maximum             | Illimité (X144+)                |
+| **Authentification API** | Optionnelle            | NIP-42 requise                  |
+| **Compétences**          | Définies à la création | Révélées progressivement        |
+| **Bootstrap**            | Toujours requis        | Non requis pour WoTx2           |
 
 ### 16.2. Compatibilité
 
-- ✅ Les permits officiels existants continuent de fonctionner
-- ✅ Les credentials 30503 existants restent valides
-- ✅ Les demandes 30501 en cours sont traitées normalement
-- ✅ Aucune migration de données requise
+* ✅ Les permits officiels existants continuent de fonctionner
+* ✅ Les credentials 30503 existants restent valides
+* ✅ Les demandes 30501 en cours sont traitées normalement
+* ✅ Aucune migration de données requise
 
----
+***
 
-**Documentation générée le** : $(date -u +"%Y-%m-%dT%H:%M:%SZ")  
-**Version du système** : 3.0 - 100% Dynamique  
-**Contact** : support@qo-op.com  
+**Documentation générée le** : $(date -u +"%Y-%m-%dT%H:%M:%SZ")\
+**Version du système** : 3.0 - 100% Dynamique\
+**Contact** : support@qo-op.com\
 **Documentation complète** : `Astroport.ONE/docs/ORACLE_SYSTEM.md`
-
-
-
-
-

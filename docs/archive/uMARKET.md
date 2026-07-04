@@ -29,11 +29,12 @@ Interface web statique
 ```
 
 **Limitations** :
-- Stockage local uniquement
-- Pas de vérification via ORE
-- Pas de récompenses économiques
-- Pas d'identité décentralisée pour les annonceurs
-- Pas d'intégration avec les contrats ORE UMAP
+
+* Stockage local uniquement
+* Pas de vérification via ORE
+* Pas de récompenses économiques
+* Pas d'identité décentralisée pour les annonceurs
+* Pas d'intégration avec les contrats ORE UMAP
 
 ## Architecture Proposée (Refonte)
 
@@ -137,58 +138,58 @@ Interface web dynamique basée sur les événements Nostr
 
 ### 1. Publication d'Annonce
 
-- **Tag `#market`** dans un message Nostr
-- **Extraction automatique** des métadonnées (prix, catégorie, images)
-- **Création d'événement Nostr** lié au DID UMAP
-- **Vérification ORE optionnelle** pour annonces certifiées
+* **Tag `#market`** dans un message Nostr
+* **Extraction automatique** des métadonnées (prix, catégorie, images)
+* **Création d'événement Nostr** lié au DID UMAP
+* **Vérification ORE optionnelle** pour annonces certifiées
 
 ### 2. Vérification et Certification
 
-- **Vérification ORE** : Les annonces peuvent être liées à des contrats ORE
-- **Certification automatique** : Annonces vérifiées via ORE Meeting Space
-- **Badges de vérification** : Affichage dans l'interface web
+* **Vérification ORE** : Les annonces peuvent être liées à des contrats ORE
+* **Certification automatique** : Annonces vérifiées via ORE Meeting Space
+* **Badges de vérification** : Affichage dans l'interface web
 
 ### 3. Récompenses Économiques
 
-- **Récompenses Ẑen** : Distribution automatique pour annonces vérifiées
-- **Intégration avec UPLANET.official.sh** : Flux de récompenses
-- **Portefeuille UMAP** : Les récompenses vont au portefeuille de l'UMAP
+* **Récompenses Ẑen** : Distribution automatique pour annonces vérifiées
+* **Intégration avec UPLANET.official.sh** : Flux de récompenses
+* **Portefeuille UMAP** : Les récompenses vont au portefeuille de l'UMAP
 
 ### 4. Interface Web Dynamique
 
-- **Lecture depuis Nostr** : Interface basée sur les événements Nostr
-- **Filtrage par UMAP** : Affichage des annonces par localisation
-- **Recherche** : Par catégorie, prix, localisation
-- **Vérification ORE** : Affichage des badges de vérification
+* **Lecture depuis Nostr** : Interface basée sur les événements Nostr
+* **Filtrage par UMAP** : Affichage des annonces par localisation
+* **Recherche** : Par catégorie, prix, localisation
+* **Vérification ORE** : Affichage des badges de vérification
 
 ### 5. Intégration avec ORE
 
-- **Contrats ORE liés** : Annonces liées à des contrats ORE spécifiques
-- **Vérification automatique** : Vérification de conformité via ORE Meeting Space
-- **Récompenses conditionnelles** : Récompenses uniquement pour annonces vérifiées
+* **Contrats ORE liés** : Annonces liées à des contrats ORE spécifiques
+* **Vérification automatique** : Vérification de conformité via ORE Meeting Space
+* **Récompenses conditionnelles** : Récompenses uniquement pour annonces vérifiées
 
 ## Événements Nostr Utilisés
 
 ### Kind 30312 (ORE Meeting Space) - Réutilisé pour Annonces
 
-- **Tag `d`** : Identifiant unique de l'annonce
-- **Tag `g`** : Coordonnées géographiques
-- **Tag `t`** : Tags (`market`, `sale`, `buy`, `exchange`, `service`)
-- **Tag `price`** : Prix en Ẑen
-- **Tag `category`** : Catégorie de l'annonce
-- **Tag `ore-contract`** : Contrat ORE lié (optionnel)
-- **Tag `expires`** : Date d'expiration (optionnel)
+* **Tag `d`** : Identifiant unique de l'annonce
+* **Tag `g`** : Coordonnées géographiques
+* **Tag `t`** : Tags (`market`, `sale`, `buy`, `exchange`, `service`)
+* **Tag `price`** : Prix en Ẑen
+* **Tag `category`** : Catégorie de l'annonce
+* **Tag `ore-contract`** : Contrat ORE lié (optionnel)
+* **Tag `expires`** : Date d'expiration (optionnel)
 
 ### Kind 30313 (ORE Verification Meeting) - Vérification d'Annonce
 
-- **Tag `a`** : Référence à l'annonce (kind 30312)
-- **Tag `result`** : Résultat de la vérification (`verified`, `rejected`)
-- **Content** : Détails de la vérification
+* **Tag `a`** : Référence à l'annonce (kind 30312)
+* **Tag `result`** : Résultat de la vérification (`verified`, `rejected`)
+* **Content** : Détails de la vérification
 
 ### Kind 30800 (DID Document) - Métadonnées UMAP
 
-- **Section `marketplace`** : Liste des annonces actives
-- **Métadonnées** : Statistiques, dernières mises à jour
+* **Section `marketplace`** : Liste des annonces actives
+* **Métadonnées** : Statistiques, dernières mises à jour
 
 ## Intégration avec ORE UMAP
 
@@ -230,32 +231,27 @@ Mise à jour du document DID UMAP
 
 ### Scripts à Refondre
 
-- `_uMARKET.generate.sh` → Nouveau script basé sur événements Nostr
-- `_uMARKET.aggregate.sh` → Utilisation d'abonnements Nostr
-- `_uMARKET.test.sh` → Tests avec événements Nostr
-- `NOSTR.UMAP.refresh.sh` → Détection et traitement des annonces
+* `_uMARKET.generate.sh` → Nouveau script basé sur événements Nostr
+* `_uMARKET.aggregate.sh` → Utilisation d'abonnements Nostr
+* `_uMARKET.test.sh` → Tests avec événements Nostr
+* `NOSTR.UMAP.refresh.sh` → Détection et traitement des annonces
 
 ### Nouveaux Scripts à Créer
 
-- `uMARKET_publish.sh` : Publication d'annonce via événement Nostr
-- `uMARKET_verify.sh` : Vérification ORE d'une annonce
-- `uMARKET_reward.sh` : Distribution de récompenses Ẑen
-- `uMARKET_interface.sh` : Génération d'interface web depuis Nostr
+* `uMARKET_publish.sh` : Publication d'annonce via événement Nostr
+* `uMARKET_verify.sh` : Vérification ORE d'une annonce
+* `uMARKET_reward.sh` : Distribution de récompenses Ẑen
+* `uMARKET_interface.sh` : Génération d'interface web depuis Nostr
 
 ## Références
 
-- **ORE System** : [ORE_SYSTEM.md](ORE_SYSTEM.md)
-- **DID Implementation** : [DID_IMPLEMENTATION.md](../DID_IMPLEMENTATION.md)
-- **NIP-101** : [101.md](../../nostr-nips/101.md)
-- **Ancien README** : [../tools/_uMARKET.README.md](../tools/_uMARKET.README.md)
+* **ORE System** : [ORE\_SYSTEM.md](../explanation/ORE_SYSTEM.md)
+* **DID Implementation** : [DID\_IMPLEMENTATION.md](https://github.com/papiche/Astroport.ONE/blob/master/DID_IMPLEMENTATION.md)
+* **NIP-101** : [101.md](https://github.com/papiche/Astroport.ONE/blob/master/nostr-nips/101.md)
+* **Ancien README** : [../tools/\_uMARKET.README.md](../../tools/_uMARKET.README.md)
 
 ## Statut
 
 🔴 **À Refondre** : Le système actuel est figé et non testé. Une refonte complète est nécessaire pour s'intégrer avec les contrats ORE UMAP.
 
 **Priorité** : Moyenne (après stabilisation des systèmes ORE et DID)
-
-
-
-
-

@@ -2,22 +2,22 @@
 
 > Documentation technique du système de tunnels IPFS P2P, de son activation automatique et de son utilisation manuelle.
 
----
+***
 
 ## Table des matières
 
-1. [Vue d'ensemble](#vue-densemble)
-2. [Les deux orchestrateurs](#les-deux-orchestrateurs)
-3. [Cycle de vie automatique (20H12)](#cycle-de-vie-automatique-20h12)
-4. [DRAGON : publication des services](#dragon--publication-des-services)
-5. [La Balise IPNS et le Swarm](#la-balise-ipns-et-le-swarm)
-6. [tunnel.sh : interface de contrôle](#tunnelsh--interface-de-contrôle)
-7. [Les scripts ME — connexion intelligente](#les-scripts-me--connexion-intelligente)
-8. [Configuration avancée (.env)](#configuration-avancée-env)
-9. [Utilisation manuelle — recettes](#utilisation-manuelle--recettes)
-10. [Dépannage](#dépannage)
+1. [Vue d'ensemble](DRAGONS_and_TUNNELS.md#vue-densemble)
+2. [Les deux orchestrateurs](DRAGONS_and_TUNNELS.md#les-deux-orchestrateurs)
+3. [Cycle de vie automatique (20H12)](DRAGONS_and_TUNNELS.md#cycle-de-vie-automatique-20h12)
+4. [DRAGON : publication des services](DRAGONS_and_TUNNELS.md#dragon--publication-des-services)
+5. [La Balise IPNS et le Swarm](DRAGONS_and_TUNNELS.md#la-balise-ipns-et-le-swarm)
+6. [tunnel.sh : interface de contrôle](DRAGONS_and_TUNNELS.md#tunnelsh--interface-de-contrôle)
+7. [Les scripts ME — connexion intelligente](DRAGONS_and_TUNNELS.md#les-scripts-me--connexion-intelligente)
+8. [Configuration avancée (.env)](DRAGONS_and_TUNNELS.md#configuration-avancée-env)
+9. [Utilisation manuelle — recettes](DRAGONS_and_TUNNELS.md#utilisation-manuelle--recettes)
+10. [Dépannage](DRAGONS_and_TUNNELS.md#dépannage)
 
----
+***
 
 ## Vue d'ensemble
 
@@ -43,18 +43,19 @@ Le système DRAGONS & TUNNELS permet à chaque station Astroport de **publier se
 ### Principe fondamental
 
 Chaque station gère **deux rôles** :
-- **Serveur** : publie ses services locaux via `ipfs p2p listen`
-- **Client** : se connecte aux services distants via `ipfs p2p forward`
+
+* **Serveur** : publie ses services locaux via `ipfs p2p listen`
+* **Client** : se connecte aux services distants via `ipfs p2p forward`
 
 Le protocole IPFS P2P (`/x/SERVICE-NODEID`) traverses les NAT et ne nécessite **aucune ouverture de port** côté client — seul le port `4001` (IPFS Swarm) doit être accessible.
 
----
+***
 
 ## Les deux orchestrateurs
 
 ### `20h12.process.sh` — Maintenance quotidienne (cron)
 
-Script lancé **une fois par jour** à l'heure solaire (~20h12 locale) par le cron géré par [`admin/system/cron_VRFY.sh`](../admin/system/cron_VRFY.sh). Il :
+Script lancé **une fois par jour** à l'heure solaire (\~20h12 locale) par le cron géré par [`admin/system/cron_VRFY.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/admin/system/cron_VRFY.sh). Il :
 
 1. Vérifie l'état du démon IPFS
 2. Met à jour le code (git pull)
@@ -73,7 +74,7 @@ Script qui tourne **en permanence** (service `astroport` systemd ou PID dans `~/
 4. **Réactive le DRAGON** si les tunnels sont manquants
 5. Publie/rafraîchit la balise IPNS toutes les 4h
 
----
+***
 
 ## Cycle de vie automatique (20H12)
 
@@ -154,13 +155,14 @@ CRON (cron_VRFY.sh)
         └──► astroport service restart ──► _12345.sh daemon ────────┘
 ```
 
----
+***
 
 ## DRAGON : publication des services
 
 ### Qu'est-ce que le DRAGON ?
 
-[`RUNTIME/DRAGON_p2p_ssh.sh`](../RUNTIME/DRAGON_p2p_ssh.sh) est le script qui :
+[`RUNTIME/DRAGON_p2p_ssh.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/RUNTIME/DRAGON_p2p_ssh.sh) est le script qui :
+
 1. **Détecte** les services locaux actifs (ollama, comfyui, qdrant, etc.)
 2. **Ouvre** les canaux IPFS P2P pour les exposer à l'essaim
 3. **Génère** les scripts clients `x_SERVICE.sh` pour les autres stations
@@ -173,12 +175,14 @@ generate_p2p_service PORT_DISTANT SLUG NOM [PORT_LOCAL_PREFERE]
 ```
 
 **Côté serveur (DRAGON local)** :
+
 1. Calcule un `NODE_OFFSET` unique (0-499) basé sur son `IPFSNODEID`.
 2. Détecte le service local (ex: port 11434).
 3. Ouvre le canal `/x/SLUG-NODEID`.
 4. Génère le script client `x_SLUG.sh` incluant l'évitement intelligent.
 
 **Structure du script `x_SLUG.sh` généré (Intelligent)** :
+
 ```bash
 #!/bin/bash
 NODE_ID="12D3KooW..."        # NODEID de la station serveur
@@ -209,34 +213,33 @@ ipfs p2p forward "$PROTO" "/ip4/$DOCKER_IP/tcp/$LPORT"   "/p2p/$NODE_ID"
 
 ### Services publiés par DRAGON
 
-> **Source de vérité unique : [`IA/modules.list`](../../IA/modules.list)**
-> La constellation opère sur cette liste fixe de slugs. Chaque développeur peut y ajouter ses propres services en respectant le format `name|port|check|install_group|label`.
+> **Source de vérité unique :** [**`IA/modules.list`**](https://github.com/papiche/Astroport.ONE/blob/master/IA/modules.list) La constellation opère sur cette liste fixe de slugs. Chaque développeur peut y ajouter ses propres services en respectant le format `name|port|check|install_group|label`.
 
 Les slugs **réservés constellation** (hardcodés dans DRAGON, hors `modules.list`) :
 
-| Slug | Port | Particularité |
-|------|------|---------------|
-| `ssh` | dynamique (`sshd_config`) | Clé SSH Y-level, connexion sécurisée |
-| `strfry` | 7777 (local: 9999) | Slug figé — `backfill_constellation.sh` cherche `x_strfry.sh` |
+| Slug     | Port                      | Particularité                                                 |
+| -------- | ------------------------- | ------------------------------------------------------------- |
+| `ssh`    | dynamique (`sshd_config`) | Clé SSH Y-level, connexion sécurisée                          |
+| `strfry` | 7777 (local: 9999)        | Slug figé — `backfill_constellation.sh` cherche `x_strfry.sh` |
 
 Les slugs **modules.list** (lus dynamiquement, dans l'ordre du fichier) :
 
-| Slug | Port | Check | Label |
-|------|------|-------|-------|
-| `icecast` | 8111 | auto | Icecast Live Broadcasting |
-| `dify` | 8010 | docker:dify-api | Dify AI Workflow |
-| `mirofish` | 5050 | docker:mirofish | MiroFish Multi-Agent |
-| `open-webui` | 8000 | docker:open-webui | Open WebUI Interface IA |
-| `nextcloud-app` | 8001 | dockerimg:nextcloud-aio | NextCloud Apache App |
-| `qdrant` | 6333 | docker:qdrant | Qdrant VectorDB |
-| `ollama` | 11434 | pgrep:ollama | Ollama LLM API |
-| `npm` | 81 | auto | Nginx Proxy Manager Admin |
-| `nextcloud-aio` | 8443 | dockerimg:nextcloud-aio | NextCloud AIO Admin |
-| `webtop-http` | 3000 | dockerimg:linuxserver/webtop | Webtop KasmVNC HTTP |
-| `webtop-https` | 3001 | dockerimg:linuxserver/webtop | Webtop KasmVNC HTTPS |
-| `comfyui` | 8188 | systemctl:comfyui | ComfyUI Image Generation |
-| `orpheus` | 5005 | docker:orpheus | Orpheus TTS |
-| `vane` | 3002 | docker:vane | Vane Search Engine |
+| Slug            | Port  | Check                        | Label                     |
+| --------------- | ----- | ---------------------------- | ------------------------- |
+| `icecast`       | 8111  | auto                         | Icecast Live Broadcasting |
+| `dify`          | 8010  | docker:dify-api              | Dify AI Workflow          |
+| `mirofish`      | 5050  | docker:mirofish              | MiroFish Multi-Agent      |
+| `open-webui`    | 8000  | docker:open-webui            | Open WebUI Interface IA   |
+| `nextcloud-app` | 8001  | dockerimg:nextcloud-aio      | NextCloud Apache App      |
+| `qdrant`        | 6333  | docker:qdrant                | Qdrant VectorDB           |
+| `ollama`        | 11434 | pgrep:ollama                 | Ollama LLM API            |
+| `npm`           | 81    | auto                         | Nginx Proxy Manager Admin |
+| `nextcloud-aio` | 8443  | dockerimg:nextcloud-aio      | NextCloud AIO Admin       |
+| `webtop-http`   | 3000  | dockerimg:linuxserver/webtop | Webtop KasmVNC HTTP       |
+| `webtop-https`  | 3001  | dockerimg:linuxserver/webtop | Webtop KasmVNC HTTPS      |
+| `comfyui`       | 8188  | systemctl:comfyui            | ComfyUI Image Generation  |
+| `orpheus`       | 5005  | docker:orpheus               | Orpheus TTS               |
+| `vane`          | 3002  | docker:vane                  | Vane Search Engine        |
 
 > ⚠️ **Protection anti-tunnel→tunnel** : DRAGON utilise `_is_native_process(PORT)` qui vérifie non seulement que le port est en écoute, mais aussi que le **processus propriétaire n'est pas `ipfs`**. Si `ipfs p2p forward` tient déjà le port (tunnel client entrant d'une autre station), DRAGON refuse de le republier — évitant des cascades inefficaces de tunnels imbriqués qui dégraderaient les performances du réseau.
 
@@ -250,17 +253,18 @@ Station A ─── ipfs forward ──► local:11434 [ipfs process]
 
 ### Page de statut — `status.html`
 
-`_12345.sh` génère un `status.html` dans la balise IPNS à chaque cycle de publication (~toutes les heures). Accessible via :
+`_12345.sh` génère un `status.html` dans la balise IPNS à chaque cycle de publication (\~toutes les heures). Accessible via :
 
 ```
 https://ipfs.DOMAIN/ipns/NODEID/status.html
 ```
 
-La page affiche (snapshot mis à jour toutes les ~4h) :
-- Identité : hostname, captain, UPlanet, santé économique colorée
-- Réseau : stations swarm connues, pairs IPFS, tunnels actifs
-- Services DRAGON publiés (`x_*.sh` présents dans la balise)
-- Liens vers `12345.json` et la balise IPNS complète
+La page affiche (snapshot mis à jour toutes les \~4h) :
+
+* Identité : hostname, captain, UPlanet, santé économique colorée
+* Réseau : stations swarm connues, pairs IPFS, tunnels actifs
+* Services DRAGON publiés (`x_*.sh` présents dans la balise)
+* Liens vers `12345.json` et la balise IPNS complète
 
 ### Wrapper `publish_service` et services privés
 
@@ -274,7 +278,7 @@ DRAGON_PRIVATE_SERVICES="qdrant nextcloud-app"
 # → ils ne seront pas visibles depuis les autres stations
 ```
 
----
+***
 
 ## La Balise IPNS et le Swarm
 
@@ -358,7 +362,7 @@ Station X
             └── B/  x_open-webui.sh
 ```
 
----
+***
 
 ## tunnel.sh : interface de contrôle
 
@@ -383,13 +387,14 @@ ID LOCAL: 12D3KooWAJxX... | Port: 11434 (Alt: 21345) | Auto-refresh ON
 
 ### Lecture des statuts
 
-| Statut | Couleur | Signification |
-|--------|---------|---------------|
-| `[  ACTIF ipfs  ]` | 🟢 Vert | Tunnel IPFS actif — canal `/x/SERVICE-NODEID` vérifié sur port Natif ou Alt |
-| `[ ACTIF process ]` | 🟡 Jaune | Port occupé localement (service natif ou autre tunnel) |
-| `[  OFF  ]` | 🔴 Rouge | Aucune connexion active |
+| Statut              | Couleur  | Signification                                                               |
+| ------------------- | -------- | --------------------------------------------------------------------------- |
+| `[ ACTIF ipfs ]`    | 🟢 Vert  | Tunnel IPFS actif — canal `/x/SERVICE-NODEID` vérifié sur port Natif ou Alt |
+| `[ ACTIF process ]` | 🟡 Jaune | Port occupé localement (service natif ou autre tunnel)                      |
+| `[ OFF ]`           | 🔴 Rouge | Aucune connexion active                                                     |
 
 **Logique de détection intelligente** :
+
 ```bash
 # 1. Recherche dans ipfs p2p ls par protocole
 active_line=$(ipfs p2p ls | grep "$proto")
@@ -401,14 +406,14 @@ active_line=$(ipfs p2p ls | grep "$proto")
 
 ### Commandes clavier
 
-| Touche | Action | Détail |
-|--------|--------|--------|
-| `↑` `↓` | Navigation | Déplace le curseur dans la liste |
-| `Entrée` | **CONNECT** | Lance `x_SERVICE.sh` si le port est libre |
-| `R` | **RESET** | Ferme puis rouvre le tunnel |
-| `X` | **STOP** | Ferme le tunnel, libère le port local |
-| `W` | **WebOpen** | Ouvre `http(s)://localhost:PORT` dans le navigateur |
-| `Q` | **Quit** | Quitte `tunnel.sh` (tunnels restent actifs) |
+| Touche   | Action      | Détail                                              |
+| -------- | ----------- | --------------------------------------------------- |
+| `↑` `↓`  | Navigation  | Déplace le curseur dans la liste                    |
+| `Entrée` | **CONNECT** | Lance `x_SERVICE.sh` si le port est libre           |
+| `R`      | **RESET**   | Ferme puis rouvre le tunnel                         |
+| `X`      | **STOP**    | Ferme le tunnel, libère le port local               |
+| `W`      | **WebOpen** | Ouvre `http(s)://localhost:PORT` dans le navigateur |
+| `Q`      | **Quit**    | Quitte `tunnel.sh` (tunnels restent actifs)         |
 
 ### Logique CONNECT (Entrée)
 
@@ -428,17 +433,17 @@ Touche Entrée sur "ALIENWARE - OLLAMA"
 
 ### Protocole HTTP pour les services via W
 
-| Port | Protocole | Service |
-|------|-----------|---------|
-| `3001` | **https** | Webtop KasmVNC (nativement HTTPS) |
-| `8443` | **https** | NextCloud AIO Admin (auto-signé) |
-| `443` | **https** | générique |
-| `6333` | http + `/dashboard` | Qdrant (interface web) |
-| **tous les autres** | **http** | Services IA (ollama, comfyui, open-webui…) |
+| Port                | Protocole           | Service                                    |
+| ------------------- | ------------------- | ------------------------------------------ |
+| `3001`              | **https**           | Webtop KasmVNC (nativement HTTPS)          |
+| `8443`              | **https**           | NextCloud AIO Admin (auto-signé)           |
+| `443`               | **https**           | générique                                  |
+| `6333`              | http + `/dashboard` | Qdrant (interface web)                     |
+| **tous les autres** | **http**            | Services IA (ollama, comfyui, open-webui…) |
 
 > **Note** : Le HTTPS public est géré par NPM (port 443). Via IPFS P2P, on accède directement aux ports HTTP internes (zone `localhost` protégée par le firewall UFW).
 
----
+***
 
 ## Les scripts ME — connexion intelligente
 
@@ -470,16 +475,16 @@ IA/ollama.me.sh
 
 ### Scripts disponibles
 
-| Script | Service | Port | Particularité |
-|--------|---------|------|---------------|
-| [`IA/ollama.me.sh`](../IA/ollama.me.sh) | Ollama LLM | 11434 | Test latence + modèles requis |
-| [`IA/comfyui.me.sh`](../IA/comfyui.me.sh) | ComfyUI | 8188 | Stats GPU (VRAM) |
-| [`IA/vane.me.sh`](../IA/vane.me.sh) | Vane Search | 3002 | Recherche web IA |
-| [`IA/orpheus.me.sh`](../IA/orpheus.me.sh) | Orpheus TTS | 5005 | P2P only (pas de SSH) |
-| [`IA/open-webui.me.sh`](../IA/open-webui.me.sh) | Open WebUI | 8000 | Interface IA centrale |
-| [`IA/qdrant.me.sh`](../IA/qdrant.me.sh) | Qdrant | 6333 | Liste collections |
-| [`IA/mirofish.me.sh`](../IA/mirofish.me.sh) | MiroFish | 5050 | Multi-agent simulation |
-| [`IA/dify.ai.me.sh`](../IA/dify.ai.me.sh) | Dify | 8010 | AI Workflow |
+| Script                                                                                                 | Service     | Port  | Particularité                 |
+| ------------------------------------------------------------------------------------------------------ | ----------- | ----- | ----------------------------- |
+| [`IA/ollama.me.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/IA/ollama.me.sh)         | Ollama LLM  | 11434 | Test latence + modèles requis |
+| [`IA/comfyui.me.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/IA/comfyui.me.sh)       | ComfyUI     | 8188  | Stats GPU (VRAM)              |
+| [`IA/vane.me.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/IA/vane.me.sh)             | Vane Search | 3002  | Recherche web IA              |
+| [`IA/orpheus.me.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/IA/orpheus.me.sh)       | Orpheus TTS | 5005  | P2P only (pas de SSH)         |
+| [`IA/open-webui.me.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/IA/open-webui.me.sh) | Open WebUI  | 8000  | Interface IA centrale         |
+| [`IA/qdrant.me.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/IA/qdrant.me.sh)         | Qdrant      | 6333  | Liste collections             |
+| [`IA/mirofish.me.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/IA/mirofish.me.sh)     | MiroFish    | 5050  | Multi-agent simulation        |
+| [`IA/dify.ai.me.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/IA/dify.ai.me.sh)       | Dify        | 8010  | AI Workflow                   |
 
 ### Commandes communes à tous les ME
 
@@ -499,11 +504,11 @@ SERVICE.me.sh TEST          # Tester l'API active
 SERVICE.me.sh HELP          # Aide complète
 ```
 
----
+***
 
 ## Configuration avancée (.env)
 
-Le fichier [`~/.zen/Astroport.ONE/.env`](../.env.template) centralise la configuration. Les variables DRAGON/tunnels :
+Le fichier [`~/.zen/Astroport.ONE/.env`](https://github.com/papiche/Astroport.ONE/blob/master/docs/.env.template) centralise la configuration. Les variables DRAGON/tunnels :
 
 ```bash
 ## ─── Passerelle SSH fallback ─────────────────────────────────────────────
@@ -532,7 +537,7 @@ DRAGON_PRIVATE_SERVICES="qdrant nextcloud-app"
     REMOTE_HOST="${SWARM_REMOTE_HOST:-scorpio.copylaradio.com}"
 ```
 
----
+***
 
 ## Utilisation manuelle — recettes
 
@@ -541,7 +546,9 @@ DRAGON_PRIVATE_SERVICES="qdrant nextcloud-app"
 ```bash
 ipfs p2p ls
 ```
+
 Exemple de sortie :
+
 ```
 /x/ollama-12D3KooWAvW...  /ip4/127.0.0.1/tcp/11434   /p2p/12D3KooWAvW...
 /x/ssh-12D3KooWAJx...     /p2p/12D3KooWAJx...         /ip4/127.0.0.1/tcp/22
@@ -636,7 +643,7 @@ ls -la ~/.zen/tmp/${IPFSNODEID}/x_*.sh 2>/dev/null
 ls ~/.zen/tmp/swarm/ | wc -l
 ```
 
----
+***
 
 ## Dépannage
 
@@ -645,6 +652,7 @@ ls ~/.zen/tmp/swarm/ | wc -l
 **Cause** : Le port est occupé localement par un service natif (pas un tunnel IPFS de ce nœud).
 
 **Action** :
+
 ```bash
 # Vérifier quel processus occupe le port
 lsof -Pi :11434 -sTCP:LISTEN
@@ -657,6 +665,7 @@ lsof -Pi :11434 -sTCP:LISTEN
 **Cause** : La balise IPNS de la station distante n'est pas encore mise à jour ou le nœud n'est pas joignable.
 
 **Action** :
+
 ```bash
 # Tester la connectivité au nœud
 ipfs --timeout=15s ping -n 2 /p2p/NODEID_DISTANT
@@ -673,6 +682,7 @@ ls /tmp/test_balise/x_*.sh
 **Cause** : Le service n'écoute pas sur `127.0.0.1` ou est dans `DRAGON_PRIVATE_SERVICES`.
 
 **Diagnostic** :
+
 ```bash
 # Vérifier que le service écoute
 ss -tln | grep ":11434"
@@ -689,6 +699,7 @@ bash -x ~/.zen/Astroport.ONE/RUNTIME/DRAGON_p2p_ssh.sh 2>&1 | grep -E "Publie|SK
 **Cause** : IPFS daemon non opérationnel ou `ipfs p2p` désactivé dans la configuration.
 
 **Action** :
+
 ```bash
 # Vérifier si ipfs p2p est activé
 ipfs config Experimental.Libp2pStreamMounting
@@ -699,11 +710,12 @@ ipfs config --json Experimental.Libp2pStreamMounting true
 sudo systemctl restart ipfs
 ```
 
-### ❌ Tunnel SSH (*.me.sh) échoue
+### ❌ Tunnel SSH (\*.me.sh) échoue
 
 **Cause** : `scorpio.copylaradio.com` inaccessible ou clé SSH non autorisée.
 
 **Action** :
+
 ```bash
 # Tester la connectivité SSH directe
 ssh -v frd@scorpio.copylaradio.com -p 2122 exit
@@ -715,7 +727,7 @@ cat ~/.zen/Astroport.ONE/.env | grep SWARM_REMOTE
 ~/.zen/Astroport.ONE/IA/ollama.me.sh P2P
 ```
 
----
+***
 
 ## Annexe : Carte des flux de fichiers
 
@@ -754,6 +766,6 @@ tunnel.sh
     └── DÉCLENCHE ──────► sudo systemctl restart astroport → _12345.sh
 ```
 
----
+***
 
-*Documentation générée depuis le code source d'[Astroport.ONE](https://github.com/papiche/Astroport.ONE) — AGPL-3.0*
+_Documentation générée depuis le code source d'_[_Astroport.ONE_](https://github.com/papiche/Astroport.ONE) _— AGPL-3.0_

@@ -6,12 +6,12 @@ The `/api/fileupload` endpoint supports automatic detection and organization of 
 
 ## Features
 
-✅ **Single-Domain Only**: Each cookie file must contain cookies for one domain only  
-✅ **Hidden Files**: All cookies saved with leading dot (`.youtube.com.cookie`, `.leboncoin.fr.cookie`)  
-✅ **Auto-Detection**: Recognizes Netscape HTTP Cookie File format  
-✅ **Domain Extraction**: Parses cookie content to identify the source domain  
-✅ **MULTIPASS Compatible**: Cookies stored in EMAIL-based MULTIPASS directories  
-❌ **No Multi-Domain**: Multi-domain cookie files are rejected (export per-domain cookies)  
+✅ **Single-Domain Only**: Each cookie file must contain cookies for one domain only\
+✅ **Hidden Files**: All cookies saved with leading dot (`.youtube.com.cookie`, `.leboncoin.fr.cookie`)\
+✅ **Auto-Detection**: Recognizes Netscape HTTP Cookie File format\
+✅ **Domain Extraction**: Parses cookie content to identify the source domain\
+✅ **MULTIPASS Compatible**: Cookies stored in EMAIL-based MULTIPASS directories\
+❌ **No Multi-Domain**: Multi-domain cookie files are rejected (export per-domain cookies)
 
 ## Directory Structure
 
@@ -31,30 +31,36 @@ The `/api/fileupload` endpoint supports automatic detection and organization of 
 ```
 
 **Notes:**
-- `.{domain}.cookie` → Single-domain cookies ONLY (e.g., youtube.com + subdomains)
-- All cookie files are **hidden files** (starting with dot) at the root of user's EMAIL directory
-- **Directory is always EMAIL-based**, NPUB/HEX are stored as files inside
-- **Multi-domain cookies are NOT supported** - export cookies separately for each domain
+
+* `.{domain}.cookie` → Single-domain cookies ONLY (e.g., youtube.com + subdomains)
+* All cookie files are **hidden files** (starting with dot) at the root of user's EMAIL directory
+* **Directory is always EMAIL-based**, NPUB/HEX are stored as files inside
+* **Multi-domain cookies are NOT supported** - export cookies separately for each domain
 
 ## Cookie File Format
 
 ### Supported format:
-- **Netscape HTTP Cookie File** (ONLY format accepted)
-- **Single-domain only** - cookies must be for one domain and its subdomains
+
+* **Netscape HTTP Cookie File** (ONLY format accepted)
+* **Single-domain only** - cookies must be for one domain and its subdomains
 
 ### Cookie File Types:
 
 #### Single-Domain Cookies (ONLY accepted type)
+
 Each uploaded file must contain cookies for **one domain only** (and its subdomains):
-- `.youtube.com.cookie` → All cookies for youtube.com and subdomains
-- `.leboncoin.fr.cookie` → All cookies for leboncoin.fr and subdomains
+
+* `.youtube.com.cookie` → All cookies for youtube.com and subdomains
+* `.leboncoin.fr.cookie` → All cookies for leboncoin.fr and subdomains
 
 #### ❌ Multi-Domain Cookies (REJECTED)
+
 Files containing cookies for **multiple different domains** are **rejected** with an error message.
 
 **Solution:** Export cookies separately for each domain using your browser extension's filter options.
 
 ### Example Netscape format:
+
 ```
 # Netscape HTTP Cookie File
 # https://curl.haxx.se/rfc/cookie_spec.html
@@ -78,6 +84,7 @@ curl -X POST 'http://localhost:54321/api/fileupload' \
 ### Response Examples
 
 #### Single-Domain Cookie:
+
 ```json
 {
   "success": true,
@@ -93,11 +100,13 @@ curl -X POST 'http://localhost:54321/api/fileupload' \
 ```
 
 #### ❌ Multi-Domain Cookie (Error):f
+
 ```json
 {
   "detail": "Multi-domain cookie files are not supported. Please export cookies for a single domain only. Detected domains: amazon.fr, leboncoin.fr, youtube.com"
 }
 ```
+
 **Status Code:** 400 Bad Request
 
 ## Automated Scraper Execution
@@ -119,32 +128,36 @@ The UPlanet system includes an **extensible domain-based scraper framework** tha
 #### Naming Convention for Scrapers
 
 **Scraper Scripts:**
-- Format: `DOMAIN.sh` (bash script run by AstrBot)
-- Location: `Astroport.ONE/IA/`
-- Examples:
-  - `youtube.com.sh` → YouTube scraper
-  - `leboncoin.fr.sh` → Leboncoin scraper
-  - `twitter.com.sh` → Twitter scraper (etc...)
+
+* Format: `DOMAIN.sh` (bash script run by AstrBot)
+* Location: `Astroport.ONE/IA/`
+* Examples:
+  * `youtube.com.sh` → YouTube scraper
+  * `leboncoin.fr.sh` → Leboncoin scraper
+  * `twitter.com.sh` → Twitter scraper (etc...)
 
 **Python Backend (optional):**
-- Format: `scraper_DOMAIN.py`
-- Location: `Astroport.ONE/IA/`
-- Called by bash script if complex logic required
+
+* Format: `scraper_DOMAIN.py`
+* Location: `Astroport.ONE/IA/`
+* Called by bash script if complex logic required
 
 #### User Notifications
 
 When a cookie is uploaded for a domain without a scraper:
-- User receives email: "🍪 Cookie: DOMAIN - MISSING ASTROBOT PROGRAM"
-- Email explains how to request a custom scraper via Captain
-- Notification sent only once per domain (tracked in `.DOMAIN_notified` file)
-- Smart contract workflow: User describes needs → Captain validates → Script added to codebase
+
+* User receives email: "🍪 Cookie: DOMAIN - MISSING ASTROBOT PROGRAM"
+* Email explains how to request a custom scraper via Captain
+* Notification sent only once per domain (tracked in `.DOMAIN_notified` file)
+* Smart contract workflow: User describes needs → Captain validates → Script added to codebase
 
 #### Execution Tracking
 
 To prevent multiple executions per day:
-- Each scraper execution creates a `.done` file: `~/.zen/tmp/${DOMAIN}_sync_${PLAYER}_${TODATE}.done`
-- If `.done` file exists for today, scraper is skipped
-- Logs are stored in: `~/.zen/tmp/${DOMAIN}_sync_${PLAYER}.log`
+
+* Each scraper execution creates a `.done` file: `~/.zen/tmp/${DOMAIN}_sync_${PLAYER}_${TODATE}.done`
+* If `.done` file exists for today, scraper is skipped
+* Logs are stored in: `~/.zen/tmp/${DOMAIN}_sync_${PLAYER}.log`
 
 See `DOMAIN_SCRAPERS.md` for detailed instructions on creating custom scrapers.
 
@@ -155,23 +168,27 @@ See `DOMAIN_SCRAPERS.md` for detailed instructions on creating custom scrapers.
 **Note:** Now handled automatically by `NOSTRCARD.refresh.sh` when `.youtube.com.cookie` is detected.
 
 Manual execution:
+
 ```bash
 bash youtube.com.sh user@email.com
 ```
 
 Searches for:
-- `~/.zen/game/nostr/user@email.com/.youtube.com.cookie` (domain-specific cookie)
+
+* `~/.zen/game/nostr/user@email.com/.youtube.com.cookie` (domain-specific cookie)
 
 ### 2. Leboncoin Scraper (automatic)
 
 **Note:** Now handled automatically by `NOSTRCARD.refresh.sh` when `.leboncoin.fr.cookie` is detected.
 
 Manual execution:
+
 ```bash
 bash leboncoin.fr.sh user@email.com ~/.zen/game/nostr/user@email.com/.leboncoin.fr.cookie
 ```
 
 Or call Python scraper directly:
+
 ```bash
 python3 scraper_leboncoin.py \
   ~/.zen/game/nostr/user@email.com/.leboncoin.fr.cookie \
@@ -193,35 +210,38 @@ python3 my_scraper.py --cookie "$COOKIE" [...]
 
 ## Supported Services
 
-| Service | Cookie File | Bash Script | Python Backend |
-|---------|-------------|-------------|----------------|
-| **YouTube** | `.youtube.com.cookie` | `youtube.com.sh` | (uses yt-dlp + process_youtube.sh) |
-| **Leboncoin** | `.leboncoin.fr.cookie` | `leboncoin.fr.sh` | `scraper_leboncoin.py` |
-| **Any Domain** | `.{domain}.cookie` | Create `{domain}.sh` | Optional `scraper_{domain}.py` |
+| Service        | Cookie File            | Bash Script          | Python Backend                      |
+| -------------- | ---------------------- | -------------------- | ----------------------------------- |
+| **YouTube**    | `.youtube.com.cookie`  | `youtube.com.sh`     | (uses yt-dlp + process\_youtube.sh) |
+| **Leboncoin**  | `.leboncoin.fr.cookie` | `leboncoin.fr.sh`    | `scraper_leboncoin.py`              |
+| **Any Domain** | `.{domain}.cookie`     | Create `{domain}.sh` | Optional `scraper_{domain}.py`      |
 
 All files are stored in `~/.zen/game/nostr/EMAIL/` directory
 
 **Extensible System:**
-- Add `DOMAIN.sh` script to `Astroport.ONE/IA/` directory
-- System automatically detects and executes it
-- No code changes required in main system
-- See `DOMAIN_SCRAPERS.md` for instructions
+
+* Add `DOMAIN.sh` script to `Astroport.ONE/IA/` directory
+* System automatically detects and executes it
+* No code changes required in main system
+* See `DOMAIN_SCRAPERS.md` for instructions
 
 ## Security
 
 🔒 **Security Features:**
-- Cookies are **NOT** published to IPFS
-- Stored in user's **private directory** (not in uDRIVE)
-- **NIP-42 authentication** required for upload
-- **Hidden files** (leading dot) for extra privacy
-- File permissions: **600** (read/write for owner only) - Set automatically on save
+
+* Cookies are **NOT** published to IPFS
+* Stored in user's **private directory** (not in uDRIVE)
+* **NIP-42 authentication** required for upload
+* **Hidden files** (leading dot) for extra privacy
+* File permissions: **600** (read/write for owner only) - Set automatically on save
 
 ⚠️ **Best Practices:**
-- Never share cookie files publicly
-- Regenerate cookies periodically
-- Use browser extensions to export cookies safely
-- Check cookie expiration dates
-- Use HTTPS-only cookies when possible
+
+* Never share cookie files publicly
+* Regenerate cookies periodically
+* Use browser extensions to export cookies safely
+* Check cookie expiration dates
+* Use HTTPS-only cookies when possible
 
 ## MULTIPASS Access
 
@@ -238,12 +258,13 @@ All MULTIPASS identities are created by `make_NOSTRCARD.sh` and stored in EMAIL-
     └── uDRIVE/
 ```
 
-**Important**: 
-- Directory structure is always based on **EMAIL** (e.g., `user@email.com`)
-- NPUB/HEX are stored as **files** inside the EMAIL directory
-- There is **NO** separate directory for NPUB
-- All services access cookies via the EMAIL path
-- **Only single-domain cookie files** (`.DOMAIN.cookie`) are supported
+**Important**:
+
+* Directory structure is always based on **EMAIL** (e.g., `user@email.com`)
+* NPUB/HEX are stored as **files** inside the EMAIL directory
+* There is **NO** separate directory for NPUB
+* All services access cookies via the EMAIL path
+* **Only single-domain cookie files** (`.DOMAIN.cookie`) are supported
 
 ## Extending to New Services
 
@@ -281,21 +302,22 @@ When using "Get cookies.txt LOCALLY" extension:
 ## API Endpoints
 
 ### Upload File with Cookie Detection
-- **Endpoint**: `POST /api/fileupload`
-- **Auth**: NIP-42 (npub required)
-- **Params**: 
-  - `file`: Cookie file (.txt with Netscape format)
-  - `npub`: User's NOSTR public key
-- **Returns**: Cookie details with detected domain
+
+* **Endpoint**: `POST /api/fileupload`
+* **Auth**: NIP-42 (npub required)
+* **Params**:
+  * `file`: Cookie file (.txt with Netscape format)
+  * `npub`: User's NOSTR public key
+* **Returns**: Cookie details with detected domain
 
 ### Helper Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `get_cookie.sh` | Find cookie file for a domain |
-| `youtube.com.sh` | Auto-sync YouTube liked videos |
-| `leboncoin.fr.sh` | Scrape Leboncoin ads |
-| `scraper_leboncoin.py` | Python backend for Leboncoin |
+| Script                 | Purpose                        |
+| ---------------------- | ------------------------------ |
+| `get_cookie.sh`        | Find cookie file for a domain  |
+| `youtube.com.sh`       | Auto-sync YouTube liked videos |
+| `leboncoin.fr.sh`      | Scrape Leboncoin ads           |
+| `scraper_leboncoin.py` | Python backend for Leboncoin   |
 
 ## Troubleshooting
 
@@ -317,6 +339,7 @@ curl -X POST 'http://localhost:54321/api/fileupload' \
 ### Cookie expired
 
 Most cookies have expiration dates. If services fail with auth errors:
+
 1. Export fresh cookies from your browser
 2. Re-upload via `/api/fileupload`
 3. System will automatically replace old cookie
@@ -333,9 +356,10 @@ mv ~/.zen/game/nostr/user@email.com/.cookie.txt \
 ## Browser Extensions for Cookie Export
 
 Recommended extensions to export cookies in Netscape format:
-- **Chrome/Edge**: "Get cookies.txt LOCALLY"
-- **Firefox**: "cookies.txt"
-- **Any Browser**: Developer Tools → Application → Cookies (manual export)
+
+* **Chrome/Edge**: "Get cookies.txt LOCALLY"
+* **Firefox**: "cookies.txt"
+* **Any Browser**: Developer Tools → Application → Cookies (manual export)
 
 ## Example: Adding New Service
 
@@ -369,44 +393,43 @@ python3 twitter_scraper.py "$COOKIE"
 ## Future Enhancements
 
 Planned features:
-- [ ] Cookie expiration monitoring
-- [ ] Automatic cookie refresh
-- [ ] Cookie sharing between UPlanet members (opt-in)
-- [ ] Cookie health checks
-- [ ] Multi-account cookie management
 
----
+* [ ] Cookie expiration monitoring
+* [ ] Automatic cookie refresh
+* [ ] Cookie sharing between UPlanet members (opt-in)
+* [ ] Cookie health checks
+* [ ] Multi-account cookie management
 
-**Documentation**: UPassport Cookie System v1.0  
-**Last Updated**: Décembre 2025  
+***
+
+**Documentation**: UPassport Cookie System v1.0\
+**Last Updated**: Décembre 2025\
 **Maintainer**: Astroport.ONE Team
 
----
+***
 
 ## Related Documentation
 
-- **[COOKIE_SYSTEM_COMPLIANCE.md](./COOKIE_SYSTEM_COMPLIANCE.md)**: Detailed conformity analysis between documentation and implementation
-- **[NOSTRCARD.refresh.sh](../RUNTIME/NOSTRCARD.refresh.sh)**: Automated scraper execution script
-- **[cookie.html](../../UPassport/templates/cookie.html)**: User interface for cookie upload
+* [**COOKIE\_SYSTEM\_COMPLIANCE.md**](https://github.com/papiche/Astroport.ONE/blob/master/docs/COOKIE_SYSTEM_COMPLIANCE.md): Detailed conformity analysis between documentation and implementation
+* [**NOSTRCARD.refresh.sh**](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTRCARD.refresh.sh): Automated scraper execution script
+* [**cookie.html**](https://github.com/papiche/Astroport.ONE/blob/master/UPassport/templates/cookie.html): User interface for cookie upload
 
+***
 
----
-
-**Documentation**: UPassport Cookie System v1.0  
-**Last Updated**: Décembre 2025  
+**Documentation**: UPassport Cookie System v1.0\
+**Last Updated**: Décembre 2025\
 **Maintainer**: Astroport.ONE Team
 
----
+***
 
 ## Related Documentation
 
-- **[COOKIE_SYSTEM_COMPLIANCE.md](./COOKIE_SYSTEM_COMPLIANCE.md)**: Detailed conformity analysis between documentation and implementation
-- **[NOSTRCARD.refresh.sh](../RUNTIME/NOSTRCARD.refresh.sh)**: Automated scraper execution script
-- **[cookie.html](../../UPassport/templates/cookie.html)**: User interface for cookie upload
+* [**COOKIE\_SYSTEM\_COMPLIANCE.md**](https://github.com/papiche/Astroport.ONE/blob/master/docs/COOKIE_SYSTEM_COMPLIANCE.md): Detailed conformity analysis between documentation and implementation
+* [**NOSTRCARD.refresh.sh**](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTRCARD.refresh.sh): Automated scraper execution script
+* [**cookie.html**](https://github.com/papiche/Astroport.ONE/blob/master/UPassport/templates/cookie.html): User interface for cookie upload
 
+***
 
----
-
-**Documentation**: UPassport Cookie System v1.0  
-**Last Updated**: Décembre 2025  
+**Documentation**: UPassport Cookie System v1.0\
+**Last Updated**: Décembre 2025\
 **Maintainer**: Astroport.ONE Team

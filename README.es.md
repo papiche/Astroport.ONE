@@ -1,13 +1,12 @@
 # 🚀 Astroport.ONE — El Internet de Confianza
 
-[EN](README.md) · [FR](README.fr.md) · [GitBook](https://astroport-1.gitbook.io/astroport.one/)
+[EN](./) · [FR](README.fr.md) · [GitBook](https://astroport-1.gitbook.io/astroport.one/)
 
-> **Internet fue creado para liberarnos. En cambio, nos convertimos en su producto.**
-> Astroport.ONE es una declaración de independencia digital — una suite de código abierto que transforma a los usuarios de inquilinos digitales en copropietarios soberanos de su infraestructura.
+> **Internet fue creado para liberarnos. En cambio, nos convertimos en su producto.** Astroport.ONE es una declaración de independencia digital — una suite de código abierto que transforma a los usuarios de inquilinos digitales en copropietarios soberanos de su infraestructura.
 
 [![Stargazers](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
 
----
+***
 
 ## 🎮 El Recorrido Iniciático: Del Curioso al Capitán
 
@@ -25,95 +24,100 @@ Día 7: La Llamada del DRAGÓN — únete a la red certificada
 
 El sistema **te envía automáticamente correos de coaching diarios** — cada ZINE adaptado a tu rol (Explorador, suscriptor ZENCard, Capitán, miembro U.SOCIETY).
 
----
+***
 
 ## 🌍 Dos Mundos: ORIGIN vs ẐEN
 
-| | **UPlanet ORIGIN** | **UPlanet ẐEN** |
-|:---|:---|:---|
-| **Vocación** | Academia · Sandbox · Descubrimiento | Producción · Economía Real |
-| **Acceso** | Abierto a todos (swarm.key = ceros) | Solo miembros certificados (swarm.key privado) |
-| **Valor del Ẑen** | 1 Ẑ = 0,1 Ğ1 (economía de práctica) | **1 Ẑ = 1 €** (unidad cooperativa real) |
-| **Enjambre IPFS** | Público, abierto | Privado, constelación cifrada |
-| **Identidad** | MULTIPASS básico | uPASSPORT validado + DID W3C |
-| **Quién lo gestiona** | El colectivo G1FabLab | **Tú** — como Capitán |
+|                       | **UPlanet ORIGIN**                  | **UPlanet ẐEN**                                |
+| --------------------- | ----------------------------------- | ---------------------------------------------- |
+| **Vocación**          | Academia · Sandbox · Descubrimiento | Producción · Economía Real                     |
+| **Acceso**            | Abierto a todos (swarm.key = ceros) | Solo miembros certificados (swarm.key privado) |
+| **Valor del Ẑen**     | 1 Ẑ = 0,1 Ğ1 (economía de práctica) | **1 Ẑ = 1 €** (unidad cooperativa real)        |
+| **Enjambre IPFS**     | Público, abierto                    | Privado, constelación cifrada                  |
+| **Identidad**         | MULTIPASS básico                    | uPASSPORT validado + DID W3C                   |
+| **Quién lo gestiona** | El colectivo G1FabLab               | **Tú** — como Capitán                          |
 
 La transición de ORIGIN a ẐEN es la **Certificación DRAGÓN** — una formación en ciberseguridad + criptografía que te otorga el `swarm.key` para unirte a la constelación privada.
 
----
+***
 
 ## 👥 Los 4 Roles de la Constelación
 
 ### 🧱 Armador (Anfitrión) — 14 Ẑen/semana
+
 Proporcionas la **máquina** (el barco). El colectivo la gestiona en modo ORIGIN mientras aprendes.
 
-- Instala Astroport.ONE en cualquier PC Linux o Raspberry Pi
-- Tu estación aparece en el mapa del enjambre UPlanet
-- **Gana 14 Ẑen/semana** como anfitrión de infraestructura
-- Suscríbete: [OpenCollective — Patrocinio Satélite](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386)
+* Instala Astroport.ONE en cualquier PC Linux o Raspberry Pi
+* Tu estación aparece en el mapa del enjambre UPlanet
+* **Gana 14 Ẑen/semana** como anfitrión de infraestructura
+* Suscríbete: [OpenCollective — Patrocinio Satélite](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386)
 
 ### 🎓 Aprendiz (Explorador)
+
 Creas tu **MULTIPASS** en una estación ORIGIN y descubres las herramientas durante 7 días.
 
-- **Día 1**: Archiva YouTube → tu uDRIVE privado (yt-dlp + Open-With Firefox)
-- **Día 2**: IA #BRO en Enjambre — Ollama local, generación de imágenes, redacción de artículos
-- **Día 7**: La Llamada del DRAGÓN — tu invitación a la red ẐEN
+* **Día 1**: Archiva YouTube → tu uDRIVE privado (yt-dlp + Open-With Firefox)
+* **Día 2**: IA #BRO en Enjambre — Ollama local, generación de imágenes, redacción de artículos
+* **Día 7**: La Llamada del DRAGÓN — tu invitación a la red ẐEN
 
 ### ⚓ Capitán — 28 Ẑen/semana
+
 **Operas la estación**, dominas las herramientas y acoge a nuevos usuarios.
 
-- Supera la **Formación DRAGÓN** (ciberseguridad + criptografía) → recibe tu `swarm.key`
-- Conecta tu estación a la constelación privada ẐEN
-- Aloja usuarios MULTIPASS (1 Ẑ/semana cada uno) y suscriptores ZENCard (4 Ẑ/semana)
-- **Gana 2× PAF** = 28 Ẑen/semana por defecto
+* Supera la **Formación DRAGÓN** (ciberseguridad + criptografía) → recibe tu `swarm.key`
+* Conecta tu estación a la constelación privada ẐEN
+* Aloja usuarios MULTIPASS (1 Ẑ/semana cada uno) y suscriptores ZENCard (4 Ẑ/semana)
+* **Gana 2× PAF** = 28 Ẑen/semana por defecto
 
 > Contacto: support@qo-op.com — Asunto: "Candidatura Capitán DRAGÓN"
 
 ### 🐉 U.SOCIETY / DRAGÓN (Miembro Cooperativo)
+
 Eres el **pilar de la constelación** — un Dragón certificado, participante en la gobernanza, miembro permanente.
 
-- **Sin alquiler semanal** — tu patrocinio anual cubre tu acceso
-- `swarm.key` para el enjambre IPFS privado ẐEN
-- **NextCloud 128 Go** incluido
-- Derechos de voto en las decisiones de la cooperativa CopyLaRadio SCIC
-- Acceso prioritario a la IA #BRO (GPU compartida en toda la constelación)
-- Patrocinio: [OpenCollective — Constelación GPU](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385)
+* **Sin alquiler semanal** — tu patrocinio anual cubre tu acceso
+* `swarm.key` para el enjambre IPFS privado ẐEN
+* **NextCloud 128 Go** incluido
+* Derechos de voto en las decisiones de la cooperativa CopyLaRadio SCIC
+* Acceso prioritario a la IA #BRO (GPU compartida en toda la constelación)
+* Patrocinio: [OpenCollective — Constelación GPU](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385)
 
----
+***
 
 ## ☁️ La ZENCard: Libérate de los GAFAM
 
 La **ZENCard** (5 Ẑen/semana) es tu suscripción a la nube soberana, guiada por un **programa de incorporación de 7 días**:
 
-| Día | Tutorial |
-|---|---|
-| 0 | NextCloud AIO activado — conectar https://cloud.TU_DOMINIO |
-| 1 | Sincronización automática de fotos (Android + iPhone → tu cápsula privada) |
-| 2 | Migración de Contactos y Agenda desde Google mediante DAVx⁵ |
-| 4 | F-Droid + Aurora Store — aplicaciones sin rastreo |
-| 5 | Organic Maps (GPS sin conexión) + Scrambled Exif (privacidad de fotos) |
-| 7 | 🎉 ¡Liberación completa! → invitación a U.SOCIETY |
+| Día | Tutorial                                                                   |
+| --- | -------------------------------------------------------------------------- |
+| 0   | NextCloud AIO activado — conectar https://cloud.TU\_DOMINIO                |
+| 1   | Sincronización automática de fotos (Android + iPhone → tu cápsula privada) |
+| 2   | Migración de Contactos y Agenda desde Google mediante DAVx⁵                |
+| 4   | F-Droid + Aurora Store — aplicaciones sin rastreo                          |
+| 5   | Organic Maps (GPS sin conexión) + Scrambled Exif (privacidad de fotos)     |
+| 7   | 🎉 ¡Liberación completa! → invitación a U.SOCIETY                          |
 
 **Servicios incluidos:**
-- ✅ **NextCloud 128 Go** (nube privada, sin GAFAM)
-- ✅ **Identidad NOSTR** (red social descentralizada sin algoritmos)
-- ✅ **uDRIVE IPFS** (almacenamiento personal distribuido)
-- ✅ **Wallet Ẑen** (cada like recibido = 1 Ẑen)
-- ✅ **IA #BRO** (inteligencia artificial local en enjambre)
 
-Guías: [pad.p2p.legal/Smartphone2NextCloud](https://pad.p2p.legal/Smartphone2NextCloud#) · [Blog CopyLaRadio](https://www.copylaradio.com/blog/blog-1/post/le-pas-a-pas-qui-libere-du-grand-mechant-cloud-36)
+* ✅ **NextCloud 128 Go** (nube privada, sin GAFAM)
+* ✅ **Identidad NOSTR** (red social descentralizada sin algoritmos)
+* ✅ **uDRIVE IPFS** (almacenamiento personal distribuido)
+* ✅ **Wallet Ẑen** (cada like recibido = 1 Ẑen)
+* ✅ **IA #BRO** (inteligencia artificial local en enjambre)
 
----
+Guías: [pad.p2p.legal/Smartphone2NextCloud](https://pad.p2p.legal/Smartphone2NextCloud) · [Blog CopyLaRadio](https://www.copylaradio.com/blog/blog-1/post/le-pas-a-pas-qui-libere-du-grand-mechant-cloud-36)
+
+***
 
 ## 🤖 #BRO: La Inteligencia del Enjambre
 
 **#BRO** (Brain Robot Online) es la **IA colectiva** de la constelación Astroport:
 
-- 🧠 **Local y privado**: funciona en cada estación mediante Ollama (sin datos enviados a OpenAI)
-- 🎨 **Generación de imágenes** para tus publicaciones de Nostr
-- 📝 **Redacción de artículos** en tu blog descentralizado
-- 🔍 **Búsqueda semántica** en tu constelación
-- 🌙 **Trabajo nocturno**: #BRO recopila y analiza mientras duermes
+* 🧠 **Local y privado**: funciona en cada estación mediante Ollama (sin datos enviados a OpenAI)
+* 🎨 **Generación de imágenes** para tus publicaciones de Nostr
+* 📝 **Redacción de artículos** en tu blog descentralizado
+* 🔍 **Búsqueda semántica** en tu constelación
+* 🌙 **Trabajo nocturno**: #BRO recopila y analiza mientras duermes
 
 A diferencia de ChatGPT, #BRO es un **enjambre de inteligencias** — cada estación contribuye, el colectivo crece. Cuantos más Capitanes, más poderosa es la IA.
 
@@ -127,7 +131,7 @@ A diferencia de ChatGPT, #BRO es un **enjambre de inteligencias** — cada estac
 curl http://127.0.0.1:11434/api/generate -d '{"model":"gemma3","prompt":"Hola BRO"}'
 ```
 
----
+***
 
 ## 🛠️ Instalación
 
@@ -163,12 +167,12 @@ bash install.sh "" "" "" ai-company
 bash install.sh "" "" "" dev
 ```
 
-| Perfil | Descripción | Estado |
-|---|---|---|
-| `standard` | IPFS · Nostr strfry · UPassport · GPG · gcli | ✅ Producción |
-| `nextcloud` | Estándar + NextCloud AIO (128 Go, almacenamiento BTRFS) | ✅ Estable |
-| `ai-company` | Estándar + Dify AI + OpenWebUI + +Qdrant IA | ⚠️ Experimental |
-| `dev` | Estándar + relay Rust rnostr (migración de plugins bash writePolicy) | 🔧 En desarrollo |
+| Perfil       | Descripción                                                          | Estado           |
+| ------------ | -------------------------------------------------------------------- | ---------------- |
+| `standard`   | IPFS · Nostr strfry · UPassport · GPG · gcli                         | ✅ Producción     |
+| `nextcloud`  | Estándar + NextCloud AIO (128 Go, almacenamiento BTRFS)              | ✅ Estable        |
+| `ai-company` | Estándar + Dify AI + OpenWebUI + +Qdrant IA                          | ⚠️ Experimental  |
+| `dev`        | Estándar + relay Rust rnostr (migración de plugins bash writePolicy) | 🔧 En desarrollo |
 
 ### Después de la instalación: Lo que está en ejecución
 
@@ -184,7 +188,7 @@ http://localhost:11434   API Ollama (perfil ai-company)
 http://localhost:8010    Agentes IA Dify AI (perfil ai-company)
 ```
 
----
+***
 
 ## 💾 Arquitectura de Almacenamiento: BTRFS Recomendado
 
@@ -206,7 +210,7 @@ sudo mv ~/.ipfs /nextcloud-data/ipfs && ln -s /nextcloud-data/ipfs ~/.ipfs
 ~/.zen/Astroport.ONE/start.sh
 ```
 
-¿Por qué BTRFS? **Copy-on-Write** = IPFS nunca reescribe bloques → coincidencia perfecta. **Instantáneas** para copias de seguridad inmediatas de NextCloud. **Compresión zstd** ~25% de ahorro de espacio.
+¿Por qué BTRFS? **Copy-on-Write** = IPFS nunca reescribe bloques → coincidencia perfecta. **Instantáneas** para copias de seguridad inmediatas de NextCloud. **Compresión zstd** \~25% de ahorro de espacio.
 
 ```
 /nextcloud-data/
@@ -215,7 +219,7 @@ sudo mv ~/.ipfs /nextcloud-data/ipfs && ln -s /nextcloud-data/ipfs ~/.ipfs
   nextcloud/    ← volúmenes NextCloud AIO (datos de usuario 128 Go cada uno)
 ```
 
----
+***
 
 ## 💰 La Economía Cooperativa: El Modelo 3×1/3
 
@@ -229,19 +233,19 @@ humana)                 1/3 Activos Comunes (tierras, bosques, infraestructura)
 
 **Pagos semanales** (automatizados por `PLAYER.refresh.sh` y `NOSTRCARD.refresh.sh`):
 
-| Fuente | Importe | Destinatario |
-|---|---|---|
-| Alquiler MULTIPASS | 1 Ẑen/semana | Estación del Capitán |
-| Alquiler ZENCard | 4 Ẑen/semana | Estación del Capitán |
-| PAF Armador | 14 Ẑen/semana | Anfitrión (desde la cooperativa) |
-| PAF Capitán | 28 Ẑen/semana | Capitán certificado |
-| Like recibido | 1 Ẑen/like | Creador de contenido |
+| Fuente             | Importe       | Destinatario                     |
+| ------------------ | ------------- | -------------------------------- |
+| Alquiler MULTIPASS | 1 Ẑen/semana  | Estación del Capitán             |
+| Alquiler ZENCard   | 4 Ẑen/semana  | Estación del Capitán             |
+| PAF Armador        | 14 Ẑen/semana | Anfitrión (desde la cooperativa) |
+| PAF Capitán        | 28 Ẑen/semana | Capitán certificado              |
+| Like recibido      | 1 Ẑen/like    | Creador de contenido             |
 
 Todas las transacciones son visibles en la **blockchain Ğ1** (Duniter v1/v2s). Transparencia total, sin modelo de negocio oculto.
 
 > 📜 Marco legal: [LEGAL.md](LEGAL.md) — Constitución del Ecosistema UPlanet
 
----
+***
 
 ## 🌐 Arquitectura Técnica
 
@@ -265,7 +269,7 @@ Todas las transacciones son visibles en la **blockchain Ğ1** (Duniter v1/v2s). 
 └─────────────────────────────────────────────────────────┘
 ```
 
----
+***
 
 ## 🔧 Para Desarrolladores: Perfil `dev` y migración rnostr
 
@@ -274,26 +278,27 @@ El perfil `dev` es un **proyecto de fondo**: migrar los plugins de política de 
 🐉 **Llamado a desarrolladores Rust/DRAGÓN** — contacto: support@qo-op.com — Asunto: `DRAGON rnostr migration`
 
 **Herramienta: `code_assistant`** (revisión de código IA local):
+
 ```bash
 ~/.zen/Astroport.ONE/code_assistant NOSTRCARD.refresh.sh --kvbasename refactor1
 ```
 
----
+***
 
 ## 📚 Índice de Documentación
 
-| Documento | Contenido |
-|---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Visión técnica completa, flujos de datos, modelos económicos |
-| [LEGAL.md](LEGAL.md) | Constitución del Ecosistema UPlanet · Gobernanza cooperativa |
-| [ANARCHITECTE.md](ANARCHITECTE.md) | Filosofía · Visión · Soberanía digital ↔ regeneración ecológica |
-| [RUNTIME/ZEN.ECONOMY.readme.md](RUNTIME/ZEN.ECONOMY.readme.md) | Pagos automáticos 3×1/3 · Provisiones IVA · Derecho cooperativo francés |
-| [DID_IMPLEMENTATION.md](DID_IMPLEMENTATION.md) | DID W3C · Gestión de claves SSSS 3/2 · Twin keys multi-blockchain |
-| [docs/ORE_SYSTEM.md](docs/ORE_SYSTEM.md) | Obligaciones medioambientales · DIDs geográficos · Contratos ecológicos |
-| [IA/README.md](IA/README.md) | Asistente IA #BRO · Memoria 12 ranuras · Capacidades de generación |
-| [BOOKS/](BOOKS/) | Libro blanco: de la soberanía digital a la regeneración ecológica |
+| Documento                                                                                                           | Contenido                                                               |
+| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                                                                                  | Visión técnica completa, flujos de datos, modelos económicos            |
+| [LEGAL.md](LEGAL.md)                                                                                                | Constitución del Ecosistema UPlanet · Gobernanza cooperativa            |
+| [ANARCHITECTE.md](ANARCHITECTE.md)                                                                                  | Filosofía · Visión · Soberanía digital ↔ regeneración ecológica         |
+| [RUNTIME/ZEN.ECONOMY.readme.md](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/ZEN.ECONOMY.readme.md) | Pagos automáticos 3×1/3 · Provisiones IVA · Derecho cooperativo francés |
+| [DID\_IMPLEMENTATION.md](https://github.com/papiche/Astroport.ONE/blob/master/DID_IMPLEMENTATION.md)                | DID W3C · Gestión de claves SSSS 3/2 · Twin keys multi-blockchain       |
+| [docs/ORE\_SYSTEM.md](docs/explanation/ORE_SYSTEM.md)                                                               | Obligaciones medioambientales · DIDs geográficos · Contratos ecológicos |
+| [IA/README.md](IA/)                                                                                                 | Asistente IA #BRO · Memoria 12 ranuras · Capacidades de generación      |
+| [BOOKS/](https://github.com/papiche/Astroport.ONE/blob/master/BOOKS/README.md)                                      | Libro blanco: de la soberanía digital a la regeneración ecológica       |
 
----
+***
 
 ## 🤝 Únete a la Constelación
 
@@ -306,7 +311,7 @@ El perfil `dev` es un **proyecto de fondo**: migrar los plugins de política de 
 5. **💻 Programa** — Rust (rnostr), Python (IA), Bash — todos los perfiles son bienvenidos
 6. **🌍 Difunde** — da una estrella al repositorio, comparte los ZINEs
 
----
+***
 
 ## 🖥️ Webtop Docker (VDI — Escritorio en el Navegador)
 
@@ -320,12 +325,13 @@ docker compose -f docker-compose.webtop.yml up -d
 ```
 
 **Características:**
-- 🖥️ Escritorio Ubuntu XFCE completo accesible desde cualquier navegador
-- 🐳 Socket Docker compartido con el host → todos los perfiles funcionan (`nextcloud`, `ai-company`)
-- 📋 Portapapeles bidireccional, vídeo WebRTC, soporte pantalla táctil
-- 🏗️ Multi-arch: amd64, arm64, arm/v7 (Raspberry Pi, Mac M-series)
-- 🔄 Mantenido por [linuxserver.io](https://docs.linuxserver.io/images/docker-webtop/) — sin build personalizado
-- 🔒 Contenedores lanzados desde webtop = **sibling containers** en el host Docker (no DinD)
+
+* 🖥️ Escritorio Ubuntu XFCE completo accesible desde cualquier navegador
+* 🐳 Socket Docker compartido con el host → todos los perfiles funcionan (`nextcloud`, `ai-company`)
+* 📋 Portapapeles bidireccional, vídeo WebRTC, soporte pantalla táctil
+* 🏗️ Multi-arch: amd64, arm64, arm/v7 (Raspberry Pi, Mac M-series)
+* 🔄 Mantenido por [linuxserver.io](https://docs.linuxserver.io/images/docker-webtop/) — sin build personalizado
+* 🔒 Contenedores lanzados desde webtop = **sibling containers** en el host Docker (no DinD)
 
 ```bash
 # Modo UPlanet ẐEN (con swarm.key) + NextCloud:
@@ -336,21 +342,20 @@ IPFS_SWARM_KEY=<hex64> \
 docker compose -f docker-compose.webtop.yml up -d
 ```
 
-> 🔒 **Acceso remoto**: usa un túnel SSH por seguridad:
-> `ssh -L 3000:localhost:3000 user@TU_IP` → luego abre `http://localhost:3000`
+> 🔒 **Acceso remoto**: usa un túnel SSH por seguridad: `ssh -L 3000:localhost:3000 user@TU_IP` → luego abre `http://localhost:3000`
 
----
+***
 
 **Cooperativa CopyLaRadio SCIC:**
-- [OpenCollective](https://opencollective.com/monnaie-libre) — transparencia financiera
-- [support@qo-op.com](mailto:support@qo-op.com) — formación de Capitanes, U.SOCIETY
-- [forum.monnaie-libre.fr](https://forum.monnaie-libre.fr) — comunidad
-- [copylaradio.com](https://www.copylaradio.com) — sitio cooperativo
-- [Ğ1 — Moneda Libre](https://monnaie-libre.fr) — la moneda libre que impulsa UPlanet
 
-> **AGPL-3.0** — Software libre, código auditable, sin modelo de negocio oculto.
-> El código es la ley. La cooperativa es la estructura. Tú eres la red.
+* [OpenCollective](https://opencollective.com/monnaie-libre) — transparencia financiera
+* [support@qo-op.com](mailto:support@qo-op.com) — formación de Capitanes, U.SOCIETY
+* [forum.monnaie-libre.fr](https://forum.monnaie-libre.fr) — comunidad
+* [copylaradio.com](https://www.copylaradio.com) — sitio cooperativo
+* [Ğ1 — Moneda Libre](https://monnaie-libre.fr) — la moneda libre que impulsa UPlanet
 
----
+> **AGPL-3.0** — Software libre, código auditable, sin modelo de negocio oculto. El código es la ley. La cooperativa es la estructura. Tú eres la red.
 
-*Astroport.ONE — G1FabLab / CopyLaRadio SCIC — [github.com/papiche/Astroport.ONE](https://github.com/papiche/Astroport.ONE)*
+***
+
+_Astroport.ONE — G1FabLab / CopyLaRadio SCIC —_ [_github.com/papiche/Astroport.ONE_](https://github.com/papiche/Astroport.ONE)

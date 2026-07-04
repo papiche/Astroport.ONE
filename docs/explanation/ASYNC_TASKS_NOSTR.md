@@ -8,7 +8,7 @@ Astroport.ONE n'a rien de tout ça par conception. Chaque station est souveraine
 
 La réponse : les **Direct Messages NOSTR (Kind 4 / NIP-44)** sont déjà un bus de messages chiffré, authentifié, et répliqué sur les relays. Ils remplissent exactement le rôle d'une file de tâches.
 
----
+***
 
 ## Le modèle conceptuel
 
@@ -29,22 +29,22 @@ bro_dm_daemon.sh                          bro_dm_daemon.sh
 
 Chaque "channel" est un type de tâche. Le payload est un objet JSON chiffré avec NIP-44 (clé de conversation ECDH-25519). Le relay NOSTR joue le rôle de broker — les messages sont délivrés même si les deux stations ne sont pas simultanément en ligne.
 
----
+***
 
-## Les canaux gérés par bro_dm_daemon.sh
+## Les canaux gérés par bro\_dm\_daemon.sh
 
-| Canal | Direction | Rôle |
-|-------|-----------|------|
-| `plain` | Client → BRO | Question en langage naturel (RAG Qdrant + Ollama) |
-| `comfyui_job` | Client → Brain | Délégation génération vidéo/image ComfyUI |
-| `comfyui_result` | Brain → Client | CID IPFS du résultat vidéo |
-| `udrive` | Nœud → Nœud | Sync fichier IPFS vers uDRIVE distant |
-| `bro_ia` | Roaming → Home | Requête BRO depuis station visitée, réponse chez soi |
-| `zen_like` | Station → Station | Paiement ẐEN relayé (roaming) |
-| `vocals` | Client → Station | Publication kind 1222/1244 (message vocal) |
-| `webcam` | Client → Station | Publication kind 21/22 (vidéo live) |
+| Canal            | Direction         | Rôle                                                 |
+| ---------------- | ----------------- | ---------------------------------------------------- |
+| `plain`          | Client → BRO      | Question en langage naturel (RAG Qdrant + Ollama)    |
+| `comfyui_job`    | Client → Brain    | Délégation génération vidéo/image ComfyUI            |
+| `comfyui_result` | Brain → Client    | CID IPFS du résultat vidéo                           |
+| `udrive`         | Nœud → Nœud       | Sync fichier IPFS vers uDRIVE distant                |
+| `bro_ia`         | Roaming → Home    | Requête BRO depuis station visitée, réponse chez soi |
+| `zen_like`       | Station → Station | Paiement ẐEN relayé (roaming)                        |
+| `vocals`         | Client → Station  | Publication kind 1222/1244 (message vocal)           |
+| `webcam`         | Client → Station  | Publication kind 21/22 (vidéo live)                  |
 
----
+***
 
 ## Ce qui distingue cette approche
 
@@ -68,21 +68,21 @@ Pour les jobs ComfyUI, un seul job GPU à la fois est garanti par `flock -x` sur
 
 Les DMs entrants sont déposés comme fichiers JSON dans `~/.zen/tmp/bro_dm_queue/` par le filtre strfry (Kind 4). `bro_dm_daemon.sh` surveille ce répertoire via `inotifywait -e close_write` — latence de l'ordre de la milliseconde, zéro polling.
 
----
+***
 
 ## Limites et compromis
 
-- **Ordre non garanti** : les DMs NOSTR peuvent arriver dans le désordre sur le relay. Pour les tâches où l'ordre compte, un `job_id` est inclus dans le payload.
-- **Pas de dead letter queue** : un job rejeté (timeout GPU) est signalé par DM mais pas réessayé automatiquement. Le client doit décider de renvoyer.
-- **Dépendance relay** : si le relay est indisponible, les messages s'accumulent côté client. La liste de relays de fallback (`_RELAYS`) atténue ce risque.
-- **Pas adapté aux flux haute fréquence** : NOSTR n'est pas Kafka. Ce bus est conçu pour des tâches à l'échelle humaine (génération d'image : 30–120 s), pas pour du streaming de données.
+* **Ordre non garanti** : les DMs NOSTR peuvent arriver dans le désordre sur le relay. Pour les tâches où l'ordre compte, un `job_id` est inclus dans le payload.
+* **Pas de dead letter queue** : un job rejeté (timeout GPU) est signalé par DM mais pas réessayé automatiquement. Le client doit décider de renvoyer.
+* **Dépendance relay** : si le relay est indisponible, les messages s'accumulent côté client. La liste de relays de fallback (`_RELAYS`) atténue ce risque.
+* **Pas adapté aux flux haute fréquence** : NOSTR n'est pas Kafka. Ce bus est conçu pour des tâches à l'échelle humaine (génération d'image : 30–120 s), pas pour du streaming de données.
 
----
+***
 
 ## Voir aussi
 
-- [bro_dm_daemon.sh](../../IA/bro_dm_daemon.sh) — implémentation complète
-- [nostr_node_intercom.py](../../IA/nostr_node_intercom.py) — couche NIP-44 Python
-- [Astrosystemctl How-To](../how-to/ASTROSYSTEMCTL.md) — tunnels P2P (couche réseau complémentaire)
-- [BRO RAG Personal](BRO_RAG_PERSONAL.md) — le canal `plain` en détail (RAG Qdrant)
-- [NOSTR Events Reference](../reference/NOSTR_EVENTS_REFERENCE.md) — Kind 4 et canaux
+* [bro\_dm\_daemon.sh](https://github.com/papiche/Astroport.ONE/blob/master/IA/bro_dm_daemon.sh) — implémentation complète
+* [nostr\_node\_intercom.py](https://github.com/papiche/Astroport.ONE/blob/master/IA/nostr_node_intercom.py) — couche NIP-44 Python
+* [Astrosystemctl How-To](../how-to/ASTROSYSTEMCTL.md) — tunnels P2P (couche réseau complémentaire)
+* [BRO RAG Personal](BRO_RAG_PERSONAL.md) — le canal `plain` en détail (RAG Qdrant)
+* [NOSTR Events Reference](../reference/NOSTR_EVENTS_REFERENCE.md) — Kind 4 et canaux

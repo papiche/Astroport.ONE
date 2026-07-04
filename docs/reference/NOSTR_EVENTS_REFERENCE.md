@@ -22,49 +22,49 @@ Les événements NOSTR sont la **source de vérité** pour tout le système UPla
                           └─────────────────────┘
 ```
 
----
+***
 
 ## 📊 Vue d'ensemble des Event Kinds
 
 ### Tableau récapitulatif
 
-| Kind | Nom | Catégorie | Description | NIP |
-|------|-----|-----------|-------------|-----|
-| **0** | Profile | Identité | Profil utilisateur (metadata) | NIP-01 |
-| **1** | Short Text Note | Interaction | Messages, notifications | NIP-01 |
-| **3** | Contacts | Réseau | Liste d'amis (N1) | NIP-02 |
-| **4** | Encrypted DM | **Inter-NODE** | Bus de tâches async NIP-44 entre stations (comfyui_job, udrive, bro_ia…) | NIP-04/44 |
-| **5** | Event Deletion | Gestion | Suppression d'événements | NIP-09 |
-| **6** | Repost | Interaction | Partage de contenu | NIP-18 |
-| **7** | Reaction | **Économie** | +ZEN, votes, likes | NIP-25 |
-| **21** | Video | Média | Vidéo longue (NostrTube) | NIP-71 |
-| **22** | Short Video | Média | Vidéo courte | NIP-71 |
-| **1000** | **MUTE** | Modération | Liste de muting (utilisateurs, mots-clés, événements à ignorer) | NIP-51 |
-| **1063** | File Metadata | Média | Métadonnées fichiers IPFS | NIP-94 |
-| **1111** | Comment | Interaction | Commentaires vidéo | NIP-22 |
-| **22242** | Auth Challenge | Auth | Authentification NIP-42 | NIP-42 |
-| **30078** | Incarnation Cert | **ATOM4LOVE** | Certificat vibratoire bootstrap WoT (personal_phase φ, omega_bio ω, a4l_proof) — `d=atom4love` | NIP-101 |
-| **30023** | Long-form | **Contenu** | Articles, documents, journaux | NIP-23 |
-| **30024** | Draft Article | Contenu | Brouillons | NIP-23 |
-| **30312** | ORE Meeting Space | **ORE** | Espace géographique ORE | NIP-101 |
-| **30313** | ORE Verification | **ORE** | Vérification environnementale | NIP-101 |
-| **30500** | Permit Definition | **Oracle** | Définition de permis | NIP-101 |
-| **30501** | Permit Request | **Oracle** | Demande de permis | NIP-101 |
-| **30502** | Permit Attestation | **Oracle** | Attestation multi-signature | NIP-101 |
-| **30503** | Permit Credential | **Oracle** | Credential W3C | NIP-101 |
-| **30504** | Training Resource | **WoTx2** | Ressource de formation liée à un skill | NIP-101 |
-| **30505** | Object / Resource | **WoTx2** | Objet physique ou logique (crafting) — état courant (replaceable) | NIP-101 |
-| **30506** | Dossier de médiation | **Justice** | Cas de friction entre 2 MULTIPASS — état courant (replaceable) | NIP-101 |
-| **30508** | Match vibratoire | **ATOM4LOVE** | Rencontre physique — cohérence k entre deux porteurs (produit par cabine-33 via BLE/WiFi) | NIP-101 |
-| **1500**  | Craft Execution Log | **WoTx2** | Log session de craft : durée réelle, opérateurs, consommations | NIP-101 |
-| **1505**  | Object Transaction | **WoTx2** | Delta qty/durability sur un Kind 30505 (journal append-only) | NIP-101 |
-| **1506**  | Acte de médiation    | **Justice** | Vote/escalade/résolution sur un dossier 30506 (journal append-only) | NIP-101 |
-| **30800** | DID Document | **Identité** | Document d'identité W3C | NIP-101 |
-| **30850** | Economic Health | **Économie** | Rapport santé économique | NIP-101 |
-| **30900** | Crowdfunding | **Crowdfunding** | Métadonnées crowdfunding | NIP-101 |
-| **30904** | CF Metadata | **Crowdfunding** | JSON structuré crowdfunding | NIP-101 |
+| Kind      | Nom                  | Catégorie        | Description                                                                                       | NIP       |
+| --------- | -------------------- | ---------------- | ------------------------------------------------------------------------------------------------- | --------- |
+| **0**     | Profile              | Identité         | Profil utilisateur (metadata)                                                                     | NIP-01    |
+| **1**     | Short Text Note      | Interaction      | Messages, notifications                                                                           | NIP-01    |
+| **3**     | Contacts             | Réseau           | Liste d'amis (N1)                                                                                 | NIP-02    |
+| **4**     | Encrypted DM         | **Inter-NODE**   | Bus de tâches async NIP-44 entre stations (comfyui\_job, udrive, bro\_ia…)                        | NIP-04/44 |
+| **5**     | Event Deletion       | Gestion          | Suppression d'événements                                                                          | NIP-09    |
+| **6**     | Repost               | Interaction      | Partage de contenu                                                                                | NIP-18    |
+| **7**     | Reaction             | **Économie**     | +ZEN, votes, likes                                                                                | NIP-25    |
+| **21**    | Video                | Média            | Vidéo longue (NostrTube)                                                                          | NIP-71    |
+| **22**    | Short Video          | Média            | Vidéo courte                                                                                      | NIP-71    |
+| **1000**  | **MUTE**             | Modération       | Liste de muting (utilisateurs, mots-clés, événements à ignorer)                                   | NIP-51    |
+| **1063**  | File Metadata        | Média            | Métadonnées fichiers IPFS                                                                         | NIP-94    |
+| **1111**  | Comment              | Interaction      | Commentaires vidéo                                                                                | NIP-22    |
+| **22242** | Auth Challenge       | Auth             | Authentification NIP-42                                                                           | NIP-42    |
+| **30078** | Incarnation Cert     | **ATOM4LOVE**    | Certificat vibratoire bootstrap WoT (personal\_phase φ, omega\_bio ω, a4l\_proof) — `d=atom4love` | NIP-101   |
+| **30023** | Long-form            | **Contenu**      | Articles, documents, journaux                                                                     | NIP-23    |
+| **30024** | Draft Article        | Contenu          | Brouillons                                                                                        | NIP-23    |
+| **30312** | ORE Meeting Space    | **ORE**          | Espace géographique ORE                                                                           | NIP-101   |
+| **30313** | ORE Verification     | **ORE**          | Vérification environnementale                                                                     | NIP-101   |
+| **30500** | Permit Definition    | **Oracle**       | Définition de permis                                                                              | NIP-101   |
+| **30501** | Permit Request       | **Oracle**       | Demande de permis                                                                                 | NIP-101   |
+| **30502** | Permit Attestation   | **Oracle**       | Attestation multi-signature                                                                       | NIP-101   |
+| **30503** | Permit Credential    | **Oracle**       | Credential W3C                                                                                    | NIP-101   |
+| **30504** | Training Resource    | **WoTx2**        | Ressource de formation liée à un skill                                                            | NIP-101   |
+| **30505** | Object / Resource    | **WoTx2**        | Objet physique ou logique (crafting) — état courant (replaceable)                                 | NIP-101   |
+| **30506** | Dossier de médiation | **Justice**      | Cas de friction entre 2 MULTIPASS — état courant (replaceable)                                    | NIP-101   |
+| **30508** | Match vibratoire     | **ATOM4LOVE**    | Rencontre physique — cohérence k entre deux porteurs (produit par cabine-33 via BLE/WiFi)         | NIP-101   |
+| **1500**  | Craft Execution Log  | **WoTx2**        | Log session de craft : durée réelle, opérateurs, consommations                                    | NIP-101   |
+| **1505**  | Object Transaction   | **WoTx2**        | Delta qty/durability sur un Kind 30505 (journal append-only)                                      | NIP-101   |
+| **1506**  | Acte de médiation    | **Justice**      | Vote/escalade/résolution sur un dossier 30506 (journal append-only)                               | NIP-101   |
+| **30800** | DID Document         | **Identité**     | Document d'identité W3C                                                                           | NIP-101   |
+| **30850** | Economic Health      | **Économie**     | Rapport santé économique                                                                          | NIP-101   |
+| **30900** | Crowdfunding         | **Crowdfunding** | Métadonnées crowdfunding                                                                          | NIP-101   |
+| **30904** | CF Metadata          | **Crowdfunding** | JSON structuré crowdfunding                                                                       | NIP-101   |
 
----
+***
 
 ## 🔐 IDENTITÉ NUMÉRIQUE
 
@@ -73,12 +73,14 @@ Les événements NOSTR sont la **source de vérité** pour tout le système UPla
 Le DID (Decentralized Identifier) est le **document d'identité** de chaque utilisateur/entité UPlanet. Il contient toutes les informations d'identité, credentials, et statuts.
 
 **Qui l'utilise :**
-- MULTIPASS (utilisateurs)
-- UMAP (cellules géographiques)
-- Cooperative wallets (CAPITAL, ASSETS, etc.)
-- Biens Crowdfunding
+
+* MULTIPASS (utilisateurs)
+* UMAP (cellules géographiques)
+* Cooperative wallets (CAPITAL, ASSETS, etc.)
+* Biens Crowdfunding
 
 **Structure :**
+
 ```json
 {
   "kind": 30800,
@@ -116,17 +118,19 @@ Le DID (Decentralized Identifier) est le **document d'identité** de chaque util
 ```
 
 **Scripts associés :**
-- `did_manager_nostr.sh` - Gestion des DIDs
-- `dashboard.DID.manager.sh` - Dashboard admin
-- `make_NOSTRCARD.sh` - Création MULTIPASS
+
+* `did_manager_nostr.sh` - Gestion des DIDs
+* `dashboard.DID.manager.sh` - Dashboard admin
+* `make_NOSTRCARD.sh` - Création MULTIPASS
 
 **Résolution DID :**
+
 ```bash
 # Format: did:nostr:<hex_pubkey>
 # Query: kind:30800 where pubkey == <hex_pubkey> and tags["d"] == "did"
 ```
 
----
+***
 
 ### Kind 0 - Profile (Metadata public)
 
@@ -148,7 +152,7 @@ Profil public visible sur les clients Nostr.
 
 **Scripts :** `nostr_setup_profile.py`
 
----
+***
 
 ### Kind 3 - Contacts (Réseau social N1)
 
@@ -170,7 +174,7 @@ Liste des amis directs (Network Level 1).
 
 **Scripts :** `nostr_follow.sh`, `nostr_get_N1.sh`
 
----
+***
 
 ## 🔀 BUS DE TÂCHES ASYNC (INTER-NODE)
 
@@ -180,18 +184,19 @@ Kind 4 est utilisé comme **bus de messages chiffré** entre stations Astroport.
 
 **Channels gérés par `bro_dm_daemon.sh` :**
 
-| Channel | Direction | Rôle |
-|---------|-----------|------|
-| `plain` | Client → BRO | Question langage naturel (RAG Qdrant + Ollama) |
-| `comfyui_job` | Client → Brain-Node | Génération vidéo/image ComfyUI déléguée |
-| `comfyui_result` | Brain-Node → Client | CID IPFS du résultat vidéo |
-| `udrive` | Nœud → Nœud | Sync fichier IPFS vers uDRIVE distant |
-| `bro_ia` | Station visitée → Home | Requête BRO en roaming |
-| `zen_like` | Station → Station | Paiement ẐEN relayé (roaming) |
-| `vocals` | Client → Station | Publication kind 1222/1244 (message vocal) |
-| `webcam` | Client → Station | Publication kind 21/22 (vidéo live) |
+| Channel          | Direction              | Rôle                                           |
+| ---------------- | ---------------------- | ---------------------------------------------- |
+| `plain`          | Client → BRO           | Question langage naturel (RAG Qdrant + Ollama) |
+| `comfyui_job`    | Client → Brain-Node    | Génération vidéo/image ComfyUI déléguée        |
+| `comfyui_result` | Brain-Node → Client    | CID IPFS du résultat vidéo                     |
+| `udrive`         | Nœud → Nœud            | Sync fichier IPFS vers uDRIVE distant          |
+| `bro_ia`         | Station visitée → Home | Requête BRO en roaming                         |
+| `zen_like`       | Station → Station      | Paiement ẐEN relayé (roaming)                  |
+| `vocals`         | Client → Station       | Publication kind 1222/1244 (message vocal)     |
+| `webcam`         | Client → Station       | Publication kind 21/22 (vidéo live)            |
 
 **Structure du payload chiffré (NIP-44) :**
+
 ```json
 {
   "channel": "comfyui_job",
@@ -204,6 +209,7 @@ Kind 4 est utilisé comme **bus de messages chiffré** entre stations Astroport.
 ```
 
 **Réponse (channel `comfyui_result`) :**
+
 ```json
 {
   "job_id": "abc123",
@@ -220,7 +226,7 @@ Kind 4 est utilisé comme **bus de messages chiffré** entre stations Astroport.
 
 > 📖 [Architecture complète](../explanation/ASYNC_TASKS_NOSTR.md)
 
----
+***
 
 ## 💰 FLUX ÉCONOMIQUES (ZEN)
 
@@ -244,12 +250,13 @@ L'événement kind 7 est le **mécanisme central** des flux économiques ZEN.
 ```
 
 **Content interpretation :**
-| Content | Signification |
-|---------|---------------|
-| `+` | Envoi 1 Ẑen |
-| `+50` | Envoi 50 Ẑen |
-| `👍` | Like simple (pas de ZEN) |
-| `❤️` | Like avec cœur |
+
+| Content | Signification            |
+| ------- | ------------------------ |
+| `+`     | Envoi 1 Ẑen              |
+| `+50`   | Envoi 50 Ẑen             |
+| `👍`    | Like simple (pas de ZEN) |
+| `❤️`    | Like avec cœur           |
 
 #### 7.2 Contribution Crowdfunding
 
@@ -271,10 +278,11 @@ L'événement kind 7 est le **mécanisme central** des flux économiques ZEN.
 ```
 
 **Processing (7.sh filter) :**
+
 1. Détecte tag `["t", "crowdfunding"]`
 2. Extrait `project-id` et `BIEN_HEX`
 3. Valide solde sender
-4. Transfère sender → BIEN_G1PUB
+4. Transfère sender → BIEN\_G1PUB
 5. Enregistre contribution
 
 #### 7.3 Vote ASSETS (Crowdfunding)
@@ -295,17 +303,19 @@ L'événement kind 7 est le **mécanisme central** des flux économiques ZEN.
 ```
 
 **Processing :**
+
 1. Détecte tag `["t", "vote-assets"]`
 2. Valide que voter est SOCIÉTAIRE
 3. Compte le vote (poids = montant ZEN)
 4. Met à jour quorum et seuil
 
 **Scripts :**
-- `7.sh` (relay filter) - Traitement des kind 7
-- `CROWDFUNDING.sh contribute` - Enregistrement contribution
-- `CROWDFUNDING.sh vote` - Enregistrement vote
 
----
+* `7.sh` (relay filter) - Traitement des kind 7
+* `CROWDFUNDING.sh contribute` - Enregistrement contribution
+* `CROWDFUNDING.sh vote` - Enregistrement vote
+
+***
 
 ### Kind 30850 - Economic Health Report
 
@@ -340,7 +350,7 @@ Rapport de santé économique diffusé quotidiennement/hebdomadairement par chaq
 
 **Collecte :** `economy.Swarm.html` agrège les kind 30850 pour dashboard swarm
 
----
+***
 
 ## 📄 CONTENU & DOCUMENTATION
 
@@ -367,21 +377,22 @@ Document markdown long (articles, contrats, journaux N², documents collaboratif
 
 **Usages :**
 
-| Type | d-tag pattern | Auteur | Description |
-|------|---------------|--------|-------------|
-| **Journal N² Daily** | `journal_daily_YYYY-MM-DD` | MULTIPASS | Résumé IA quotidien |
-| **Journal N² Weekly** | `journal_weekly_WXX-YYYY` | MULTIPASS | Résumé IA hebdomadaire |
-| **Document Collab.** | `commons_<topic>` | UMAP | Document collaboratif |
-| **Crowdfunding Doc** | `crowdfunding-CF-XXXX` | BIEN | Campagne crowdfunding |
-| **Contrat ORE** | `contract_ORE_<lat>_<lon>` | UMAP | Contrat environnemental |
-| **Blog Personnel** | Custom | MULTIPASS | Article personnel |
+| Type                  | d-tag pattern              | Auteur    | Description             |
+| --------------------- | -------------------------- | --------- | ----------------------- |
+| **Journal N² Daily**  | `journal_daily_YYYY-MM-DD` | MULTIPASS | Résumé IA quotidien     |
+| **Journal N² Weekly** | `journal_weekly_WXX-YYYY`  | MULTIPASS | Résumé IA hebdomadaire  |
+| **Document Collab.**  | `commons_<topic>`          | UMAP      | Document collaboratif   |
+| **Crowdfunding Doc**  | `crowdfunding-CF-XXXX`     | BIEN      | Campagne crowdfunding   |
+| **Contrat ORE**       | `contract_ORE_<lat>_<lon>` | UMAP      | Contrat environnemental |
+| **Blog Personnel**    | Custom                     | MULTIPASS | Article personnel       |
 
 **Scripts :**
-- `N2.journal.sh` - Génération journaux IA
-- `CROWDFUNDING.sh` - Publication campagnes
-- `UPlanet_IA_Responder.sh` - Contrats ORE
 
----
+* `N2.journal.sh` - Génération journaux IA
+* `CROWDFUNDING.sh` - Publication campagnes
+* `UPlanet_IA_Responder.sh` - Contrats ORE
+
+***
 
 ### Kind 30904 - Crowdfunding Metadata (JSON)
 
@@ -416,7 +427,7 @@ Métadonnées structurées crowdfunding pour parsing machine par `crowdfunding.h
 }
 ```
 
----
+***
 
 ## 🏛️ SYSTÈME ORACLE (PERMITS)
 
@@ -445,13 +456,14 @@ Définition d'un type de permis/licence.
 ```
 
 **Permis courants :**
-| Permit ID | Attestations | Durée | Description |
-|-----------|--------------|-------|-------------|
-| `PERMIT_ORE_V1` | 5 | 3 ans | Vérificateur environnemental |
-| `PERMIT_DRIVER` | 12 | 15 ans | Permis de conduire WoT |
-| `PERMIT_WOT_DRAGON` | 3 | Illimité | Autorité UPlanet |
 
----
+| Permit ID           | Attestations | Durée    | Description                  |
+| ------------------- | ------------ | -------- | ---------------------------- |
+| `PERMIT_ORE_V1`     | 5            | 3 ans    | Vérificateur environnemental |
+| `PERMIT_DRIVER`     | 12           | 15 ans   | Permis de conduire WoT       |
+| `PERMIT_WOT_DRAGON` | 3            | Illimité | Autorité UPlanet             |
+
+***
 
 ### Kind 30501 - Permit Request
 
@@ -473,7 +485,7 @@ Demande de permis par un utilisateur.
 }
 ```
 
----
+***
 
 ### Kind 30502 - Permit Attestation
 
@@ -498,11 +510,12 @@ Attestation multi-signature par un détenteur de permis.
 ```
 
 **Règles :**
-- L'attesteur DOIT détenir le permis requis
-- Un attesteur ne peut attester qu'UNE FOIS par demande
-- Signature Schnorr cryptographique
 
----
+* L'attesteur DOIT détenir le permis requis
+* Un attesteur ne peut attester qu'UNE FOIS par demande
+* Signature Schnorr cryptographique
+
+***
 
 ### Kind 30503 - Permit Credential (W3C Verifiable Credential)
 
@@ -534,38 +547,37 @@ Credential W3C émis après atteinte du seuil d'attestations.
 
 **Script :** `ORACLE.refresh.sh` - Validation automatique (20h12)
 
----
+***
 
 ### Kind 30504 - Ressource de Formation (WoTx2)
 
-Ressource multimédia liée à un skill WoTx2. Publiée par tout utilisateur MULTIPASS
-pour enrichir collectivement la base de connaissance de la constellation.
+Ressource multimédia liée à un skill WoTx2. Publiée par tout utilisateur MULTIPASS pour enrichir collectivement la base de connaissance de la constellation.
 
 **Tags obligatoires :**
 
-| Tag | Format | Description |
-|-----|--------|-------------|
+| Tag | Format                         | Description                             |
+| --- | ------------------------------ | --------------------------------------- |
 | `d` | `training_<skill>_<timestamp>` | Identifiant unique (NIP-33 replaceable) |
-| `t` | `<skill>` | Skill associé (lowercase, sans espace) |
-| `r` | `["/ipfs/<CID>", "<type>"]` | URL de la ressource + type |
+| `t` | `<skill>`                      | Skill associé (lowercase, sans espace)  |
+| `r` | `["/ipfs/<CID>", "<type>"]`    | URL de la ressource + type              |
 
 **Tags optionnels :**
 
-| Tag | Format | Description |
-|-----|--------|-------------|
-| `t` | `formation` | Marqueur de catégorie |
-| `title` | `<string>` | Titre affiché dans MineLife |
+| Tag     | Format      | Description                 |
+| ------- | ----------- | --------------------------- |
+| `t`     | `formation` | Marqueur de catégorie       |
+| `title` | `<string>`  | Titre affiché dans MineLife |
 
 **Types de ressource (`r` tag) :**
 
-| Valeur | Kind source | Produit par |
-|--------|-------------|-------------|
-| `video` | Kind 21/22 (NIP-71) | `webcam.html`, `ajouter_media.sh` |
-| `audio` | Kind 1222 (NIP-A0) | VOCALS system |
-| `document` | Kind 1063 (NIP-94) | `ajouter_media.sh` (pdf) |
-| `image` | Kind 1063 (NIP-94) | Upload IPFS |
-| `cours` | Kind 30023 (NIP-23) | Articles markdown |
-| `lien` | — | URL libre (non-IPFS) |
+| Valeur     | Kind source         | Produit par                       |
+| ---------- | ------------------- | --------------------------------- |
+| `video`    | Kind 21/22 (NIP-71) | `webcam.html`, `ajouter_media.sh` |
+| `audio`    | Kind 1222 (NIP-A0)  | VOCALS system                     |
+| `document` | Kind 1063 (NIP-94)  | `ajouter_media.sh` (pdf)          |
+| `image`    | Kind 1063 (NIP-94)  | Upload IPFS                       |
+| `cours`    | Kind 30023 (NIP-23) | Articles markdown                 |
+| `lien`     | —                   | URL libre (non-IPFS)              |
 
 **Exemple minimal :**
 
@@ -611,11 +623,9 @@ pour enrichir collectivement la base de connaissance de la constellation.
 └── ...
 ```
 
-**Scripts :** `admin/ia_db/knowledge_index.sh`, `admin/ia_db/knowledge_index.py`
-**Interface :** MineLife onglet Formation — bouton "Mes médias" (mode édition)
-**BRO :** commande `#rec <skill>` via DM Kind 4
+**Scripts :** `admin/ia_db/knowledge_index.sh`, `admin/ia_db/knowledge_index.py` **Interface :** MineLife onglet Formation — bouton "Mes médias" (mode édition) **BRO :** commande `#rec <skill>` via DM Kind 4
 
----
+***
 
 ## 🌱 SYSTÈME ORE (Environnemental)
 
@@ -641,7 +651,7 @@ Espace géographique persistant pour vérifications ORE.
 }
 ```
 
----
+***
 
 ### Kind 30313 - ORE Verification Meeting
 
@@ -667,13 +677,14 @@ Vérification environnementale effectuée.
 ```
 
 **Flux économique :**
+
 1. Contrat ORE → UMAP DID (30800)
 2. Espace ORE → 30312
 3. Validation expert → 30313
 4. Paiement → RnD → UMAP wallet
 5. Redistribution → Gardiens locaux
 
----
+***
 
 ## 🔄 SYNCHRONISATION CONSTELLATION
 
@@ -702,66 +713,73 @@ Vérification environnementale effectuée.
 
 **Script :** `~/.zen/workspace/NIP-101/backfill_constellation.sh`
 
----
+***
 
 ## 📋 Scripts par catégorie
 
 ### Identité
-| Script | Events | Description |
-|--------|--------|-------------|
-| `did_manager_nostr.sh` | 30800 | CRUD DID documents |
-| `dashboard.DID.manager.sh` | 30800 | Dashboard admin DID |
-| `make_NOSTRCARD.sh` | 0, 30800 | Création MULTIPASS |
-| `nostr_setup_profile.py` | 0 | Setup profil Nostr |
+
+| Script                     | Events   | Description         |
+| -------------------------- | -------- | ------------------- |
+| `did_manager_nostr.sh`     | 30800    | CRUD DID documents  |
+| `dashboard.DID.manager.sh` | 30800    | Dashboard admin DID |
+| `make_NOSTRCARD.sh`        | 0, 30800 | Création MULTIPASS  |
+| `nostr_setup_profile.py`   | 0        | Setup profil Nostr  |
 
 ### Économie
-| Script | Events | Description |
-|--------|--------|-------------|
-| `7.sh` (filter) | 7 | Traitement +ZEN |
-| `ECONOMY.broadcast.sh` | 30850 | Diffusion santé éco |
-| `CROWDFUNDING.sh` | 7, 30023, 30904 | Gestion crowdfunding |
-| `UPLANET.crowdfunding.sh` | 7, 30023, 30904 | Interface capitaine |
+
+| Script                    | Events          | Description          |
+| ------------------------- | --------------- | -------------------- |
+| `7.sh` (filter)           | 7               | Traitement +ZEN      |
+| `ECONOMY.broadcast.sh`    | 30850           | Diffusion santé éco  |
+| `CROWDFUNDING.sh`         | 7, 30023, 30904 | Gestion crowdfunding |
+| `UPLANET.crowdfunding.sh` | 7, 30023, 30904 | Interface capitaine  |
 
 ### Oracle
-| Script | Events | Description |
-|--------|--------|-------------|
+
+| Script              | Events      | Description        |
+| ------------------- | ----------- | ------------------ |
 | `ORACLE.refresh.sh` | 30500-30503 | Validation permits |
-| `oracle_api.sh` | 30500-30503 | API Oracle |
+| `oracle_api.sh`     | 30500-30503 | API Oracle         |
 
 ### WoTx² — Compétences & Objets
-| Script | Events | Description |
-|--------|--------|-------------|
-| `emit_skill.sh` | 30503 | Émet Kind 30503 (compétence auto-attestée) |
-| `emit_object.sh` | 30505 | Publie Kind 30505 (objet/ressource physique ou logique) |
-| `oracle_init_captain_wotx2.sh` | 30500, 30503 | Bootstrap capitaines (seeds Oracle) |
-| `admin/dashboard.WOTX2.manager.sh` | 30503-30506 | Dashboard admin WoTx² complet |
-| `tools/demo_wotx2_seed.sh` | 30503, 30505, 30500 | Données de démo (6 personas) |
+
+| Script                             | Events              | Description                                             |
+| ---------------------------------- | ------------------- | ------------------------------------------------------- |
+| `emit_skill.sh`                    | 30503               | Émet Kind 30503 (compétence auto-attestée)              |
+| `emit_object.sh`                   | 30505               | Publie Kind 30505 (objet/ressource physique ou logique) |
+| `oracle_init_captain_wotx2.sh`     | 30500, 30503        | Bootstrap capitaines (seeds Oracle)                     |
+| `admin/dashboard.WOTX2.manager.sh` | 30503-30506         | Dashboard admin WoTx² complet                           |
+| `tools/demo_wotx2_seed.sh`         | 30503, 30505, 30500 | Données de démo (6 personas)                            |
 
 ### Justice & Médiation
-| Script | Events | Description |
-|--------|--------|-------------|
-| `NIP-101/filter/1984.sh` | 1984 | Détection friction → log justice_cases.log |
-| `ASTROBOT/N1Mediation.sh` | 30506, 1506 | Oracle : création dossier + notification N1 |
-| `admin/dashboard.JUSTICE.manager.sh` | 30506, 1506, 1984 | Dashboard admin médiation |
+
+| Script                               | Events            | Description                                 |
+| ------------------------------------ | ----------------- | ------------------------------------------- |
+| `NIP-101/filter/1984.sh`             | 1984              | Détection friction → log justice\_cases.log |
+| `ASTROBOT/N1Mediation.sh`            | 30506, 1506       | Oracle : création dossier + notification N1 |
+| `admin/dashboard.JUSTICE.manager.sh` | 30506, 1506, 1984 | Dashboard admin médiation                   |
 
 ### Contenu
-| Script | Events | Description |
-|--------|--------|-------------|
-| `N2.journal.sh` | 30023 | Génération journaux IA |
-| `nostr_send_note.py` | 1, 30023 | Publication events |
+
+| Script               | Events   | Description            |
+| -------------------- | -------- | ---------------------- |
+| `N2.journal.sh`      | 30023    | Génération journaux IA |
+| `nostr_send_note.py` | 1, 30023 | Publication events     |
 
 ### ORE
-| Script | Events | Description |
-|--------|--------|-------------|
-| `ore_system.py` | 30312, 30313 | Système ORE |
+
+| Script                    | Events       | Description |
+| ------------------------- | ------------ | ----------- |
+| `ore_system.py`           | 30312, 30313 | Système ORE |
 | `UPlanet_IA_Responder.sh` | 30023, 30312 | Contrats IA |
 
----
+***
 
 ## 🔗 Références
 
-- [NIP-101 - UPlanet Protocol](../nostr-nips/101.md)
-- [NIP-101 Oracle Extension](../nostr-nips/42-oracle-permits-extension.md)
-- [NIP-101 Economic Health](../nostr-nips/101-economic-health-extension.md)
-- [Crowdfunding Contract](./UPlanet_CROWDFUNDING_CONTRACT.md)
-- [ZEN Economy](../explanation/ZEN.ECONOMY.v3.md)
+* [NIP-101 - UPlanet Protocol](https://github.com/papiche/Astroport.ONE/blob/master/docs/nostr-nips/101.md)
+* [NIP-101 Oracle Extension](https://github.com/papiche/Astroport.ONE/blob/master/docs/nostr-nips/42-oracle-permits-extension.md)
+* [NIP-101 Economic Health](https://github.com/papiche/Astroport.ONE/blob/master/docs/nostr-nips/101-economic-health-extension.md)
+* [Crowdfunding Contract](UPlanet_CROWDFUNDING_CONTRACT.md)
+* [ZEN Economy](../explanation/ZEN.ECONOMY.v3.md)

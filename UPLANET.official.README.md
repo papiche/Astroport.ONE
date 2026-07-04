@@ -2,27 +2,30 @@
 
 ## 🎯 **Objectif**
 
-Ce script gère les virements officiels de l'écosystème UPlanet ẐEN selon la [Constitution de l'Écosystème](./LEGAL.md) et implémente techniquement le [Code de la Route](./RUNTIME/ZEN.ECONOMY.readme.md).
+Ce script gère les virements officiels de l'écosystème UPlanet ẐEN selon la [Constitution de l'Écosystème](LEGAL.md) et implémente techniquement le [Code de la Route](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/ZEN.ECONOMY.readme.md).
 
 > **cette documentation est normalement conforme (comme toutes les autres) mais reste à vérifier et mettre à jour par rapport à l'évolution de fonctionnement du code décris**
 
 ## 🏗️ **Niveaux de Station UPlanet**
 
 ### **🔴 Niveau X (Station Standard)**
-- **SSH** : Clé SSH standard (non jumelée)
-- **IPFS** : Identité IPFS indépendante
-- **NODE** : Conversion `IPFSNODEID → G1PUB` via `ipfs_to_g1.py`
-- **Fichier** : ❌ Pas de `secret.NODE.dunikey`
-- **Usage** : Stations de base, développement, tests
+
+* **SSH** : Clé SSH standard (non jumelée)
+* **IPFS** : Identité IPFS indépendante
+* **NODE** : Conversion `IPFSNODEID → G1PUB` via `ipfs_to_g1.py`
+* **Fichier** : ❌ Pas de `secret.NODE.dunikey`
+* **Usage** : Stations de base, développement, tests
 
 ### **🟡 Niveau Y (Station Transmutée)**
-- **SSH** : Clé SSH jumelée avec IPFS (via `Ylevel.sh`)
-- **IPFS** : Identité IPFS liée à la clé SSH
-- **NODE** : Fichier `secret.NODE.dunikey` créé par transmutation
-- **Fichier** : ✅ `secret.NODE.dunikey` existe
-- **Usage** : Stations de production, sécurité renforcée
+
+* **SSH** : Clé SSH jumelée avec IPFS (via `Ylevel.sh`)
+* **IPFS** : Identité IPFS liée à la clé SSH
+* **NODE** : Fichier `secret.NODE.dunikey` créé par transmutation
+* **Fichier** : ✅ `secret.NODE.dunikey` existe
+* **Usage** : Stations de production, sécurité renforcée
 
 ### **🔄 Processus de Transmutation (Ylevel.sh)**
+
 ```bash
 # Avant transmutation (Niveau X)
 ~/.ssh/id_ed25519          # Clé SSH standard
@@ -36,6 +39,7 @@ Ce script gère les virements officiels de l'écosystème UPlanet ẐEN selon la
 ```
 
 ### **🎯 Détection Automatique du Niveau**
+
 Le script détecte automatiquement le niveau de la station :
 
 ```bash
@@ -55,39 +59,42 @@ fi
 
 ### **📊 Comparaison des Niveaux**
 
-| **Aspect** | **Niveau X** | **Niveau Y** | **Niveau Z** |
-|------------|--------------|--------------|--------------|
-| **SSH/IPFS** | Indépendants | Jumelés | Jumelés + PGP |
-| **Fichier NODE** | ❌ Absent | ✅ `secret.NODE.dunikey` | ✅ `secret.NODE.dunikey` |
-| **Méthode NODE** | Conversion IPFS | Lecture fichier | Lecture fichier |
-| **Sécurité** | Standard | Renforcée | Maximale |
-| **Performance** | Conversion à chaque fois | Cache optimisé | Cache optimisé |
-| **Transmutation** | Non effectuée | Via `Ylevel.sh` | Via `Ylevel.sh` + PGP |
-| **Vérification Humaine** | ⚠️ Limitée | ✅ Confirmée | ✅ Maximale |
+| **Aspect**               | **Niveau X**             | **Niveau Y**            | **Niveau Z**            |
+| ------------------------ | ------------------------ | ----------------------- | ----------------------- |
+| **SSH/IPFS**             | Indépendants             | Jumelés                 | Jumelés + PGP           |
+| **Fichier NODE**         | ❌ Absent                 | ✅ `secret.NODE.dunikey` | ✅ `secret.NODE.dunikey` |
+| **Méthode NODE**         | Conversion IPFS          | Lecture fichier         | Lecture fichier         |
+| **Sécurité**             | Standard                 | Renforcée               | Maximale                |
+| **Performance**          | Conversion à chaque fois | Cache optimisé          | Cache optimisé          |
+| **Transmutation**        | Non effectuée            | Via `Ylevel.sh`         | Via `Ylevel.sh` + PGP   |
+| **Vérification Humaine** | ⚠️ Limitée               | ✅ Confirmée             | ✅ Maximale              |
 
 ### **🔒 Sécurité et Vérification Humaine**
 
 Le système de niveaux X/Y/Z garantit qu'**un Humain est aux commandes** de la machine :
 
 #### **🔴 Niveau X - Vérification Basique**
-- **Statut** : Station standard, développement
-- **Sécurité** : SSH/IPFS indépendants
-- **Vérification Humaine** : Limitée (pas de jumelage cryptographique)
-- **Usage** : Tests, développement, stations temporaires
+
+* **Statut** : Station standard, développement
+* **Sécurité** : SSH/IPFS indépendants
+* **Vérification Humaine** : Limitée (pas de jumelage cryptographique)
+* **Usage** : Tests, développement, stations temporaires
 
 #### **🟡 Niveau Y - Vérification Renforcée**
-- **Statut** : Station transmutée, production
-- **Sécurité** : SSH/IPFS jumelés via `Ylevel.sh`
-- **Vérification Humaine** : ✅ **Confirmée** (transmutation cryptographique)
-- **Usage** : Production, stations permanentes
-- **Garantie** : L'identité SSH est liée à l'identité IPFS
+
+* **Statut** : Station transmutée, production
+* **Sécurité** : SSH/IPFS jumelés via `Ylevel.sh`
+* **Vérification Humaine** : ✅ **Confirmée** (transmutation cryptographique)
+* **Usage** : Production, stations permanentes
+* **Garantie** : L'identité SSH est liée à l'identité IPFS
 
 #### **🟢 Niveau Z - Vérification Maximale**
-- **Statut** : Station transmutée + PGP
-- **Sécurité** : SSH/IPFS jumelés + PGP intégré
-- **Vérification Humaine** : ✅ **Maximale** (triple vérification)
-- **Usage** : Stations critiques, haute sécurité
-- **Garantie** : Triple vérification SSH/IPFS/PGP
+
+* **Statut** : Station transmutée + PGP
+* **Sécurité** : SSH/IPFS jumelés + PGP intégré
+* **Vérification Humaine** : ✅ **Maximale** (triple vérification)
+* **Usage** : Stations critiques, haute sécurité
+* **Garantie** : Triple vérification SSH/IPFS/PGP
 
 ### **🎯 Pourquoi cette Vérification est Cruciale ?**
 
@@ -110,58 +117,69 @@ Ylevel.sh  # Jumelage cryptographique SSH ↔ IPFS
 ## 🏗️ **Architecture des Virements**
 
 ### **1. Virement MULTIPASS (Recharge MULTIPASS)**
+
 ```
 UPLANETNAME_G1 → UPLANETNAME → MULTIPASS[email]
 ```
-- **Montant** : Variable selon `$NCARD` (défini dans `my.sh`)
-- **Objectif** : Recharger le compte MULTIPASS d'un locataire
-- **Conformité** : Respecte le flux économique hebdomadaire
+
+* **Montant** : Variable selon `$NCARD` (défini dans `my.sh`)
+* **Objectif** : Recharger le compte MULTIPASS d'un locataire
+* **Conformité** : Respecte le flux économique hebdomadaire
 
 ### **2. Virement SOCIÉTAIRE (Parts Sociales)**
+
 ```
 UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZEN Card[email] → 3x1/3
 ```
-- **Types** :
-  - **Satellite** : 50€/an (sans IA)
-  - **Constellation** : 540€/3ans (avec IA)
-- **Objectif** : Attribuer des parts sociales et effectuer la répartition 3x1/3
-- **Répartition** : Utilise les mêmes portefeuilles que `ZEN.COOPERATIVE.3x1-3.sh`
-  - 1/3 Treasury (`~/.zen/game/uplanet.CASH.dunikey`)
-  - 1/3 R&D (`~/.zen/game/uplanet.RnD.dunikey`)
-  - 1/3 Assets (`~/.zen/game/uplanet.ASSETS.dunikey`)
+
+* **Types** :
+  * **Satellite** : 50€/an (sans IA)
+  * **Constellation** : 540€/3ans (avec IA)
+* **Objectif** : Attribuer des parts sociales et effectuer la répartition 3x1/3
+* **Répartition** : Utilise les mêmes portefeuilles que `ZEN.COOPERATIVE.3x1-3.sh`
+  * 1/3 Treasury (`~/.zen/game/uplanet.CASH.dunikey`)
+  * 1/3 R\&D (`~/.zen/game/uplanet.RnD.dunikey`)
+  * 1/3 Assets (`~/.zen/game/uplanet.ASSETS.dunikey`)
 
 ### **3. Apport CAPITAL INFRASTRUCTURE (Valorisation Machine)**
+
 ```
 UPLANETNAME_G1 → ZEN Card[CAPTAIN] → NODE
 ```
-- **Type** : Infrastructure (500€ par défaut)
-- **Objectif** : Apport au capital fixe (valorisation machine du capitaine)
-- **Spécificité** : **PAS de répartition 3x1/3** (apport au capital non distribuable)
-- **Email automatique** : Utilise `$CAPTAINEMAIL` depuis `my.sh`
-- **Valeur** : `$MACHINE_VALUE_ZEN` ou saisie interactive
+
+* **Type** : Infrastructure (500€ par défaut)
+* **Objectif** : Apport au capital fixe (valorisation machine du capitaine)
+* **Spécificité** : **PAS de répartition 3x1/3** (apport au capital non distribuable)
+* **Email automatique** : Utilise `$CAPTAINEMAIL` depuis `my.sh`
+* **Valeur** : `$MACHINE_VALUE_ZEN` ou saisie interactive
 
 ### **4. 🔧 MODE DÉPANNAGE - Récupération Complète**
+
 ```
 SOCIETY → ZEN Card[email] → 3x1/3 (TREASURY, RnD, ASSETS)
 ```
-- **Usage** : Quand des fonds sont bloqués dans SOCIETY
-- **Processus complet** : Effectue les 2 étapes (SOCIETY → ZEN Card → 3x1/3)
-- **Option** : `-r` ou `--recovery`
+
+* **Usage** : Quand des fonds sont bloqués dans SOCIETY
+* **Processus complet** : Effectue les 2 étapes (SOCIETY → ZEN Card → 3x1/3)
+* **Option** : `-r` ou `--recovery`
 
 ### **5. 🔧 MODE DÉPANNAGE - Récupération Partielle**
+
 ```
 ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
 ```
-- **Usage** : Quand la 2ème étape a échoué partiellement
-- **Processus sélectif** : Refaire un seul transfert vers le portefeuille manquant
-- **Option** : `--recovery-3x13`
-- **Cas d'usage** : Réparer les échecs de répartition 3x1/3
+
+* **Usage** : Quand la 2ème étape a échoué partiellement
+* **Processus sélectif** : Refaire un seul transfert vers le portefeuille manquant
+* **Option** : `--recovery-3x13`
+* **Cas d'usage** : Réparer les échecs de répartition 3x1/3
 
 ## 🚀 **Utilisation**
 
 ### **Mode Ligne de Commande**
 
 #### **Virement Locataire**
+
 ```bash
 # Recharge MULTIPASS standard (selon $NCARD)
 ./UPLANET.official.sh -l user@example.com
@@ -171,6 +189,7 @@ ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
 ```
 
 #### **Virement Sociétaire**
+
 ```bash
 # Parts sociales satellite (50€/an)
 ./UPLANET.official.sh -s user@example.com -t satellite
@@ -183,6 +202,7 @@ ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
 ```
 
 #### **Apport Capital Infrastructure**
+
 ```bash
 # Apport capital avec valeur par défaut (MACHINE_VALUE_ZEN ou 500€)
 ./UPLANET.official.sh -i
@@ -191,6 +211,7 @@ ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
 ```
 
 #### **Modes Dépannage**
+
 ```bash
 # Récupération complète depuis SOCIETY
 ./UPLANET.official.sh -r
@@ -200,11 +221,13 @@ ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
 ```
 
 ### **Mode Interactif**
+
 ```bash
 ./UPLANET.official.sh
 ```
 
 **Menu disponible :**
+
 1. Virement MULTIPASS (recharge MULTIPASS)
 2. Virement SOCIÉTAIRE Satellite (50€/an)
 3. Virement SOCIÉTAIRE Constellation (540€/3ans)
@@ -216,43 +239,50 @@ ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
 ## 🔒 **Sécurité et Conformité**
 
 ### **Vérification des Transactions**
-- **Attente de confirmation** : Le script attend que chaque transaction soit confirmée sur la blockchain
-- **Timeout** : Maximum **40 minutes** d'attente par transaction (configurable via `BLOCKCHAIN_TIMEOUT`)
-- **Vérification automatique** : Vérifie que le solde pending repasse à 0
-- **Intervalle de vérification** : Toutes les 60 secondes (configurable via `VERIFICATION_INTERVAL`)
+
+* **Attente de confirmation** : Le script attend que chaque transaction soit confirmée sur la blockchain
+* **Timeout** : Maximum **40 minutes** d'attente par transaction (configurable via `BLOCKCHAIN_TIMEOUT`)
+* **Vérification automatique** : Vérifie que le solde pending repasse à 0
+* **Intervalle de vérification** : Toutes les 60 secondes (configurable via `VERIFICATION_INTERVAL`)
 
 ### **Conformité Légale**
-- ✅ Respect de la Constitution de l'Écosystème UPlanet ẐEN
-- ✅ Application automatique de la règle 3x1/3
-- ✅ Utilisation des portefeuilles coopératifs standardisés
-- ✅ Traçabilité complète des flux économiques
-- ✅ Mise à jour automatique des DID via `did_manager_nostr.sh`
+
+* ✅ Respect de la Constitution de l'Écosystème UPlanet ẐEN
+* ✅ Application automatique de la règle 3x1/3
+* ✅ Utilisation des portefeuilles coopératifs standardisés
+* ✅ Traçabilité complète des flux économiques
+* ✅ Mise à jour automatique des DID via `did_manager_nostr.sh`
 
 ### **Vérification Humaine des Virements**
-- ✅ **Niveau Y/Z requis** : Les virements importants nécessitent une station transmutée
-- ✅ **Identité vérifiée** : Chaque transaction est liée à une identité humaine confirmée
-- ✅ **Prévention des bots** : Seuls les humains peuvent effectuer des virements économiques
-- ✅ **Traçabilité** : Références blockchain incluent l'identité du nœud humain
-- ✅ **Sécurité économique** : Protection contre les transactions automatisées non autorisées
+
+* ✅ **Niveau Y/Z requis** : Les virements importants nécessitent une station transmutée
+* ✅ **Identité vérifiée** : Chaque transaction est liée à une identité humaine confirmée
+* ✅ **Prévention des bots** : Seuls les humains peuvent effectuer des virements économiques
+* ✅ **Traçabilité** : Références blockchain incluent l'identité du nœud humain
+* ✅ **Sécurité économique** : Protection contre les transactions automatisées non autorisées
 
 ### **WoT DRAGON - Web of Trust**
+
 Le système respecte les usages de la **Web of Trust DRAGON** :
 
 #### **🔑 Primo-Transaction NODE**
-- **Source** : UPLANETNAME_G1 (compte principal)
-- **Destination** : Wallet NODE (niveau Y/Z)
-- **Montant** : 1Ğ1 (primo-transaction)
-- **Référence** : `UPLANET:${UPLANETG1PUB:0:8}:NODEINIT:${IPFSNODEID}`
-- **Justification** : Initialisation du nœud par l'écosystème UPlanet
+
+* **Source** : UPLANETNAME\_G1 (compte principal)
+* **Destination** : Wallet NODE (niveau Y/Z)
+* **Montant** : 1Ğ1 (primo-transaction)
+* **Référence** : `UPLANET:${UPLANETG1PUB:0:8}:NODEINIT:${IPFSNODEID}`
+* **Justification** : Initialisation du nœud par l'écosystème UPlanet
 
 #### **🔄 Validation WoT DRAGON (.2nd)** (en option)
-- **Source** : Compte forgeron du Capitaine (`CAPTAINEMAIL`)
-- **Destination** : Wallet NODE (même adresse)
-- **Montant** : 0.01Ğ1 (transaction de validation)
-- **Référence** : `$CAPTAINEMAIL`
-- **Justification** : Validation WoT par le Capitaine forgeron
+
+* **Source** : Compte forgeron du Capitaine (`CAPTAINEMAIL`)
+* **Destination** : Wallet NODE (même adresse)
+* **Montant** : 0.01Ğ1 (transaction de validation)
+* **Référence** : `$CAPTAINEMAIL`
+* **Justification** : Validation WoT par le Capitaine forgeron
 
 #### **📊 Avantages WoT DRAGON**
+
 1. **Traçabilité** : Chaque NODE est initialisé par UPlanet puis validé par son Capitaine
 2. **Sécurité** : Double vérification (UPlanet + Capitaine forgeron)
 3. **Gouvernance** : Responsabilité claire du Capitaine sur son nœud
@@ -262,6 +292,7 @@ Le système respecte les usages de la **Web of Trust DRAGON** :
 ## 📋 **Prérequis**
 
 ### **Dépendances Système**
+
 ```bash
 # Outils requis
 gcli        # Client Duniter v2s (g1cli)
@@ -274,54 +305,62 @@ bc          # Calculs mathématiques
 Le script fonctionne avec **tous les niveaux de station** :
 
 #### **🔴 Niveau X (Standard)**
-- ✅ **Fonctionne** : Utilise la conversion `IPFSNODEID → G1PUB`
-- ✅ **Recommandé pour** : Développement, tests, stations temporaires
-- ✅ **Prérequis** : `IPFSNODEID` disponible dans l'environnement
+
+* ✅ **Fonctionne** : Utilise la conversion `IPFSNODEID → G1PUB`
+* ✅ **Recommandé pour** : Développement, tests, stations temporaires
+* ✅ **Prérequis** : `IPFSNODEID` disponible dans l'environnement
 
 #### **🟡 Niveau Y (Transmutée)**
-- ✅ **Fonctionne** : Utilise le fichier `secret.NODE.dunikey`
-- ✅ **Recommandé pour** : Production, stations permanentes
-- ✅ **Prérequis** : Exécution de `Ylevel.sh` pour la transmutation SSH/IPFS
-- ✅ **Sécurité** : Vérification humaine confirmée
+
+* ✅ **Fonctionne** : Utilise le fichier `secret.NODE.dunikey`
+* ✅ **Recommandé pour** : Production, stations permanentes
+* ✅ **Prérequis** : Exécution de `Ylevel.sh` pour la transmutation SSH/IPFS
+* ✅ **Sécurité** : Vérification humaine confirmée
 
 #### **🟢 Niveau Z (Transmutée + PGP)**
-- ✅ **Fonctionne** : Utilise le fichier `secret.NODE.dunikey` + PGP
-- ✅ **Recommandé pour** : Stations critiques, haute sécurité
-- ✅ **Prérequis** : Transmutation SSH/IPFS + intégration PGP
-- ✅ **Sécurité** : Vérification par Dongle USB (YubiKey)
+
+* ✅ **Fonctionne** : Utilise le fichier `secret.NODE.dunikey` + PGP
+* ✅ **Recommandé pour** : Stations critiques, haute sécurité
+* ✅ **Prérequis** : Transmutation SSH/IPFS + intégration PGP
+* ✅ **Sécurité** : Vérification par Dongle USB (YubiKey)
 
 ### **Niveau de Station par Type de Virement**
 
-| **Type de Virement** | **Niveau Minimum** | **Justification** |
-|----------------------|-------------------|-------------------|
-| **MULTIPASS** | X | Recharge simple, pas de risque économique majeur |
-| **SOCIÉTAIRE** | Y | Parts sociales, nécessite identité vérifiée |
-| **INFRASTRUCTURE** | Y | Apport capital, sécurité économique requise |
-| **PAF Burn** | Y | Gestion économique critique, vérification humaine |
-| **Dépannage** | Y | Opérations de récupération, sécurité requise |
+| **Type de Virement** | **Niveau Minimum** | **Justification**                                 |
+| -------------------- | ------------------ | ------------------------------------------------- |
+| **MULTIPASS**        | X                  | Recharge simple, pas de risque économique majeur  |
+| **SOCIÉTAIRE**       | Y                  | Parts sociales, nécessite identité vérifiée       |
+| **INFRASTRUCTURE**   | Y                  | Apport capital, sécurité économique requise       |
+| **PAF Burn**         | Y                  | Gestion économique critique, vérification humaine |
+| **Dépannage**        | Y                  | Opérations de récupération, sécurité requise      |
 
 ### **Configuration UPlanet**
+
 Le script nécessite que les portefeuilles suivants soient configurés :
 
 #### **Portefeuilles Principaux**
-- `UPLANETNAME_G1` → `~/.zen/game/uplanet.G1.dunikey` (Réserve Ğ1/Ẑen)
-- `UPLANETNAME` → `~/.zen/game/uplanet.dunikey` (Compte d'exploitation)
-- `UPLANETNAME_SOCIETY` → `~/.zen/game/uplanet.SOCIETY.dunikey` (Capital social)
+
+* `UPLANETNAME_G1` → `~/.zen/game/uplanet.G1.dunikey` (Réserve Ğ1/Ẑen)
+* `UPLANETNAME` → `~/.zen/game/uplanet.dunikey` (Compte d'exploitation)
+* `UPLANETNAME_SOCIETY` → `~/.zen/game/uplanet.SOCIETY.dunikey` (Capital social)
 
 #### **Portefeuilles Coopératifs** (créés par `ZEN.COOPERATIVE.3x1-3.sh`)
-- `UPLANETNAME_TREASURY` → `~/.zen/game/uplanet.CASH.dunikey`
-- `UPLANETNAME_RND` → `~/.zen/game/uplanet.RnD.dunikey`
-- `UPLANETNAME_ASSETS` → `~/.zen/game/uplanet.ASSETS.dunikey`
+
+* `UPLANETNAME_TREASURY` → `~/.zen/game/uplanet.CASH.dunikey`
+* `UPLANETNAME_RND` → `~/.zen/game/uplanet.RnD.dunikey`
+* `UPLANETNAME_ASSETS` → `~/.zen/game/uplanet.ASSETS.dunikey`
 
 #### **Portefeuilles Utilisateurs**
-- **MULTIPASS** : `~/.zen/game/nostr/${email}/G1PUBNOSTR` & `~/.zen/game/nostr/${email}/.secret.dunikey`
-- **ZEN Card** : `~/.zen/game/players/${email}/.g1pub` & `~/.zen/game/players/${email}/secret.dunikey`
+
+* **MULTIPASS** : `~/.zen/game/nostr/${email}/G1PUBNOSTR` & `~/.zen/game/nostr/${email}/.secret.dunikey`
+* **ZEN Card** : `~/.zen/game/players/${email}/.g1pub` & `~/.zen/game/players/${email}/secret.dunikey`
 
 **💡 Configuration** : Utilisez `zen.sh` pour configurer les portefeuilles principaux et `ZEN.COOPERATIVE.3x1-3.sh` pour les portefeuilles coopératifs.
 
 ## 🔄 **Flux de Traitement**
 
 ### **Virement Locataire**
+
 1. **Vérification** : Contrôle de l'existence des portefeuilles
 2. **Étape 1** : Transfert `UPLANETNAME_G1` → `UPLANETNAME` (via `uplanet.G1.dunikey`)
 3. **Vérification** : Attente confirmation blockchain sur le wallet source
@@ -330,23 +369,25 @@ Le script nécessite que les portefeuilles suivants soient configurés :
 6. **Succès** : Rapport de fin d'opération
 
 ### **Virement Sociétaire**
+
 1. **Vérification** : Contrôle de l'existence des portefeuilles
 2. **Étape 1** : Transfert `UPLANETNAME_G1` → `UPLANETNAME_SOCIETY` (via `uplanet.G1.dunikey`)
 3. **Vérification** : Attente confirmation blockchain (max 40 minutes)
 4. **Étape 2** : Transfert `UPLANETNAME_SOCIETY` → `ZEN Card[email]` (via `uplanet.SOCIETY.dunikey`)
 5. **Vérification** : Attente confirmation blockchain (max 40 minutes)
 6. **Étape 3** : Répartition 3x1/3 depuis ZEN Card (via `secret.dunikey` de l'utilisateur)
-   - Treasury (1/3) → `uplanet.CASH.dunikey` + attente confirmation
-   - R&D (1/3) → `uplanet.RnD.dunikey` + attente confirmation
-   - Assets (1/3) → `uplanet.ASSETS.dunikey` + attente confirmation
+   * Treasury (1/3) → `uplanet.CASH.dunikey` + attente confirmation
+   * R\&D (1/3) → `uplanet.RnD.dunikey` + attente confirmation
+   * Assets (1/3) → `uplanet.ASSETS.dunikey` + attente confirmation
 7. **Mise à jour DID** : Enregistrement des contributions pour chaque portefeuille
 8. **Succès** : Rapport de fin d'opération
 
 ### **Mode Dépannage - Récupération Complète**
+
 1. **Affichage du solde SOCIETY** : Vérification des fonds disponibles
 2. **Demande de l'email** : Identification du sociétaire
 3. **Vérification ZEN Card** : Récupération de la clé publique et dunikey
-4. **Vérification portefeuilles 3x1/3** : TREASURY, R&D, ASSETS
+4. **Vérification portefeuilles 3x1/3** : TREASURY, R\&D, ASSETS
 5. **Demande du montant** : Saisie ou 'max' pour tout transférer
 6. **Calcul 3x1/3** : Répartition automatique en 3 parts égales
 7. **Étape 1** : SOCIETY → ZEN Card + attente confirmation (max 40 minutes)
@@ -355,9 +396,10 @@ Le script nécessite que les portefeuilles suivants soient configurés :
 10. **Succès** : Rapport complet avec nouveau solde SOCIETY
 
 ### **Mode Dépannage - Récupération Partielle**
+
 1. **Demande de l'email** : Identification du sociétaire
 2. **Affichage du solde ZEN Card** : Vérification des fonds disponibles
-3. **Menu de sélection** : Choix du portefeuille destination (TREASURY, R&D, ou ASSETS)
+3. **Menu de sélection** : Choix du portefeuille destination (TREASURY, R\&D, ou ASSETS)
 4. **Demande du montant** : Saisie du montant à transférer (en Ẑen)
 5. **Transfert** : ZEN Card → Portefeuille sélectionné + attente confirmation (max 40 minutes)
 6. **Mise à jour DID** : Enregistrement de la contribution spécifique
@@ -366,11 +408,14 @@ Le script nécessite que les portefeuilles suivants soient configurés :
 ## 🔧 **Configuration et Personnalisation**
 
 ### **Variables d'Environnement**
+
 Le script charge automatiquement :
-- **`my.sh`** : Variables UPlanet et configuration système
-- **`.env`** : Paramètres personnalisables (créé à partir de `env.template`)
+
+* **`my.sh`** : Variables UPlanet et configuration système
+* **`.env`** : Paramètres personnalisables (créé à partir de `env.template`)
 
 ### **Paramètres Configurables**
+
 ```bash
 # Timeouts et intervalles
 BLOCKCHAIN_TIMEOUT=2400      # 40 minutes max (2400 secondes)
@@ -386,6 +431,7 @@ MACHINE_VALUE_ZEN=500        # Valeur machine par défaut
 ## 📊 **Exemples d'Utilisation**
 
 ### **Scénario 1 : Nouveau Locataire**
+
 ```bash
 # Recharge hebdomadaire pour un nouveau locataire
 ./UPLANET.official.sh -l john.doe@example.com
@@ -399,6 +445,7 @@ MACHINE_VALUE_ZEN=500        # Valeur machine par défaut
 ```
 
 ### **Scénario 2 : Nouveau Sociétaire Satellite**
+
 ```bash
 # Attribution parts sociales satellite
 ./UPLANET.official.sh -s jane.smith@example.com -t satellite
@@ -416,6 +463,7 @@ MACHINE_VALUE_ZEN=500        # Valeur machine par défaut
 ```
 
 ### **Scénario 3 : Mode Dépannage - Fonds Bloqués dans SOCIETY**
+
 ```bash
 # Situation : Des fonds sont restés bloqués dans SOCIETY après un échec
 ./UPLANET.official.sh -r
@@ -439,6 +487,7 @@ Type de sociétaire (satellite/constellation): satellite
 ```
 
 ### **Scénario 4 : Mode Dépannage - Réparation Partielle 3x1/3**
+
 ```bash
 # Situation : La 2ème étape a échoué, seul le transfert vers R&D a réussi
 # Il reste des fonds dans la ZEN Card à redistribuer
@@ -474,32 +523,36 @@ Type de sociétaire (satellite/constellation): satellite
 ## 🚨 **Gestion des Erreurs**
 
 ### **Erreurs Communes**
-- **Portefeuilles non configurés** : Le script vérifie l'existence des fichiers dunikey
-- **Portefeuilles coopératifs manquants** : Message d'aide pour exécuter `ZEN.COOPERATIVE.3x1-3.sh`
-- **Timeout blockchain** : Si une transaction n'est pas confirmée en 40 minutes (configurable)
-- **Dépendances manquantes** : Vérification de `gcli`, `jq`, `bc`
-- **ZEN Card non trouvée** : Vérifier que le dossier `~/.zen/game/players/${email}/` existe
-- **Solde insuffisant ZEN Card** : Le script vérifie qu'il y a > 1Ğ1 pour effectuer un transfert
+
+* **Portefeuilles non configurés** : Le script vérifie l'existence des fichiers dunikey
+* **Portefeuilles coopératifs manquants** : Message d'aide pour exécuter `ZEN.COOPERATIVE.3x1-3.sh`
+* **Timeout blockchain** : Si une transaction n'est pas confirmée en 40 minutes (configurable)
+* **Dépendances manquantes** : Vérification de `gcli`, `jq`, `bc`
+* **ZEN Card non trouvée** : Vérifier que le dossier `~/.zen/game/players/${email}/` existe
+* **Solde insuffisant ZEN Card** : Le script vérifie qu'il y a > 1Ğ1 pour effectuer un transfert
 
 ### **Modes de Dépannage - Quand les Utiliser ?**
 
-| Situation | Mode à Utiliser | Commande |
-|-----------|----------------|----------|
-| 🔴 Fonds bloqués dans SOCIETY | Récupération Complète | `./UPLANET.official.sh -r` |
-| 🟠 Étape 1 OK, mais 3x1/3 a échoué complètement | Récupération Complète | `./UPLANET.official.sh -r` |
-| 🟡 Étape 1 OK, mais un seul transfert 3x1/3 a échoué | Récupération Partielle | `./UPLANET.official.sh --recovery-3x13` |
-| 🟢 Transaction normale | Virement Sociétaire | `./UPLANET.official.sh -s user@example.com -t satellite` |
+| Situation                                            | Mode à Utiliser        | Commande                                                 |
+| ---------------------------------------------------- | ---------------------- | -------------------------------------------------------- |
+| 🔴 Fonds bloqués dans SOCIETY                        | Récupération Complète  | `./UPLANET.official.sh -r`                               |
+| 🟠 Étape 1 OK, mais 3x1/3 a échoué complètement      | Récupération Complète  | `./UPLANET.official.sh -r`                               |
+| 🟡 Étape 1 OK, mais un seul transfert 3x1/3 a échoué | Récupération Partielle | `./UPLANET.official.sh --recovery-3x13`                  |
+| 🟢 Transaction normale                               | Virement Sociétaire    | `./UPLANET.official.sh -s user@example.com -t satellite` |
 
 ### **Alertes Automatiques**
+
 Le script envoie automatiquement des alertes au CAPTAINEMAIL en cas de :
-- **Timeout blockchain** : Transaction non confirmée après 40 minutes
-- **Erreur de transfert** : Échec lors de l'exécution d'un transfert
-- **Erreur dunikey** : Fichier de clés manquant ou invalide
-- **Erreur pubkey** : Impossible de récupérer la clé publique
+
+* **Timeout blockchain** : Transaction non confirmée après 40 minutes
+* **Erreur de transfert** : Échec lors de l'exécution d'un transfert
+* **Erreur dunikey** : Fichier de clés manquant ou invalide
+* **Erreur pubkey** : Impossible de récupérer la clé publique
 
 ### **Codes de Retour**
-- `0` : Succès
-- `1` : Erreur (détails dans les messages)
+
+* `0` : Succès
+* `1` : Erreur (détails dans les messages)
 
 ## 🔍 **Fonctionnement Technique**
 
@@ -507,27 +560,30 @@ Le script envoie automatiquement des alertes au CAPTAINEMAIL en cas de :
 
 Toutes les transactions de parts de capital incluent l'identifiant IPFS du nœud (`$IPFSNODEID`) pour assurer la traçabilité :
 
-| Type de Transaction | Format de Référence |
-|---------------------|---------------------|
-| **ZENCOIN** (Location) | `UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}` |
-| **CAPITAL** (Infrastructure) | `UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}` |
-| **SOCIETY** (Parts Sociales) | `UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}` |
+| Type de Transaction           | Format de Référence                                                   |
+| ----------------------------- | --------------------------------------------------------------------- |
+| **ZENCOIN** (Location)        | `UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}`                        |
+| **CAPITAL** (Infrastructure)  | `UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}`          |
+| **SOCIETY** (Parts Sociales)  | `UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}`  |
 | **TREASURY** (1/3 Trésorerie) | `UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${email}:${type}:${IPFSNODEID}` |
-| **RnD** (1/3 R&D) | `UPLANET:${UPLANETG1PUB:0:8}:RnD:${email}:${type}:${IPFSNODEID}` |
-| **ASSETS** (1/3 Actifs) | `UPLANET:${UPLANETG1PUB:0:8}:ASSETS:${email}:${type}:${IPFSNODEID}` |
+| **RnD** (1/3 R\&D)            | `UPLANET:${UPLANETG1PUB:0:8}:RnD:${email}:${type}:${IPFSNODEID}`      |
+| **ASSETS** (1/3 Actifs)       | `UPLANET:${UPLANETG1PUB:0:8}:ASSETS:${email}:${type}:${IPFSNODEID}`   |
 
 **Exemple de référence :**
+
 ```
 UPLANET:g1LBF94v:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 ```
 
 **Avantages de la traçabilité :**
-- 🔍 **Identification du nœud** : Chaque transaction identifie la machine à l'origine
-- 📊 **Statistiques par infrastructure** : Calcul des contributions par nœud
-- 🏛️ **Gouvernance transparente** : Visibilité sur les apports de capital
-- 🔒 **Auditabilité complète** : Transparence sur les sources de financement
+
+* 🔍 **Identification du nœud** : Chaque transaction identifie la machine à l'origine
+* 📊 **Statistiques par infrastructure** : Calcul des contributions par nœud
+* 🏛️ **Gouvernance transparente** : Visibilité sur les apports de capital
+* 🔒 **Auditabilité complète** : Transparence sur les sources de financement
 
 ### **Vérification des Transactions**
+
 ```bash
 # Le script utilise G1balance.sh (GraphQL squid) pour :
 1. Récupérer le solde initial
@@ -535,6 +591,7 @@ UPLANET:g1LBF94v:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuv
 ```
 
 ### **Gestion des Clés Privées**
+
 ```bash
 # Chaque transfert utilise le fichier dunikey approprié :
 - UPLANETNAME_G1 → uplanet.G1.dunikey
@@ -546,37 +603,40 @@ UPLANET:g1LBF94v:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuv
 ## 🔧 **Maintenance et Évolution**
 
 ### **Logs et Monitoring**
-- **Affichage en temps réel** : Progression des étapes avec couleurs
-- **Validation automatique** : Confirmation de chaque étape
-- **Gestion des timeouts** : Configurable via variables d'environnement
+
+* **Affichage en temps réel** : Progression des étapes avec couleurs
+* **Validation automatique** : Confirmation de chaque étape
+* **Gestion des timeouts** : Configurable via variables d'environnement
 
 ### **Évolutions Futures**
-- Support des notifications email
-- Mode simulation pour tests
-- Intégration avec d'autres outils UPlanet
+
+* Support des notifications email
+* Mode simulation pour tests
+* Intégration avec d'autres outils UPlanet
 
 ## 📚 **Documentation Associée**
 
-- **[Constitution de l'Écosystème](./LEGAL.md)** : Cadre légal et règles économiques
-- **[Code de la Route](./RUNTIME/ZEN.ECONOMY.readme.md)** : Implémentation technique
-- **[ZEN.COOPERATIVE.3x1-3.sh](./RUNTIME/ZEN.COOPERATIVE.3x1-3.sh)** : Script de répartition coopérative
-- **[Diagramme des Flux](./templates/mermaid_LEGAL_UPLANET_FLUX.mmd)** : Visualisation des flux économiques
+* [**Constitution de l'Écosystème**](LEGAL.md) : Cadre légal et règles économiques
+* [**Code de la Route**](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/ZEN.ECONOMY.readme.md) : Implémentation technique
+* [**ZEN.COOPERATIVE.3x1-3.sh**](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/ZEN.COOPERATIVE.3x1-3.sh) : Script de répartition coopérative
+* [**Diagramme des Flux**](https://github.com/papiche/Astroport.ONE/blob/master/templates/mermaid_LEGAL_UPLANET_FLUX.mmd) : Visualisation des flux économiques
 
 ## 🤝 **Support et Contribution**
 
-- **Auteur** : Fred (support@qo-op.com)
-- **Licence** : AGPL-3.0
-- **Version** : 1.2
-- **Statut** : ✅ **CONFORME** à la Constitution UPlanet ẐEN
+* **Auteur** : Fred (support@qo-op.com)
+* **Licence** : AGPL-3.0
+* **Version** : 1.2
+* **Statut** : ✅ **CONFORME** à la Constitution UPlanet ẐEN
 
 ### **Changelog v1.2**
-- ✅ Timeout de confirmation étendu à 40 minutes (au lieu de 20)
-- ✅ Nouveau mode dépannage complet : Récupération SOCIETY → ZEN Card → 3x1/3
-- ✅ Nouveau mode dépannage partiel : Récupération ZEN Card → 3x1/3 (sélectif)
-- ✅ Mise à jour automatique des DID après chaque contribution
-- ✅ Alertes automatiques par email en cas d'erreur
-- ✅ Amélioration de la traçabilité et du reporting
 
----
+* ✅ Timeout de confirmation étendu à 40 minutes (au lieu de 20)
+* ✅ Nouveau mode dépannage complet : Récupération SOCIETY → ZEN Card → 3x1/3
+* ✅ Nouveau mode dépannage partiel : Récupération ZEN Card → 3x1/3 (sélectif)
+* ✅ Mise à jour automatique des DID après chaque contribution
+* ✅ Alertes automatiques par email en cas d'erreur
+* ✅ Amélioration de la traçabilité et du reporting
+
+***
 
 **"Ce script transforme les règles statutaires en protocole automatisé, transparent et décentralisé, en utilisant les standards de sécurité et de configuration du projet UPlanet."**

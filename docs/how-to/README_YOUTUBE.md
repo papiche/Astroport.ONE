@@ -17,20 +17,20 @@ The UPlanet video management system provides **three modes** for creating and ma
 3. **Geolocation capture** - User can specify coordinates or use current location (defaults to 0.00, 0.00)
 4. **IPFS Upload** - Video uploaded via `/api/fileupload` endpoint
 5. **NOSTR Publication** - NIP-71 event (kind 21/22) with geographic tags:
-   - `g` tag: Geohash format (lat,lon) for UMAP anchoring
-   - `location` tag: Human-readable coordinates
-   - `latitude` and `longitude` tags: Individual coordinate tags
+   * `g` tag: Geohash format (lat,lon) for UMAP anchoring
+   * `location` tag: Human-readable coordinates
+   * `latitude` and `longitude` tags: Individual coordinate tags
 6. **uDRIVE Storage** - Video saved to `uDRIVE/Videos/` directory
 7. **Geographic Discovery** - Videos searchable by location via `/youtube` route
 
 ### Manual Download Process Flow
 
 1. **User sends message** with `#youtube` tag + YouTube URL
-2. **UPlanet_IA_Responder.sh** detects the tag and calls `process_youtube.sh`
-3. **process_youtube.sh** tries multiple cookie strategies:
-   - **User-uploaded cookies** (`.cookie.txt` from astro_base interface)
-   - **Browser cookies** (from Chrome, Firefox, Brave, Edge)
-   - **Generated cookies** (basic fallback)
+2. **UPlanet\_IA\_Responder.sh** detects the tag and calls `process_youtube.sh`
+3. **process\_youtube.sh** tries multiple cookie strategies:
+   * **User-uploaded cookies** (`.cookie.txt` from astro\_base interface)
+   * **Browser cookies** (from Chrome, Firefox, Brave, Edge)
+   * **Generated cookies** (basic fallback)
 4. **yt-dlp** downloads the video/audio
 5. **IPFS** uploads the media
 6. **NOSTR Events** published (kind: 1 + NIP-71 kind: 21/22)
@@ -67,12 +67,12 @@ https://www.youtube.com/@ARTEfr
 
 Fonctionnement (`sync_youtube_channels` dans `youtube.com.sh`, exécuté juste après la sync des likes) :
 
-- Interroge l'onglet public `/videos` de chaque chaîne (pas besoin de cookie pour cette étape — la playlist est publique)
-- Télécharge **au maximum 1 nouvelle vidéo par chaîne et par jour** (léger, adapté Raspberry Pi)
-- Réutilise le même pipeline que les likes : téléchargement `process_youtube.sh`, upload `/api/fileupload`, publication NOSTR NIP-71 (kind 21/22), rangement dans `uDRIVE/Videos/`
-- Dédoublonnage global par `video_id` dans `.processed_youtube_videos` (une vidéo likée ET publiée par une chaîne suivie n'est copiée qu'une fois)
-- Best-effort : un échec sur une chaîne n'interrompt ni les autres chaînes ni la synchronisation des likes
-- Les vidéos de plus de 90 minutes sont ignorées (même règle que les likes)
+* Interroge l'onglet public `/videos` de chaque chaîne (pas besoin de cookie pour cette étape — la playlist est publique)
+* Télécharge **au maximum 1 nouvelle vidéo par chaîne et par jour** (léger, adapté Raspberry Pi)
+* Réutilise le même pipeline que les likes : téléchargement `process_youtube.sh`, upload `/api/fileupload`, publication NOSTR NIP-71 (kind 21/22), rangement dans `uDRIVE/Videos/`
+* Dédoublonnage global par `video_id` dans `.processed_youtube_videos` (une vidéo likée ET publiée par une chaîne suivie n'est copiée qu'une fois)
+* Best-effort : un échec sur une chaîne n'interrompt ni les autres chaînes ni la synchronisation des likes
+* Les vidéos de plus de 90 minutes sont ignorées (même règle que les likes)
 
 Sans fichier `.youtube.com.channels`, rien ne change : seule la sync des likes s'exécute.
 
@@ -92,6 +92,7 @@ Ce mode est le plus puissant : il permet d'archiver une **chaîne YouTube entiè
 **Étape 1 — Formuler le voeu**
 
 Créer un tiddler avec :
+
 ```
 Titre : CopierYoutube
 Tags  : voeu CopierYoutube
@@ -101,6 +102,7 @@ Texte : (description facultative de l'intention)
 **Étape 2 — Lister les URLs à archiver**
 
 Créer un tiddler par source avec :
+
 ```
 Titre : MaChaineYoutube  (ou tout autre nom)
 Tags  : CopierYoutube
@@ -108,6 +110,7 @@ Texte : https://www.youtube.com/@nom-de-la-chaine
 ```
 
 Pour une playlist :
+
 ```
 Texte : https://www.youtube.com/playlist?list=PLxxxxxx
 ```
@@ -117,6 +120,7 @@ Pour plusieurs sources, mettre une URL par ligne dans le texte, ou créer plusie
 **Étape 3 — Pour archiver en audio seulement (MP3)**
 
 Ajouter le tag `MP3` au tiddler de contenu :
+
 ```
 Tags : CopierYoutube MP3
 ```
@@ -142,13 +146,15 @@ TW player.index.html
 ```
 
 Les vidéos apparaissent dans le TW sous le tag `CopierYoutube` avec lecteur intégré. Elles sont simultanément :
-- publiées comme **événements NIP-71** (kind 21/22) visibles sur `/youtube`
-- sauvegardées dans le **uDRIVE** du joueur (`Videos/` ou `Music/` pour MP3)
-- indexées comme **fichiers NIP-94** (kind 1063) dans la constellation
+
+* publiées comme **événements NIP-71** (kind 21/22) visibles sur `/youtube`
+* sauvegardées dans le **uDRIVE** du joueur (`Videos/` ou `Music/` pour MP3)
+* indexées comme **fichiers NIP-94** (kind 1063) dans la constellation
 
 ### Cookies YouTube
 
 Le script utilise les cookies du navigateur par défaut (détection automatique). Pour les stations sans interface graphique (serveur), uploader les cookies via :
+
 ```
 https://u.domain.tld/astro  →  cookie upload
 ```
@@ -197,9 +203,9 @@ voeu CopierYoutube "Permaculture"
                  └─ craft validé → Grimoire kind 22
 ```
 
-→ Voir [MINELIFE.md](MINELIFE.md), [GRIMOIRE_LIVE.md](GRIMOIRE_LIVE.md), [KNOWLEDGE_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md)
+→ Voir [MINELIFE.md](MINELIFE.md), [GRIMOIRE\_LIVE.md](GRIMOIRE_LIVE.md), [KNOWLEDGE\_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md)
 
----
+***
 
 ## 🍪 Cookie Management
 
@@ -209,39 +215,41 @@ YouTube blocks bot requests. Fresh browser cookies allow ASTROBOT to download vi
 
 ### How to Upload Cookies
 
-1. **Export cookies** from your browser using the guide:
-   ```
-   https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html
-   ```
+1.  **Export cookies** from your browser using the guide:
 
-2. **Upload the file** via the ASTROBOT interface:
-   ```
-   https://u.copylaradio.com/astro
-   ```
+    ```
+    https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html
+    ```
+2.  **Upload the file** via the ASTROBOT interface:
 
-3. **System automatically detects** the Netscape format and saves to:
-   ```
-   ~/.zen/game/nostr/<your-email>/.cookie.txt
-   ```
+    ```
+    https://u.copylaradio.com/astro
+    ```
+3.  **System automatically detects** the Netscape format and saves to:
+
+    ```
+    ~/.zen/game/nostr/<your-email>/.cookie.txt
+    ```
 
 ### Automatic Sync Activation
 
 Once you upload cookies, the system automatically:
 
-- **Detects your cookies** during daily NOSTR refresh cycle
-- **Launches YouTube sync** for your liked videos
-- **Downloads up to 3 new videos** per day
-- **Organizes videos** in your uDRIVE
-- **Publishes NOSTR events** for each video
-- **Sends email notifications** with sync results
+* **Detects your cookies** during daily NOSTR refresh cycle
+* **Launches YouTube sync** for your liked videos
+* **Downloads up to 3 new videos** per day
+* **Organizes videos** in your uDRIVE
+* **Publishes NOSTR events** for each video
+* **Sends email notifications** with sync results
 
 ### Cookie File Format
 
 The system expects **Netscape cookie format**. Cookies are automatically detected and stored as `.youtube.com.cookie` in your MULTIPASS directory.
 
-> **📖 For complete cookie management documentation, see [COOKIE_SYSTEM.md](./COOKIE_SYSTEM.md)**
+> **📖 For complete cookie management documentation, see** [**COOKIE\_SYSTEM.md**](https://github.com/papiche/Astroport.ONE/blob/master/docs/how-to/COOKIE_SYSTEM.md)
 
 Example format:
+
 ```
 # Netscape HTTP Cookie File
 .youtube.com	TRUE	/	TRUE	2147483647	CONSENT	YES+cb...
@@ -255,6 +263,7 @@ Example format:
 ### Log File Location
 
 All YouTube processing logs are written to:
+
 ```bash
 ~/.zen/tmp/IA.log
 ```
@@ -279,19 +288,22 @@ grep "process_youtube" ~/.zen/tmp/IA.log | tail -100
 **Cause:** Cookies are missing, expired, or invalid.
 
 **Solution:**
+
 1. Export fresh cookies from your browser (see cookie guide)
-2. Upload via astro_base interface
+2. Upload via astro\_base interface
 3. Try again
 
 ### Issue 2: "Download or IPFS upload failed"
 
 **Causes:**
-- YouTube bot detection
-- Network issues
-- IPFS daemon not running
-- Video too long (>3h limit)
+
+* YouTube bot detection
+* Network issues
+* IPFS daemon not running
+* Video too long (>3h limit)
 
 **Solution:**
+
 1. Check logs
 2. Verify IPFS is running: `ipfs id`
 3. Try with fresh cookies
@@ -302,6 +314,7 @@ grep "process_youtube" ~/.zen/tmp/IA.log | tail -100
 **Cause:** All cookie strategies failed.
 
 **Debug:**
+
 ```bash
 # Check if user cookie file exists
 ls -la ~/.zen/game/nostr/*/. cookie.txt
@@ -316,11 +329,12 @@ stat ~/.zen/game/nostr/<email>/.cookie.txt
 **Cause:** YouTube requires a Proof of Origin (PO) token for some clients. See [yt-dlp PO Token Guide](https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide).
 
 **Solutions (in order):**
+
 1. **Update yt-dlp** – Already done daily by `install_yt_dlp_ejs_node.sh`.
-2. **PO Token Provider plugin** – Installed optionally by the same script. Run the provider:  
+2. **PO Token Provider plugin** – Installed optionally by the same script. Run the provider:\
    `docker run -d -p 4416:4416 --name bgutil-provider brainicism/bgutil-ytdlp-pot-provider`
-3. **Manual PO token (GVS)** – Put the token in one line (no spaces) in:  
-   `~/.zen/game/nostr/<your-email>/.youtube.potoken`  
+3. **Manual PO token (GVS)** – Put the token in one line (no spaces) in:\
+   `~/.zen/game/nostr/<your-email>/.youtube.potoken`\
    How to get it: [PO Token Guide – PO Token for GVS](https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide#po-token-for-gvs) (YouTube Music → Network → v1/player → `serviceIntegrityDimensions.poToken`).
 
 The scripts prefer clients that do not require a PO token (`tv_embedded`, `tv`) and retry with them on 403.
@@ -369,8 +383,8 @@ The system publishes **two types** of NOSTR events for each video:
 
 ### NIP-71 Classification (implémentation réelle)
 
-- **Kind 21** — long-form : durée > 60 secondes
-- **Kind 22** — short-form : durée ≤ 60 secondes
+* **Kind 21** — long-form : durée > 60 secondes
+* **Kind 22** — short-form : durée ≤ 60 secondes
 
 ### NIP-71 Tags Structure
 
@@ -441,13 +455,13 @@ https://u.copylaradio.com/youtube
 
 #### Features
 
-- **Video Gallery** - Browse all downloaded and recorded videos
-- **NOSTR Integration** - Like videos, view author profiles
-- **Geographic Filtering** - Search videos by location (lat, lon, radius)
-- **Responsive Design** - Works on PC and mobile
-- **IPFS Streaming** - Direct video playback from IPFS
-- **Metadata Display** - Duration, file size, dimensions, keywords, location
-- **Channel Organization** - Videos grouped by uploader/creator
+* **Video Gallery** - Browse all downloaded and recorded videos
+* **NOSTR Integration** - Like videos, view author profiles
+* **Geographic Filtering** - Search videos by location (lat, lon, radius)
+* **Responsive Design** - Works on PC and mobile
+* **IPFS Streaming** - Direct video playback from IPFS
+* **Metadata Display** - Duration, file size, dimensions, keywords, location
+* **Channel Organization** - Videos grouped by uploader/creator
 
 #### Geographic Search
 
@@ -458,10 +472,11 @@ https://u.copylaradio.com/youtube?lat=48.86&lon=2.35&radius=10&html=1
 ```
 
 Parameters:
-- `lat`: Latitude (decimal degrees)
-- `lon`: Longitude (decimal degrees)
-- `radius`: Search radius in kilometers
-- `html=1`: Return HTML view (required for web browser)
+
+* `lat`: Latitude (decimal degrees)
+* `lon`: Longitude (decimal degrees)
+* `radius`: Search radius in kilometers
+* `html=1`: Return HTML view (required for web browser)
 
 The system uses the Haversine formula to calculate geographic distances and filter videos within the specified radius.
 
@@ -475,26 +490,26 @@ https://u.copylaradio.com/webcam
 
 #### Features
 
-- **NOSTR Authentication** - Connect via browser extension or nsec key
-- **Webcam Recording** - Direct browser recording (3-60 seconds)
-- **File Upload** - Upload local video files (.mp4, .webm, .mov, max 500MB)
-- **Geolocation** - Interactive map for location selection
-- **Preview & Edit** - Review video before publishing
-- **IPFS Upload** - Automatic upload via `/api/fileupload`
-- **NIP-71 Publishing** - Creates proper video events with geographic tags
-- **uDRIVE Storage** - Saves to personal `uDRIVE/Videos/` directory
+* **NOSTR Authentication** - Connect via browser extension or nsec key
+* **Webcam Recording** - Direct browser recording (3-60 seconds)
+* **File Upload** - Upload local video files (.mp4, .webm, .mov, max 500MB)
+* **Geolocation** - Interactive map for location selection
+* **Preview & Edit** - Review video before publishing
+* **IPFS Upload** - Automatic upload via `/api/fileupload`
+* **NIP-71 Publishing** - Creates proper video events with geographic tags
+* **uDRIVE Storage** - Saves to personal `uDRIVE/Videos/` directory
 
 #### Recording Workflow
 
 1. **Connect NOSTR** - Authenticate with your NOSTR identity
 2. **Choose Source**:
-   - Record via webcam (adjustable duration)
-   - Upload video file from device
+   * Record via webcam (adjustable duration)
+   * Upload video file from device
 3. **Preview** - Review video in modal
 4. **Edit Metadata**:
-   - Title (required)
-   - Description (optional)
-   - Geographic location (interactive map or manual input)
+   * Title (required)
+   * Description (optional)
+   * Geographic location (interactive map or manual input)
 5. **Publish** - Video uploaded to IPFS and published to NOSTR
 6. **View** - Access via `/youtube` interface with geographic filtering
 
@@ -541,33 +556,19 @@ UPassport/
 ## 💡 Tips
 
 1. **Cookie lifespan**: YouTube cookies typically last 1-3 months. Re-export when downloads start failing.
-
 2. **Multiple users**: Each user can upload their own cookies. The system automatically uses cookies for the requesting user.
-
 3. **Privacy**: Cookies are stored locally and only used for YouTube downloads. They're not shared or transmitted.
-
 4. **Format detection**: `#youtube` defaults to MP4. Add `#mp3` for audio-only: `#youtube #mp3`
-
 5. **Duration limit**: Videos longer than 3 hours are rejected to prevent resource exhaustion.
-
 6. **Automatic sync**: Upload cookies once and your liked videos will sync automatically every day (up to 2 new videos per day).
-
 7. **NIP-71 compatibility**: All videos are published as fully compliant NIP-71 events with proper `imeta` tags, `title`, `published_at`, `alt`, and accessibility features.
-
 8. **uDRIVE organization**: Videos are automatically organized in your personal uDRIVE storage (`uDRIVE/Videos/` and `uDRIVE/Music/`).
-
 9. **Email notifications**: You'll receive daily summaries of your YouTube sync results.
-
 10. **Channel interface**: Access all your videos via the `/youtube` route with full NOSTR integration and geographic filtering.
-
 11. **Webcam recording**: Record videos directly in browser with adjustable duration (3-60 seconds, optimized for mobile).
-
 12. **Video upload**: Upload local video files (.mp4, .webm, .mov) up to 500MB via `/webcam` interface.
-
 13. **Geolocation**: Add location data to videos for geographic discovery and UMAP anchoring (defaults to 0.00, 0.00 if not specified).
-
 14. **Geographic search**: Filter videos by location using `lat`, `lon`, and `radius` URL parameters on `/youtube` route.
-
 15. **IPFS streaming**: All videos accessible via IPFS gateway for decentralized, censorship-resistant playback.
 
 ## 🔄 System Architecture
@@ -575,6 +576,7 @@ UPassport/
 ### Complete Video Management Flow
 
 #### YouTube Download Flow
+
 ```
 User Uploads Cookies
         ↓
@@ -594,6 +596,7 @@ create_video_channel.py (Channel parsing)
 ```
 
 #### Webcam Recording Flow
+
 ```
 User Accesses /webcam
         ↓
@@ -612,27 +615,29 @@ NOSTR Publication (kind: 21/22 with g, location, lat, lon tags)
 
 ### Key Components
 
-- **Cookie Upload**: `cookie.html` → `astro_base.html` → `.cookie.txt`
-- **Daily Sync**: `NOSTRCARD.refresh.sh` → `youtube.com.sh` → `process_youtube.sh`
-- **Webcam Recording**: `/webcam` → NOSTR auth → video capture → `/api/fileupload`
-- **IPFS Upload**: `/api/fileupload` → `uDRIVE/Videos/` → IPFS CID
-- **NOSTR Publishing**: `/webcam` route → NIP-71 event with geographic tags
-- **Video Processing**: `process_youtube.sh` → IPFS → NOSTR → uDRIVE
-- **Channel Parsing**: `create_video_channel.py` → Extract NIP-71 events with geolocation
-- **User Interface**: `/youtube` route → `youtube.html` with geographic filtering
-- **Geographic Discovery**: Haversine formula → filter videos by lat/lon/radius
+* **Cookie Upload**: `cookie.html` → `astro_base.html` → `.cookie.txt`
+* **Daily Sync**: `NOSTRCARD.refresh.sh` → `youtube.com.sh` → `process_youtube.sh`
+* **Webcam Recording**: `/webcam` → NOSTR auth → video capture → `/api/fileupload`
+* **IPFS Upload**: `/api/fileupload` → `uDRIVE/Videos/` → IPFS CID
+* **NOSTR Publishing**: `/webcam` route → NIP-71 event with geographic tags
+* **Video Processing**: `process_youtube.sh` → IPFS → NOSTR → uDRIVE
+* **Channel Parsing**: `create_video_channel.py` → Extract NIP-71 events with geolocation
+* **User Interface**: `/youtube` route → `youtube.html` with geographic filtering
+* **Geographic Discovery**: Haversine formula → filter videos by lat/lon/radius
 
 ## 🆘 Support
 
 If you encounter issues:
 
 ### YouTube Download Issues
+
 1. Check logs: `tail -f ~/.zen/tmp/IA.log | grep "process_youtube"`
 2. Verify cookie file exists and is recent: `ls -la ~/.zen/game/nostr/*/. cookie.txt`
 3. Test with a different YouTube URL
 4. Update yt-dlp: `pip install --upgrade yt-dlp`
 
 ### Webcam Recording Issues
+
 1. Verify NOSTR connection: Check browser console for connection errors
 2. Check IPFS upload: Verify `/api/fileupload` endpoint is accessible
 3. Browser permissions: Ensure webcam/microphone access is granted
@@ -640,16 +645,17 @@ If you encounter issues:
 5. Supported formats: .mp4, .webm, .mov
 
 ### General System Checks
+
 1. Check IPFS daemon: `ipfs id`
 2. Check NOSTR relay: `ws://127.0.0.1:7777` or `wss://relay.copylaradio.com`
 3. Verify uDRIVE directory: `~/.zen/game/nostr/<email>/APP/uDRIVE/Videos/`
 4. Check video storage: `ls -lh ~/.zen/game/nostr/<email>/APP/uDRIVE/Videos/`
 
 ### Geographic Filtering Issues
+
 1. Verify coordinates format: Use decimal degrees (e.g., 48.86, not 48°51'N)
 2. Check radius parameter: Value in kilometers (default: 10.0)
 3. Test without filters: Access `/youtube?html=1` first
 4. Browser console: Check for JavaScript errors in geographic calculations
 
 For more help, contact: support@qo-op.com
-

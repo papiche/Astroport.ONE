@@ -3,11 +3,12 @@
 ## Overview
 
 The **MULTIPASS** is a universal decentralized identity system that allows users to:
-- Create a complete cryptographic identity from a single email address
-- Access their identity from any UPlanet terminal without storing credentials
-- Use secure PASS codes to control access levels and regenerate lost credentials
-- Manage a personal decentralized storage space (uDRIVE)
-- Interact with multiple blockchain networks (NOSTR, G1/Duniter, Bitcoin, Monero)
+
+* Create a complete cryptographic identity from a single email address
+* Access their identity from any UPlanet terminal without storing credentials
+* Use secure PASS codes to control access levels and regenerate lost credentials
+* Manage a personal decentralized storage space (uDRIVE)
+* Interact with multiple blockchain networks (NOSTR, G1/Duniter, Bitcoin, Monero)
 
 ## What is a MULTIPASS?
 
@@ -22,24 +23,25 @@ A MULTIPASS is the evolution of the NOSTRCARD concept. It combines:
 
 ### MULTIPASS vs ZEN Card
 
-| Feature | MULTIPASS IPFS | ZEN Card |
-|---------|----------------|----------|
-| **Identité** | NOSTR + DID | NOSTR + DID + Primo-transaction |
-| **Stockage Public** | uDRIVE 10GB (IPFS/IPNS) | uDRIVE 10GB (IPFS/IPNS) |
-| **Stockage Privé** | ❌ Non inclus | ✅ NextCloud illimité |
-| **Vidéo Privée** | ❌ Non inclus | ✅ PeerTube illimité |
-| **Accès SSH** | ❌ Non inclus | ✅ Accès relais essaim |
-| **Coût** | Gratuit | 1Ẑ/semaine (≈0.1Ğ1) |
-| **Authentification** | SSSS (2/3 parts) | SSSS + Primo-Ğ1 |
-| **Usage** | Web3 public, partage | Collaboration privée |
+| Feature              | MULTIPASS IPFS          | ZEN Card                        |
+| -------------------- | ----------------------- | ------------------------------- |
+| **Identité**         | NOSTR + DID             | NOSTR + DID + Primo-transaction |
+| **Stockage Public**  | uDRIVE 10GB (IPFS/IPNS) | uDRIVE 10GB (IPFS/IPNS)         |
+| **Stockage Privé**   | ❌ Non inclus            | ✅ NextCloud illimité            |
+| **Vidéo Privée**     | ❌ Non inclus            | ✅ PeerTube illimité             |
+| **Accès SSH**        | ❌ Non inclus            | ✅ Accès relais essaim           |
+| **Coût**             | Gratuit                 | 1Ẑ/semaine (≈0.1Ğ1)             |
+| **Authentification** | SSSS (2/3 parts)        | SSSS + Primo-Ğ1                 |
+| **Usage**            | Web3 public, partage    | Collaboration privée            |
 
 **En résumé** :
-- **MULTIPASS IPFS** = Identité + 10GB public (gratuit)
-- **ZEN Card** = MULTIPASS + Stockage privé illimité (payant)
+
+* **MULTIPASS IPFS** = Identité + 10GB public (gratuit)
+* **ZEN Card** = MULTIPASS + Stockage privé illimité (payant)
 
 ## Creation
 
-### Using make_NOSTRCARD.sh
+### Using make\_NOSTRCARD.sh
 
 ```bash
 # Basic creation
@@ -93,19 +95,22 @@ When you create a MULTIPASS, the following files are generated in `~/.zen/game/n
 ## SSSS Key System
 
 The MULTIPASS uses **Shamir Secret Sharing Scheme (SSSS)** to split the master secret into 3 parts:
-- **2 out of 3 parts are required** to recover the identity
-- Part 1: Encrypted with the user's G1 public key (owner)
-- Part 2: Encrypted with the Captain's G1 public key (operator)
-- Part 3: Encrypted with UPlanet's G1 public key (network)
+
+* **2 out of 3 parts are required** to recover the identity
+* Part 1: Encrypted with the user's G1 public key (owner)
+* Part 2: Encrypted with the Captain's G1 public key (operator)
+* Part 3: Encrypted with UPlanet's G1 public key (network)
 
 ### SSSS QR Code Format
 
 The SSSS QR code contains:
+
 ```
 M-{base58_encoded_secret}:{IPNS_vault_key}
 ```
 
 Example:
+
 ```
 M-3geE2ktuVKGUoEuv3FQEtiCAZDa69PN2kiT8d4UhAH3RbMkgPbooz7W:k51qzi5uqu5dhwr9cp52nhe7w13y9g58kg4l7m45ojka0tx92s72bise85sjn0
 ```
@@ -118,36 +123,37 @@ The PASS code system allows users to control what happens when they authenticate
 
 ### Available PASS Codes
 
-| PASS Code | Purpose | Action |
-|-----------|---------|--------|
-| *(empty)* | **Quick Message** | Opens the simple NOSTR message interface (default, most secure for public terminals) |
-| `0000` | **Resiliation** | Cancels/regenerates the MULTIPASS - allows the owner to claim a new identity if lost, stolen, or forgotten |
-| `1111` | **Full Access** | Opens the complete Astro Base interface (UPlanet Messenger) with the nsec pre-filled and authenticated |
-| `xxxx` | **Future** | More PASS codes coming for delegated tasks and advanced features |
+| PASS Code | Purpose           | Action                                                                                                     |
+| --------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| _(empty)_ | **Quick Message** | Opens the simple NOSTR message interface (default, most secure for public terminals)                       |
+| `0000`    | **Resiliation**   | Cancels/regenerates the MULTIPASS - allows the owner to claim a new identity if lost, stolen, or forgotten |
+| `1111`    | **Full Access**   | Opens the complete Astro Base interface (UPlanet Messenger) with the nsec pre-filled and authenticated     |
+| `xxxx`    | **Future**        | More PASS codes coming for delegated tasks and advanced features                                           |
 
 ### How to Use PASS Codes
 
 1. **Go to a MULTIPASS Terminal**: Visit `u.copylaradio.com/scan` (or your local Astroport's `/scan` endpoint)
 2. **Scan your SSSS QR code**: Use the camera to scan your MULTIPASS SSSS QR code
 3. **Enter your PASS code** (or leave empty):
-   - *(empty)* → Quick Message interface (safest for public terminals)
-   - `0000` → Resiliation/Regeneration (emergency recovery)
-   - `1111` → Full Astro Base interface with authenticated session
+   * _(empty)_ → Quick Message interface (safest for public terminals)
+   * `0000` → Resiliation/Regeneration (emergency recovery)
+   * `1111` → Full Astro Base interface with authenticated session
 4. **Click OK**: Access is granted based on your PASS code
 
 ### MULTIPASS Terminal Interface
 
 The MULTIPASS Terminal (`scan_new.html`) is the primary interface for SSSS authentication. It provides:
 
-- **QR Code Scanner**: Camera-based scanning with automatic detection
-- **PASS Code Entry**: Secure PIN entry with optional visibility toggle
-- **Multiple Camera Support**: Automatic detection and switching between front/back cameras
-- **Real-time Feedback**: Visual indicators for successful scans
-- **Zero Storage**: No credentials stored in browser - everything erased on tab close
+* **QR Code Scanner**: Camera-based scanning with automatic detection
+* **PASS Code Entry**: Secure PIN entry with optional visibility toggle
+* **Multiple Camera Support**: Automatic detection and switching between front/back cameras
+* **Real-time Feedback**: Visual indicators for successful scans
+* **Zero Storage**: No credentials stored in browser - everything erased on tab close
 
 ### Example Usage Scenarios
 
 #### Scenario 1: Daily Use (PASS 1111)
+
 ```
 User scans SSSS QR → Enters "1111" → Gets full Astro Base interface
 ↳ Can send NOSTR messages
@@ -158,6 +164,7 @@ User scans SSSS QR → Enters "1111" → Gets full Astro Base interface
 ```
 
 #### Scenario 2: Emergency Recovery (PASS 0000)
+
 ```
 User lost device → Scans SSSS QR on friend's terminal → Enters "0000"
 ↳ System recognizes regeneration request
@@ -167,6 +174,7 @@ User lost device → Scans SSSS QR on friend's terminal → Enters "0000"
 ```
 
 #### Scenario 3: Quick Message (Empty PASS) - DEFAULT
+
 ```
 User scans SSSS QR → Leaves PASS field empty → Clicks OK
 ↳ Gets simple NOSTR message interface (nostr.html)
@@ -182,14 +190,16 @@ User scans SSSS QR → Leaves PASS field empty → Clicks OK
 ### Key Derivation
 
 All keys are deterministically derived from:
+
 ```
 DISCO = /?{EMAIL}={SALT}&nostr={PEPPER}
 ```
 
 This means:
-- Same EMAIL + SALT + PEPPER = Same keys
-- No keys are stored permanently
-- Everything can be regenerated from the SSSS parts
+
+* Same EMAIL + SALT + PEPPER = Same keys
+* No keys are stored permanently
+* Everything can be regenerated from the SSSS parts
 
 ### Encryption Layers
 
@@ -201,22 +211,25 @@ This means:
 ### No Browser Storage
 
 The MULTIPASS system is designed with **zero browser storage**:
-- nsec is **never** saved in localStorage
-- nsec is **never** saved in cookies
-- nsec is **never** saved in browser history
-- nsec is only kept in JavaScript memory during the session
-- When the user closes the tab, everything is **immediately erased**
-- To reconnect, the user must scan their SSSS QR again with their PASS code
+
+* nsec is **never** saved in localStorage
+* nsec is **never** saved in cookies
+* nsec is **never** saved in browser history
+* nsec is only kept in JavaScript memory during the session
+* When the user closes the tab, everything is **immediately erased**
+* To reconnect, the user must scan their SSSS QR again with their PASS code
 
 This prevents:
-- Key theft from compromised browsers
-- Cross-site scripting (XSS) attacks on stored credentials
-- Device loss exposing private keys
-- Browser extensions stealing keys
-- Forensic recovery of keys from browser data
-- Session hijacking attacks
+
+* Key theft from compromised browsers
+* Cross-site scripting (XSS) attacks on stored credentials
+* Device loss exposing private keys
+* Browser extensions stealing keys
+* Forensic recovery of keys from browser data
+* Session hijacking attacks
 
 **Architecture**: The SSSS QR code + PASS code system ensures that:
+
 1. The SSSS secret is reconstructed server-side (2-of-3 Shamir scheme)
 2. The nsec is derived on-the-fly from SALT + PEPPER
 3. The nsec is injected into the page template at render time
@@ -235,12 +248,13 @@ Each MULTIPASS includes a W3C-compliant DID document accessible at:
 ```
 
 The DID document contains:
-- Verification methods for all blockchain identities
-- Service endpoints (NOSTR relay, IPNS vault, uDRIVE, uSPOT, Cesium)
-- Authentication and authorization capabilities
-- Metadata (creation date, location, language)
 
-See [DID_IMPLEMENTATION.md](./DID_IMPLEMENTATION.md) for full details.
+* Verification methods for all blockchain identities
+* Service endpoints (NOSTR relay, IPNS vault, uDRIVE, uSPOT, Cesium)
+* Authentication and authorization capabilities
+* Metadata (creation date, location, language)
+
+See [DID\_IMPLEMENTATION.md](https://github.com/papiche/Astroport.ONE/blob/master/tools/DID_IMPLEMENTATION.md) for full details.
 
 ## uDRIVE Storage (MULTIPASS IPFS)
 
@@ -260,22 +274,25 @@ Each MULTIPASS includes a personal IPFS/IPNS storage space called **uDRIVE** wit
 **Architecture à Deux Niveaux** :
 
 ### Niveau 1 : MULTIPASS IPFS (Public, 10GB)
-- **Stockage** : uDRIVE sur IPFS/IPNS
-- **Taille** : Maximum 10GB
-- **Accessibilité** : Public (Web3 + Web2)
-- **Usage** : Applications, sites web, contenu partageable
-- **Authentification** : NOSTR (npub/nsec)
+
+* **Stockage** : uDRIVE sur IPFS/IPNS
+* **Taille** : Maximum 10GB
+* **Accessibilité** : Public (Web3 + Web2)
+* **Usage** : Applications, sites web, contenu partageable
+* **Authentification** : NOSTR (npub/nsec)
 
 ### Niveau 2 : ZEN Card (Privé, Illimité)
-- **Stockage** : NextCloud ou PeerTube sur relais d'essaim
-- **Taille** : Illimité (dépend de l'Astroport)
-- **Accessibilité** : Privé entre relais de confiance
-- **Usage** : Fichiers personnels, vidéos privées, collaboration
-- **Authentification** : SSSS + Primo-transaction Ğ1
+
+* **Stockage** : NextCloud ou PeerTube sur relais d'essaim
+* **Taille** : Illimité (dépend de l'Astroport)
+* **Accessibilité** : Privé entre relais de confiance
+* **Usage** : Fichiers personnels, vidéos privées, collaboration
+* **Authentification** : SSSS + Primo-transaction Ğ1
 
 ### Uploading to uDRIVE (MULTIPASS)
 
 Users can upload files to their uDRIVE (max 10GB) via:
+
 1. **Web interface** - Drag & drop at `{uSPOT}/upload`
 2. **API** - POST to `/api/upload` with NOSTR authentication
 3. **From other drives** - Copy from another user's IPFS vault
@@ -285,6 +302,7 @@ All uploads require NOSTR authentication (npub or nsec).
 ### Accessing Private Storage (ZEN Card)
 
 ZEN Card holders access private storage directly:
+
 1. **NextCloud** - Full-featured file sync and share
 2. **PeerTube** - Private video hosting and streaming
 3. **Direct SSH** - Command-line access to relais d'essaim
@@ -300,63 +318,57 @@ The MULTIPASS is fully integrated with the UPlanet ecosystem:
 #### Services Publics (MULTIPASS IPFS)
 
 1. **MULTIPASS Terminal** - Identity authentication
-   - Default: `https://u.copylaradio.com/scan`
-   - Local: `http://{hostname}:54321/scan`
-   - Interface: scan_new.html (QR scanner with PASS codes)
-   - **Taille** : Illimité (service d'authentification)
-
+   * Default: `https://u.copylaradio.com/scan`
+   * Local: `http://{hostname}:54321/scan`
+   * Interface: scan\_new.html (QR scanner with PASS codes)
+   * **Taille** : Illimité (service d'authentification)
 2. **uSPOT** - Wallet and credential service
-   - Check balance: `{uSPOT}/check_balance?g1pub={EMAIL}`
-   - Send ZEN: `{uSPOT}/zen_send`
-   - **Taille** : Illimité (service transactionnel)
-
+   * Check balance: `{uSPOT}/check_balance?g1pub={EMAIL}`
+   * Send ZEN: `{uSPOT}/zen_send`
+   * **Taille** : Illimité (service transactionnel)
 3. **uDRIVE** - Personal IPFS storage
-   - Access: `{myIPFS}/ipns/{NOSTRNS}/{EMAIL}/APP/uDRIVE`
-   - Upload: `{uSPOT}/upload` or API `/api/upload`
-   - **Taille** : **Maximum 10GB** (Web3 + Web2 public)
-
+   * Access: `{myIPFS}/ipns/{NOSTRNS}/{EMAIL}/APP/uDRIVE`
+   * Upload: `{uSPOT}/upload` or API `/api/upload`
+   * **Taille** : **Maximum 10GB** (Web3 + Web2 public)
 4. **NOSTR Relay** - Decentralized messaging
-   - Default relay: `wss://relay.copylaradio.com`
-   - Local relay: `ws://127.0.0.1:7777` (development)
-   - **Taille** : Illimité (messages éphémères)
-
+   * Default relay: `wss://relay.copylaradio.com`
+   * Local relay: `ws://127.0.0.1:7777` (development)
+   * **Taille** : Illimité (messages éphémères)
 5. **IPFS Gateway** - Distributed storage
-   - Default: `https://ipfs.copylaradio.com`
-   - Local: `http://127.0.0.1:8080`
-   - **Taille** : Dépend du pinning
-
+   * Default: `https://ipfs.copylaradio.com`
+   * Local: `http://127.0.0.1:8080`
+   * **Taille** : Dépend du pinning
 6. **Astroport.ONE** - Control center
-   - Default: `https://astroport.copylaradio.com`
-   - Local: UPassport 54321 (port 1234 deprecated)
-   - **Taille** : Interface de gestion
+   * Default: `https://astroport.copylaradio.com`
+   * Local: UPassport 54321 (port 1234 deprecated)
+   * **Taille** : Interface de gestion
 
 #### Services Privés (ZEN Card)
 
 7. **NextCloud** - Private file sync and share
-   - Access: `https://cloud.{astroport-domain}/{username}`
-   - Features: Sync, share, collaboration, versioning
-   - **Taille** : **Illimité** (selon capacité Astroport)
-   - **Authentification** : SSSS + Primo-transaction
-
+   * Access: `https://cloud.{astroport-domain}/{username}`
+   * Features: Sync, share, collaboration, versioning
+   * **Taille** : **Illimité** (selon capacité Astroport)
+   * **Authentification** : SSSS + Primo-transaction
 8. **PeerTube** - Private video hosting
-   - Access: `https://tube.{astroport-domain}/{username}`
-   - Features: Upload, streaming, playlists, live
-   - **Taille** : **Illimité** (selon capacité Astroport)
-   - **Authentification** : SSSS + Primo-transaction
-
+   * Access: `https://tube.{astroport-domain}/{username}`
+   * Features: Upload, streaming, playlists, live
+   * **Taille** : **Illimité** (selon capacité Astroport)
+   * **Authentification** : SSSS + Primo-transaction
 9. **SSH Access** - Direct relais access
-   - Command: `ssh {username}@{astroport-domain}`
-   - Features: Full shell, docker, automation
-   - **Taille** : Dépend des quotas serveur
-   - **Authentification** : Clé SSH jumelle Ed25519
+   * Command: `ssh {username}@{astroport-domain}`
+   * Features: Full shell, docker, automation
+   * **Taille** : Dépend des quotas serveur
+   * **Authentification** : Clé SSH jumelle Ed25519
 
 ### UPlanet Astroport Network
 
 Each Astroport in the UPlanet network can:
-- Create MULTIPASS identities for new users
-- Authenticate existing MULTIPASS holders
-- Provide terminal access for SSSS scanning
-- Host local NOSTR relays and IPFS nodes
+
+* Create MULTIPASS identities for new users
+* Authenticate existing MULTIPASS holders
+* Provide terminal access for SSSS scanning
+* Host local NOSTR relays and IPFS nodes
 
 This creates a truly decentralized identity system where users can access their identity from any UPlanet terminal worldwide.
 
@@ -364,45 +376,42 @@ This creates a truly decentralized identity system where users can access their 
 
 ### Scripts Involved
 
-1. **make_NOSTRCARD.sh** - Creates the MULTIPASS
-   - Generates all cryptographic keys
-   - Creates QR codes
-   - Publishes to IPFS/IPNS
-   - Sends ZINE email to user
-
+1. **make\_NOSTRCARD.sh** - Creates the MULTIPASS
+   * Generates all cryptographic keys
+   * Creates QR codes
+   * Publishes to IPFS/IPNS
+   * Sends ZINE email to user
 2. **upassport.sh** - Authenticates MULTIPASS
-   - Decodes SSSS secrets (Shamir 2-of-3 reconstruction)
-   - Handles PASS codes and routing
-   - Opens appropriate interface based on PASS code
-   - Generates nsec on-the-fly (never stored)
-
+   * Decodes SSSS secrets (Shamir 2-of-3 reconstruction)
+   * Handles PASS codes and routing
+   * Opens appropriate interface based on PASS code
+   * Generates nsec on-the-fly (never stored)
 3. **54321.py** - API backend
-   - Handles file uploads to uDRIVE
-   - Manages NOSTR authentication
-   - Provides REST endpoints (`/upassport`, `/api/upload`, etc.)
-   - Integrates with shell scripts
-   - Serves web interfaces (scan_new.html, astro_base.html, nostr.html)
-
-4. **scan_new.html** - MULTIPASS Terminal Interface
-   - Primary QR scanning interface
-   - Camera control and selection
-   - PASS code entry with security features
-   - Real-time QR detection
-   - Visual feedback and guidance
+   * Handles file uploads to uDRIVE
+   * Manages NOSTR authentication
+   * Provides REST endpoints (`/upassport`, `/api/upload`, etc.)
+   * Integrates with shell scripts
+   * Serves web interfaces (scan\_new.html, astro\_base.html, nostr.html)
+4. **scan\_new.html** - MULTIPASS Terminal Interface
+   * Primary QR scanning interface
+   * Camera control and selection
+   * PASS code entry with security features
+   * Real-time QR detection
+   * Visual feedback and guidance
 
 ### Key Generation Tools
 
-- **keygen** - Multi-algorithm key generator (NOSTR, Duniter, Bitcoin, Monero, IPFS)
-- **nostr2hex.py** - Converts between NOSTR formats (npub/nsec ↔ hex)
-- **natools.py** - NaCl encryption/decryption for SSSS parts
+* **keygen** - Multi-algorithm key generator (NOSTR, Duniter, Bitcoin, Monero, IPFS)
+* **nostr2hex.py** - Converts between NOSTR formats (npub/nsec ↔ hex)
+* **natools.py** - NaCl encryption/decryption for SSSS parts
 
 ### Dependencies
 
-- **IPFS** - Distributed file system
-- **ssss** - Shamir Secret Sharing implementation
-- **NaCl** - Cryptographic library (Ed25519)
-- **gcli** - Duniter v2s blockchain client (g1cli)
-- **nostr_send_note.py** - NOSTR protocol client
+* **IPFS** - Distributed file system
+* **ssss** - Shamir Secret Sharing implementation
+* **NaCl** - Cryptographic library (Ed25519)
+* **gcli** - Duniter v2s blockchain client (g1cli)
+* **nostr\_send\_note.py** - NOSTR protocol client
 
 ## Best Practices
 
@@ -437,10 +446,10 @@ This creates a truly decentralized identity system where users can access their 
 
 ## Future PASS Codes (Planned)
 
-| PASS Code | Purpose | Status |
-|-----------|---------|--------|
-| `2222` | View N² Network | /api/getN2 |
-| `...` | More to come | Planned |
+| PASS Code | Purpose         | Status     |
+| --------- | --------------- | ---------- |
+| `2222`    | View N² Network | /api/getN2 |
+| `...`     | More to come    | Planned    |
 
 **Implementation**: Each PASS code can trigger different behaviors in `upassport.sh` by routing to specific templates or setting different environment variables. The architecture is extensible - new PASS codes can be added without breaking existing functionality.
 
@@ -524,14 +533,14 @@ This creates a truly decentralized identity system where users can access their 
 
 ### Code Location Reference
 
-| Component | File | Key Functions |
-|-----------|------|---------------|
-| QR Scanner | `UPassport/templates/scan_new.html` | Camera control, PASS entry, SSSS detection |
-| API Endpoint | `UPassport/54321.py` | `/upassport` route, form handling |
-| Authentication | `UPassport/upassport.sh` | SSSS decode, PASS routing, nsec derivation |
-| Full Interface | `UPassport/templates/astro_base.html` | Astro messenger (PASS 1111) |
-| Quick Interface | `UPassport/templates/nostr.html` | Simple messages (empty PASS) |
-| Card Creation | `Astroport.ONE/tools/make_NOSTRCARD.sh` | MULTIPASS generation, SSSS creation |
+| Component       | File                                    | Key Functions                              |
+| --------------- | --------------------------------------- | ------------------------------------------ |
+| QR Scanner      | `UPassport/templates/scan_new.html`     | Camera control, PASS entry, SSSS detection |
+| API Endpoint    | `UPassport/54321.py`                    | `/upassport` route, form handling          |
+| Authentication  | `UPassport/upassport.sh`                | SSSS decode, PASS routing, nsec derivation |
+| Full Interface  | `UPassport/templates/astro_base.html`   | Astro messenger (PASS 1111)                |
+| Quick Interface | `UPassport/templates/nostr.html`        | Simple messages (empty PASS)               |
+| Card Creation   | `Astroport.ONE/tools/make_NOSTRCARD.sh` | MULTIPASS generation, SSSS creation        |
 
 ### Security Checkpoints
 
@@ -545,11 +554,11 @@ This creates a truly decentralized identity system where users can access their 
 
 ## Resources
 
-- [W3C DID 1.0 Specification](https://www.w3.org/TR/did-1.0/)
-- [NOSTR Protocol](https://github.com/nostr-protocol/nostr)
-- [Shamir Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing)
-- [G1 Currency](https://duniter.org/)
-- [IPFS Documentation](https://docs.ipfs.io/)
+* [W3C DID 1.0 Specification](https://www.w3.org/TR/did-1.0/)
+* [NOSTR Protocol](https://github.com/nostr-protocol/nostr)
+* [Shamir Secret Sharing](https://en.wikipedia.org/wiki/Shamir's_Secret_Sharing)
+* [G1 Currency](https://duniter.org/)
+* [IPFS Documentation](https://docs.ipfs.io/)
 
 ## License
 
@@ -558,10 +567,10 @@ AGPL-3.0 - See LICENSE file for details
 ## Contact
 
 For support or questions about the MULTIPASS system:
-- Email: support@qo-op.com
-- UPlanet Network: Visit your local Astroport
 
----
+* Email: support@qo-op.com
+* UPlanet Network: Visit your local Astroport
+
+***
 
 **Remember**: Your MULTIPASS is your universal decentralized identity. Treat your SSSS QR code like a physical key - keep it safe, but know that with PASS `0000`, you can always destroy and regenerate it if needed.
-

@@ -1,30 +1,27 @@
 # Guide des Bonnes Pratiques Bash — Astroport.ONE / UPlanet ẐEN
 
-> Version 1.0 — Mars 2026
-> Applicable à tous les scripts Bash du projet Astroport.ONE.
+> Version 1.0 — Mars 2026 Applicable à tous les scripts Bash du projet Astroport.ONE.
 
----
+***
 
 ## Sommaire
 
-1. [Sécurité — Ne jamais exposer les secrets](#1-sécurité--ne-jamais-exposer-les-secrets)
-2. [Sécurité — Jamais d'`eval` sur des données externes](#2-sécurité--jamais-deval-sur-des-données-externes)
-3. [Stabilité — Valeurs par défaut avant `bc`](#3-stabilité--valeurs-par-défaut-avant-bc)
-4. [Stabilité — Limiter le parallélisme IPFS](#4-stabilité--limiter-le-parallélisme-ipfs)
-5. [Robustesse — `set -eo pipefail` (avec précautions)](#5-robustesse--set--eo-pipefail-avec-précautions)
-6. [Architecture — `MY_PATH` moderne](#6-architecture--my_path-moderne)
-7. [Template de script standard](#7-template-de-script-standard)
-8. [Checklist avant commit](#8-checklist-avant-commit)
+1. [Sécurité — Ne jamais exposer les secrets](BASH_BEST_PRACTICES.md#1-sécurité--ne-jamais-exposer-les-secrets)
+2. [Sécurité — Jamais d'`eval` sur des données externes](BASH_BEST_PRACTICES.md#2-sécurité--jamais-deval-sur-des-données-externes)
+3. [Stabilité — Valeurs par défaut avant `bc`](BASH_BEST_PRACTICES.md#3-stabilité--valeurs-par-défaut-avant-bc)
+4. [Stabilité — Limiter le parallélisme IPFS](BASH_BEST_PRACTICES.md#4-stabilité--limiter-le-parallélisme-ipfs)
+5. [Robustesse — `set -eo pipefail` (avec précautions)](BASH_BEST_PRACTICES.md#5-robustesse--set--eo-pipefail-avec-précautions)
+6. [Architecture — `MY_PATH` moderne](BASH_BEST_PRACTICES.md#6-architecture--my_path-moderne)
+7. [Template de script standard](BASH_BEST_PRACTICES.md#7-template-de-script-standard)
+8. [Checklist avant commit](BASH_BEST_PRACTICES.md#8-checklist-avant-commit)
 
----
+***
 
 ## 1. Sécurité — Ne jamais exposer les secrets
 
 ### Le problème
 
-Sous Linux, les arguments de ligne de commande sont visibles par tous les utilisateurs via
-`ps aux` ou `/proc/<pid>/cmdline`. Appeler `keygen` avec `SALT` et `PEPPER` en arguments
-expose ces secrets à n'importe quel utilisateur du système pendant la durée d'exécution :
+Sous Linux, les arguments de ligne de commande sont visibles par tous les utilisateurs via `ps aux` ou `/proc/<pid>/cmdline`. Appeler `keygen` avec `SALT` et `PEPPER` en arguments expose ces secrets à n'importe quel utilisateur du système pendant la durée d'exécution :
 
 ```bash
 # ❌ DANGEREUX — visible dans ps aux
@@ -34,8 +31,7 @@ ${MY_PATH}/../tools/keygen -t ipfs -o /tmp/key.pem "$SALT" "$PEPPER"
 
 ### La solution : fichier credentials temporaire en RAM
 
-Le binaire [`keygen`](../tools/keygen) supporte l'option `-i FILE` qui lit un fichier texte
-au **format `credentials`** : simplement `username` sur la ligne 1, `password` sur la ligne 2.
+Le binaire [`keygen`](https://github.com/papiche/Astroport.ONE/blob/master/docs/tools/keygen/README.md) supporte l'option `-i FILE` qui lit un fichier texte au **format `credentials`** : simplement `username` sur la ligne 1, `password` sur la ligne 2.
 
 ```bash
 # ✅ CORRECT — SALT/PEPPER jamais exposés dans ps aux
@@ -52,18 +48,17 @@ ${MY_PATH}/../tools/keygen -t ipfs -o /tmp/key.pem -i "$_CRED"
 
 ### Règles
 
-| Règle | Détail |
-|-------|--------|
-| Toujours utiliser `/dev/shm` si disponible | tmpfs en RAM, aucune écriture disque |
-| `chmod 600` immédiatement après `mktemp` | Personne d'autre ne peut lire le fichier |
-| `trap "rm -f ..." EXIT INT TERM` | Nettoyage garanti même en cas d'interruption |
-| `printf '%s\n%s\n'` plutôt que `echo` | Comportement prévisible avec caractères spéciaux |
+| Règle                                            | Détail                                                          |
+| ------------------------------------------------ | --------------------------------------------------------------- |
+| Toujours utiliser `/dev/shm` si disponible       | tmpfs en RAM, aucune écriture disque                            |
+| `chmod 600` immédiatement après `mktemp`         | Personne d'autre ne peut lire le fichier                        |
+| `trap "rm -f ..." EXIT INT TERM`                 | Nettoyage garanti même en cas d'interruption                    |
+| `printf '%s\n%s\n'` plutôt que `echo`            | Comportement prévisible avec caractères spéciaux                |
 | Créer **un seul** fichier credentials par script | Le réutiliser pour tous les appels `keygen` du même SALT/PEPPER |
 
 ### Cas particulier : mot de passe composite
 
-Quand le mot de passe est composite (ex: `"$PEPPER $IPFSNODEID"`), créer un fichier
-séparé et le supprimer immédiatement après :
+Quand le mot de passe est composite (ex: `"$PEPPER $IPFSNODEID"`), créer un fichier séparé et le supprimer immédiatement après :
 
 ```bash
 _CRED_FEED=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
@@ -73,15 +68,13 @@ ${MY_PATH}/../tools/keygen -t ipfs -o /tmp/feed.key -i "$_CRED_FEED"
 rm -f "$_CRED_FEED"  # supprimer immédiatement (pas besoin de trap ici)
 ```
 
----
+***
 
 ## 2. Sécurité — Jamais d'`eval` sur des données externes
 
 ### Le problème
 
-`eval` exécute une chaîne de caractères comme du code Bash. Si cette chaîne provient de
-données externes (fichiers NOSTR, réseau, entrées utilisateur), un attaquant peut injecter
-du code arbitraire :
+`eval` exécute une chaîne de caractères comme du code Bash. Si cette chaîne provient de données externes (fichiers NOSTR, réseau, entrées utilisateur), un attaquant peut injecter du code arbitraire :
 
 ```bash
 # ❌ DANGEREUX — faille d'injection de code
@@ -118,10 +111,9 @@ fi
 
 ### Règle absolue
 
-> **Ne jamais utiliser `eval` sur des données qui pourraient provenir d'un tiers.**
-> Cela inclut : fichiers NOSTR, réponses de nœuds RPC, entrées utilisateur, variables d'environnement non contrôlées.
+> **Ne jamais utiliser `eval` sur des données qui pourraient provenir d'un tiers.** Cela inclut : fichiers NOSTR, réponses de nœuds RPC, entrées utilisateur, variables d'environnement non contrôlées.
 
----
+***
 
 ## 3. Stabilité — Valeurs par défaut avant `bc`
 
@@ -151,31 +143,29 @@ if [[ $(echo "$COINS > $Gpaf + $Npaf" | bc -l) -eq 1 ]]; then ...
 
 ### Règles
 
-| Contexte | Pattern recommandé |
-|----------|-------------------|
-| Variable simple | `VAR=${VAR:-0}` |
-| Variable pouvant valoir `"null"` (retour jq) | `[[ "$VAR" == "null" ]] && VAR=0` |
+| Contexte                                              | Pattern recommandé                          |
+| ----------------------------------------------------- | ------------------------------------------- |
+| Variable simple                                       | `VAR=${VAR:-0}`                             |
+| Variable pouvant valoir `"null"` (retour jq)          | `[[ "$VAR" == "null" ]] && VAR=0`           |
 | Variable calculée par `bc` qui alimente un autre `bc` | Appliquer `${:-0}` sur chaque intermédiaire |
-| Option `bc -l` avec `2>/dev/null \|\| echo 0` | Fallback explicite en cas d'erreur bc |
+| Option `bc -l` avec `2>/dev/null \|\| echo 0`         | Fallback explicite en cas d'erreur bc       |
 
 ### Attention aux scripts critiques
 
-Les scripts suivants manipulent de l'argent réel (Ğ1) — toute variable vide peut causer
-une perte de fonds ou un double paiement :
+Les scripts suivants manipulent de l'argent réel (Ğ1) — toute variable vide peut causer une perte de fonds ou un double paiement :
 
-- [`RUNTIME/NOSTRCARD.refresh.sh`](../RUNTIME/NOSTRCARD.refresh.sh) — paiements MULTIPASS
-- [`RUNTIME/PLAYER.refresh.sh`](../RUNTIME/PLAYER.refresh.sh) — paiements ZENCard
-- [`RUNTIME/ZEN.ECONOMY.sh`](../RUNTIME/ZEN.ECONOMY.sh) — rétribution NODE/CAPTAIN
-- [`RUNTIME/ZEN.COOPERATIVE.3x1-3.sh`](../RUNTIME/ZEN.COOPERATIVE.3x1-3.sh) — allocation coopérative
+* [`RUNTIME/NOSTRCARD.refresh.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/RUNTIME/NOSTRCARD.refresh.sh) — paiements MULTIPASS
+* [`RUNTIME/PLAYER.refresh.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/RUNTIME/PLAYER.refresh.sh) — paiements ZENCard
+* [`RUNTIME/ZEN.ECONOMY.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/RUNTIME/ZEN.ECONOMY.sh) — rétribution NODE/CAPTAIN
+* [`RUNTIME/ZEN.COOPERATIVE.3x1-3.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/RUNTIME/ZEN.COOPERATIVE.3x1-3.sh) — allocation coopérative
 
----
+***
 
 ## 4. Stabilité — Limiter le parallélisme IPFS
 
 ### Le problème
 
-Lancer `ipfs name publish &` en arrière-plan pour 200 utilisateurs simultanément
-provoque un **OOM kill** sur Raspberry Pi (IPFS consomme ~150 Mo de RAM par processus) :
+Lancer `ipfs name publish &` en arrière-plan pour 200 utilisateurs simultanément provoque un **OOM kill** sur Raspberry Pi (IPFS consomme \~150 Mo de RAM par processus) :
 
 ```bash
 # ❌ DANGEREUX en batch — 200 processus ipfs simultanés = OOM
@@ -196,10 +186,11 @@ ipfs name publish --key "${key}" "/ipfs/${cid}" 2>&1 >/dev/null &
 ```
 
 La variable `MAX_IPFS_PUBLISH` est configurable dans `.env` selon les capacités de la machine :
-- Raspberry Pi 4 (4 Go) : `MAX_IPFS_PUBLISH=2`
-- Serveur standard (16 Go+) : `MAX_IPFS_PUBLISH=8`
 
----
+* Raspberry Pi 4 (4 Go) : `MAX_IPFS_PUBLISH=2`
+* Serveur standard (16 Go+) : `MAX_IPFS_PUBLISH=8`
+
+***
 
 ## 5. Robustesse — `set -eo pipefail` (avec précautions)
 
@@ -209,15 +200,16 @@ La variable `MAX_IPFS_PUBLISH` est configurable dans `.env` selon les capacités
 set -eo pipefail
 ```
 
-- `set -e` : arrête le script si une commande échoue (évite les cascades d'erreurs)
-- `set -o pipefail` : attrape les erreurs dans les pipes (`cmd1 | cmd2`)
+* `set -e` : arrête le script si une commande échoue (évite les cascades d'erreurs)
+* `set -o pipefail` : attrape les erreurs dans les pipes (`cmd1 | cmd2`)
 
 ### Précautions indispensables avant d'activer
 
 Avec `set -e`, toute commande retournant un code non-zéro arrête le script. Ceci inclut :
-- `grep` qui ne trouve rien (exit 1)
-- `jq` sur une clé absente
-- `[[ ... ]]` conditions intentionnellement fausses
+
+* `grep` qui ne trouve rien (exit 1)
+* `jq` sur une clé absente
+* `[[ ... ]]` conditions intentionnellement fausses
 
 **Avant d'activer `set -e`, auditer toutes les lignes et ajouter `|| true` où nécessaire :**
 
@@ -234,11 +226,11 @@ VAL=$(jq -r '.optional_field // empty' file.json 2>/dev/null) || VAL=""
 
 ### Scripts où `set -eo pipefail` est recommandé (après audit)
 
-- [`tools/PAYforSURE.sh`](../tools/PAYforSURE.sh) — script de paiement critique
-- [`RUNTIME/ZEN.ECONOMY.sh`](../RUNTIME/ZEN.ECONOMY.sh) — économie hebdomadaire
-- [`RUNTIME/ZEN.COOPERATIVE.3x1-3.sh`](../RUNTIME/ZEN.COOPERATIVE.3x1-3.sh) — allocation coopérative
+* [`tools/PAYforSURE.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/tools/PAYforSURE.sh) — script de paiement critique
+* [`RUNTIME/ZEN.ECONOMY.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/RUNTIME/ZEN.ECONOMY.sh) — économie hebdomadaire
+* [`RUNTIME/ZEN.COOPERATIVE.3x1-3.sh`](https://github.com/papiche/Astroport.ONE/blob/master/docs/RUNTIME/ZEN.COOPERATIVE.3x1-3.sh) — allocation coopérative
 
----
+***
 
 ## 6. Architecture — `MY_PATH` moderne
 
@@ -255,9 +247,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 MY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ```
 
-**Différence clé** : `${BASH_SOURCE[0]}` retourne le chemin du fichier **sourcé**,
-alors que `$0` retourne le nom du processus appelant (peut différer si le script est
-`source`d depuis un autre script).
+**Différence clé** : `${BASH_SOURCE[0]}` retourne le chemin du fichier **sourcé**, alors que `$0` retourne le nom du processus appelant (peut différer si le script est `source`d depuis un autre script).
 
 ### Migration
 
@@ -269,10 +259,9 @@ find Astroport.ONE -name "*.sh" -exec sed -i \
   's|MY_PATH="`dirname \\"$0\\"*`"|MY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" \&\& pwd)"|g' {} \;
 ```
 
-> ⚠️ Effectuer cette migration **progressivement** avec tests d'intégration,
-> pas en une seule opération globale.
+> ⚠️ Effectuer cette migration **progressivement** avec tests d'intégration, pas en une seule opération globale.
 
----
+***
 
 ## 7. Template de script standard
 
@@ -323,25 +312,25 @@ VAR_NUMERIQUE=${VAR_NUMERIQUE:-0}
 echo "Starting ${0##*/}..."
 ```
 
----
+***
 
 ## 8. Checklist avant commit
 
 Avant de commiter un script Bash qui manipule des secrets ou des paiements :
 
-- [ ] **Secrets** : Les `SALT`, `PEPPER`, `NSEC` ne sont **jamais** passés en arguments CLI à `keygen`
-- [ ] **eval** : Aucun `eval` sur des données externes (NOSTR, réseau, utilisateur)
-- [ ] **bc** : Toutes les variables utilisées dans `bc` ont une valeur par défaut `${:-0}`
-- [ ] **IPFS** : Les appels `ipfs name publish &` en boucle sont protégés par un rate-limiter `pgrep`
-- [ ] **Fichiers temp** : Tout `mktemp` est suivi d'un `trap "rm -f ..."` ou d'une suppression explicite
-- [ ] **MY_PATH** : Les nouveaux scripts utilisent `${BASH_SOURCE[0]}` (pas `$0`)
-- [ ] **Permissions** : Les fichiers de clés sont protégés `chmod 600` après création
+* [ ] **Secrets** : Les `SALT`, `PEPPER`, `NSEC` ne sont **jamais** passés en arguments CLI à `keygen`
+* [ ] **eval** : Aucun `eval` sur des données externes (NOSTR, réseau, utilisateur)
+* [ ] **bc** : Toutes les variables utilisées dans `bc` ont une valeur par défaut `${:-0}`
+* [ ] **IPFS** : Les appels `ipfs name publish &` en boucle sont protégés par un rate-limiter `pgrep`
+* [ ] **Fichiers temp** : Tout `mktemp` est suivi d'un `trap "rm -f ..."` ou d'une suppression explicite
+* [ ] **MY\_PATH** : Les nouveaux scripts utilisent `${BASH_SOURCE[0]}` (pas `$0`)
+* [ ] **Permissions** : Les fichiers de clés sont protégés `chmod 600` après création
 
----
+***
 
 ## Références
 
-- [keygen interface](../reference/cli_keygen_commands.md) — Documentation du binaire de génération de clés
-- [PAYforSURE.sh](../tools/PAYforSURE.sh) — Exemple de bonne pratique pour les paiements (secrets via fichier)
-- [G1check.sh](../tools/G1check.sh) — Exemple de validation de valeur numérique avant `bc`
-- [DRAGONS_and_TUNNELS.md](../how-to/DRAGONS_and_TUNNELS.md) — Architecture de l'écosystème Astroport.ONE
+* [keygen interface](../reference/cli_keygen_commands.md) — Documentation du binaire de génération de clés
+* [PAYforSURE.sh](https://github.com/papiche/Astroport.ONE/blob/master/docs/tools/PAYforSURE.sh) — Exemple de bonne pratique pour les paiements (secrets via fichier)
+* [G1check.sh](https://github.com/papiche/Astroport.ONE/blob/master/docs/tools/G1check.sh) — Exemple de validation de valeur numérique avant `bc`
+* [DRAGONS\_and\_TUNNELS.md](../how-to/DRAGONS_and_TUNNELS.md) — Architecture de l'écosystème Astroport.ONE

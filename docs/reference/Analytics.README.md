@@ -7,10 +7,11 @@
 The UPlanet Analytics System (`astro.js`) provides a standardized way to collect and send analytics data in the UPlanet ecosystem. It supports multiple modes of operation depending on which libraries are loaded, from simple HTTP-based analytics to decentralized NOSTR events with optional encryption.
 
 **Related NIPs:**
-- [NIP-10000: UPlanet Analytics Events](/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) - Analytics events use **kind 10600** (encrypted/non-encrypted determined by content). Kind 10000 is reserved by [NIP-51](https://nips.nostr.com/51) for mute lists.
-- Note: Kind 10001 is reserved for NIP-51 pin list
 
----
+* [NIP-10000: UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) - Analytics events use **kind 10600** (encrypted/non-encrypted determined by content). Kind 10000 is reserved by [NIP-51](https://nips.nostr.com/51) for mute lists.
+* Note: Kind 10001 is reserved for NIP-51 pin list
+
+***
 
 ## Modes of Operation
 
@@ -20,30 +21,26 @@ When `astro.js` is loaded **alone**, it provides basic HTTP-based analytics func
 
 #### Available Functions
 
-- **`uPlanetAnalytics.send(data, includeContext)`**
-  - Sends analytics data via HTTP POST to `/ping` endpoint
-  - Automatically calculates uSPOT URL from current page URL
-  - Handles URL transformations (ipfs.domain → u.domain, localhost → localhost:54321)
-  - Returns `Promise<boolean>`
-
-- **`uPlanetAnalytics.sendWithContext(data)`**
-  - Convenience method that automatically includes page context
-  - Includes: URL, viewport, user agent, referer, timestamp
-  - Returns `Promise<boolean>`
-
-- **`uPlanetAnalytics.autoSend(data, includeContext)`**
-  - Automatically sends analytics when DOM is ready
-  - Useful for page view tracking
-  - Returns `void`
-
-- **`uPlanetAnalytics.getUSPOTBaseURL()`**
-  - Calculates the correct uSPOT base URL
-  - Handles URL transformations automatically
-  - Returns `string`
-
-- **`uPlanetAnalytics.getPageContext()`**
-  - Gathers automatic page context data
-  - Returns `Object` with timestamp, URL, viewport, user agent, referer
+* **`uPlanetAnalytics.send(data, includeContext)`**
+  * Sends analytics data via HTTP POST to `/ping` endpoint
+  * Automatically calculates uSPOT URL from current page URL
+  * Handles URL transformations (ipfs.domain → u.domain, localhost → localhost:54321)
+  * Returns `Promise<boolean>`
+* **`uPlanetAnalytics.sendWithContext(data)`**
+  * Convenience method that automatically includes page context
+  * Includes: URL, viewport, user agent, referer, timestamp
+  * Returns `Promise<boolean>`
+* **`uPlanetAnalytics.autoSend(data, includeContext)`**
+  * Automatically sends analytics when DOM is ready
+  * Useful for page view tracking
+  * Returns `void`
+* **`uPlanetAnalytics.getUSPOTBaseURL()`**
+  * Calculates the correct uSPOT base URL
+  * Handles URL transformations automatically
+  * Returns `string`
+* **`uPlanetAnalytics.getPageContext()`**
+  * Gathers automatic page context data
+  * Returns `Object` with timestamp, URL, viewport, user agent, referer
 
 #### Example Usage
 
@@ -88,35 +85,37 @@ Backend stores analytics
 
 #### Limitations
 
-- ❌ No NOSTR integration (no decentralized storage)
-- ❌ No encryption support
-- ❌ Analytics stored on centralized server only
-- ✅ Simple and lightweight
-- ✅ Works everywhere (no dependencies)
+* ❌ No NOSTR integration (no decentralized storage)
+* ❌ No encryption support
+* ❌ Analytics stored on centralized server only
+* ✅ Simple and lightweight
+* ✅ Works everywhere (no dependencies)
 
 #### Web2 Compatibility Note
 
 **This HTTP-based mode (`/ping` endpoint) is designed for web2 sites** that are not yet compatible with:
-- MULTIPASS card scanning
-- NOSTR browser extensions (NOSTR Connect, Alby, nos2x)
-- Native NOSTR integration
+
+* MULTIPASS card scanning
+* NOSTR browser extensions (NOSTR Connect, Alby, nos2x)
+* Native NOSTR integration
 
 **Use case**: Legacy websites, traditional web applications, or sites that need analytics without requiring users to have NOSTR capabilities.
 
 **However**, a **pure NOSTR approach (kind 10600 events)** is **more robust and flexible** because:
-- ✅ **Decentralized**: Data stored on user-controlled relays (not centralized server)
-- ✅ **Verifiable**: Cryptographically signed by user
-- ✅ **Queryable**: Can query analytics via standard NOSTR filters
-- ✅ **User ownership**: User controls which relays store their data
-- ✅ **No single point of failure**: No dependency on `/ping` endpoint availability
-- ✅ **Privacy**: Optional encryption (kind 10600 with encrypted content) for sensitive analytics
-- ✅ **Interoperable**: Works with any NOSTR client or relay
+
+* ✅ **Decentralized**: Data stored on user-controlled relays (not centralized server)
+* ✅ **Verifiable**: Cryptographically signed by user
+* ✅ **Queryable**: Can query analytics via standard NOSTR filters
+* ✅ **User ownership**: User controls which relays store their data
+* ✅ **No single point of failure**: No dependency on `/ping` endpoint availability
+* ✅ **Privacy**: Optional encryption (kind 10600 with encrypted content) for sensitive analytics
+* ✅ **Interoperable**: Works with any NOSTR client or relay
 
 **Recommendation**: For new projects or sites that can require NOSTR, prefer **Mode 2** (NOSTR events) or **Mode 3** (Encrypted NOSTR events) over HTTP `/ping`. Use HTTP `/ping` only as a fallback or for web2 compatibility.
 
 **See**: `/ping` endpoint implementation in `UPassport/54321.py` for server-side processing details.
 
----
+***
 
 ### Mode 2: With common.js (NOSTR Integration)
 
@@ -124,21 +123,19 @@ When `astro.js` is loaded **after** `common.js`, it gains NOSTR integration capa
 
 #### Additional Functions Available
 
-- **`uPlanetAnalytics.isNostrAvailable()`**
-  - Checks if NOSTR connection is available
-  - Returns `boolean`
-
-- **`uPlanetAnalytics.sendAsNostrEvent(data, includeContext)`**
-  - Sends analytics as NOSTR event (kind 10600)
-  - Requires: `common.js` loaded + NOSTR connected
-  - Falls back to HTTP `/ping` if NOSTR unavailable
-  - Returns `Promise<boolean>`
-  - **See:** [NIP-10000](/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md)
-
-- **`uPlanetAnalytics.smartSend(data, includeContext, preferNostr, preferEncrypted, preferIPFS)`**
-  - Automatically selects best available method
-  - Tries encrypted NOSTR → unencrypted NOSTR → HTTP `/ping`
-  - Returns `Promise<boolean>`
+* **`uPlanetAnalytics.isNostrAvailable()`**
+  * Checks if NOSTR connection is available
+  * Returns `boolean`
+* **`uPlanetAnalytics.sendAsNostrEvent(data, includeContext)`**
+  * Sends analytics as NOSTR event (kind 10600)
+  * Requires: `common.js` loaded + NOSTR connected
+  * Falls back to HTTP `/ping` if NOSTR unavailable
+  * Returns `Promise<boolean>`
+  * **See:** [NIP-10000](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md)
+* **`uPlanetAnalytics.smartSend(data, includeContext, preferNostr, preferEncrypted, preferIPFS)`**
+  * Automatically selects best available method
+  * Tries encrypted NOSTR → unencrypted NOSTR → HTTP `/ping`
+  * Returns `Promise<boolean>`
 
 #### Example Usage
 
@@ -180,11 +177,11 @@ NO → Fallback to HTTP POST /ping
 
 #### Benefits
 
-- ✅ **Decentralized storage**: Analytics stored on NOSTR relays
-- ✅ **Verifiable**: Cryptographically signed by user
-- ✅ **Queryable**: Can query analytics via NOSTR filters
-- ✅ **User control**: User chooses which relays store data
-- ✅ **Graceful fallback**: Falls back to HTTP if NOSTR unavailable
+* ✅ **Decentralized storage**: Analytics stored on NOSTR relays
+* ✅ **Verifiable**: Cryptographically signed by user
+* ✅ **Queryable**: Can query analytics via NOSTR filters
+* ✅ **User control**: User chooses which relays store data
+* ✅ **Graceful fallback**: Falls back to HTTP if NOSTR unavailable
 
 #### NOSTR Event Structure (kind 10600)
 
@@ -205,9 +202,9 @@ NO → Fallback to HTTP POST /ping
 }
 ```
 
-**See:** [NIP-10000: UPlanet Analytics Events](/papiche/nostr-nips/blob/NIP-101/nostr-nips/10000-analytics-extension.md)
+**See:** [NIP-10000: UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/nostr-nips/10000-analytics-extension.md)
 
----
+***
 
 ### Mode 3: With common.js + nostr.bundle.js (Encrypted Analytics)
 
@@ -215,22 +212,20 @@ When `astro.js` is loaded **after** `common.js` and `nostr.bundle.js`, it gains 
 
 #### Additional Functions Available
 
-- **`uPlanetAnalytics.isEncryptionAvailable()`**
-  - Checks if encryption is available (NostrTools + user private key)
-  - Returns `boolean`
-
-- **`uPlanetAnalytics.sendEncryptedAsNostrEvent(data, includeContext, useIPFS)`**
-  - Sends encrypted analytics as NOSTR event (kind 10600 with encrypted content)
-  - Requires: `nostr.bundle.js` + `common.js` + user private key
-  - Uses NIP-44 encryption (ChaCha20-Poly1305)
-  - Only user can decrypt their own analytics
-  - Returns `Promise<boolean>`
-  - **See:** [NIP-10000](/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md)
-
-- **`uPlanetAnalytics.sendEncryptedAsNostrEventWithIPFS(data, includeContext)`**
-  - Uploads analytics to IPFS, encrypts only CID
-  - Useful for large data (> 50 KB)
-  - Returns `Promise<boolean>`
+* **`uPlanetAnalytics.isEncryptionAvailable()`**
+  * Checks if encryption is available (NostrTools + user private key)
+  * Returns `boolean`
+* **`uPlanetAnalytics.sendEncryptedAsNostrEvent(data, includeContext, useIPFS)`**
+  * Sends encrypted analytics as NOSTR event (kind 10600 with encrypted content)
+  * Requires: `nostr.bundle.js` + `common.js` + user private key
+  * Uses NIP-44 encryption (ChaCha20-Poly1305)
+  * Only user can decrypt their own analytics
+  * Returns `Promise<boolean>`
+  * **See:** [NIP-10000](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md)
+* **`uPlanetAnalytics.sendEncryptedAsNostrEventWithIPFS(data, includeContext)`**
+  * Uploads analytics to IPFS, encrypts only CID
+  * Useful for large data (> 50 KB)
+  * Returns `Promise<boolean>`
 
 #### Example Usage
 
@@ -282,68 +277,70 @@ Only user can decrypt (with their private key)
 
 #### Benefits
 
-- ✅ **Privacy**: Only user can decrypt their analytics
-- ✅ **Self-ownership**: User controls encrypted data on their relays
-- ✅ **History**: Complete encrypted navigation history
-- ✅ **Performance**: Hybrid approach (public data in tags, sensitive data encrypted)
-- ✅ **10x faster decryption**: Only encrypts sensitive data (~500 bytes - 2 KB)
+* ✅ **Privacy**: Only user can decrypt their analytics
+* ✅ **Self-ownership**: User controls encrypted data on their relays
+* ✅ **History**: Complete encrypted navigation history
+* ✅ **Performance**: Hybrid approach (public data in tags, sensitive data encrypted)
+* ✅ **10x faster decryption**: Only encrypts sensitive data (\~500 bytes - 2 KB)
 
 #### Encryption Approaches
 
-**Approach A: Direct Encryption** (default, recommended for analytics ~3-5 KB)
-- Encrypts sensitive data directly in NOSTR event content
-- No IPFS needed
-- Simpler and faster
+**Approach A: Direct Encryption** (default, recommended for analytics \~3-5 KB)
+
+* Encrypts sensitive data directly in NOSTR event content
+* No IPFS needed
+* Simpler and faster
 
 **Approach B: IPFS + CID** (for large data > 50 KB)
-- Uploads data to IPFS, encrypts only CID
-- Same technique as [NIP-A0 Encryption Extension](/papiche/nostr-nips/blob/NIP-101/A0-encryption-extension.md)
-- Ultra-fast decryption (CID only)
 
-**See:** [NIP-10000: UPlanet Analytics Events](/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) (encrypted/non-encrypted determined by content)
+* Uploads data to IPFS, encrypts only CID
+* Same technique as [NIP-A0 Encryption Extension](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/A0-encryption-extension.md)
+* Ultra-fast decryption (CID only)
 
----
+**See:** [NIP-10000: UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) (encrypted/non-encrypted determined by content)
+
+***
 
 ## Function Reference
 
 ### Core Functions (Available in all modes)
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `getUSPOTBaseURL()` | Calculate uSPOT base URL | `string` |
-| `getPageContext()` | Get automatic page context | `Object` |
-| `send(data, includeContext)` | Send analytics via HTTP | `Promise<boolean>` |
-| `sendWithContext(data)` | Send with automatic context | `Promise<boolean>` |
-| `autoSend(data, includeContext)` | Auto-send on page load | `void` |
+| Function                         | Description                 | Returns            |
+| -------------------------------- | --------------------------- | ------------------ |
+| `getUSPOTBaseURL()`              | Calculate uSPOT base URL    | `string`           |
+| `getPageContext()`               | Get automatic page context  | `Object`           |
+| `send(data, includeContext)`     | Send analytics via HTTP     | `Promise<boolean>` |
+| `sendWithContext(data)`          | Send with automatic context | `Promise<boolean>` |
+| `autoSend(data, includeContext)` | Auto-send on page load      | `void`             |
 
 ### NOSTR Functions (Requires common.js)
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `isNostrAvailable()` | Check if NOSTR is available | `boolean` |
-| `sendAsNostrEvent(data, includeContext)` | Send as NOSTR event (kind 10600) | `Promise<boolean>` |
-| `smartSend(data, includeContext, preferNostr, preferEncrypted, preferIPFS)` | Auto-select best method | `Promise<boolean>` |
+| Function                                                                    | Description                      | Returns            |
+| --------------------------------------------------------------------------- | -------------------------------- | ------------------ |
+| `isNostrAvailable()`                                                        | Check if NOSTR is available      | `boolean`          |
+| `sendAsNostrEvent(data, includeContext)`                                    | Send as NOSTR event (kind 10600) | `Promise<boolean>` |
+| `smartSend(data, includeContext, preferNostr, preferEncrypted, preferIPFS)` | Auto-select best method          | `Promise<boolean>` |
 
 ### Encryption Functions (Requires nostr.bundle.js + common.js)
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `isEncryptionAvailable()` | Check if encryption is available | `boolean` |
+| Function                                                   | Description                                        | Returns            |
+| ---------------------------------------------------------- | -------------------------------------------------- | ------------------ |
+| `isEncryptionAvailable()`                                  | Check if encryption is available                   | `boolean`          |
 | `sendEncryptedAsNostrEvent(data, includeContext, useIPFS)` | Send encrypted (kind 10600 with encrypted content) | `Promise<boolean>` |
-| `sendEncryptedAsNostrEventWithIPFS(data, includeContext)` | Send encrypted via IPFS | `Promise<boolean>` |
+| `sendEncryptedAsNostrEventWithIPFS(data, includeContext)`  | Send encrypted via IPFS                            | `Promise<boolean>` |
 
----
+***
 
 ## URL Transformations
 
 The system automatically transforms URLs to find the correct uSPOT endpoint:
 
-- `https://ipfs.domain.tld` → `https://u.domain.tld`
-- `u.domain.tld` → `u.domain.tld` (unchanged)
-- `http://127.0.0.1:8080` → `http://127.0.0.1:54321`
-- `http://localhost:8080` → `http://localhost:54321`
+* `https://ipfs.domain.tld` → `https://u.domain.tld`
+* `u.domain.tld` → `u.domain.tld` (unchanged)
+* `http://127.0.0.1:8080` → `http://127.0.0.1:54321`
+* `http://localhost:8080` → `http://localhost:54321`
 
----
+***
 
 ## Data Format
 
@@ -367,16 +364,16 @@ All analytics data follows this structure:
 }
 ```
 
----
+***
 
 ## Error Handling
 
-- All errors are silently caught and logged to `console.debug`
-- Analytics system never blocks page functionality
-- Graceful fallback: NOSTR → HTTP, encrypted → unencrypted → HTTP
-- User experience is never interrupted
+* All errors are silently caught and logged to `console.debug`
+* Analytics system never blocks page functionality
+* Graceful fallback: NOSTR → HTTP, encrypted → unencrypted → HTTP
+* User experience is never interrupted
 
----
+***
 
 ## Use Cases
 
@@ -433,60 +430,64 @@ All analytics data follows this structure:
 </script>
 ```
 
----
+***
 
 ## Comparison Table
 
-| Feature | Standalone | + common.js | + nostr.bundle.js |
-|---------|-----------|-------------|-------------------|
-| HTTP `/ping` | ✅ | ✅ | ✅ |
-| NOSTR events (kind 10600) | ❌ | ✅ | ✅ |
-| Encrypted events (kind 10600, encrypted content) | ❌ | ❌ | ✅ |
-| Decentralized storage | ❌ | ✅ | ✅ |
-| User control | ❌ | ✅ | ✅ |
-| Privacy (encryption) | ❌ | ❌ | ✅ |
-| Dependencies | None | common.js | nostr.bundle.js + common.js |
+| Feature                                          | Standalone | + common.js | + nostr.bundle.js           |
+| ------------------------------------------------ | ---------- | ----------- | --------------------------- |
+| HTTP `/ping`                                     | ✅          | ✅           | ✅                           |
+| NOSTR events (kind 10600)                        | ❌          | ✅           | ✅                           |
+| Encrypted events (kind 10600, encrypted content) | ❌          | ❌           | ✅                           |
+| Decentralized storage                            | ❌          | ✅           | ✅                           |
+| User control                                     | ❌          | ✅           | ✅                           |
+| Privacy (encryption)                             | ❌          | ❌           | ✅                           |
+| Dependencies                                     | None       | common.js   | nostr.bundle.js + common.js |
 
----
+***
 
 ## References
 
-- **Implementation**: `UPlanet/astro.js`
-- **NIP-10000**: [UPlanet Analytics Events](/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) (supports both encrypted and unencrypted analytics)
-- **NIP-A0**: [Encryption Extension](/papiche/nostr-nips/blob/NIP-101/A0-encryption-extension.md) (uses same IPFS+CID technique)
+* **Implementation**: `UPlanet/astro.js`
+* **NIP-10000**: [UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) (supports both encrypted and unencrypted analytics)
+* **NIP-A0**: [Encryption Extension](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/A0-encryption-extension.md) (uses same IPFS+CID technique)
 
----
+***
 
 ## Architecture Decision: HTTP vs NOSTR
 
 ### When to Use HTTP `/ping` (Mode 1)
 
 Use HTTP `/ping` endpoint when:
-- ✅ **Web2 compatibility required**: Site doesn't support NOSTR or MULTIPASS
-- ✅ **Legacy integration**: Existing web2 infrastructure that can't be modified
-- ✅ **Fallback mechanism**: Backup when NOSTR is unavailable
-- ✅ **Simple deployment**: No NOSTR dependencies needed
+
+* ✅ **Web2 compatibility required**: Site doesn't support NOSTR or MULTIPASS
+* ✅ **Legacy integration**: Existing web2 infrastructure that can't be modified
+* ✅ **Fallback mechanism**: Backup when NOSTR is unavailable
+* ✅ **Simple deployment**: No NOSTR dependencies needed
 
 **Trade-offs**:
-- ❌ Centralized storage (single point of failure)
-- ❌ No user control over data storage
-- ❌ Not queryable via NOSTR filters
-- ❌ Requires `/ping` endpoint to be available
+
+* ❌ Centralized storage (single point of failure)
+* ❌ No user control over data storage
+* ❌ Not queryable via NOSTR filters
+* ❌ Requires `/ping` endpoint to be available
 
 ### When to Use Pure NOSTR (Mode 2/3)
 
 Use NOSTR events (kind 10600) when:
-- ✅ **Decentralization priority**: Want user-controlled data storage
-- ✅ **Verifiability needed**: Cryptographically signed analytics
-- ✅ **Queryability required**: Need to query analytics via NOSTR filters
-- ✅ **User ownership**: Users should control their analytics data
-- ✅ **Privacy concerns**: Sensitive data requires encryption (kind 10600 with encrypted content)
-- ✅ **Interoperability**: Want to work with any NOSTR client/relay
+
+* ✅ **Decentralization priority**: Want user-controlled data storage
+* ✅ **Verifiability needed**: Cryptographically signed analytics
+* ✅ **Queryability required**: Need to query analytics via NOSTR filters
+* ✅ **User ownership**: Users should control their analytics data
+* ✅ **Privacy concerns**: Sensitive data requires encryption (kind 10600 with encrypted content)
+* ✅ **Interoperability**: Want to work with any NOSTR client/relay
 
 **Trade-offs**:
-- ❌ Requires NOSTR connection (browser extension or native support)
-- ❌ Slightly more complex setup (needs `common.js` or `nostr.bundle.js`)
-- ✅ More robust and flexible long-term
+
+* ❌ Requires NOSTR connection (browser extension or native support)
+* ❌ Slightly more complex setup (needs `common.js` or `nostr.bundle.js`)
+* ✅ More robust and flexible long-term
 
 **Recommendation**: For new projects, prefer **pure NOSTR** (Mode 2/3). Use HTTP `/ping` only for web2 compatibility or as a fallback.
 
@@ -500,9 +501,8 @@ Use NOSTR events (kind 10600) when:
 6. **Handle errors gracefully**: System already does this, but be aware of fallbacks
 7. **Prefer NOSTR**: For new projects, use pure NOSTR events (kind 10600) over HTTP `/ping` when possible
 
----
+***
 
-**Last Updated**: 2024  
-**Status**: Production  
+**Last Updated**: 2024\
+**Status**: Production\
 **Version**: 1.0.0
-

@@ -2,20 +2,20 @@
 
 ## 📋 Table des Matières
 
-1. [Vue d'ensemble](#-vue-densemble)
-2. [Architecture Système](#-architecture-système)
-3. [Composants Principaux](#-composants-principaux)
-4. [Flux de Données](#-flux-de-données)
-5. [Sécurité et Cryptographie](#-sécurité-et-cryptographie)
-6. [Économie et Paiements](#-économie-et-paiements)
-7. [Stockage et Cache](#-stockage-et-cache)
-8. [APIs et Services](#-apis-et-services)
-9. [Maintenance et Monitoring](#-maintenance-et-monitoring)
-10. [Déploiement](#-déploiement)
-11. [Intégration NOSTR](#-intégration-nostr)
-12. [Système UPassport](#-système-upassport)
+1. [Vue d'ensemble](ARCHITECTURE.md#-vue-densemble)
+2. [Architecture Système](ARCHITECTURE.md#-architecture-système)
+3. [Composants Principaux](ARCHITECTURE.md#-composants-principaux)
+4. [Flux de Données](ARCHITECTURE.md#-flux-de-données)
+5. [Sécurité et Cryptographie](ARCHITECTURE.md#-sécurité-et-cryptographie)
+6. [Économie et Paiements](ARCHITECTURE.md#-économie-et-paiements)
+7. [Stockage et Cache](ARCHITECTURE.md#-stockage-et-cache)
+8. [APIs et Services](ARCHITECTURE.md#-apis-et-services)
+9. [Maintenance et Monitoring](ARCHITECTURE.md#-maintenance-et-monitoring)
+10. [Déploiement](ARCHITECTURE.md#-déploiement)
+11. [Intégration NOSTR](ARCHITECTURE.md#-intégration-nostr)
+12. [Système UPassport](ARCHITECTURE.md#-système-upassport)
 
----
+***
 
 ## 🌟 Vue d'ensemble
 
@@ -23,29 +23,31 @@ Astroport.ONE est une plateforme décentralisée qui combine **monnaie libre (Ğ
 
 ### 🎯 Objectifs
 
-- **Souveraineté Numérique** : Contrôle total des données utilisateur
-- **Économie Libre** : Transactions sans intermédiaires via Ğ1
-- **Identité Décentralisée** : Gestion d'identité basée sur NOSTR et IPFS
-- **Résilience** : Architecture distribuée sans point de défaillance unique
-- **Automatisation Intelligente** : Système AstroBot avec Vœux
+* **Souveraineté Numérique** : Contrôle total des données utilisateur
+* **Économie Libre** : Transactions sans intermédiaires via Ğ1
+* **Identité Décentralisée** : Gestion d'identité basée sur NOSTR et IPFS
+* **Résilience** : Architecture distribuée sans point de défaillance unique
+* **Automatisation Intelligente** : Système AstroBot avec Vœux
 
 ### 🌍 Écosystème UPlanet
 
 Astroport.ONE alimente l'écosystème **UPlanet** qui fonctionne sur deux niveaux :
 
 #### 🌐 **UPlanet ORIGIN (Niveau X)**
-- **Accès public** pour tous les utilisateurs
-- **Sécurité standard** avec surveillance Ğ1
-- **Token fixe** : 1 Ẑen = 0.1 Ğ1
-- **Services** : MULTIPASS, ZENCARD de base
+
+* **Accès public** pour tous les utilisateurs
+* **Sécurité standard** avec surveillance Ğ1
+* **Token fixe** : 1 Ẑen = 0.1 Ğ1
+* **Services** : MULTIPASS, ZENCARD de base
 
 #### 🛡️ **UPlanet Ẑen (Niveau Y/Z)**
-- **Réseau privé** avec clés SSH<->IPFS jumelles
-- **Sécurité avancée** avec détection d'intrusion
-- **Tokens personnalisables** : 1 Ẑen = valeur d'actif (€, m², kWh, etc.)
-- **Services avancés** : DeFi, actifs réels, coopératives
 
----
+* **Réseau privé** avec clés SSH<->IPFS jumelles
+* **Sécurité avancée** avec détection d'intrusion
+* **Tokens personnalisables** : 1 Ẑen = valeur d'actif (€, m², kWh, etc.)
+* **Services avancés** : DeFi, actifs réels, coopératives
+
+***
 
 ## 🏗️ Architecture Système
 
@@ -77,40 +79,40 @@ Astroport.ONE alimente l'écosystème **UPlanet** qui fonctionne sur deux niveau
 
 ### Architecture en Couches
 
-| Couche | Composants | Description |
-|--------|------------|-------------|
-| **Présentation** | Ports 12345, 54321 | Interfaces web et APIs |
-| **Application** | API/, RUNTIME/, ASTROBOT/ | Services métier et automatisation |
-| **Données** | IPFS, ~/.zen/game/ | Stockage décentralisé et cache |
-| **Réseau** | Ğ1, NOSTR, IPFS | Protocoles de communication |
+| Couche           | Composants                | Description                       |
+| ---------------- | ------------------------- | --------------------------------- |
+| **Présentation** | Ports 12345, 54321        | Interfaces web et APIs            |
+| **Application**  | API/, RUNTIME/, ASTROBOT/ | Services métier et automatisation |
+| **Données**      | IPFS, \~/.zen/game/       | Stockage décentralisé et cache    |
+| **Réseau**       | Ğ1, NOSTR, IPFS           | Protocoles de communication       |
 
----
+***
 
 ## 🔧 Composants Principaux
 
 ### 1. Scripts de Gestion Principaux
 
-| Script | Taille | Port | Rôle |
-|--------|--------|------|------|
-| `command.sh` | 51KB | - | Interface principale de gestion |
-| `12345.sh` | 10KB | 1234 | Launcher principal |
-| `_12345.sh` | 23KB | 12345 | Cartographie des stations |
-| `20h12.process.sh` | 11KB | - | Maintenance quotidienne |
-| `NOSTRCARD.refresh.sh` | 34KB | - | Gestion des cartes NOSTR |
+| Script                 | Taille | Port  | Rôle                            |
+| ---------------------- | ------ | ----- | ------------------------------- |
+| `command.sh`           | 51KB   | -     | Interface principale de gestion |
+| `12345.sh`             | 10KB   | 1234  | Launcher principal              |
+| `_12345.sh`            | 23KB   | 12345 | Cartographie des stations       |
+| `20h12.process.sh`     | 11KB   | -     | Maintenance quotidienne         |
+| `NOSTRCARD.refresh.sh` | 34KB   | -     | Gestion des cartes NOSTR        |
 
 ### 2. Services et Ports
 
-| Port | Service | Description | Protocole |
-|------|---------|-------------|-----------|
-| **1234** | Twist API | Twist BASH API (deprecated) | HTTP |
-| **12345** | Station Map | Cartographie UPlanet | HTTP |
-| **45780-90** | Twist API Response | Ports de réponse twist uniques | HTTP |
-| **33101** | G1Billet | Service fabrication Ğ1 BILLETS | HTTP |
-| **54321** | UPassport | UPassport 'FastApi' API | HTTP |
-| **8080, 4001, 5001** | IPFS Gateway | Accès stockage décentralisé | HTTP |
-| **7777** | NOSTR Relay | Réseau social décentralisé | HTTP/WebSocket |
-| **80, 443, 81** | Proxy SSL | Nginx Proxy Manager (NPM) | HTTPS |
-| **8002, 8443** | NextCloud AIO | Administration NextCloud | HTTPS |
+| Port                 | Service            | Description                    | Protocole      |
+| -------------------- | ------------------ | ------------------------------ | -------------- |
+| **1234**             | Twist API          | Twist BASH API (deprecated)    | HTTP           |
+| **12345**            | Station Map        | Cartographie UPlanet           | HTTP           |
+| **45780-90**         | Twist API Response | Ports de réponse twist uniques | HTTP           |
+| **33101**            | G1Billet           | Service fabrication Ğ1 BILLETS | HTTP           |
+| **54321**            | UPassport          | UPassport 'FastApi' API        | HTTP           |
+| **8080, 4001, 5001** | IPFS Gateway       | Accès stockage décentralisé    | HTTP           |
+| **7777**             | NOSTR Relay        | Réseau social décentralisé     | HTTP/WebSocket |
+| **80, 443, 81**      | Proxy SSL          | Nginx Proxy Manager (NPM)      | HTTPS          |
+| **8002, 8443**       | NextCloud AIO      | Administration NextCloud       | HTTPS          |
 
 ### 3. Structure des Répertoires
 
@@ -146,7 +148,7 @@ Astroport.ONE/
 └── _DOCKER/               # Services tiers (Duniter, PeerTube, etc.)
 ```
 
----
+***
 
 ## 🔄 Flux de Données
 
@@ -190,20 +192,20 @@ flowchart TD
 
 ### 3. Flux de Requête API Typique
 
-cf. [Dépot de code /UPassport](/papiche/UPassport/) 
+cf. [Dépot de code /UPassport](https://github.com/papiche/Astroport.ONE/blob/master/papiche/UPassport/README.md)
 
----
+***
 
 ## 🔐 Sécurité et Cryptographie
 
 ### 1. Gestion des Clés
 
-| Type de Clé | Format | Usage | Stockage |
-|-------------|--------|-------|----------|
-| **Zen Card** | Ẑen | Paiements et transactions | `~/.zen/game/players/*/secret.dunikey` |
-| **IPFS Key** | IPFS | Identité décentralisée | `~/.ipfs/keystore/` |
-| **MULTIPASS Key** | NOSTR | Réseau social | `~/.zen/game/nostr/*/.secret.nostr` |
-| **SSSS Keys** | Shamir | Seed source | `~/.zen/game/nostr/*/.secret.disco` |
+| Type de Clé       | Format | Usage                     | Stockage                               |
+| ----------------- | ------ | ------------------------- | -------------------------------------- |
+| **Zen Card**      | Ẑen    | Paiements et transactions | `~/.zen/game/players/*/secret.dunikey` |
+| **IPFS Key**      | IPFS   | Identité décentralisée    | `~/.ipfs/keystore/`                    |
+| **MULTIPASS Key** | NOSTR  | Réseau social             | `~/.zen/game/nostr/*/.secret.nostr`    |
+| **SSSS Keys**     | Shamir | Seed source               | `~/.zen/game/nostr/*/.secret.disco`    |
 
 ### 2. Validation des Transactions
 
@@ -227,29 +229,32 @@ function validate_primal_transaction() {
 
 ### 3. Système de Chiffrement
 
-- **Clés Géographiques** : Génération basée sur coordonnées GPS (UMAP 1km, SECTOR 10km, REGION 100km)
-- **Stargates** : Distribution des messages NOSTR (protocole N²)
-- **Communs Cryptographiques** : Partage de ressources cryptographiques
+* **Clés Géographiques** : Génération basée sur coordonnées GPS (UMAP 1km, SECTOR 10km, REGION 100km)
+* **Stargates** : Distribution des messages NOSTR (protocole N²)
+* **Communs Cryptographiques** : Partage de ressources cryptographiques
 
----
+***
 
 ## 💰 Économie et Paiements
 
 ### 1. Système Multi-Tokens
 
 #### **Tokens Ẑen (MULTIPASS & ZENCARD)**
-- **UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1 (taux fixe)
-- **UPlanet Ẑen** : 1 Ẑen = valeur personnalisable (€, terrain, énergie, etc.)
+
+* **UPlanet ORIGIN** : 1 Ẑen = 0.1 Ğ1 (taux fixe)
+* **UPlanet Ẑen** : 1 Ẑen = valeur personnalisable (€, terrain, énergie, etc.)
 
 #### **Tokens NEẐ (uPASSPORT ZEROCARD)**
-- **Valeur** : 1 NEẐ = 1 Ğ1 (équivalent direct Ğ1)
-- **Usage** : Actions dans l'infrastructure coopérative
+
+* **Valeur** : 1 NEẐ = 1 Ğ1 (équivalent direct Ğ1)
+* **Usage** : Actions dans l'infrastructure coopérative
 
 #### **Made In Zen Tokens**
-- **Usage** : Gouvernance coopérative et propriété d'infrastructure
-- **Accès** : Disponible aux détenteurs de ZENCARD et dépositaires uPASSPORT
 
-### 2. G1PalPay.sh - Surveillance Ğ1/NOSTR (ZEN.ECONOMY.sh, NOSTRCARD.refresh.sh, PLAYER.refresh.sh) 
+* **Usage** : Gouvernance coopérative et propriété d'infrastructure
+* **Accès** : Disponible aux détenteurs de ZENCARD et dépositaires uPASSPORT
+
+### 2. G1PalPay.sh - Surveillance Ğ1/NOSTR (ZEN.ECONOMY.sh, NOSTRCARD.refresh.sh, PLAYER.refresh.sh)
 
 ```bash
 # Surveillance des transactions Ğ1
@@ -274,11 +279,11 @@ function monitor_g1_transactions() {
 
 ### 3. Économie des Likes
 
-- **Chaque like reçu** = 1 Ẑ automatiquement transféré
-- **Système de gratitude** : Récompense directe pour les interactions
-- **Capitalisation automatique** : Gestion des tokens en temps réel
+* **Chaque like reçu** = 1 Ẑ automatiquement transféré
+* **Système de gratitude** : Récompense directe pour les interactions
+* **Capitalisation automatique** : Gestion des tokens en temps réel
 
----
+***
 
 ## 💾 Stockage et Cache
 
@@ -301,17 +306,17 @@ function monitor_g1_transactions() {
 
 ### 2. Système de Cache
 
-- **Cache Local** : `~/.zen/tmp/` pour les données temporaires
-- **Cache IPFS** : Stockage local IPFS du TW de la ZenCard
-- **Cache NOSTR** : Stockage local + synchro N² des événements NOSTR
+* **Cache Local** : `~/.zen/tmp/` pour les données temporaires
+* **Cache IPFS** : Stockage local IPFS du TW de la ZenCard
+* **Cache NOSTR** : Stockage local + synchro N² des événements NOSTR
 
 ### 3. Synchronisation
 
-- **Synchronisation Swarm** : Partage des données entre stations UPlanet
-- **Publication IPNS** : Mise à jour des références IPNS
-- **Cache Invalidation** : Gestion automatique de l'expiration des caches
+* **Synchronisation Swarm** : Partage des données entre stations UPlanet
+* **Publication IPNS** : Mise à jour des références IPNS
+* **Cache Invalidation** : Gestion automatique de l'expiration des caches
 
----
+***
 
 ## 🔌 APIs et Services
 
@@ -342,7 +347,7 @@ POST /api/delete - Suppression de fichiers
 GET /api/test-nostr - Test d'authentification NOSTR
 ```
 
----
+***
 
 ## 🔧 Maintenance et Monitoring
 
@@ -373,18 +378,18 @@ send_maintenance_report
 
 ### 2. Monitoring Système - work in progress
 
-- **heartbox_analysis.sh** : Analyse complète du système
-- **heartbox_control.sh** : Contrôle et gestion du système
-- **heartbox_prometheus_analysis.sh** : Métriques Prometheus
+* **heartbox\_analysis.sh** : Analyse complète du système
+* **heartbox\_control.sh** : Contrôle et gestion du système
+* **heartbox\_prometheus\_analysis.sh** : Métriques Prometheus
 
 ### 3. Logs et Debugging
 
-- **Logs UPassport API** : `journalctl -fu upassport`
-- **Logs NOSTR** : `~/.zen/tmp/nostr_*.log`
-- **Logs UPlanet** : `~/.zen/tmp/uplanet_*.log`
-- **Logs IA** : `~/.zen/tmp/IA.log`
+* **Logs UPassport API** : `journalctl -fu upassport`
+* **Logs NOSTR** : `~/.zen/tmp/nostr_*.log`
+* **Logs UPlanet** : `~/.zen/tmp/uplanet_*.log`
+* **Logs IA** : `~/.zen/tmp/IA.log`
 
----
+***
 
 ## 🚀 Déploiement
 
@@ -448,22 +453,25 @@ docker compose logs -f astroport
 ```
 
 Architecture Docker (3 containers frères sur réseau `astronet`) :
-- **astroport** : IPFS + API 12345 + NOSTR + UPassport + G1Billet
-- **npm** : Nginx Proxy Manager (SSL Let's Encrypt ou auto-signé)
-- **nextcloud** : NextCloud AIO (optionnel, `--profile full`)
+
+* **astroport** : IPFS + API 12345 + NOSTR + UPassport + G1Billet
+* **npm** : Nginx Proxy Manager (SSL Let's Encrypt ou auto-signé)
+* **nextcloud** : NextCloud AIO (optionnel, `--profile full`)
 
 Sous-domaines configurés automatiquement par NPM :
-- `astroport.DOMAIN` → :12345
-- `ipfs.DOMAIN` → :8080
-- `relay.DOMAIN` → :7777 (WebSocket)
-- `u.DOMAIN` → :54321
-- `cloud.DOMAIN` → :8001 (NextCloud)
+
+* `astroport.DOMAIN` → :12345
+* `ipfs.DOMAIN` → :8080
+* `relay.DOMAIN` → :7777 (WebSocket)
+* `u.DOMAIN` → :54321
+* `cloud.DOMAIN` → :8001 (NextCloud)
 
 Documentation NextCloud :
-- https://pad.p2p.legal/NextCloud#
-- https://pad.p2p.legal/Smartphone2NextCloud#
 
----
+* https://pad.p2p.legal/NextCloud#
+* https://pad.p2p.legal/Smartphone2NextCloud#
+
+***
 
 ## 🤖 Intégration NOSTR
 
@@ -471,29 +479,30 @@ Documentation NextCloud :
 
 Astroport.ONE utilise un relay NOSTR dédié avec des filtres personnalisés pour :
 
-- **Authentification NIP-42** : Vérification des identités
-- **IA Contextuelle** : Réponses automatiques avec #BRO
-- **Géolocalisation** : Messages liés aux coordonnées GPS
-- **Mémoire Privée** : Stockage contrôlé avec #rec
-- **Événements Vidéo (NIP-71)** : Support pour kind 21/22 (vidéos normales/courtes)
+* **Authentification NIP-42** : Vérification des identités
+* **IA Contextuelle** : Réponses automatiques avec #BRO
+* **Géolocalisation** : Messages liés aux coordonnées GPS
+* **Mémoire Privée** : Stockage contrôlé avec #rec
+* **Événements Vidéo (NIP-71)** : Support pour kind 21/22 (vidéos normales/courtes)
 
 ### 2. Nostr Tube - Plateforme Vidéo Décentralisée
 
 Astroport.ONE intègre **Nostr Tube**, une alternative décentralisée à YouTube utilisant :
 
-- **NIP-71** : Événements vidéo (kind 21/22) avec métadonnées complètes
-- **IPFS** : Stockage décentralisé des vidéos et miniatures
-- **NIP-51** : Playlists (kind 10001) pour les collections vidéo
-- **NIP-25** : Réactions (kind 7) pour les likes et commentaires
-- **UMAP** : Ancrage géographique des vidéos (tags `g`, `latitude`, `longitude`)
+* **NIP-71** : Événements vidéo (kind 21/22) avec métadonnées complètes
+* **IPFS** : Stockage décentralisé des vidéos et miniatures
+* **NIP-51** : Playlists (kind 10001) pour les collections vidéo
+* **NIP-25** : Réactions (kind 7) pour les likes et commentaires
+* **UMAP** : Ancrage géographique des vidéos (tags `g`, `latitude`, `longitude`)
 
 **Composants** :
-- Route `/youtube` : Interface de découverte et lecture
-- Route `/theater` : Mode théâtre immersif avec commentaires en direct
-- Route `/playlist` : Gestionnaire de playlists
-- Scripts IA : Synchronisation YouTube (`youtube.com.sh`), traitement vidéo (`process_youtube.sh`)
 
-Voir **[docs/explanation/README.NostrTube.md](docs/explanation/README.NostrTube.md)** pour la documentation complète.
+* Route `/youtube` : Interface de découverte et lecture
+* Route `/theater` : Mode théâtre immersif avec commentaires en direct
+* Route `/playlist` : Gestionnaire de playlists
+* Scripts IA : Synchronisation YouTube (`youtube.com.sh`), traitement vidéo (`process_youtube.sh`)
+
+Voir [**docs/explanation/README.NostrTube.md**](docs/explanation/README.NostrTube.md) pour la documentation complète.
 
 ### 3. Filtres Personnalisés
 
@@ -510,11 +519,11 @@ Voir **[docs/explanation/README.NostrTube.md](docs/explanation/README.NostrTube.
 
 ### 4. Système de Mémoire
 
-- **Mémoire Utilisateur** : `~/.zen/flashmem/uplanet_memory/pubkey/{pubkey}.json`
-- **Mémoire UMAP** : `~/.zen/flashmem/uplanet_memory/{latitude}_{longitude}.json`
-- **Contrôle Privé** : Tag #rec requis pour stockage
+* **Mémoire Utilisateur** : `~/.zen/flashmem/uplanet_memory/pubkey/{pubkey}.json`
+* **Mémoire UMAP** : `~/.zen/flashmem/uplanet_memory/{latitude}_{longitude}.json`
+* **Contrôle Privé** : Tag #rec requis pour stockage
 
----
+***
 
 ## 🛡️ Système UPassport
 
@@ -522,10 +531,10 @@ Voir **[docs/explanation/README.NostrTube.md](docs/explanation/README.NostrTube.
 
 UPassport fournit une API complète pour :
 
-- **Gestion d'Identité** : Création et gestion des UPassports
-- **Stockage IPFS** : Upload et gestion de fichiers décentralisés
-- **Intégration NOSTR** : Authentification et gestion des cartes NOSTR
-- **Intégration Ğ1** : Vérification de solde et transactions
+* **Gestion d'Identité** : Création et gestion des UPassports
+* **Stockage IPFS** : Upload et gestion de fichiers décentralisés
+* **Intégration NOSTR** : Authentification et gestion des cartes NOSTR
+* **Intégration Ğ1** : Vérification de solde et transactions
 
 ### 2. Authentification NIP-42
 
@@ -540,27 +549,30 @@ curl -F "file=@photo.jpg" \
      http://localhost:54321/api/upload
 ```
 
----
+***
 
 ## 🔗 Liens et Ressources
 
 ### Documentation
-- **[README.md](README.md)** - Introduction principale
-- **[WELCOME.md](WELCOME.md)** - Guide écosystème UPlanet
-- **[UPASSPORT_API.md](UPASSPORT_API.md)** - Documentation API UPassport
-- **[API.NOSTRAuth.readme.md](API.NOSTRAuth.readme.md)** - Documentation NOSTR
-- **[docs/explanation/README.NostrTube.md](docs/explanation/README.NostrTube.md)** - Documentation Nostr Tube (plateforme vidéo décentralisée)
+
+* [**README.md**](./) - Introduction principale
+* [**WELCOME.md**](WELCOME.md) - Guide écosystème UPlanet
+* [**UPASSPORT\_API.md**](UPASSPORT_API.md) - Documentation API UPassport
+* [**API.NOSTRAuth.readme.md**](https://github.com/papiche/Astroport.ONE/blob/master/API.NOSTRAuth.readme.md) - Documentation NOSTR
+* [**docs/explanation/README.NostrTube.md**](docs/explanation/README.NostrTube.md) - Documentation Nostr Tube (plateforme vidéo décentralisée)
 
 ### Ressources Externes
-- **[GitHub Repository](https://github.com/papiche/Astroport.ONE)** - Code source
-- **[Open Collective](https://opencollective.com/monnaie-libre)** - Support financier
-- **[Documentation GitBook](https://astroport-1.gitbook.io/astroport.one/)** - Guide utilisateur
+
+* [**GitHub Repository**](https://github.com/papiche/Astroport.ONE) - Code source
+* [**Open Collective**](https://opencollective.com/monnaie-libre) - Support financier
+* [**Documentation GitBook**](https://astroport-1.gitbook.io/astroport.one/) - Guide utilisateur
 
 ### Contact
-- **Email** : support@qo-op.com
-- **Site Web** : https://astroport.com
-- **Communauté** : https://copylaradio.com
 
----
+* **Email** : support@qo-op.com
+* **Site Web** : https://astroport.com
+* **Communauté** : https://copylaradio.com
 
-**Astroport.ONE : L'architecture décentralisée pour un Internet libre et souverain** 🌍✨ 
+***
+
+**Astroport.ONE : L'architecture décentralisée pour un Internet libre et souverain** 🌍✨

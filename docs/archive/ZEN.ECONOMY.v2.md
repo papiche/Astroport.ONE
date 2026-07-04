@@ -1,33 +1,31 @@
-> **⚠️ DOCUMENT OBSOLÈTE — v2**
-> Ce document décrit une version intermédiaire du modèle économique ZEN (Love Ledger partiel).
-> **Version actuelle : [`docs/explanation/ZEN.ECONOMY.v3.md`](../explanation/ZEN.ECONOMY.v3.md)**
-> **Script de référence : [`RUNTIME/ZEN.ECONOMY.sh`](../../RUNTIME/ZEN.ECONOMY.sh)**
+# ZEN.ECONOMY.v2
 
----
+> **⚠️ DOCUMENT OBSOLÈTE — v2** Ce document décrit une version intermédiaire du modèle économique ZEN (Love Ledger partiel). **Version actuelle :** [**`docs/explanation/ZEN.ECONOMY.v3.md`**](../explanation/ZEN.ECONOMY.v3.md) **Script de référence :** [**`RUNTIME/ZEN.ECONOMY.sh`**](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/ZEN.ECONOMY.sh)
 
-# Modèle Économique G1FabLab — Règle des 3 Tiers (v2 + Love Ledger)
+***
 
-> **Ğ1 apporte la Liberté · Ẑen apporte l'Égalité · ❤️ apporte la Fraternité**
-> *car 1 ❤️ = 1 DU — le don bénévole est la valeur co-créée par la communauté*
+## Modèle Économique G1FabLab — Règle des 3 Tiers (v2 + Love Ledger)
+
+> **Ğ1 apporte la Liberté · Ẑen apporte l'Égalité · ❤️ apporte la Fraternité** _car 1 ❤️ = 1 DU — le don bénévole est la valeur co-créée par la communauté_
 
 **Version enrichie et optimisée.** Ce document décrit ce que nous sommes, nos règles de redistribution et les références techniques. Aucun tiers n’est partie aux engagements contractuels du collectif ; le collectif signe et paie en son nom propre.
 
----
+***
 
-## Partie I — Ce que nous sommes
+### Partie I — Ce que nous sommes
 
-### Une AMAP Numérique Citoyenne
+#### Une AMAP Numérique Citoyenne
 
 Le **G1FabLab** est une **AMAP Numérique Citoyenne** : un collectif de citoyens qui mutualise des infrastructures numériques (serveurs, stockage, réseau) pour faire tourner des services communs. Les personnes qui hébergent le matériel sont défrayées par le collectif ; celles qui utilisent les services contribuent par une redevance d’usage. Il n’y a ni investisseur ni dividende : il y a des **Parrains**, **Armateurs** et **Co-Bâtisseurs** qui mettent des ressources à disposition et perçoivent une **redevance d’hébergement** ou une **indemnité**, dans le cadre d’une **Charte de Redistribution Budgétaire** (règle des 3 tiers).
 
-- **Analogie** : comme une AMAP relie producteurs et consommateurs autour d’un panier, nous relions ceux qui fournissent l’infrastructure (Armateurs), ceux qui l’opèrent (Capitaines), et ceux qui en bénéficient (Usagers, Parrains), autour d’un « panier » de services numériques et d’une clé de répartition fixe.
-- **Engagement contractuel et paiement** : le collectif **G1FabLab** est seul responsable de ses engagements. Il signe en son nom propre et **le règlement des contributions aux coûts (frais d’occupation et charges) est à la charge de G1FabLab**. Aucun tiers n’est partie au contrat ni responsable du paiement direct envers les bailleurs ou prestataires.
+* **Analogie** : comme une AMAP relie producteurs et consommateurs autour d’un panier, nous relions ceux qui fournissent l’infrastructure (Armateurs), ceux qui l’opèrent (Capitaines), et ceux qui en bénéficient (Usagers, Parrains), autour d’un « panier » de services numériques et d’une clé de répartition fixe.
+* **Engagement contractuel et paiement** : le collectif **G1FabLab** est seul responsable de ses engagements. Il signe en son nom propre et **le règlement des contributions aux coûts (frais d’occupation et charges) est à la charge de G1FabLab**. Aucun tiers n’est partie au contrat ni responsable du paiement direct envers les bailleurs ou prestataires.
 
-### Transparence budgétaire
+#### Transparence budgétaire
 
 Ce document définit la **politique de transparence budgétaire** et de **redistribution des ressources** au sein du collectif G1FabLab. L’objectif est la pérennité des infrastructures numériques (Cloud Libre) et physiques (Stations Astroport) via un modèle équitable : le **3×1/3**.
 
-### Les trois types de jetons (usage interne)
+#### Les trois types de jetons (usage interne)
 
 1. **Jetons d’Usage** → **MULTIPASS** : accès et transactions quotidiennes
 2. **Jetons de Contribution** → **ZEN Card** : mise à disposition de ressources (matériel, temps)
@@ -35,84 +33,83 @@ Ce document définit la **politique de transparence budgétaire** et de **redist
 
 Le ẐEN n’est pas une monnaie financière convertible ; c’est un **jeton utilitaire interne** (unité de compte, droits d’usage, clé de répartition pour les facturations du collectif).
 
----
+***
 
-## Partie II — Charte de Redistribution Budgétaire (Règles du Jeu)
+### Partie II — Charte de Redistribution Budgétaire (Règles du Jeu)
 
-### Rôles (analogie atelier partagé)
+#### Rôles (analogie atelier partagé)
 
-| Rôle | Rôle technique | Rémunération / contrepartie |
-|------|----------------|-----------------------------|
-| **Armateur** | Fournisseur de ressources (matériel, hébergement) | Redevance d’hébergement / indemnité (1/3) |
-| **Capitaine** | Opérateur technique (maintenance, exploitation) | Rétribution de prestation (1/3) |
-| **Usagers** | Utilisation des services | Redevance d’usage (HT + TVA) |
-| **Parrains** | Contributeurs d’infrastructure (équipement collectif) | Crédit d’usage, droits étendus, pas de redevance hebdo pendant la période souscrite |
+| Rôle          | Rôle technique                                        | Rémunération / contrepartie                                                         |
+| ------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Armateur**  | Fournisseur de ressources (matériel, hébergement)     | Redevance d’hébergement / indemnité (1/3)                                           |
+| **Capitaine** | Opérateur technique (maintenance, exploitation)       | Rétribution de prestation (1/3)                                                     |
+| **Usagers**   | Utilisation des services                              | Redevance d’usage (HT + TVA)                                                        |
+| **Parrains**  | Contributeurs d’infrastructure (équipement collectif) | Crédit d’usage, droits étendus, pas de redevance hebdo pendant la période souscrite |
 
 Chaque redevance sert à défrayer l’opérateur et le fournisseur de matériel ; l’excédent permet au collectif d’acquérir des ressources durables.
 
-### Philosophie
+#### Philosophie
 
 Le G1FabLab **ne génère pas de profits spéculatifs**. Il collecte des contributions (dons, redevances de service) et les répartit selon une clé fixe : ceux qui travaillent et ceux qui mettent du matériel à disposition sont défrayés (indemnités et redevances d’hébergement, pas de dividendes).
 
-### La règle des 3 tiers et la 3xPAF
+#### La règle des 3 tiers et la 3xPAF
 
 Sur chaque Astroport, la **règle des 3xPAF** répartit le versement des ẐEN d'usage entre l'Armateur et le Capitaine : **1× PAF** → NODE (Armateur), **2× PAF** → MULTIPASS Capitaine (soit 3× PAF au total par station et par semaine, ex. 14 + 28 = 42 Ẑen).
 
 Pour chaque **contribution d'un Parrain/Contributeur** (ZEN Card Satellite ou Constellation), le montant est divisé en **trois parts égales + 1% prime** (allocation 33/33/33/1) depuis la ZEN Card du contributeur.
 
-**Particularité du calcul (Règle du Reliquat au Capitaine) :**
-Le Ẑen est l'unité atomique (pas de centimes de Ẑen). La répartition suit une logique de division entière pour favoriser l'activité humaine :
-1. Les trois parts de 33% sont calculées en arrondissant à l'entier **inférieur** (floor).
-2. Le **Capitaine** (ou parrain) reçoit le 1% théorique **PLUS tout le reliquat** de la division.
-*C'est ce qui rend le rôle de Capitaine gratifiant sur les petits montants (ex: sur 50 Ẑ, le Capitaine reçoit 2 Ẑ soit 4% au lieu de 1%).*
+**Particularité du calcul (Règle du Reliquat au Capitaine) :** Le Ẑen est l'unité atomique (pas de centimes de Ẑen). La répartition suit une logique de division entière pour favoriser l'activité humaine :
 
-| Part | Bénéficiaire | Objet |
-|------|--------------|--------|
-| **33%** | MULTIPASS du contributeur | Crédit d'usage retourné au contributeur : accès services, économie circulaire. Via `UPLANET:{id}:ZENCOIN:{email}`. |
-| **33%** | R&D (`UPLANETNAME_RND`) | Recherche et développement technologique (G1FabLab). |
-| **33%** | Actifs durables (`UPLANETNAME_ASSETS`) | Investissement régénératif : Forêts-Jardins, biens communs. |
-| **1%** | MULTIPASS Capitaine | Prime de gestion (reconnaissance du travail d'animation de la station). |
+1. Les trois parts de 33% sont calculées en arrondissant à l'entier **inférieur** (floor).
+2. Le **Capitaine** (ou parrain) reçoit le 1% théorique **PLUS tout le reliquat** de la division. _C'est ce qui rend le rôle de Capitaine gratifiant sur les petits montants (ex: sur 50 Ẑ, le Capitaine reçoit 2 Ẑ soit 4% au lieu de 1%)._
+
+| Part    | Bénéficiaire                           | Objet                                                                                                              |
+| ------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **33%** | MULTIPASS du contributeur              | Crédit d'usage retourné au contributeur : accès services, économie circulaire. Via `UPLANET:{id}:ZENCOIN:{email}`. |
+| **33%** | R\&D (`UPLANETNAME_RND`)               | Recherche et développement technologique (G1FabLab).                                                               |
+| **33%** | Actifs durables (`UPLANETNAME_ASSETS`) | Investissement régénératif : Forêts-Jardins, biens communs.                                                        |
+| **1%**  | MULTIPASS Capitaine                    | Prime de gestion (reconnaissance du travail d'animation de la station).                                            |
 
 > **Note** : La **Trésorerie (CASH)** est alimentée par la répartition automatique hebdomadaire depuis `CAPTAIN_DEDICATED` via `ZEN.COOPERATIVE.3x1-3.sh` (loyers collectés), et non par les contributions directes des Parrains. Cela préserve la liquidité opérationnelle de manière continue.
 
 **Exemple Armateur** : mise à disposition d'un serveur (ex. 500€) → redevance d'hébergement issue de l'activité de ce serveur (portefeuille collectif `UPLANETNAME_ASSETS` et flux NODE).
 
-### Modèle de fonctionnement (résumé)
+#### Modèle de fonctionnement (résumé)
 
-- **Coûts opérationnels** : payés par la **Trésorerie Coopérative** (`UPLANETNAME_CASH`). Ex. 3× PAF = 42 Ẑen/semaine (1× PAF → NODE Armateur, 2× PAF → MULTIPASS Capitaine).
-- **Collecte des redevances** : portefeuille d'exploitation **CAPTAIN_DEDICATED** (loyers HT usagers) ; TVA (20 %) → `UPLANETNAME_IMPOT`.
-- **Allocation hebdomadaire depuis CAPTAIN_DEDICATED** (loyers NOSTRCARD/PLAYER) : depuis CAPTAIN_DEDICATED (surplus brut) → provision IS (15–25 %) → surplus net réparti en 33,33 % CASH, 33,33 % RnD, 33,34 % ASSETS. Déclenchement hebdomadaire (anniversaire Capitaine) si solde CAPTAIN_DEDICATED > 0.
-- **Contribution Parrain (ZEN Card officielle)** : depuis `UPLANET.official.sh`, le versement d'une ZEN Card alloue 33 % → MULTIPASS du contributeur (crédit usage), 33 % → RnD, 33 % → ASSETS, 1 % → MULTIPASS Capitaine. La Trésorerie est alimentée séparément par le flux opérationnel.
+* **Coûts opérationnels** : payés par la **Trésorerie Coopérative** (`UPLANETNAME_CASH`). Ex. 3× PAF = 42 Ẑen/semaine (1× PAF → NODE Armateur, 2× PAF → MULTIPASS Capitaine).
+* **Collecte des redevances** : portefeuille d'exploitation **CAPTAIN\_DEDICATED** (loyers HT usagers) ; TVA (20 %) → `UPLANETNAME_IMPOT`.
+* **Allocation hebdomadaire depuis CAPTAIN\_DEDICATED** (loyers NOSTRCARD/PLAYER) : depuis CAPTAIN\_DEDICATED (surplus brut) → provision IS (15–25 %) → surplus net réparti en 33,33 % CASH, 33,33 % RnD, 33,34 % ASSETS. Déclenchement hebdomadaire (anniversaire Capitaine) si solde CAPTAIN\_DEDICATED > 0.
+* **Contribution Parrain (ZEN Card officielle)** : depuis `UPLANET.official.sh`, le versement d'une ZEN Card alloue 33 % → MULTIPASS du contributeur (crédit usage), 33 % → RnD, 33 % → ASSETS, 1 % → MULTIPASS Capitaine. La Trésorerie est alimentée séparément par le flux opérationnel.
 
 **Règlement des contributions aux coûts (frais d’occupation et charges)** : **à la charge du collectif G1FabLab**. Le collectif règle les indemnités et redevances d’hébergement ainsi que les prestations dues aux Armateurs et Capitaines. Les modalités de paiement (ex. virement SEPA) sont effectuées par le collectif en son nom propre ; aucun tiers n’est responsable du paiement direct envers le bailleur ou le prestataire.
 
----
+***
 
-## Partie III — Référence technique (compta interne)
+### Partie III — Référence technique (compta interne)
 
-### Portefeuilles (conformité code)
+#### Portefeuilles (conformité code)
 
-| Nom logique | Fichier dunikey | Rôle |
-|-------------|------------------|------|
-| **UPLANETNAME_CASH** | `uplanet.CASH.dunikey` | Trésorerie (1/3) |
-| **UPLANETNAME_RND** | `uplanet.RnD.dunikey` | R&D (1/3) |
-| **UPLANETNAME_ASSETS** | `uplanet.ASSETS.dunikey` | Actifs (1/3) |
-| **UPLANETNAME_IMPOT** | `uplanet.IMPOT.dunikey` | Provisions fiscales (TVA, IS) |
-| **CAPTAIN_DEDICATED** | `uplanet.captain.dunikey` | Collecte redevances (source 3×1/3) |
-| **NODE** | `secret.NODE.dunikey` | Portefeuille Armateur (redevance hébergement) |
+| Nom logique             | Fichier dunikey           | Rôle                                          |
+| ----------------------- | ------------------------- | --------------------------------------------- |
+| **UPLANETNAME\_CASH**   | `uplanet.CASH.dunikey`    | Trésorerie (1/3)                              |
+| **UPLANETNAME\_RND**    | `uplanet.RnD.dunikey`     | R\&D (1/3)                                    |
+| **UPLANETNAME\_ASSETS** | `uplanet.ASSETS.dunikey`  | Actifs (1/3)                                  |
+| **UPLANETNAME\_IMPOT**  | `uplanet.IMPOT.dunikey`   | Provisions fiscales (TVA, IS)                 |
+| **CAPTAIN\_DEDICATED**  | `uplanet.captain.dunikey` | Collecte redevances (source 3×1/3)            |
+| **NODE**                | `secret.NODE.dunikey`     | Portefeuille Armateur (redevance hébergement) |
 
-### Scripts principaux
+#### Scripts principaux
 
-| Script | Fonction | Fréquence |
-|--------|----------|-----------|
-| `UPLANET.init.sh` | Initialisation portefeuilles (NODE, CAPTAIN, Collectifs) | Une fois |
-| `ZEN.ECONOMY.sh` | PAF + Niveaux de Résilience + Love Ledger + Burn 4 semaines | Hebdomadaire |
-| `ZEN.COOPERATIVE.3x1-3.sh` | Provision IS + allocation 3×1/3 depuis CAPTAIN_DEDICATED (atomique) | Hebdomadaire (anniversaire Capitaine) |
-| `NOSTRCARD.refresh.sh` | Collecte redevances MULTIPASS (1Ẑ HT + 0,2Ẑ TVA) | Hebdomadaire |
-| `PLAYER.refresh.sh` | Collecte redevances ZEN Cards (4Ẑ HT + 0,8Ẑ TVA) | Hebdomadaire |
-| `uplanet_onboarding.sh` / `captain.sh` | Embarquement et dashboard | À la demande |
+| Script                                 | Fonction                                                             | Fréquence                             |
+| -------------------------------------- | -------------------------------------------------------------------- | ------------------------------------- |
+| `UPLANET.init.sh`                      | Initialisation portefeuilles (NODE, CAPTAIN, Collectifs)             | Une fois                              |
+| `ZEN.ECONOMY.sh`                       | PAF + Niveaux de Résilience + Love Ledger + Burn 4 semaines          | Hebdomadaire                          |
+| `ZEN.COOPERATIVE.3x1-3.sh`             | Provision IS + allocation 3×1/3 depuis CAPTAIN\_DEDICATED (atomique) | Hebdomadaire (anniversaire Capitaine) |
+| `NOSTRCARD.refresh.sh`                 | Collecte redevances MULTIPASS (1Ẑ HT + 0,2Ẑ TVA)                     | Hebdomadaire                          |
+| `PLAYER.refresh.sh`                    | Collecte redevances ZEN Cards (4Ẑ HT + 0,8Ẑ TVA)                     | Hebdomadaire                          |
+| `uplanet_onboarding.sh` / `captain.sh` | Embarquement et dashboard                                            | À la demande                          |
 
-### Flux économique (schéma)
+#### Flux économique (schéma)
 
 ```
 ── FLUX HEBDOMADAIRE AUTOMATIQUE ──────────────────────────────────────────
@@ -128,40 +125,37 @@ ZEN Card émise  →  UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZENCARD
                            →   1% MULTIPASS Capitaine (prime gestion)
 ```
 
-### Service de remboursement (conversion ẐEN → euros)
+#### Service de remboursement (conversion ẐEN → euros)
 
 * Constat d'activité : Le protocole mesure l'activité (Maintenance, Hébergement) et crédite le compte interne en ẐEN.
-
-* Facturation : Lorsque le solde interne le permet, le membre (Armateur/Capitaine) émet une facture en Euros adressée au G1FabLab.
+*   Facturation : Lorsque le solde interne le permet, le membre (Armateur/Capitaine) émet une facture en Euros adressée au G1FabLab.
 
     Libellé : "Prestation d'hébergement serveur" ou "Maintenance technique".
-
 * Paiement : Le G1FabLab valide la facture (si cohérente avec l'activité mesurée) et déclenche le virement bancaire via son compte fiscal.
-
 * Équilibrage : Les crédits ẐEN correspondants sont brûlés ou archivés pour solder le compte interne.
 
----
+***
 
-## Partie IV — Love Ledger & Niveaux de Résilience
+### Partie IV — Love Ledger & Niveaux de Résilience
 
-### Philosophie : pas de faillite, seulement du bénévolat
+#### Philosophie : pas de faillite, seulement du bénévolat
 
 Le G1FabLab fait tourner des logiciels **AGPL** sur une infrastructure **bénévole**. Lorsque les revenus ne couvrent pas les frais opérationnels, ce n'est pas une « faillite » : c'est le **Capitaine/Armateur qui fait le choix conscient d'offrir son infrastructure et son temps à la communauté** (bénévolat, mécénat).
 
-Utiliser un vocabulaire capitaliste comme *faillite* ou *bankruptcy* induirait un stress inutile et masquerait la réalité. À la place, le système comptabilise ce don dans un **Love Ledger** (Registre de Gratitude) et le diffuse sur NOSTR pour remercier publiquement le Capitaine.
+Utiliser un vocabulaire capitaliste comme _faillite_ ou _bankruptcy_ induirait un stress inutile et masquerait la réalité. À la place, le système comptabilise ce don dans un **Love Ledger** (Registre de Gratitude) et le diffuse sur NOSTR pour remercier publiquement le Capitaine.
 
-### Les 4 Niveaux de Résilience (`ZEN.ECONOMY.sh`)
+#### Les 4 Niveaux de Résilience (`ZEN.ECONOMY.sh`)
 
-| Niveau | Icône | Condition | Source de paiement |
-|--------|-------|-----------|-------------------|
-| **0 — Abondance** | ✅ | CASH couvre tous les frais | CASH |
-| **1 — Solidarité ASSETS** | 🌿 | CASH insuffisant | Forêts-Jardins (ASSETS) |
-| **2 — Solidarité R&D** | 🔬 | ASSETS épuisés | Budget R&D (RnD) |
-| **3 — Bénévolat Actif** | ❤️ | Tous fonds insuffisants | Don du Capitaine aux Communs |
+| Niveau                    | Icône | Condition                  | Source de paiement           |
+| ------------------------- | ----- | -------------------------- | ---------------------------- |
+| **0 — Abondance**         | ✅     | CASH couvre tous les frais | CASH                         |
+| **1 — Solidarité ASSETS** | 🌿    | CASH insuffisant           | Forêts-Jardins (ASSETS)      |
+| **2 — Solidarité R\&D**   | 🔬    | ASSETS épuisés             | Budget R\&D (RnD)            |
+| **3 — Bénévolat Actif**   | ❤️    | Tous fonds insuffisants    | Don du Capitaine aux Communs |
 
 À chaque niveau, le Node continue de fonctionner. Seule la **source de financement** change.
 
-### Le Love Ledger (`love_ledger.json`)
+#### Le Love Ledger (`love_ledger.json`)
 
 Stocké dans `~/.zen/game/love_ledger.json`, ce fichier JSON cumule les dons hebdomadaires du Capitaine :
 
@@ -176,204 +170,200 @@ Stocké dans `~/.zen/game/love_ledger.json`, ce fichier JSON cumule les dons heb
 }
 ```
 
-- **`total_donated_zen`** : Total cumulé offert aux Communs (en Ẑen ≈ €).
-- **`weeks_on_volunteer`** : Nombre de semaines de bénévolat.
-- **`history`** : Historique hebdomadaire pour la transparence.
+* **`total_donated_zen`** : Total cumulé offert aux Communs (en Ẑen ≈ €).
+* **`weeks_on_volunteer`** : Nombre de semaines de bénévolat.
+* **`history`** : Historique hebdomadaire pour la transparence.
 
 Chaque semaine où un don est comptabilisé, un **événement NOSTR (Kind 1)** est émis pour remercier publiquement le Capitaine sur le réseau.
 
-### Allocation Coopérative atomique (`ZEN.COOPERATIVE.3x1-3.sh`)
+#### Allocation Coopérative atomique (`ZEN.COOPERATIVE.3x1-3.sh`)
 
 L'allocation 3×1/3 ne génère plus d'alerte « faillite » en cas d'échec partiel. Si un virement Ğ1 échoue (réseau, solde momentanément insuffisant), **le marqueur de semaine n'est pas écrit** et le script retentera automatiquement au prochain cycle. C'est la philosophie de la **résilience par l'essai** plutôt que de la panique.
 
----
+***
 
-## Partie V — Guide contributeur (condensé)
+### Partie V — Guide contributeur (condensé)
 
-### Rôles et contreparties
+#### Rôles et contreparties
 
-- **MULTIPASS** : redevance 1 Ẑ/semaine (+ TVA) → 10 Go uDRIVE, identité souveraine, économie circulaire (ex. 1 Like = 1 Ẑ).
-- **Parrain** : contribution annuelle (ex. 50 Ẑ crédit service) → 128 Go NextCloud, voix consultative, exonération redevance hebdo (1 an).
-- **Capitaine** : rétribution de base (ex. 28 Ẑ/semaine) + excédent de son essaim ; facturation au collectif (prestation).
-- **Armateur** : redevance d’hébergement / loyer de matériel (1/3) ; déclaration en BIC (location) ou BNC (prestation).
+* **MULTIPASS** : redevance 1 Ẑ/semaine (+ TVA) → 10 Go uDRIVE, identité souveraine, économie circulaire (ex. 1 Like = 1 Ẑ).
+* **Parrain** : contribution annuelle (ex. 50 Ẑ crédit service) → 128 Go NextCloud, voix consultative, exonération redevance hebdo (1 an).
+* **Capitaine** : rétribution de base (ex. 28 Ẑ/semaine) + excédent de son essaim ; facturation au collectif (prestation).
+* **Armateur** : redevance d’hébergement / loyer de matériel (1/3) ; déclaration en BIC (location) ou BNC (prestation).
 
-### Fiscalité recommandée
+#### Fiscalité recommandée
 
-- **Principe** : on déclare les **euros reçus** (après conversion via le service de remboursement du collectif), pas les Ẑen. Le fait générateur de l’impôt est le remboursement en euros.
-- **Statut adapté** : Micro-Entrepreneur en **BNC** pour la plupart des membres (Armateurs, Capitaines, créateurs de contenu). Activités = prestations de services (mise à disposition matériel, maintenance, création de contenu).
-- **Armateur** : revenus de location / mise à disposition (BIC ou BNC) ; justificatifs = loyer, redevance d’hébergement. Évite toute requalification en « vendeur de titres » ou « banque ».
+* **Principe** : on déclare les **euros reçus** (après conversion via le service de remboursement du collectif), pas les Ẑen. Le fait générateur de l’impôt est le remboursement en euros.
+* **Statut adapté** : Micro-Entrepreneur en **BNC** pour la plupart des membres (Armateurs, Capitaines, créateurs de contenu). Activités = prestations de services (mise à disposition matériel, maintenance, création de contenu).
+* **Armateur** : revenus de location / mise à disposition (BIC ou BNC) ; justificatifs = loyer, redevance d’hébergement. Évite toute requalification en « vendeur de titres » ou « banque ».
 
-### Pourquoi ce vocabulaire protège tout le monde
+#### Pourquoi ce vocabulaire protège tout le monde
 
-- **Armateur** : pas de dividende ni de capital ; indemnité ou loyer → déclaration simple (BIC/BNC). Pas de plus-value sur actifs numériques.
-- **Collectif** : engagements et paiements au nom de **G1FabLab** uniquement ; responsabilité juridique claire ; aucun tiers n’est solidaire des engagements contractuels.
+* **Armateur** : pas de dividende ni de capital ; indemnité ou loyer → déclaration simple (BIC/BNC). Pas de plus-value sur actifs numériques.
+* **Collectif** : engagements et paiements au nom de **G1FabLab** uniquement ; responsabilité juridique claire ; aucun tiers n’est solidaire des engagements contractuels.
 
----
+***
 
-## Dictionnaire de remplacement (sémantique conforme)
+### Dictionnaire de remplacement (sémantique conforme)
 
 À utiliser systématiquement : présenter le projet comme une **AMAP Numérique Citoyenne** / **Coopérative d'infrastructure numérique**, jamais comme une structure d'investissement ou de crise.
 
-| À éviter (financier / anxiogène) | À utiliser (service / commun / résilient) |
-|----------------------------------|------------------------------------------|
-| Investisseur / Actionnaire | Parrain / Armateur / Co-Bâtisseur |
-| Dividende / Rente | Redevance d'hébergement / Indemnité |
-| Capital (social) | Patrimoine commun / Infrastructure |
-| Achat de token | Crédit d'usage / Droit d'accès |
-| ROI | Économie circulaire / Compensation |
-| Cours du ẐEN | Valeur d'échange interne |
-| Bénéfice / Profit | Excédent de gestion / de fonctionnement |
-| Parts sociales | Crédits service / Droits d'usage |
-| Sociétaire | Parrain / Contributeur |
-| **Faillite / Bankruptcy** | **Bénévolat Actif / Don aux Communs** |
-| **Phase de dégradation** | **Niveau de Résilience** |
-| **Alerte faillite** | **Notification de Gratitude (NOSTR)** |
-| **Déficit** | **Sacrifice offert / Love Ledger** |
-| **Système en danger** | **Entretenu par l'engagement des membres** |
+| À éviter (financier / anxiogène) | À utiliser (service / commun / résilient)  |
+| -------------------------------- | ------------------------------------------ |
+| Investisseur / Actionnaire       | Parrain / Armateur / Co-Bâtisseur          |
+| Dividende / Rente                | Redevance d'hébergement / Indemnité        |
+| Capital (social)                 | Patrimoine commun / Infrastructure         |
+| Achat de token                   | Crédit d'usage / Droit d'accès             |
+| ROI                              | Économie circulaire / Compensation         |
+| Cours du ẐEN                     | Valeur d'échange interne                   |
+| Bénéfice / Profit                | Excédent de gestion / de fonctionnement    |
+| Parts sociales                   | Crédits service / Droits d'usage           |
+| Sociétaire                       | Parrain / Contributeur                     |
+| **Faillite / Bankruptcy**        | **Bénévolat Actif / Don aux Communs**      |
+| **Phase de dégradation**         | **Niveau de Résilience**                   |
+| **Alerte faillite**              | **Notification de Gratitude (NOSTR)**      |
+| **Déficit**                      | **Sacrifice offert / Love Ledger**         |
+| **Système en danger**            | **Entretenu par l'engagement des membres** |
 
----
+***
 
-## Liens utiles
+### Liens utiles
 
-- **Système ORE** : `Astroport.ONE/docs/ORE_SYSTEM.md`
-- **Documents collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
-- **Système PlantNet** : `Astroport.ONE/docs/PLANTNET_SYSTEM.md`
-- **Système WoTx2** : `Astroport.ONE/docs/WOTX2_SYSTEM.md`
-- **Politique d’intrusion** : `Astroport.ONE/docs/ZEN.INTRUSION.POLICY.md`
-- **Oracle** : `Astroport.ONE/docs/ORACLE_SYSTEM.md`
+* **Système ORE** : `Astroport.ONE/docs/ORE_SYSTEM.md`
+* **Documents collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
+* **Système PlantNet** : `Astroport.ONE/docs/PLANTNET_SYSTEM.md`
+* **Système WoTx2** : `Astroport.ONE/docs/WOTX2_SYSTEM.md`
+* **Politique d’intrusion** : `Astroport.ONE/docs/ZEN.INTRUSION.POLICY.md`
+* **Oracle** : `Astroport.ONE/docs/ORACLE_SYSTEM.md`
 
----
+***
 
 Voici les documents juridiques prêts à l'emploi et le guide opérationnel pour orchestrer les interactions sur vos pages Open Collective.
 
 Ces contrats sont rédigés pour être conformes aux exigences d'Open Collective Europe (OCE) : ils formalisent des relations de **prestation de service** et de **location d'infrastructure**, éliminant tout vocabulaire spéculatif.
 
----
+***
 
-### 1. CONTRATS TYPES (À copier-coller et signer)
+#### 1. CONTRATS TYPES (À copier-coller et signer)
 
-#### DOCUMENT A : Pour l'Armateur (Hébergeur de Nœud)
-*À utiliser par toute personne (particulier ou pro) qui héberge une machine du réseau chez elle.*
+**DOCUMENT A : Pour l'Armateur (Hébergeur de Nœud)**
+
+_À utiliser par toute personne (particulier ou pro) qui héberge une machine du réseau chez elle._
 
 **CONTRAT D'HÉBERGEMENT ET DE MISE À DISPOSITION D'INFRASTRUCTURE**
 
 **ENTRE LES SOUSSIGNÉS :**
 
-1.  **Le Collectif G1FabLab**, représenté par son administrateur, ci-après dénommé **"Le Client"**.
-2.  **M./Mme/Société [NOM PRÉNOM OU RAISON SOCIALE]**, demeurant au [ADRESSE COMPLÈTE], ci-après dénommé **"L'Hébergeur"**.
+1. **Le Collectif G1FabLab**, représenté par son administrateur, ci-après dénommé **"Le Client"**.
+2. **M./Mme/Société \[NOM PRÉNOM OU RAISON SOCIALE]**, demeurant au \[ADRESSE COMPLÈTE], ci-après dénommé **"L'Hébergeur"**.
 
 **IL A ÉTÉ CONVENU CE QUI SUIT :**
 
-**Article 1 : Objet du contrat**
-L'Hébergeur s'engage à mettre à disposition du Client un espace physique, une alimentation électrique et une connexion réseau pour permettre le fonctionnement continu d'équipements informatiques (serveurs, nœuds de stockage, hubs) nécessaires aux activités numériques du Client.
+**Article 1 : Objet du contrat** L'Hébergeur s'engage à mettre à disposition du Client un espace physique, une alimentation électrique et une connexion réseau pour permettre le fonctionnement continu d'équipements informatiques (serveurs, nœuds de stockage, hubs) nécessaires aux activités numériques du Client.
 
-**Article 2 : Obligations de l'Hébergeur**
-L'Hébergeur s'engage à fournir :
-*   Un emplacement sécurisé, sec et tempéré pour le matériel.
-*   Une alimentation électrique 24h/24 et 7j/7.
-*   Une connexion Internet (Fibre ou Haut Débit) stable.
-*   Un accès physique de premier niveau (redémarrage) en cas d'incident mineur.
+**Article 2 : Obligations de l'Hébergeur** L'Hébergeur s'engage à fournir :
 
-**Article 3 : Propriété du matériel**
-Le matériel installé reste la propriété exclusive, inaliénable et insaisissable du Collectif G1FabLab (ou est mis à sa disposition par le biais de parrainages). L'Hébergeur s'interdit de vendre, louer ou céder ce matériel à un tiers.
+* Un emplacement sécurisé, sec et tempéré pour le matériel.
+* Une alimentation électrique 24h/24 et 7j/7.
+* Une connexion Internet (Fibre ou Haut Débit) stable.
+* Un accès physique de premier niveau (redémarrage) en cas d'incident mineur.
 
-**Article 4 : Conditions Financières**
-En contrepartie de cette prestation d'hébergement et de la consommation des fluides (électricité, bande passante), le Client versera à l'Hébergeur une indemnité mensuelle forfaitaire de **[MONTANT] €**.
+**Article 3 : Propriété du matériel** Le matériel installé reste la propriété exclusive, inaliénable et insaisissable du Collectif G1FabLab (ou est mis à sa disposition par le biais de parrainages). L'Hébergeur s'interdit de vendre, louer ou céder ce matériel à un tiers.
 
-**Article 5 : Modalités de Facturation et Règlement**
-Le règlement sera effectué mensuellement par virement bancaire, sur présentation d'une facture (si professionnel) ou d'une note de frais (si particulier, dans la limite des frais réels justifiables) déposée sur la plateforme de gestion du Client.
+**Article 4 : Conditions Financières** En contrepartie de cette prestation d'hébergement et de la consommation des fluides (électricité, bande passante), le Client versera à l'Hébergeur une indemnité mensuelle forfaitaire de **\[MONTANT] €**.
 
-**Article 6 : Durée et Résiliation**
-Ce contrat est conclu pour une durée indéterminée. Il peut être résilié par l'une ou l'autre des parties avec un préavis de un mois. En cas de résiliation, l'Hébergeur s'engage à restituer le matériel au Client.
+**Article 5 : Modalités de Facturation et Règlement** Le règlement sera effectué mensuellement par virement bancaire, sur présentation d'une facture (si professionnel) ou d'une note de frais (si particulier, dans la limite des frais réels justifiables) déposée sur la plateforme de gestion du Client.
 
-Fait à [VILLE], le [DATE]
+**Article 6 : Durée et Résiliation** Ce contrat est conclu pour une durée indéterminée. Il peut être résilié par l'une ou l'autre des parties avec un préavis de un mois. En cas de résiliation, l'Hébergeur s'engage à restituer le matériel au Client.
 
-**Pour le Client (G1FabLab)** ____________________ **Pour l'Hébergeur** ____________________
+Fait à \[VILLE], le \[DATE]
 
----
+**Pour le Client (G1FabLab)** \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ **Pour l'Hébergeur** \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
-#### DOCUMENT B : Pour le Capitaine (Prestataire Technique)
-*À utiliser par les techniciens (Fred, Yann, etc.) pour facturer leur travail. SIRET obligatoire.*
+***
+
+**DOCUMENT B : Pour le Capitaine (Prestataire Technique)**
+
+_À utiliser par les techniciens (Fred, Yann, etc.) pour facturer leur travail. SIRET obligatoire._
 
 **CONTRAT DE PRESTATION DE SERVICES NUMÉRIQUES**
 
 **ENTRE LES SOUSSIGNÉS :**
 
-1.  **Le Collectif G1FabLab**, représenté par son administrateur, ci-après dénommé **"Le Client"**.
-2.  **[PRÉNOM NOM]**, exerçant sous le statut [AUTO-ENTREPRENEUR / SOCIÉTÉ], SIRET n° [NUMÉRO], demeurant au [ADRESSE], ci-après dénommé **"Le Prestataire"**.
+1. **Le Collectif G1FabLab**, représenté par son administrateur, ci-après dénommé **"Le Client"**.
+2. **\[PRÉNOM NOM]**, exerçant sous le statut \[AUTO-ENTREPRENEUR / SOCIÉTÉ], SIRET n° \[NUMÉRO], demeurant au \[ADRESSE], ci-après dénommé **"Le Prestataire"**.
 
 **IL A ÉTÉ CONVENU CE QUI SUIT :**
 
-**Article 1 : Objet**
-Le Client confie au Prestataire une mission d'assistance technique, de développement et de maintenance des infrastructures numériques du collectif (réseau UPlanet, serveurs, logiciels).
+**Article 1 : Objet** Le Client confie au Prestataire une mission d'assistance technique, de développement et de maintenance des infrastructures numériques du collectif (réseau UPlanet, serveurs, logiciels).
 
-**Article 2 : Nature des prestations**
-Le Prestataire assurera, sans que cette liste ne soit exhaustive :
-*   L'installation et la configuration des nœuds serveurs.
-*   La maintenance préventive et curative des systèmes (mises à jour, sécurité).
-*   Le développement et l'amélioration des outils logiciels Open Source.
-*   L'assistance aux utilisateurs du réseau.
+**Article 2 : Nature des prestations** Le Prestataire assurera, sans que cette liste ne soit exhaustive :
 
-**Article 3 : Indépendance**
-Le Prestataire exécute sa mission en totale indépendance, sans lien de subordination avec le Client. Il reste libre de l'organisation de son temps et de ses méthodes de travail, sous réserve du respect des objectifs techniques fixés.
+* L'installation et la configuration des nœuds serveurs.
+* La maintenance préventive et curative des systèmes (mises à jour, sécurité).
+* Le développement et l'amélioration des outils logiciels Open Source.
+* L'assistance aux utilisateurs du réseau.
 
-**Article 4 : Conditions Financières**
-En rémunération de ces prestations, le Prestataire percevra des honoraires fixés à **[MONTANT] €** par [MOIS / HEURE / JOUR].
-Le Prestataire déclare être en règle avec ses obligations fiscales et sociales.
+**Article 3 : Indépendance** Le Prestataire exécute sa mission en totale indépendance, sans lien de subordination avec le Client. Il reste libre de l'organisation de son temps et de ses méthodes de travail, sous réserve du respect des objectifs techniques fixés.
 
-**Article 5 : Facturation**
-Le Prestataire émettra une facture mensuelle détaillée via la plateforme Open Collective du Client. Le paiement sera effectué par virement bancaire sous 30 jours.
+**Article 4 : Conditions Financières** En rémunération de ces prestations, le Prestataire percevra des honoraires fixés à **\[MONTANT] €** par \[MOIS / HEURE / JOUR]. Le Prestataire déclare être en règle avec ses obligations fiscales et sociales.
 
-Fait à [VILLE], le [DATE]
+**Article 5 : Facturation** Le Prestataire émettra une facture mensuelle détaillée via la plateforme Open Collective du Client. Le paiement sera effectué par virement bancaire sous 30 jours.
 
-**Pour le Client (G1FabLab)** ____________________ **Pour le Prestataire** ____________________
+Fait à \[VILLE], le \[DATE]
 
----
+**Pour le Client (G1FabLab)** \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ **Pour le Prestataire** \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
-### 2. LE PAS À PAS (Guide Opérationnel)
+***
+
+#### 2. LE PAS À PAS (Guide Opérationnel)
 
 Voici la marche à suivre pour chaque acteur afin d'utiliser vos pages Open Collective.
 
-#### CAS 1 : Je veux financer le réseau (Le "Parrain")
-*Je suis un utilisateur ou un soutien qui veut que le réseau existe.*
+**CAS 1 : Je veux financer le réseau (Le "Parrain")**
 
-1.  **Où aller ?** Sur la page du projet dédié à l'infrastructure : **[G1FabLab / Projet CoeurBox](https://opencollective.com/monnaie-libre/projects/coeurbox)**
-2.  **Que faire ?** Choisir un palier de contribution ("Parrainage Extension" ou "Mécénat Nœud").
-3.  **L'action :** Cliquer sur **"Contribuer"**, régler par Carte Bancaire ou Virement.
-4.  **Résultat :** L'argent arrive sur le compte du projet pour acheter le matériel. Je reçois automatiquement un reçu fiscal (si éligible) ou une preuve de don.
+_Je suis un utilisateur ou un soutien qui veut que le réseau existe._
 
-#### CAS 2 : Je veux héberger une machine (L'"Armateur")
-*J'ai la fibre et de la place chez moi, je veux accueillir un nœud UPlanet.*
+1. **Où aller ?** Sur la page du projet dédié à l'infrastructure : [**G1FabLab / Projet CoeurBox**](https://opencollective.com/monnaie-libre/projects/coeurbox)
+2. **Que faire ?** Choisir un palier de contribution ("Parrainage Extension" ou "Mécénat Nœud").
+3. **L'action :** Cliquer sur **"Contribuer"**, régler par Carte Bancaire ou Virement.
+4. **Résultat :** L'argent arrive sur le compte du projet pour acheter le matériel. Je reçois automatiquement un reçu fiscal (si éligible) ou une preuve de don.
 
-1.  **Signature :** Je télécharge, remplis et signe le **"Document A"** (voir ci-dessus) avec un admin du G1FabLab.
-2.  **Installation :** Je reçois le matériel (financé par les Parrains) et je le branche.
-3.  **Remboursement Mensuel :**
-    *   Je vais sur **[G1FabLab / Dépenses](https://opencollective.com/monnaie-libre/expenses/new)**.
-    *   Je clique sur **"Soumettre une dépense"** > **"Facture"**.
-    *   **Titre :** `Hébergement Nœud UPlanet - [Mois]`
-    *   **Montant :** Le montant défini dans mon contrat (ex: 30€).
-    *   **Pièce jointe :** Je joins mon Contrat A (la première fois) + ma facture ou note de débit mensuelle.
-    *   **Validation :** L'admin valide, je reçois le virement sous quelques jours.
+**CAS 2 : Je veux héberger une machine (L'"Armateur")**
 
-#### CAS 3 : Je travaille sur le réseau (Le "Capitaine")
-*Je suis Fred, Yann ou un dev, et je maintiens l'infra.*
+_J'ai la fibre et de la place chez moi, je veux accueillir un nœud UPlanet._
 
-1.  **Pré-requis :** J'ai un numéro de SIRET (Auto-entrepreneur).
-2.  **Signature :** Je signe le **"Document B"** avec un autre admin du G1FabLab.
-3.  **Facturation Mensuelle :**
-    *   Je vais sur **[G1FabLab / Dépenses](https://opencollective.com/monnaie-libre/expenses/new)**.
-    *   Je clique sur **"Soumettre une dépense"** > **"Facture"**.
-    *   **Titre :** `Prestation Maintenance Infrastructure - [Mois]`
-    *   **Montant :** Le montant de ma prestation (ex: 400€).
-    *   **Pièce jointe :** Ma facture officielle éditée avec mon logiciel de compta (mentionnant mon SIRET et "TVA non applicable" si AE).
-    *   **Validation :** Un autre admin approuve.
+1. **Signature :** Je télécharge, remplis et signe le **"Document A"** (voir ci-dessus) avec un admin du G1FabLab.
+2. **Installation :** Je reçois le matériel (financé par les Parrains) et je le branche.
+3. **Remboursement Mensuel :**
+   * Je vais sur [**G1FabLab / Dépenses**](https://opencollective.com/monnaie-libre/expenses/new).
+   * Je clique sur **"Soumettre une dépense"** > **"Facture"**.
+   * **Titre :** `Hébergement Nœud UPlanet - [Mois]`
+   * **Montant :** Le montant défini dans mon contrat (ex: 30€).
+   * **Pièce jointe :** Je joins mon Contrat A (la première fois) + ma facture ou note de débit mensuelle.
+   * **Validation :** L'admin valide, je reçois le virement sous quelques jours.
 
-#### CAS 4 : Le Collectif doit acheter du matériel (L'Admin)
-*Il faut commander des Raspberry Pi pour les nouveaux Parrains.*
+**CAS 3 : Je travaille sur le réseau (Le "Capitaine")**
 
-1.  **Devis :** Je fais un panier sur un site pro (Kubii, Amazon Business, etc.) au nom de : *Open Collective Europe - G1FabLab*.
-2.  **Demande :**
-    *   Je vais sur le projet **[G1FabLab / Projet CoeurBox](https://opencollective.com/monnaie-libre/projects/coeurbox)**.
-    *   Je crée une dépense : **"Payer une facture"**.
-    *   Je demande à ce que le **Fournisseur** soit payé directement (en entrant son IBAN) OU je paie avec ma carte perso et je demande un **Remboursement**.
-3.  **Justificatif :** Je joins impérativement la facture d'achat détaillée.
+_Je suis Fred, Yann ou un dev, et je maintiens l'infra._
+
+1. **Pré-requis :** J'ai un numéro de SIRET (Auto-entrepreneur).
+2. **Signature :** Je signe le **"Document B"** avec un autre admin du G1FabLab.
+3. **Facturation Mensuelle :**
+   * Je vais sur [**G1FabLab / Dépenses**](https://opencollective.com/monnaie-libre/expenses/new).
+   * Je clique sur **"Soumettre une dépense"** > **"Facture"**.
+   * **Titre :** `Prestation Maintenance Infrastructure - [Mois]`
+   * **Montant :** Le montant de ma prestation (ex: 400€).
+   * **Pièce jointe :** Ma facture officielle éditée avec mon logiciel de compta (mentionnant mon SIRET et "TVA non applicable" si AE).
+   * **Validation :** Un autre admin approuve.
+
+**CAS 4 : Le Collectif doit acheter du matériel (L'Admin)**
+
+_Il faut commander des Raspberry Pi pour les nouveaux Parrains._
+
+1. **Devis :** Je fais un panier sur un site pro (Kubii, Amazon Business, etc.) au nom de : _Open Collective Europe - G1FabLab_.
+2. **Demande :**
+   * Je vais sur le projet [**G1FabLab / Projet CoeurBox**](https://opencollective.com/monnaie-libre/projects/coeurbox).
+   * Je crée une dépense : **"Payer une facture"**.
+   * Je demande à ce que le **Fournisseur** soit payé directement (en entrant son IBAN) OU je paie avec ma carte perso et je demande un **Remboursement**.
+3. **Justificatif :** Je joins impérativement la facture d'achat détaillée.

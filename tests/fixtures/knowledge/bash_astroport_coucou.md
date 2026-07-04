@@ -1,18 +1,16 @@
 # Bash pour stations Astroport
 
-**Auteur** : coucou (support+coucou@qo-op.com)  
-**Skill** : bash  
-**Niveau** : X1 — Fondamentaux  
+**Auteur** : coucou (support+coucou@qo-op.com)\
+**Skill** : bash\
+**Niveau** : X1 — Fondamentaux
 
----
+***
 
 ## Pourquoi Bash sur une station Astroport ?
 
-Astroport.ONE est entièrement écrit en Bash. Comprendre Bash, c'est comprendre
-comment la station vit : comment elle démarre, publie sur IPFS, signe des
-événements NOSTR, et coopère dans la constellation.
+Astroport.ONE est entièrement écrit en Bash. Comprendre Bash, c'est comprendre comment la station vit : comment elle démarre, publie sur IPFS, signe des événements NOSTR, et coopère dans la constellation.
 
----
+***
 
 ## 1. Le pattern de base de tout script Astroport
 
@@ -25,17 +23,17 @@ MY_PATH="$(cd "$MY_PATH" && pwd)"
 ```
 
 `tools/my.sh` fournit les variables fondamentales :
-- `$IPFSNODEID` — identifiant IPFS du nœud
-- `$CAPTAING1PUB` — clé publique G1 du capitaine
-- `$CAPTAINEMAIL` — email du capitaine
-- `$myRELAY` — relay NOSTR de la constellation
 
----
+* `$IPFSNODEID` — identifiant IPFS du nœud
+* `$CAPTAING1PUB` — clé publique G1 du capitaine
+* `$CAPTAINEMAIL` — email du capitaine
+* `$myRELAY` — relay NOSTR de la constellation
+
+***
 
 ## 2. Écrire dans un fichier JSON
 
-La station publie son état dans `~/.zen/tmp/$IPFSNODEID/12345.json`.
-Pour mettre à jour un champ :
+La station publie son état dans `~/.zen/tmp/$IPFSNODEID/12345.json`. Pour mettre à jour un champ :
 
 ```bash
 # Lire
@@ -47,7 +45,7 @@ jq --arg v "42" '.capacities.power_score = ($v | tonumber)' \
     && mv /tmp/12345_new.json ~/.zen/tmp/$IPFSNODEID/12345.json
 ```
 
----
+***
 
 ## 3. Publier sur IPFS
 
@@ -60,7 +58,7 @@ echo "Publié : /ipfs/$CID"
 ipfs name publish --key="$IPFSNODEID" /ipfs/$CID
 ```
 
----
+***
 
 ## 4. Signer un événement NOSTR depuis Bash
 
@@ -73,7 +71,7 @@ python3 tools/nostr_node_intercom.py publish \
     --relays "$myRELAY"
 ```
 
----
+***
 
 ## 5. Boucles et conditions robustes
 
@@ -95,7 +93,7 @@ for f in "${fichiers[@]}"; do
 done
 ```
 
----
+***
 
 ## 6. Exercice pratique
 
@@ -125,10 +123,10 @@ python3 "${MY_PATH}/../tools/nostr_node_intercom.py" publish \
 echo "✓ Publié sur $myRELAY"
 ```
 
----
+***
 
 ## Ressources complémentaires
 
-- `Astroport.ONE/tools/my.sh` — bibliothèque centrale
-- `Astroport.ONE/12345.sh` — API station (lire avant d'écrire)
-- [BASH_BEST_PRACTICES.md](../../docs/tutorials/BASH_BEST_PRACTICES.md) — sécurité et robustesse
+* `Astroport.ONE/tools/my.sh` — bibliothèque centrale
+* `Astroport.ONE/12345.sh` — API station (lire avant d'écrire)
+* [BASH\_BEST\_PRACTICES.md](https://github.com/papiche/Astroport.ONE/blob/master/tests/docs/tutorials/BASH_BEST_PRACTICES.md) — sécurité et robustesse

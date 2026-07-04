@@ -6,18 +6,18 @@
 
 ## 🎯 Fonctionnalités
 
-- ✅ **Calcul du CA total** en ẐEN et Ğ1
-- ✅ **Filtrage par année** (2024, 2025, etc.)
-- ✅ **Résumé annuel automatique** (CA par année)
-- ✅ **Historique détaillé** des ventes ZENCOIN
-- ✅ **Identification des clients** (email)
-- ✅ **Sortie JSON structurée**
+* ✅ **Calcul du CA total** en ẐEN et Ğ1
+* ✅ **Filtrage par année** (2024, 2025, etc.)
+* ✅ **Résumé annuel automatique** (CA par année)
+* ✅ **Historique détaillé** des ventes ZENCOIN
+* ✅ **Identification des clients** (email)
+* ✅ **Sortie JSON structurée**
 
 ## 📋 Prérequis
 
-- **Environnement configuré** : Variables `UPLANETG1PUB` et `UPLANETNAME_G1` dans `my.sh`
-- **Script G1history.sh** : Doit être disponible dans le même répertoire
-- **jq** : Processeur JSON en ligne de commande
+* **Environnement configuré** : Variables `UPLANETG1PUB` et `UPLANETNAME_G1` dans `my.sh`
+* **Script G1history.sh** : Doit être disponible dans le même répertoire
+* **jq** : Processeur JSON en ligne de commande
 
 ## 🚀 Usage
 
@@ -29,9 +29,9 @@
 
 ### Paramètres
 
-- `YEAR` : Année à filtrer (optionnel)
-  - `all` ou aucun paramètre : Toutes les années
-  - `2024`, `2025`, etc. : Année spécifique
+* `YEAR` : Année à filtrer (optionnel)
+  * `all` ou aucun paramètre : Toutes les années
+  * `2024`, `2025`, etc. : Année spécifique
 
 ### Exemples
 
@@ -98,16 +98,16 @@
 
 ### Champs Principaux
 
-| Champ | Type | Description |
-|-------|------|-------------|
-| `g1pub` | string | Clé publique du portefeuille UPLANETNAME |
-| `filter_year` | string | Année filtrée ("all" ou "YYYY") |
-| `total_revenue_g1` | number | CA total en Ğ1 |
-| `total_revenue_zen` | number | CA total en ẐEN |
-| `total_transactions` | number | Nombre de ventes ZENCOIN |
-| `yearly_summary` | array | Résumé CA par année (mode "all" uniquement) |
-| `transactions` | array | Liste des transactions (max 100) |
-| `timestamp` | string | Date/heure de génération |
+| Champ                | Type   | Description                                 |
+| -------------------- | ------ | ------------------------------------------- |
+| `g1pub`              | string | Clé publique du portefeuille UPLANETNAME    |
+| `filter_year`        | string | Année filtrée ("all" ou "YYYY")             |
+| `total_revenue_g1`   | number | CA total en Ğ1                              |
+| `total_revenue_zen`  | number | CA total en ẐEN                             |
+| `total_transactions` | number | Nombre de ventes ZENCOIN                    |
+| `yearly_summary`     | array  | Résumé CA par année (mode "all" uniquement) |
+| `transactions`       | array  | Liste des transactions (max 100)            |
+| `timestamp`          | string | Date/heure de génération                    |
 
 ## 🔍 Logique de Calcul du CA
 
@@ -126,6 +126,7 @@ UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}
 ```
 
 **Exemple** :
+
 ```
 UPLANET:g1LBF94v:ZENCOIN:bidule@machintruc.com
 ```
@@ -136,9 +137,10 @@ UPLANET:g1LBF94v:ZENCOIN:bidule@machintruc.com
 ẐEN = (Ğ1 - 1) × 10
 ```
 
-**Exemple** : 
-- Transaction de 2.0 Ğ1
-- CA = (2.0 - 1) × 10 = **10 Ẑ**
+**Exemple** :
+
+* Transaction de 2.0 Ğ1
+* CA = (2.0 - 1) × 10 = **10 Ẑ**
 
 ## 🏗️ Architecture Économique
 
@@ -176,10 +178,10 @@ async def check_revenue_route(year: Optional[str] = None):
 
 ### Endpoints API
 
-- `GET /check_revenue` → JSON (toutes années)
-- `GET /check_revenue?year=2025` → JSON (année 2025)
-- `GET /check_revenue?html=1` → Page HTML stylisée
-- `GET /check_revenue?html=1&year=2024` → Page HTML (année 2024)
+* `GET /check_revenue` → JSON (toutes années)
+* `GET /check_revenue?year=2025` → JSON (année 2025)
+* `GET /check_revenue?html=1` → Page HTML stylisée
+* `GET /check_revenue?html=1&year=2024` → Page HTML (année 2024)
 
 ## 📊 Affichage dans economy.html
 
@@ -220,15 +222,15 @@ cd /home/fred/workspace/AAA/Astroport.ONE
 
 ## 📚 Fichiers Associés
 
-| Fichier | Description |
-|---------|-------------|
-| `G1revenue.sh` | Script principal de calcul CA |
-| `G1history.sh` | Récupère l'historique blockchain |
-| `UPLANET.official.sh` | Gère les transactions ZENCOIN |
-| `54321.py` | API FastAPI avec endpoint `/check_revenue` |
-| `templates/revenue.html` | Template HTML pour affichage CA |
-| `economy.html` | Dashboard économique UPlanet |
-| `UPASSPORT_API.md` | Documentation API complète |
+| Fichier                  | Description                                |
+| ------------------------ | ------------------------------------------ |
+| `G1revenue.sh`           | Script principal de calcul CA              |
+| `G1history.sh`           | Récupère l'historique blockchain           |
+| `UPLANET.official.sh`    | Gère les transactions ZENCOIN              |
+| `54321.py`               | API FastAPI avec endpoint `/check_revenue` |
+| `templates/revenue.html` | Template HTML pour affichage CA            |
+| `economy.html`           | Dashboard économique UPlanet               |
+| `UPASSPORT_API.md`       | Documentation API complète                 |
 
 ## 🔄 Flux de Données
 
@@ -243,26 +245,27 @@ cd /home/fred/workspace/AAA/Astroport.ONE
 
 ## 📈 Évolutions Futures
 
-- [ ] **Statistiques mensuelles** (CA par mois)
-- [ ] **Graphiques de tendance** (croissance CA)
-- [ ] **Top clients** (classement par CA)
-- [ ] **Prévisions CA** (ML sur historique)
-- [ ] **Export CSV/Excel** (reporting comptable)
-- [ ] **Alertes CA** (seuils personnalisés)
+* [ ] **Statistiques mensuelles** (CA par mois)
+* [ ] **Graphiques de tendance** (croissance CA)
+* [ ] **Top clients** (classement par CA)
+* [ ] **Prévisions CA** (ML sur historique)
+* [ ] **Export CSV/Excel** (reporting comptable)
+* [ ] **Alertes CA** (seuils personnalisés)
 
 ## 📝 Changelog
 
 ### Version 1.0 (2025-10-09)
-- ✅ Calcul CA total depuis transactions ZENCOIN
-- ✅ Filtrage par année
-- ✅ Résumé annuel automatique
-- ✅ Sortie JSON structurée
-- ✅ Intégration API `/check_revenue`
-- ✅ Affichage dans `economy.html`
+
+* ✅ Calcul CA total depuis transactions ZENCOIN
+* ✅ Filtrage par année
+* ✅ Résumé annuel automatique
+* ✅ Sortie JSON structurée
+* ✅ Intégration API `/check_revenue`
+* ✅ Affichage dans `economy.html`
 
 ## 📄 Licence
 
-AGPL-3.0 - Voir [LICENSE](../LICENSE) pour plus de détails.
+AGPL-3.0 - Voir [LICENSE](https://github.com/papiche/Astroport.ONE/blob/master/LICENSE/README.md) pour plus de détails.
 
 ## 👤 Auteur
 
@@ -270,10 +273,6 @@ Fred (support@qo-op.com) - Astroport.ONE / UPlanet ẐEN
 
 ## 🔗 Liens Utiles
 
-- [UPASSPORT_API.md](../UPASSPORT_API.md) - Documentation API complète
-- [UPLANET.official.README.md](../UPLANET.official.README.md) - Guide des virements officiels
-- [ZEN.ECONOMY.readme.md](../RUNTIME/ZEN.ECONOMY.readme.md) - Système économique UPlanet
-
-
-
-
+* [UPASSPORT\_API.md](../UPASSPORT_API.md) - Documentation API complète
+* [UPLANET.official.README.md](../UPLANET.official.README.md) - Guide des virements officiels
+* [ZEN.ECONOMY.readme.md](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/ZEN.ECONOMY.readme.md) - Système économique UPlanet

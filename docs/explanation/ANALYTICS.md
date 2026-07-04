@@ -4,7 +4,7 @@
 
 **Solution** : `astro.js` collecte les métriques de page et les publie sous forme d'événements NOSTR **Kind 10600**, chiffrés avec NIP-44, stockés exclusivement sur le relay local.
 
----
+***
 
 ## Pourquoi ce choix d'architecture
 
@@ -24,9 +24,9 @@ Les événements Kind 10600 sont chiffrés via `nip44.utils.getConversationKey(s
 
 ### Pourquoi Kind 10600 ?
 
-Les Kinds 10000–19999 sont des événements remplaçables (*replaceable*) dans le protocole NOSTR. Pour les analytics, cela signifie que chaque session écrase la précédente — pas d'accumulation illimitée de micro-événements. L'armateur conserve un instantané de l'activité récente sans saturer le relay.
+Les Kinds 10000–19999 sont des événements remplaçables (_replaceable_) dans le protocole NOSTR. Pour les analytics, cela signifie que chaque session écrase la précédente — pas d'accumulation illimitée de micro-événements. L'armateur conserve un instantané de l'activité récente sans saturer le relay.
 
----
+***
 
 ## Structure d'un événement Kind 10600
 
@@ -43,6 +43,7 @@ Les Kinds 10000–19999 sont des événements remplaçables (*replaceable*) dans
 ```
 
 Le payload chiffré contient :
+
 ```json
 {
   "url": "https://ipfs.domain.tld/earth/index.html",
@@ -53,7 +54,7 @@ Le payload chiffré contient :
 }
 ```
 
----
+***
 
 ## Implémentation dans astro.js
 
@@ -64,9 +65,9 @@ Le payload chiffré contient :
 3. Chiffre le payload avec `nip44.encrypt(payload, conversationKey)`
 4. Publie l'événement Kind 10600 sur `window.nostrRelay`
 
-Le fichier source : [`WWW/js/astro.js`](../../WWW/js/astro.js)
+Le fichier source : [`WWW/js/astro.js`](https://github.com/papiche/Astroport.ONE/blob/master/WWW/js/astro.js)
 
----
+***
 
 ## Lecture des métriques
 
@@ -82,23 +83,23 @@ firefox http://localhost:12345/nostr_console.html
 
 Puisque les events sont chiffrés, la lecture nécessite la clé privée de la station (disponible localement dans `~/.zen/game/players/.current/`).
 
----
+***
 
 ## Comparaison avec les alternatives
 
-| Solution | Hébergement | Vie privée | NOSTR-natif |
-|---------|-------------|-----------|-------------|
-| Google Analytics | GAFAM | ❌ | ❌ |
-| Plausible (cloud) | Tiers | ⚠️ | ❌ |
-| Plausible (self-hosted) | Vous | ✅ | ❌ |
-| **astro.js + Kind 10600** | **Relay local** | **✅** | **✅** |
+| Solution                  | Hébergement     | Vie privée | NOSTR-natif |
+| ------------------------- | --------------- | ---------- | ----------- |
+| Google Analytics          | GAFAM           | ❌          | ❌           |
+| Plausible (cloud)         | Tiers           | ⚠️         | ❌           |
+| Plausible (self-hosted)   | Vous            | ✅          | ❌           |
+| **astro.js + Kind 10600** | **Relay local** | **✅**      | **✅**       |
 
 L'avantage distinctif d'astro.js : les métriques font partie du graphe social NOSTR de la station. Elles peuvent être corrélées avec les événements de contenu (Kind 1, Kind 30023) pour comprendre quels articles génèrent de l'engagement — sans jamais quitter la constellation.
 
----
+***
 
 ## Voir aussi
 
-- [Référence Kind 10600](../reference/Analytics.README.md) — spécification technique complète
-- [NOSTR Events Reference](../reference/NOSTR_EVENTS_REFERENCE.md) — tous les kinds utilisés dans UPlanet
-- [feedback.js](../../WWW/js/feedback.js) — système de remontée de bugs (NIP-07 + GitHub)
+* [Référence Kind 10600](../reference/Analytics.README.md) — spécification technique complète
+* [NOSTR Events Reference](../reference/NOSTR_EVENTS_REFERENCE.md) — tous les kinds utilisés dans UPlanet
+* [feedback.js](https://github.com/papiche/Astroport.ONE/blob/master/WWW/js/feedback.js) — système de remontée de bugs (NIP-07 + GitHub)

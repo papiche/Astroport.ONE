@@ -6,18 +6,18 @@ UPassport est un système complet d'identité numérique et de gestion de fichie
 
 ## 📋 Table des Matières
 
-1. [Installation & Configuration](#installation--configuration)
-2. [Fonctionnalités Principales](#fonctionnalités-principales)
-3. [Endpoints API](#endpoints-api)
-4. [Authentification NOSTR](#authentification-nostr)
-5. [Gestion de Fichiers](#gestion-de-fichiers)
-6. [Intégration NOSTR](#intégration-nostr)
-7. [Sécurité & Rate Limiting](#sécurité--rate-limiting)
-8. [Exemples d'Utilisation](#exemples-dutilisation)
-9. [Dépannage](#dépannage)
-10. [Architecture Technique](#architecture-technique)
+1. [Installation & Configuration](UPASSPORT_API.md#installation--configuration)
+2. [Fonctionnalités Principales](UPASSPORT_API.md#fonctionnalités-principales)
+3. [Endpoints API](UPASSPORT_API.md#endpoints-api)
+4. [Authentification NOSTR](UPASSPORT_API.md#authentification-nostr)
+5. [Gestion de Fichiers](UPASSPORT_API.md#gestion-de-fichiers)
+6. [Intégration NOSTR](UPASSPORT_API.md#intégration-nostr)
+7. [Sécurité & Rate Limiting](UPASSPORT_API.md#sécurité--rate-limiting)
+8. [Exemples d'Utilisation](UPASSPORT_API.md#exemples-dutilisation)
+9. [Dépannage](UPASSPORT_API.md#dépannage)
+10. [Architecture Technique](UPASSPORT_API.md#architecture-technique)
 
----
+***
 
 ## 🚀 Installation & Configuration
 
@@ -63,36 +63,37 @@ sudo systemctl status upassport
 sudo journalctl -u upassport -f
 ```
 
----
+***
 
 ## ✨ Fonctionnalités Principales
 
 ### 🆔 Gestion d'Identité Numérique
 
-- **Cartes NOSTR** : Création et gestion d'identités NOSTR
-- **Scan QR Code** : Scan de QR codes pour vérification d'identité
-- **Intégration Ğ1** : Liaison des identités avec la cryptomonnaie Ğ1
-- **Géolocalisation** : Association des identités avec coordonnées géographiques
+* **Cartes NOSTR** : Création et gestion d'identités NOSTR
+* **Scan QR Code** : Scan de QR codes pour vérification d'identité
+* **Intégration Ğ1** : Liaison des identités avec la cryptomonnaie Ğ1
+* **Géolocalisation** : Association des identités avec coordonnées géographiques
 
 ### 📁 Gestion de Fichiers IPFS
 
-- **Stockage Structuré** : Organisation automatique des fichiers (Images, Music, Videos, Documents)
-- **Sécurité Twin-Key** : Fichiers liés aux identités NOSTR
-- **Intégration IPFS** : Stockage décentralisé avec génération de CID
-- **Synchronisation Drive** : Sync des fichiers entre IPFS et stockage local
+* **Stockage Structuré** : Organisation automatique des fichiers (Images, Music, Videos, Documents)
+* **Sécurité Twin-Key** : Fichiers liés aux identités NOSTR
+* **Intégration IPFS** : Stockage décentralisé avec génération de CID
+* **Synchronisation Drive** : Sync des fichiers entre IPFS et stockage local
 
 ### 🔐 Système d'Authentification
 
-- **Authentification NIP-42** : Authentification sécurisée basée sur NOSTR
-- **Rate Limiting** : Protection contre les abus
-- **Gestion IP de Confiance** : Whitelist pour réseaux de confiance
-- **Gestion de Session** : Gestion sécurisée des sessions
+* **Authentification NIP-42** : Authentification sécurisée basée sur NOSTR
+* **Rate Limiting** : Protection contre les abus
+* **Gestion IP de Confiance** : Whitelist pour réseaux de confiance
+* **Gestion de Session** : Gestion sécurisée des sessions
 
----
+***
 
 ## 🔌 Endpoints API
 
 ### URL de Base
+
 ```
 http://localhost:54321
 ```
@@ -100,46 +101,58 @@ http://localhost:54321
 ### Endpoints Principaux
 
 #### 1. Interface Principale
+
 ```http
 GET /
 ```
-**Description** : creates System json with @Ustats.sh (accept UPlanet grid coord ie. ```/?lat=43&lon=1&deg=1```)
+
+**Description** : creates System json with @Ustats.sh (accept UPlanet grid coord ie. `/?lat=43&lon=1&deg=1`)
 
 #### 2. Gestion GEO Message NOSTR
+
 ```http
 GET /nostr
 ```
+
 **Description** : Interface de publication des "UPlanet GEO Message"
 
 #### 3. Interface SCAN
+
 ```http
 GET /scan
 ```
+
 **Description** : MULITPASS 0.00 email registration + QR CODE Multi Scan : MULTIPASS, ZEN Card, uPASSPORT
 
 #### 4. Intégration Ğ1
+
 ```http
 GET /g1
 ```
+
 **Description** : Interface Inscription MULTIPASS (option credentials Ğ1) ( Geo Localized )
 
 ### API de Gestion de Fichiers
 
 #### 1. Upload de Fichier vers IPFS
+
 ```http
 POST /api/upload
 ```
 
 **Headers** :
+
 ```
 Content-Type: multipart/form-data
 ```
 
 **Paramètres** :
-- `file` : Fichier à uploader (requis)
-- `npub` : Clé publique NOSTR pour authentification (requis)
+
+* `file` : Fichier à uploader (requis)
+* `npub` : Clé publique NOSTR pour authentification (requis)
 
 **Réponse** :
+
 ```json
 {
   "success": true,
@@ -154,11 +167,13 @@ Content-Type: multipart/form-data
 ```
 
 #### 2. Upload depuis Drive IPFS
+
 ```http
 POST /api/upload_from_drive
 ```
 
 **Body** :
+
 ```json
 {
   "ipfs_link": "QmHash/filename.ext",
@@ -167,6 +182,7 @@ POST /api/upload_from_drive
 ```
 
 **Réponse** :
+
 ```json
 {
   "success": true,
@@ -180,11 +196,13 @@ POST /api/upload_from_drive
 ```
 
 #### 3. Suppression de Fichier
+
 ```http
 POST /api/delete
 ```
 
 **Body** :
+
 ```json
 {
   "file_path": "Images/photo.jpg",
@@ -193,6 +211,7 @@ POST /api/delete
 ```
 
 **Réponse** :
+
 ```json
 {
   "success": true,
@@ -205,16 +224,19 @@ POST /api/delete
 ```
 
 #### 4. Test d'Authentification NOSTR
+
 ```http
 POST /api/test-nostr
 ```
 
 **Body** :
+
 ```
 npub=npub1...
 ```
 
 **Réponse** :
+
 ```json
 {
   "auth_verified": true,
@@ -227,15 +249,18 @@ npub=npub1...
 ### API Économie UPlanet ẐEN
 
 #### 1. Vérification de Solde Ğ1
+
 ```http
 GET /check_balance?g1pub={G1_PUBLIC_KEY}&html={0|1}
 ```
 
 **Paramètres** :
-- `g1pub` : Clé publique Ğ1 (requis)
-- `html` : Si présent, retourne une page HTML au lieu de JSON (optionnel)
+
+* `g1pub` : Clé publique Ğ1 (requis)
+* `html` : Si présent, retourne une page HTML au lieu de JSON (optionnel)
 
 **Réponse JSON** :
+
 ```json
 {
   "g1pub": "XhPsqMeJX2LkPWcHEv3MY2AjEUqm...",
@@ -248,6 +273,7 @@ GET /check_balance?g1pub={G1_PUBLIC_KEY}&html={0|1}
 **Formule de conversion** : `ẐEN = (Ğ1 - 1) × 10`
 
 #### 2. Historique Capital Social (SOCIETY)
+
 ```http
 GET /check_society?html={0|1}
 ```
@@ -255,9 +281,11 @@ GET /check_society?html={0|1}
 **Description** : Récupère l'historique des parts sociales distribuées depuis le portefeuille SOCIETY. La clé publique est automatiquement récupérée depuis l'environnement (`$UPLANETNAME_SOCIETY`).
 
 **Paramètres** :
-- `html` : Si présent, retourne une page HTML stylisée (optionnel)
+
+* `html` : Si présent, retourne une page HTML stylisée (optionnel)
 
 **Réponse JSON** :
+
 ```json
 {
   "g1pub": "MycKxkg9oVBvKeLdtmRwiPpNF48CDMfB7yJwKaoZJfG",
@@ -280,12 +308,14 @@ GET /check_society?html={0|1}
 ```
 
 **Types de parts sociales** :
-- `constellation` : Parts sociales constellation (540€/3ans avec IA) 🌟
-- `satellite` : Parts sociales satellite (50€/an sans IA) 🛰️
-- `parts` : Parts sociales legacy (ancien format) 📦
-- `other` : Autres types de transactions
+
+* `constellation` : Parts sociales constellation (540€/3ans avec IA) 🌟
+* `satellite` : Parts sociales satellite (50€/an sans IA) 🛰️
+* `parts` : Parts sociales legacy (ancien format) 📦
+* `other` : Autres types de transactions
 
 **Format des références blockchain** :
+
 ```
 UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}
 ```
@@ -293,13 +323,15 @@ UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}
 **Traçabilité** : Chaque transaction inclut l'identifiant IPFS du nœud (`ipfs_node`) pour identifier la machine à l'origine de la transaction.
 
 **Page HTML** : Accessible via `?html=1`, fournit une interface web stylisée avec :
-- Résumé du capital social total distribué
-- Tableau détaillé des parts sociales par sociétaire
-- Type de part avec icône
-- Lien vers le nœud IPFS d'origine
-- Historique complet des transactions
+
+* Résumé du capital social total distribué
+* Tableau détaillé des parts sociales par sociétaire
+* Type de part avec icône
+* Lien vers le nœud IPFS d'origine
+* Historique complet des transactions
 
 #### 3. Chiffre d'Affaires (REVENUE)
+
 ```http
 GET /check_revenue?html={0|1}&year={YYYY}
 ```
@@ -307,10 +339,12 @@ GET /check_revenue?html={0|1}&year={YYYY}
 **Description** : Récupère l'historique du Chiffre d'Affaires depuis les transactions ZENCOIN. Calcule les revenus totaux depuis le portefeuille `UPLANETNAME` (hub de distribution des services).
 
 **Paramètres** :
-- `html` : Si présent, retourne une page HTML stylisée (optionnel)
-- `year` : Filtre par année (ex: "2024", "2025"). Par défaut: "all" (toutes les années)
+
+* `html` : Si présent, retourne une page HTML stylisée (optionnel)
+* `year` : Filtre par année (ex: "2024", "2025"). Par défaut: "all" (toutes les années)
 
 **Réponse JSON** :
+
 ```json
 {
   "g1pub": "g1LBF94vApBWxJExucfEQyTRkAN1eFEnD5EFA2ZN8J1PpcdZ5",
@@ -348,26 +382,31 @@ GET /check_revenue?html={0|1}&year={YYYY}
 ```
 
 **Filtrage par année** :
-- `GET /check_revenue` : Toutes les années (avec résumé annuel)
-- `GET /check_revenue?year=2025` : Uniquement l'année 2025
-- `GET /check_revenue?year=2024` : Uniquement l'année 2024
+
+* `GET /check_revenue` : Toutes les années (avec résumé annuel)
+* `GET /check_revenue?year=2025` : Uniquement l'année 2025
+* `GET /check_revenue?year=2024` : Uniquement l'année 2024
 
 **Format des références blockchain** :
+
 ```
 UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}
 ```
 
 **Calcul du CA** : Le Chiffre d'Affaires est calculé depuis les transactions **INCOMING** (entrantes) vers `UPLANETG1PUB` qui :
+
 1. Proviennent de `UPLANETNAME_G1` (réserve)
 2. Contiennent "ZENCOIN" dans la référence (ventes de services)
 
 **Page HTML** : Accessible via `?html=1`, fournit une interface web stylisée avec :
-- Résumé du CA total (ẐEN, Ğ1, nombre de transactions)
-- **Tableau récapitulatif annuel** (mode "all")
-- Boutons pour filtrer par année
-- Historique détaillé des ventes ZENCOIN avec identification client
+
+* Résumé du CA total (ẐEN, Ğ1, nombre de transactions)
+* **Tableau récapitulatif annuel** (mode "all")
+* Boutons pour filtrer par année
+* Historique détaillé des ventes ZENCOIN avec identification client
 
 **Architecture économique** :
+
 ```
 UPLANETNAME_G1 (Réserve) 
     ↓ ÉMISSION (CA enregistré)
@@ -376,7 +415,7 @@ UPLANETNAME (UPLANETG1PUB) ← Hub de distribution
 MULTIPASS / ZEN Card (Services utilisateurs)
 ```
 
----
+***
 
 ## 🔐 Authentification NOSTR
 
@@ -432,7 +471,7 @@ await relay.connect();
 await relay.publish(signedEvent);
 ```
 
----
+***
 
 ## 📁 Gestion de Fichiers
 
@@ -452,22 +491,22 @@ uDRIVE organise automatiquement les fichiers dans une structure hiérarchique :
 
 ### Types de Fichiers Supportés
 
-| Type | Extensions | Description |
-|------|------------|-------------|
-| **Images** | jpg, jpeg, png, gif, bmp, svg | Images et graphiques |
-| **Music** | mp3, wav, ogg, flac, m4a | Fichiers audio |
-| **Videos** | mp4, avi, mov, mkv, webm | Fichiers vidéo |
-| **Documents** | pdf, txt, doc, docx, odt | Documents texte |
+| Type          | Extensions                    | Description          |
+| ------------- | ----------------------------- | -------------------- |
+| **Images**    | jpg, jpeg, png, gif, bmp, svg | Images et graphiques |
+| **Music**     | mp3, wav, ogg, flac, m4a      | Fichiers audio       |
+| **Videos**    | mp4, avi, mov, mkv, webm      | Fichiers vidéo       |
+| **Documents** | pdf, txt, doc, docx, odt      | Documents texte      |
 
 ### Sécurité Twin-Key
 
 Chaque fichier est lié à l'identité NOSTR de l'utilisateur :
 
-- **Vérification de Propriété** : Seul le propriétaire peut modifier ses fichiers
-- **Drive Personnel** : Chaque utilisateur a son propre drive IPFS
-- **Synchronisation** : Possibilité de sync depuis d'autres drives publics
+* **Vérification de Propriété** : Seul le propriétaire peut modifier ses fichiers
+* **Drive Personnel** : Chaque utilisateur a son propre drive IPFS
+* **Synchronisation** : Possibilité de sync depuis d'autres drives publics
 
----
+***
 
 ## 🌐 Intégration NOSTR
 
@@ -475,12 +514,12 @@ Chaque fichier est lié à l'identité NOSTR de l'utilisateur :
 
 Gestion d'événements NOSTR :
 
-- **Kind 0** : Mise à jour de profil
-- **Kind 1** : Messages texte
-- **Kind 3** : Contacts et suivi
-- **Kind 22242** : Authentification (NIP-42)
+* **Kind 0** : Mise à jour de profil
+* **Kind 1** : Messages texte
+* **Kind 3** : Contacts et suivi
+* **Kind 22242** : Authentification (NIP-42)
 
----
+***
 
 ## 🛡️ Sécurité & Rate Limiting
 
@@ -489,6 +528,7 @@ Gestion d'événements NOSTR :
 UPassport implémente plusieurs niveaux de protection :
 
 #### 1. Rate Limiting
+
 ```python
 # Limite : 100 requêtes par minute par IP
 RATE_LIMIT = {
@@ -498,6 +538,7 @@ RATE_LIMIT = {
 ```
 
 #### 2. Gestion des IP de Confiance
+
 ```python
 # Whitelist pour réseaux de confiance
 TRUSTED_IPS = [
@@ -508,6 +549,7 @@ TRUSTED_IPS = [
 ```
 
 #### 3. Validation des Fichiers
+
 ```python
 # Vérification des types de fichiers
 ALLOWED_EXTENSIONS = {
@@ -520,12 +562,12 @@ ALLOWED_EXTENSIONS = {
 
 ### Chiffrement et Sécurité
 
-- **Chiffrement en Transit** : HTTPS/TLS pour toutes les communications
-- **Chiffrement au Repos** : Fichiers chiffrés sur IPFS
-- **Authentification Forte** : NOSTR NIP-42 pour toutes les opérations
-- **Isolation des Données** : Chaque utilisateur a son propre espace
+* **Chiffrement en Transit** : HTTPS/TLS pour toutes les communications
+* **Chiffrement au Repos** : Fichiers chiffrés sur IPFS
+* **Authentification Forte** : NOSTR NIP-42 pour toutes les opérations
+* **Isolation des Données** : Chaque utilisateur a son propre espace
 
----
+***
 
 ## 💡 Exemples d'Utilisation
 
@@ -579,13 +621,14 @@ open http://localhost:54321/nostr
 open http://localhost:54321/g1
 ```
 
----
+***
 
 ## 🔧 Dépannage
 
 ### Problèmes Courants
 
 #### 1. Service UPassport ne démarre pas
+
 ```bash
 # Vérifier les logs
 journalctl -fu upassport
@@ -598,6 +641,7 @@ sudo systemctl restart upassport
 ```
 
 #### 2. Erreur d'authentification NOSTR
+
 ```bash
 # Vérifier le relay NOSTR
 curl -I http://localhost:7777
@@ -608,6 +652,7 @@ curl -X POST http://localhost:54321/api/test-nostr \
 ```
 
 #### 3. Problème d'upload IPFS
+
 ```bash
 # Vérifier IPFS
 ipfs swarm peers
@@ -628,7 +673,7 @@ sudo journalctl -u upassport -f
 
 ```
 
----
+***
 
 ## 🏗️ Architecture Technique
 
@@ -678,17 +723,17 @@ RestartSec=1
 WantedBy=multi-user.target
 ```
 
----
+***
 
 ## 🔗 Intégration avec Astroport.ONE
 
 ### Ports et Services
 
-| Port | Service | Description |
-|------|---------|-------------|
-| **54321** | UPassport API | API d'identité numérique |
-| **7777** | NOSTR Relay | Relay pour authentification |
-| **8080** | IPFS Gateway | Accès aux fichiers IPFS |
+| Port      | Service       | Description                 |
+| --------- | ------------- | --------------------------- |
+| **54321** | UPassport API | API d'identité numérique    |
+| **7777**  | NOSTR Relay   | Relay pour authentification |
+| **8080**  | IPFS Gateway  | Accès aux fichiers IPFS     |
 
 ### Flux d'Intégration
 
@@ -704,16 +749,16 @@ graph TD
     H[Scripts BASH] --> B
 ```
 
----
+***
 
 ## 📊 Métriques et Monitoring
 
 ### Indicateurs de Performance
 
-- **Temps de Réponse** : < 500ms pour les requêtes simples
-- **Throughput** : 1000+ requêtes/minute
-- **Disponibilité** : 99.9% uptime
-- **Stockage** : Gestion automatique de l'espace
+* **Temps de Réponse** : < 500ms pour les requêtes simples
+* **Throughput** : 1000+ requêtes/minute
+* **Disponibilité** : 99.9% uptime
+* **Stockage** : Gestion automatique de l'espace
 
 ### Monitoring
 
@@ -726,25 +771,28 @@ curl http://localhost:54321/health
 
 ```
 
----
+***
 
 ## 🔗 Liens et Ressources
 
 ### Documentation
-- **[README.md](README.md)** - Introduction principale
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Architecture système
-- **[API.NOSTRAuth.readme.md](API.NOSTRAuth.readme.md)** - Documentation NOSTR
+
+* [**README.md**](./) - Introduction principale
+* [**ARCHITECTURE.md**](ARCHITECTURE.md) - Architecture système
+* [**API.NOSTRAuth.readme.md**](https://github.com/papiche/Astroport.ONE/blob/master/API.NOSTRAuth.readme.md) - Documentation NOSTR
 
 ### Ressources Externes
-- **[GitHub Repository](https://github.com/papiche/UPassport)** - Code source
-- **[NOSTR Protocol](https://github.com/nostr-protocol/nips)** - Documentation NOSTR
-- **[IPFS Documentation](https://docs.ipfs.io/)** - Guide IPFS
+
+* [**GitHub Repository**](https://github.com/papiche/UPassport) - Code source
+* [**NOSTR Protocol**](https://github.com/nostr-protocol/nips) - Documentation NOSTR
+* [**IPFS Documentation**](https://docs.ipfs.io/) - Guide IPFS
 
 ### Support
-- **Email** : support@qo-op.com
-- **Documentation** : https://astroport-1.gitbook.io/astroport.one/
-- **Communauté** : https://copylaradio.com
 
----
+* **Email** : support@qo-op.com
+* **Documentation** : https://astroport-1.gitbook.io/astroport.one/
+* **Communauté** : https://copylaradio.com
 
-**UPassport : Votre identité numérique décentralisée et sécurisée** 🛡️✨ 
+***
+
+**UPassport : Votre identité numérique décentralisée et sécurisée** 🛡️✨

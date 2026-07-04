@@ -1,10 +1,10 @@
-# Opérer une station Astroport (PERMIT_ASTROPORT_X1)
+# Opérer une station Astroport (PERMIT\_ASTROPORT\_X1)
 
-**Auteur** : coucou (support+coucou@qo-op.com)  
-**Skill** : astroport  
-**Niveau** : X1 — Composite (linux + bash + docker)  
+**Auteur** : coucou (support+coucou@qo-op.com)\
+**Skill** : astroport\
+**Niveau** : X1 — Composite (linux + bash + docker)
 
----
+***
 
 ## Qu'est-ce qu'une station Astroport ?
 
@@ -15,10 +15,9 @@ Une station Astroport est un serveur personnel décentralisé qui :
 3. **Coopère** dans la constellation UPlanet (swarm P2P)
 4. **Héberge** des services IA souverains (Ollama, Qdrant, ComfyUI)
 
-Le PERMIT_ASTROPORT_X1 est la compétence fondamentale pour opérer une station
-de manière autonome et contribuer à la constellation.
+Le PERMIT\_ASTROPORT\_X1 est la compétence fondamentale pour opérer une station de manière autonome et contribuer à la constellation.
 
----
+***
 
 ## Prérequis (craft composite)
 
@@ -30,7 +29,7 @@ PERMIT_DOCKER_X1   ← conteneurs, stack IA, mises à jour
 PERMIT_ASTROPORT_X1
 ```
 
----
+***
 
 ## 1. Architecture d'une station
 
@@ -47,7 +46,7 @@ Station Astroport
     └── Open WebUI       → interface chat (port 8000)
 ```
 
----
+***
 
 ## 2. Démarrer et vérifier une station
 
@@ -66,12 +65,11 @@ ipfs swarm peers | wc -l
 curl -s http://localhost:7777 | jq '.name'
 ```
 
----
+***
 
 ## 3. La carte station (12345.json)
 
-Le script `_12345.sh` génère `~/.zen/tmp/$IPFSNODEID/12345.json` — la carte
-publiée sur IPNS. Elle contient :
+Le script `_12345.sh` génère `~/.zen/tmp/$IPFSNODEID/12345.json` — la carte publiée sur IPNS. Elle contient :
 
 ```json
 {
@@ -91,7 +89,7 @@ publiée sur IPNS. Elle contient :
 }
 ```
 
----
+***
 
 ## 4. Cycle de vie quotidien
 
@@ -106,7 +104,7 @@ publiée sur IPNS. Elle contient :
 # - Publie le rapport sur IPNS
 ```
 
----
+***
 
 ## 5. Publier du contenu sur IPNS
 
@@ -122,7 +120,7 @@ ipfs name publish --key="$IPFSNODEID" /ipfs/$CID
 # https://ipfs.example.tld/ipns/$IPFSNODEID/
 ```
 
----
+***
 
 ## 6. Rejoindre la constellation (backfill N²)
 
@@ -135,11 +133,11 @@ cd ../NIP-101
 ./backfill_constellation.sh --stats
 ```
 
----
+***
 
 ## 7. Exercice de certification
 
-Pour obtenir PERMIT_ASTROPORT_X1 :
+Pour obtenir PERMIT\_ASTROPORT\_X1 :
 
 1. **Installer** une station bare-metal ou Docker sur votre machine
 2. **Vérifier** que la carte 12345.json est accessible publiquement
@@ -147,12 +145,12 @@ Pour obtenir PERMIT_ASTROPORT_X1 :
 4. **Publier** un Kind 1 sur le relay local et vérifier le backfill sur le relay remote
 5. **Demander** la validation à un pair Astroport X1 existant (Kind 30501 → Kind 30502)
 
----
+***
 
 ## Ressources complémentaires
 
-- `Astroport.ONE/install.sh` — installation bare-metal
-- `Astroport.ONE/docker/docker-compose.yml` — installation Docker
-- `Astroport.ONE/tools/astrosystemctl.sh` — télécommande P2P
-- [DRAGONS_and_TUNNELS.md](../../docs/how-to/DRAGONS_and_TUNNELS.md) — découverte de services IA entre stations
-- `tests/test_wotx2_demo.sh` — dataset de démonstration WoTx2 complet
+* `Astroport.ONE/install.sh` — installation bare-metal
+* `Astroport.ONE/docker/docker-compose.yml` — installation Docker
+* `Astroport.ONE/tools/astrosystemctl.sh` — télécommande P2P
+* [DRAGONS\_and\_TUNNELS.md](https://github.com/papiche/Astroport.ONE/blob/master/tests/docs/how-to/DRAGONS_and_TUNNELS.md) — découverte de services IA entre stations
+* `tests/test_wotx2_demo.sh` — dataset de démonstration WoTx2 complet
