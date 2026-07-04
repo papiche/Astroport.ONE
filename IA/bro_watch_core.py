@@ -1635,73 +1635,84 @@ def _call_generator(script_name, prompt):
         return None
 
 
-def _handle_ia_responder_tags(owner_email, text, img_url=None):
-    """Pont BRO ↔ UPlanet_IA_Responder.sh : reconnaît les #tags media/vision
-    dans le canal self-DM et délègue aux générateurs/reconnaisseurs Python/bash.
-    Retourne la réponse ou None (→ repli conversationnel gérant img_url en contexte)."""
-    lowered = text.lower()
-    clean = _IA_CLEAN_RE.sub("", text).strip()
+# Durée max de chaque type de tâche média — mêmes valeurs que les timeouts
+# subprocess ci-dessous (_run_media_background), affichées au propriétaire
+# dans le message "en cours" pour fixer une attente réaliste.
+_MEDIA_RUN_TIMEOUT_SEC = {"image": 300, "video": 300, "music": 300, "plantnet": 60, "inventory": 60, "tts": 150}
+_MEDIA_PROGRESS_MSG = {
+    "image": "🖼️ Génération d'image en cours",
+    "video": "🎬 Génération vidéo en cours",
+    "music": "🎵 Génération musicale en cours",
+    "plantnet": "🌿 Identification botanique en cours",
+    "inventory": "📦 Inventaire en cours",
+    "tts": "🔊 Préparation de la réponse vocale en cours",
+}
 
-    # ── Génération d'image (ComfyUI) ──────────────────────────────────────
-    if re.search(r'#image\b', lowered):
-        url = _call_generator("generate_image.sh", clean or "abstract artwork")
-        if url:
-            return f"🖼️ Image générée :\n{url}"
-        return "⚠️ Génération d'image indisponible (ComfyUI non accessible — demandez à la constellation)."
 
-    # ── Génération de vidéo ────────────────────────────────────────────────
-    if re.search(r'#vid[ée]o\b', lowered):
-        url = _call_generator("generate_video.sh", clean or "abstract motion")
-        if url:
-            return f"🎬 Vidéo générée :\n{url}"
-        return "⚠️ Génération vidéo indisponible (ComfyUI non accessible)."
+def _dispatch_media_background(media_type, owner_email, payload):
+    """Valide (déjà fait par l'appelant) puis LANCE en tâche détachée le
+    traitement média réel (_run_media_background) — jamais d'exécution
+    synchrone ici. Même raison structurelle que le scraper et #craft/#badge :
+    ces appels (ComfyUI jusqu'à 300s, reconnaissance jusqu'à 60s, TTS jusqu'à
+    150s) bloquaient auparavant process_incoming_commands directement, avec
+    le même risque de boucle de rejeu massive que l'incident du 2026-07-03."""
+    try:
+        subprocess.Popen(
+            ["python3", os.path.abspath(__file__), "run-media-background",
+             media_type, owner_email, json.dumps(payload)],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+        )
+    except Exception as e:
+        return f"⚠️ Échec du lancement : {e}"
+    timeout = _MEDIA_RUN_TIMEOUT_SEC.get(media_type, 120)
+    progress = _MEDIA_PROGRESS_MSG.get(media_type, "⏳ Traitement en cours")
+    return f"{progress}… (jusqu'à {timeout}s) — je vous enverrai le résultat par DM."
 
-    # ── Génération de musique ──────────────────────────────────────────────
-    if re.search(r'#music(?:ue)?\b', lowered):
-        url = _call_generator("generate_music.sh", clean or "ambient music")
-        if url:
-            return f"🎵 Musique générée :\n{url}"
-        return "⚠️ Génération musicale indisponible sur cette station."
 
-    # ── Reconnaissance botanique (PlantNet) ────────────────────────────────
-    if re.search(r'#(?:plant(?:net|e)?|botanique|flora)\b', lowered):
-        if not img_url:
-            return "🌿 Envoie une photo de plante avec #plant pour l'identification botanique."
-        script = os.path.join(BRO_IA_PATH, "plantnet_recognition.py")
-        if not os.path.isfile(script):
-            return "⚠️ PlantNet non installé sur cette station."
-        venv_py = os.path.expanduser("~/.astro/bin/python3")
-        py = venv_py if os.path.isfile(venv_py) else "python3"
-        try:
-            result = subprocess.run([py, script, img_url], capture_output=True, text=True, timeout=60)
-            out = result.stdout.strip()
-            return out or "⚠️ PlantNet n'a pas identifié de plante sur cette image."
-        except Exception:
-            return "⚠️ Service PlantNet indisponible."
+def _run_recognition_script(script_name, img_url, empty_msg, missing_msg, error_msg):
+    """Factorise plantnet_recognition.py / inventory_recognition.py — même
+    contrat (script img_url -> texte sur stdout), même venv, même timeout."""
+    script = os.path.join(BRO_IA_PATH, script_name)
+    if not os.path.isfile(script):
+        return missing_msg
+    venv_py = os.path.expanduser("~/.astro/bin/python3")
+    py = venv_py if os.path.isfile(venv_py) else "python3"
+    try:
+        result = subprocess.run([py, script, img_url], capture_output=True, text=True, timeout=60)
+        return result.stdout.strip() or empty_msg
+    except Exception:
+        return error_msg
 
-    # ── Inventaire automatique ─────────────────────────────────────────────
-    if re.search(r'#(?:inventory|inventaire)\b', lowered):
-        if not img_url:
-            return "📦 Envoie une photo avec #inventory pour l'inventaire automatique."
-        script = os.path.join(BRO_IA_PATH, "inventory_recognition.py")
-        if not os.path.isfile(script):
-            return "⚠️ Inventaire non disponible sur cette station."
-        venv_py = os.path.expanduser("~/.astro/bin/python3")
-        py = venv_py if os.path.isfile(venv_py) else "python3"
-        try:
-            result = subprocess.run([py, script, img_url], capture_output=True, text=True, timeout=60)
-            out = result.stdout.strip()
-            return out or "⚠️ Inventaire vide ou non reconnu."
-        except Exception:
-            return "⚠️ Service inventaire indisponible."
 
-    # ── Synthèse vocale (#pierre / #amelie) ───────────────────────────────
-    if re.search(r'#(?:pierre|am[ée]lie)\b', lowered):
-        voice = "amelie" if re.search(r'#am[ée]lie\b', lowered) else "pierre"
-        # Texte épuré de tous les tags commandes pour la question et pour le TTS
-        clean_question = re.sub(
-            r'#(?:bro|bot|pierre|am[ée]lie)\b', '', text, flags=re.IGNORECASE
-        ).strip()
+def _run_media_background(media_type, owner_email, payload):
+    """Exécute réellement le traitement média (appelé en sous-processus
+    détaché par _dispatch_media_background) et notifie le résultat par DM.
+    Logique identique à l'ancienne version synchrone de
+    _handle_ia_responder_tags, seul le mode d'appel a changé."""
+    if media_type == "image":
+        url = _call_generator("generate_image.sh", payload["prompt"])
+        reply = f"🖼️ Image générée :\n{url}" if url else \
+            "⚠️ Génération d'image indisponible (ComfyUI non accessible — demandez à la constellation)."
+    elif media_type == "video":
+        url = _call_generator("generate_video.sh", payload["prompt"])
+        reply = f"🎬 Vidéo générée :\n{url}" if url else "⚠️ Génération vidéo indisponible (ComfyUI non accessible)."
+    elif media_type == "music":
+        url = _call_generator("generate_music.sh", payload["prompt"])
+        reply = f"🎵 Musique générée :\n{url}" if url else "⚠️ Génération musicale indisponible sur cette station."
+    elif media_type == "plantnet":
+        reply = _run_recognition_script(
+            "plantnet_recognition.py", payload["img_url"],
+            "⚠️ PlantNet n'a pas identifié de plante sur cette image.",
+            "⚠️ PlantNet non installé sur cette station.", "⚠️ Service PlantNet indisponible.")
+    elif media_type == "inventory":
+        reply = _run_recognition_script(
+            "inventory_recognition.py", payload["img_url"],
+            "⚠️ Inventaire vide ou non reconnu.",
+            "⚠️ Inventaire non disponible sur cette station.", "⚠️ Service inventaire indisponible.")
+    elif media_type == "tts":
+        voice = payload["voice"]
+        clean_question = payload.get("clean_question", "")
+        img_url = payload.get("img_url") or None
         if clean_question:
             text_reply = _conversational_reply(owner_email, clean_question, img_url)
             text_for_tts = re.sub(r'^[💬📋✅🤔🔔]\s*', '', text_reply).strip()
@@ -1719,9 +1730,48 @@ def _handle_ia_responder_tags(owner_email, text, img_url=None):
                 audio_url = result.stdout.strip()
             except Exception as exc:
                 print(f"[BRO_WATCH] TTS échoué ({voice}) : {exc}")
-        if audio_url:
-            return f"{text_reply}\n\n🔊 Audio ({voice}) : {audio_url}"
-        return text_reply
+        reply = f"{text_reply}\n\n🔊 Audio ({voice}) : {audio_url}" if audio_url else text_reply
+    else:
+        reply = "⚠️ Type de média inconnu."
+    send_dm_to_owner(owner_email, reply, ttl_days=1)
+
+
+def _handle_ia_responder_tags(owner_email, text, img_url=None):
+    """Pont BRO ↔ UPlanet_IA_Responder.sh : reconnaît les #tags media/vision
+    dans le canal self-DM. Chaque tag reconnu LANCE le traitement réel en
+    tâche détachée (_dispatch_media_background) et retourne immédiatement un
+    accusé de réception — voir sa docstring pour la raison structurelle.
+    Retourne None (→ repli conversationnel gérant img_url en contexte) si
+    aucun tag média n'est présent."""
+    lowered = text.lower()
+    clean = _IA_CLEAN_RE.sub("", text).strip()
+
+    if re.search(r'#image\b', lowered):
+        return _dispatch_media_background("image", owner_email, {"prompt": clean or "abstract artwork"})
+
+    if re.search(r'#vid[ée]o\b', lowered):
+        return _dispatch_media_background("video", owner_email, {"prompt": clean or "abstract motion"})
+
+    if re.search(r'#music(?:ue)?\b', lowered):
+        return _dispatch_media_background("music", owner_email, {"prompt": clean or "ambient music"})
+
+    if re.search(r'#(?:plant(?:net|e)?|botanique|flora)\b', lowered):
+        if not img_url:
+            return "🌿 Envoie une photo de plante avec #plant pour l'identification botanique."
+        return _dispatch_media_background("plantnet", owner_email, {"img_url": img_url})
+
+    if re.search(r'#(?:inventory|inventaire)\b', lowered):
+        if not img_url:
+            return "📦 Envoie une photo avec #inventory pour l'inventaire automatique."
+        return _dispatch_media_background("inventory", owner_email, {"img_url": img_url})
+
+    if re.search(r'#(?:pierre|am[ée]lie)\b', lowered):
+        voice = "amelie" if re.search(r'#am[ée]lie\b', lowered) else "pierre"
+        clean_question = re.sub(
+            r'#(?:bro|bot|pierre|am[ée]lie)\b', '', text, flags=re.IGNORECASE
+        ).strip()
+        return _dispatch_media_background(
+            "tts", owner_email, {"voice": voice, "clean_question": clean_question, "img_url": img_url or ""})
 
     # Pas de tag spécifique → repli vers _conversational_reply (avec img_url en contexte)
     return None
@@ -2710,6 +2760,14 @@ if __name__ == "__main__":
         # jamais appelé directement par un humain.
         _, _, email, skill = sys.argv[:4]
         _run_badge_background(email, skill)
+        sys.exit(0)
+
+    elif len(sys.argv) >= 5 and sys.argv[1] == "run-media-background":
+        # Point d'entrée du sous-processus détaché lancé par
+        # _dispatch_media_background (#image/#video/#music/#plant/#inventory/
+        # #pierre/#amelie) — jamais appelé directement par un humain.
+        _, _, media_type, email, payload_json = sys.argv[:5]
+        _run_media_background(media_type, email, json.loads(payload_json))
         sys.exit(0)
 
     else:
