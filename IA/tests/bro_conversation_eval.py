@@ -117,6 +117,44 @@ def run_intent_routing(cases, verbose=False):
     return score
 
 
+# Tags self-DM documentés dans docs/how-to/BRO_HELP_COMMANDS.md, du niveau 0
+# (accessible à tous) au niveau 3 (satellite ẐEN) — craft/badge/rec:<skill>/
+# mem:<skill> vérifient le niveau réel via bro_user_level.py (même mécanisme
+# que le canal DM-to-NODE de bro_dm_daemon.sh). Garde-fou structurel contre
+# la classe de bug de l'incident du 2026-07-03 (tag documenté mais absent du
+# canal self-DM, donc halluciné par le LLM) : si un tag disparaît du registre
+# bro_tools sans qu'on retire sa ligne ici, ce test échoue AVANT que ça
+# reparte en prod.
+DOCUMENTED_SELF_DM_TAGS = {
+    "help": "aide / liste des commandes (niveau 0)",
+    "mem": "#mem — mémoire personnelle (niveau 0)",
+    "reset": "#reset — effacer la mémoire (niveau 0)",
+    "rec": "#rec — mémoriser (niveau 0)",
+    "scraper": "lance le scraper — implémentation self-DM (niveau 0)",
+    "craft": "#craft <url> — décompose un tutoriel (niveau atom4love)",
+    "badge": "#badge <skill> — génère un badge ComfyUI (niveau satellite)",
+    "rec_skill": "#rec:<skill> — mémoire partagée collective (niveau atom4love)",
+    "mem_skill": "#mem:<skill> — lecture mémoire partagée (niveau atom4love)",
+}
+
+
+def run_registry_coverage(verbose=False):
+    print("\n── Couverture du registre bro_tools (anti-divergence) ──────────")
+    passed = 0
+    for tag, why in DOCUMENTED_SELF_DM_TAGS.items():
+        tool = bwc.bro_tools.get(tag)
+        ok = tool is not None and callable(tool.handler)
+        passed += int(ok)
+        status = "✅" if ok else "❌"
+        if verbose or not ok:
+            print(f"{status} #{tag} — {why}")
+            if not ok:
+                print("    ⚠️  absent du registre bro_tools : risque d'hallucination LLM (cf. incident 2026-07-03)")
+    score = passed / len(DOCUMENTED_SELF_DM_TAGS)
+    print(f"Score couverture registre : {passed}/{len(DOCUMENTED_SELF_DM_TAGS)} ({score:.0%})")
+    return score
+
+
 def run_hallucination_checks(cases, repeat=1, verbose=False):
     print(f"\n── Anti-hallucination conversationnelle (LLM, x{repeat}) ───────")
     total_runs, passed_runs = 0, 0
@@ -155,6 +193,7 @@ def main():
     args = parser.parse_args()
 
     data = _load_cases()
+    coverage_score = run_registry_coverage(verbose=args.verbose)
     restore = _patch_fixed_context(data)
     try:
         routing_score = run_tool_routing(data["tool_routing_cases"], verbose=args.verbose)
@@ -165,9 +204,10 @@ def main():
     finally:
         restore()
 
-    print(f"\n══ Score global : routage outils {routing_score:.0%} · routage tags {intent_score:.0%}"
+    print(f"\n══ Score global : couverture registre {coverage_score:.0%} · routage outils {routing_score:.0%} "
+          f"· routage tags {intent_score:.0%}"
           + (f" · anti-hallucination {halluc_score:.0%}" if not args.skip_llm else " (LLM sauté)"))
-    sys.exit(0 if (routing_score == 1.0 and intent_score == 1.0 and halluc_score == 1.0) else 1)
+    sys.exit(0 if (coverage_score == 1.0 and routing_score == 1.0 and intent_score == 1.0 and halluc_score == 1.0) else 1)
 
 
 if __name__ == "__main__":

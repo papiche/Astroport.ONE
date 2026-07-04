@@ -46,10 +46,14 @@ Convention de clé dans params.channels (une entrée par sous-canal surveillé) 
 
 import os
 import re
+import sys
 import json
 import hashlib
 import tempfile
 import subprocess
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bro_tools
 
 BRO_IA_PATH = os.path.expanduser("~/.zen/Astroport.ONE/IA")
 TOOLS_PATH = os.path.expanduser("~/.zen/Astroport.ONE/tools")
@@ -533,25 +537,11 @@ INTENT_SHARED_NEGATIVES = [
     "identifie cette plante sur la photo",
 ]
 
-# Tags système réels (docs/how-to/BRO_HELP_COMMANDS.md) avec quelques
-# formulations positives représentatives, y compris les formulations EXACTES
-# suggérées par la doc pour "help" ("help", "aide", "commandes BRO",
-# "quelles sont les commandes"). "craft"/"badge" nécessitent un niveau
-# d'accès (atom4love / satellite ẐEN) que ce canal ne vérifie pas encore —
-# _execute_system_tag répond honnêtement plutôt que d'exécuter à tort.
-SYSTEM_TAG_CORPUS = {
-    "help": ["help", "aide", "commandes BRO", "quelles sont les commandes",
-             "que peux-tu faire ?", "liste tes commandes"],
-    "mem": ["montre-moi mes souvenirs", "qu'est-ce que tu as retenu de moi ?",
-            "rappelle-moi ce qu'on s'est dit", "voir toutes mes mémoires", "#mem"],
-    "reset": ["oublie tout ce qu'on s'est dit", "efface toutes mes mémoires", "#reset"],
-    "rec": ["retiens que j'aime le jardinage", "mémorise ça pour plus tard", "note ça",
-            "#rec", "#rec j'adore le compost et les légumes anciens"],
-    "craft": ["décompose ce tutoriel en recette", "transforme ce lien en étapes", "#craft"],
-    "badge": ["génère un badge pour cette compétence", "crée mon badge de compétence", "#badge"],
-    "scraper": ["lance le scraper mastodon maintenant", "exécute la surveillance mastodon.social",
-                "relance la synchro de mon cookie", "vérifie mes mentions tout de suite", "#scraper"],
-}
+# Les tags système réels (docs/how-to/BRO_HELP_COMMANDS.md) et leurs exemples
+# positifs ne sont plus une collection à part ici : ils vivent sur chaque
+# bro_tools.Tool enregistré plus bas (_register_system_tools), à côté du
+# gestionnaire qui l'exécute réellement. Une seule définition par outil —
+# impossible que la description/le corpus divergent de ce qui s'exécute.
 
 
 def _intent_point_id(kind, target, text):
@@ -561,9 +551,10 @@ def _intent_point_id(kind, target, text):
 
 def _seed_intent_corpus():
     """Peuple (idempotent) la collection Qdrant de routage d'intention avec
-    le corpus figé ci-dessus. Appelé paresseusement au premier match_intent()
-    — pas de coût au chargement du module, dégradation silencieuse si
-    Qdrant/Ollama indisponible."""
+    les exemples positifs déclarés sur chaque bro_tools.Tool enregistré.
+    Appelé paresseusement au premier match_intent() — pas de coût au
+    chargement du module, dégradation silencieuse si Qdrant/Ollama
+    indisponible."""
     from qdrant_client.models import Distance, VectorParams, PointStruct
 
     client = _qdrant_client()
@@ -575,14 +566,13 @@ def _seed_intent_corpus():
         )
 
     points = []
-    for target, examples in SYSTEM_TAG_CORPUS.items():
-        for ex in examples:
-            pid = _intent_point_id("positive", target, ex)
-            existing = client.retrieve(collection_name=QDRANT_INTENT_COLLECTION, ids=[pid])
-            if existing:
-                continue
-            points.append(PointStruct(id=pid, vector=_qdrant_embed(ex),
-                                       payload={"label": "positive", "target": target, "text": ex}))
+    for target, ex in bro_tools.iter_examples():
+        pid = _intent_point_id("positive", target, ex)
+        existing = client.retrieve(collection_name=QDRANT_INTENT_COLLECTION, ids=[pid])
+        if existing:
+            continue
+        points.append(PointStruct(id=pid, vector=_qdrant_embed(ex),
+                                   payload={"label": "positive", "target": target, "text": ex}))
     for ex in INTENT_SHARED_NEGATIVES:
         pid = _intent_point_id("negative", "shared", ex)
         existing = client.retrieve(collection_name=QDRANT_INTENT_COLLECTION, ids=[pid])
@@ -1333,31 +1323,6 @@ def _extract_tool_docstring(module_name):
     return module_name
 
 
-def activate_tool(module_name, description=None):
-    tool_path = os.path.join(TOOLS_GENERATED_DIR, f"{module_name}.py")
-    if not os.path.isfile(tool_path):
-        return False, f"Fichier introuvable : {tool_path} — la branche a-t-elle été mergée ?"
-    tools = list_active_tools()
-    tools[module_name] = {
-        "description": description or _extract_tool_docstring(module_name),
-        "activated_at": _now_iso(),
-    }
-    os.makedirs(os.path.dirname(ACTIVE_TOOLS_FILE), exist_ok=True)
-    with open(ACTIVE_TOOLS_FILE, "w", encoding="utf-8") as f:
-        json.dump(tools, f, ensure_ascii=False, indent=2)
-    return True, f"Outil '{module_name}' activé : {tools[module_name]['description']}"
-
-
-def deactivate_tool(module_name):
-    tools = list_active_tools()
-    if module_name not in tools:
-        return False, f"'{module_name}' n'est pas actif."
-    del tools[module_name]
-    with open(ACTIVE_TOOLS_FILE, "w", encoding="utf-8") as f:
-        json.dump(tools, f, ensure_ascii=False, indent=2)
-    return True, f"Outil '{module_name}' désactivé."
-
-
 def _call_tool(module_name, query):
     """Charge et exécute un outil généré (contrat : def run(query: str) -> str).
     Échoue silencieusement (None) — l'appelant retombe alors sur la conversation
@@ -1374,6 +1339,56 @@ def _call_tool(module_name, query):
     except Exception as e:
         print(f"[BRO_WATCH] Appel outil '{module_name}' échoué : {e}")
         return None
+
+
+def _register_arbor_tool(module_name, info):
+    """Reflète un outil forgé par Arbor (persisté dans ACTIVE_TOOLS_FILE) dans
+    le registre bro_tools — même représentation que les tags système, pour que
+    _bro_capabilities_description n'ait plus qu'UNE seule boucle à maintenir."""
+    bro_tools.register(bro_tools.Tool(
+        name=module_name,
+        description=info.get("description", module_name),
+        handler=lambda owner_email, text, _m=module_name: _call_tool(_m, text),
+        source="arbor",
+    ))
+
+
+def activate_tool(module_name, description=None):
+    tool_path = os.path.join(TOOLS_GENERATED_DIR, f"{module_name}.py")
+    if not os.path.isfile(tool_path):
+        return False, f"Fichier introuvable : {tool_path} — la branche a-t-elle été mergée ?"
+    tools = list_active_tools()
+    tools[module_name] = {
+        "description": description or _extract_tool_docstring(module_name),
+        "activated_at": _now_iso(),
+    }
+    os.makedirs(os.path.dirname(ACTIVE_TOOLS_FILE), exist_ok=True)
+    with open(ACTIVE_TOOLS_FILE, "w", encoding="utf-8") as f:
+        json.dump(tools, f, ensure_ascii=False, indent=2)
+    _register_arbor_tool(module_name, tools[module_name])
+    return True, f"Outil '{module_name}' activé : {tools[module_name]['description']}"
+
+
+def deactivate_tool(module_name):
+    tools = list_active_tools()
+    if module_name not in tools:
+        return False, f"'{module_name}' n'est pas actif."
+    del tools[module_name]
+    with open(ACTIVE_TOOLS_FILE, "w", encoding="utf-8") as f:
+        json.dump(tools, f, ensure_ascii=False, indent=2)
+    bro_tools.unregister(module_name)
+    return True, f"Outil '{module_name}' désactivé."
+
+
+def _load_arbor_tools_into_registry():
+    """Reflète l'état persisté (ACTIVE_TOOLS_FILE) dans le registre en mémoire —
+    appelé au chargement du module, pour qu'un process qui redémarre retrouve
+    les outils déjà activés par un précédent process."""
+    for module_name, info in list_active_tools().items():
+        _register_arbor_tool(module_name, info)
+
+
+_load_arbor_tools_into_registry()
 
 
 # Calibré empiriquement via bro_conversation_eval.py (dans le même esprit que
@@ -1407,21 +1422,21 @@ def match_tool(text):
     lowered = text.strip().lower()
     if any(phrase in lowered for phrase in _META_CAPABILITY_PHRASES):
         return None
-    tools = list_active_tools()
-    if not tools:
+    arbor_tools = [t for t in bro_tools.all_tools() if t.source == "arbor"]
+    if not arbor_tools:
         return None
     try:
         text_vec = _qdrant_embed(text)
     except Exception:
         return None
     best_module, best_score = None, 0.0
-    for module_name, info in tools.items():
+    for tool in arbor_tools:
         try:
-            score = _cosine(text_vec, _qdrant_embed(info.get("description", module_name)))
+            score = _cosine(text_vec, _qdrant_embed(tool.description))
         except Exception:
             continue
         if score > best_score:
-            best_module, best_score = module_name, score
+            best_module, best_score = tool.name, score
     if best_module and best_score >= TOOL_MATCH_THRESHOLD:
         return best_module, best_score
     return None
@@ -1463,27 +1478,34 @@ def _bro_capabilities_description(owner_email):
         "- Surveillance de sources web (Mastodon, forums Discourse, chaînes YouTube).",
         "- Mémoire de vos échanges précédents (rappelée automatiquement quand pertinent) — "
         "« #oublie » pour l'effacer.",
-        "- Notes explicites : « #rec TEXTE » pour mémoriser un fait précis, "
-        "« #mem » pour voir vos notes, « #reset » pour les effacer (« #rec #2 » / #mem #2 / #reset #2 "
-        "pour un autre slot que le slot 0 par défaut).",
-        "- « #help » ou « aide » affiche cette même liste.",
-        "- « lance le scraper DOMAINE » (ou « #scraper DOMAINE ») exécute immédiatement la surveillance "
-        "d'une source dont vous avez déjà déposé le cookie, au lieu d'attendre le cycle quotidien.",
+        "- « #rec #2 » / #mem #2 / #reset #2 ciblent un autre slot que le slot 0 par défaut.",
         "- Reconnaissance d'image : envoie une image (URL .jpg/.png/etc.) — "
         "BRO la décrit automatiquement. Tags spéciaux : "
         "#plant (botanique PlantNet), #inventory (inventaire).",
         "- Génération de contenu : #image PROMPT (image ComfyUI), "
         "#video PROMPT (vidéo), #music PROMPT (musique).",
     ]
+    # Commandes du registre bro_tools (help/mem/reset/rec/scraper...) — une
+    # seule définition par outil, partagée avec l'exécution et le routage
+    # sémantique : impossible que cette liste diverge de ce qui est réellement
+    # exécutable (cf. incident du 2026-07-03). Niveau RÉEL (0-5, voir
+    # bro_user_level.py) — PAS un simple booléen capitaine : un sociétaire
+    # satellite (niveau 3, pas capitaine) doit voir #craft/#badge dans sa
+    # propre liste de capacités, faute de quoi l'IA les cacherait à tort à
+    # tous les non-capitaines.
+    access_level = ACCESS_LEVEL_CAPITAINE if _is_captain(owner_email) else _owner_access_level(owner_email)
+    for tool in bro_tools.all_tools():
+        if tool.source == "static" and tool.advertise and tool.min_access <= access_level:
+            lines.append(f"- {tool.description}")
     if _is_captain(owner_email):
         lines.append("- #arbor : lance l'auto-amélioration du prompt d'interprétation (réservé capitaine).")
 
-    tools = list_active_tools()
-    if tools:
+    arbor_tools = [t for t in bro_tools.all_tools() if t.source == "arbor"]
+    if arbor_tools:
         lines.append("")
         lines.append("OUTILS SUPPLÉMENTAIRES DISPONIBLES (pose directement ta question, utilisés automatiquement) :")
-        for info in tools.values():
-            lines.append(f"- {info.get('description', '?')}")
+        for tool in arbor_tools:
+            lines.append(f"- {tool.description}")
 
     lines.append("")
     lines.append("Si on te demande ce que tu sais faire, réponds à partir de CETTE liste uniquement. "
@@ -1786,12 +1808,24 @@ def _clear_slot(owner_email, slot):
 # sémantique, alors que le tag lui-même est un marqueur non ambigu — pas
 # besoin d'IA pour le reconnaître (même logique que _handle_hashtag_command
 # et _handle_ia_responder_tags, tags déterministes ailleurs dans ce fichier).
-_SYSTEM_TAG_RE = re.compile(r"#(mem|reset|rec|help|craft|badge|scraper)\b", re.IGNORECASE)
-
-
 def _detect_system_tag(text):
-    m = _SYSTEM_TAG_RE.search(text)
-    return m.group(1).lower() if m else None
+    tool = bro_tools.find_by_tag(text)
+    return tool.name if tool else None
+
+
+# #rec:<skill> / #mem:<skill> (docs/how-to/BRO_HELP_COMMANDS.md, niveau 2 —
+# profil atom4love requis) sont une syntaxe DISTINCTE de #rec/#mem simples :
+# "#rec:devops ..." doit être reconnu comme rec_skill, jamais comme le "rec"
+# générique (les deux regex se chevauchent sur le "\b" après "#rec" — cette
+# détection doit donc être tentée EN PREMIER, avant _detect_system_tag).
+_SKILL_TAG_RE = re.compile(r"#(rec|mem):([a-z0-9_-]*)", re.IGNORECASE)
+
+
+def _detect_skill_tag(text):
+    m = _SKILL_TAG_RE.search(text)
+    if not m:
+        return None
+    return "rec_skill" if m.group(1).lower() == "rec" else "mem_skill"
 
 
 SCRAPER_RUN_TIMEOUT_SEC = 180
@@ -1968,59 +2002,353 @@ def _run_scraper_background(owner_email, domain, script, cookie_file):
     send_dm_to_owner(owner_email, msg, ttl_days=1)
 
 
+# ── Registre des outils système (bro_tools.py) ──────────────────────────
+# Chaque outil ci-dessous porte SA PROPRE description et SES PROPRES exemples
+# — utilisés à la fois pour l'exécution (handler), le routage sémantique
+# (_seed_intent_corpus) et le texte d'aide (_bro_capabilities_description).
+# Un tag ajouté ici est automatiquement documenté et routable ; il n'y a plus
+# de second endroit à mettre à jour manuellement (cause de l'incident du
+# 2026-07-03 : #reset/#help hallucinés faute d'être reconnus nulle part).
+
+def _tool_help(owner_email, text):
+    lines = _bro_capabilities_description(owner_email).split("\n")
+    lines.append("")
+    lines.append("Voir aussi : #mem (souvenirs), #reset (les effacer), #rec <texte> (en noter un).")
+    return "\n".join(lines)
+
+
+def _tool_mem(owner_email, text):
+    slots = _slots_from_text(text)
+    parts = []
+    for slot in slots:
+        summary = _format_slot_summary(owner_email, slot)
+        parts.append(f"Slot {slot} :\n{summary}" if summary else f"Slot {slot} : (vide)")
+    return "🧠 " + "\n\n".join(parts)
+
+
+def _tool_reset(owner_email, text):
+    slots = _slots_from_text(text)
+    for slot in slots:
+        _clear_slot(owner_email, slot)
+    slots_str = ", ".join(str(s) for s in slots)
+    return f"🗑️ Mémoire effacée (slot{'s' if len(slots) > 1 else ''} {slots_str})."
+
+
+def _tool_rec(owner_email, text):
+    slots = _slots_from_text(text)
+    # Texte à mémoriser : le message débarrassé des tags #rec/#N eux-mêmes.
+    content = re.sub(r"#rec\b", "", text, flags=re.IGNORECASE)
+    content = re.sub(r"#\d{1,2}\b", "", content).strip()
+    if not content:
+        return "🤔 Dites-moi quoi mémoriser, par exemple « #rec j'aime le jardinage »."
+    ok = all(_persist_slot_content(owner_email, slot, content) for slot in slots)
+    slots_str = ", ".join(str(s) for s in slots)
+    return f"✅ Noté dans le slot{'s' if len(slots) > 1 else ''} {slots_str}." if ok else \
+        "⚠️ Échec de la mémorisation (Qdrant indisponible ?)."
+
+
+def _tool_scraper(owner_email, text):
+    domain = _extract_scraper_domain(owner_email, text)
+    if domain:
+        return _run_scraper_now(owner_email, domain)
+    available = _available_scraper_domains(owner_email)
+    if not available:
+        return "🍪 Aucun cookie déposé pour l'instant — déposez-en un sur /cookie pour activer un scraper."
+    return "🤔 Quel domaine ? " + ", ".join(available)
+
+
+# Niveau d'accès RÉEL — découvert en auditant bro_dm_daemon.sh (canal DM-to-
+# NODE), qui vérifie déjà #craft/#badge/#rec:<skill>/#mem:<skill> via
+# bro_user_level.py (0 anonyme … 5 capitaine). Le canal self-DM prétendait
+# à tort que ce niveau n'était "pas vérifiable ici" — en réalité la même
+# fonction Python est directement importable, pas besoin de bash pour ça.
+try:
+    import bro_user_level
+except Exception:
+    bro_user_level = None
+
+ACCESS_LEVEL_ATOME = 2       # profil atom4love (craft, rec:<skill>, mem:<skill>)
+ACCESS_LEVEL_SATELLITE = 3   # sociétaire satellite ou + (badge)
+ACCESS_LEVEL_CAPITAINE = 5   # = bro_tools.ACCESS_CAPTAIN, cf. bro_user_level.py
+
+
+def _owner_access_level(owner_email):
+    """Niveau BRO réel du propriétaire (0-5), voir bro_user_level.py. 0 si
+    indisponible (Qdrant/relay hors service, ou module absent) — dégradation
+    silencieuse vers le palier le plus restrictif plutôt qu'un crash.
+    Relay : RELAYS[-1] (relai LOCAL de la station si résolu par _load_relays,
+    sinon DEFAULT_RELAY) — un profil atom4love (Kind 30078) est le plus
+    souvent publié sur le relay de la station d'accueil, pas forcément sur le
+    relay public par défaut ; même logique que _CONSTELLATION_RELAY côté
+    bro_dm_daemon.sh."""
+    if not bro_user_level:
+        return 0
+    hex_ = _owner_hex(owner_email)
+    if not hex_:
+        return 0
+    try:
+        return bro_user_level.get_user_level(hex_, RELAYS[-1]).get("level", 0)
+    except Exception as e:
+        print(f"[BRO_WATCH] _owner_access_level indisponible : {e}")
+        return 0
+
+
+# Libellés humains du niveau requis — mêmes seuils que bro_dm_daemon.sh, pour
+# que le message affiché ne suggère jamais une condition insuffisante (ex :
+# dire "atom4love" à quelqu'un qui a besoin d'un abonnement satellite payant).
+_ACCESS_LEVEL_LABEL = {
+    ACCESS_LEVEL_ATOME: "un profil atom4love (créez-le sur atomic.html)",
+    ACCESS_LEVEL_SATELLITE: "une souscription ẐEN satellite ou constellation "
+                             "(https://opencollective.com/monnaie-libre/contribute)",
+}
+
+
+def _make_gated_handler(tag_name, min_level, real_handler):
+    """Vérifie le niveau réel avant d'exécuter real_handler — mêmes seuils et
+    même esprit que bro_dm_daemon.sh (canal DM-to-NODE), pour que la réponse
+    au propriétaire ne dépende pas du canal utilisé pour la poser."""
+    def _handler(owner_email, text):
+        if _owner_access_level(owner_email) < min_level:
+            requirement = _ACCESS_LEVEL_LABEL.get(min_level, "un niveau d'accès supérieur")
+            return f"🔒 #{tag_name} nécessite {requirement}."
+        return real_handler(owner_email, text)
+    return _handler
+
+
+CRAFT_RUN_TIMEOUT_SEC = 90     # question.py, cf. _run_craft_background
+BADGE_RUN_TIMEOUT_SEC = 300    # ComfyUI, cf. _run_badge_background (même durée que _call_generator)
+
+
+def _tool_craft(owner_email, text):
+    """Valide et LANCE en tâche détachée l'analyse d'un tutoriel — jamais
+    d'exécution synchrone ici (bro_url_content.py + question.py peuvent
+    prendre jusqu'à CRAFT_RUN_TIMEOUT_SEC). Même raison structurelle que
+    _run_scraper_now : un appel bloquant dans _handle_command_text a déjà
+    causé une boucle de rejeu massive le 2026-07-03 (voir sa docstring)."""
+    m = re.search(r"https?://\S+", text)
+    url = m.group(0) if m else re.sub(r"#craft\b", "", text, flags=re.IGNORECASE).strip()
+    if not url:
+        return "⚠️ Usage : #craft <url>  ex: #craft https://instructables.com/Arduino-TV-B-Gone/"
+    try:
+        subprocess.Popen(
+            ["python3", os.path.abspath(__file__), "run-craft-background", owner_email, url],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+        )
+    except Exception as e:
+        return f"⚠️ Échec du lancement de l'analyse : {e}"
+    return f"⏳ Analyse IA en cours pour : {url} — je vous enverrai le résultat sous {CRAFT_RUN_TIMEOUT_SEC}s."
+
+
+def _run_craft_background(owner_email, url):
+    """Exécute réellement le pipeline #craft (appelé en sous-processus détaché
+    par _tool_craft — voir sa docstring) et notifie le résultat par DM. Même
+    pipeline que bro_dm_daemon.sh::_handle_craft (bro_url_content.py ->
+    describe_image.py en repli -> question.py pour extraire le JSON recette)."""
+    content = ""
+    try:
+        result = subprocess.run(["python3", os.path.join(BRO_IA_PATH, "bro_url_content.py"), url],
+                                 capture_output=True, text=True, timeout=30)
+        content = result.stdout.strip()[:6000]
+    except Exception:
+        pass
+    if len(content) < 80:
+        content = _describe_image_url(url)[:4000]
+    if len(content) < 40:
+        send_dm_to_owner(owner_email, f"❌ Impossible de récupérer le contenu de : {url}", ttl_days=1)
+        return
+
+    prompt = (
+        "Tu es un assistant pédagogique Crafting Mine Life sur UPlanet. Analyse ce tutoriel et "
+        "identifie les compétences requises.\n"
+        "Réponds UNIQUEMENT en JSON valide sur une seule ligne (aucun texte autour, aucun markdown) :\n"
+        '{"name":"Nom en français","icon":"emoji","description":"1 phrase",'
+        '"ingredients":[{"skill":"nom_skill","level":1}],"resource_type":"lien"}\n'
+        "Règles strictes :\n"
+        "- skills : minuscules, pas d'espaces (underscores), 1-3 mots (ex: arduino, soudure, electronique_base)\n"
+        "- level : 1=débutant 2=intermédiaire 3=avancé\n"
+        "- 2 à 6 ingrédients\n"
+        f"- resource_type : \"document\", \"video\" ou \"lien\"\n\nTutoriel :\n{content}"
+    )
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
+            f.write(prompt)
+            tmp_path = f.name
+        result = subprocess.run(
+            ["python3", os.path.join(BRO_IA_PATH, "question.py"),
+             "--prompt-file", tmp_path, "--model", "gemma3:latest",
+             "--ctx", "8192", "--max-tokens", "256", "--temperature", "0.2"],
+            capture_output=True, text=True, timeout=CRAFT_RUN_TIMEOUT_SEC,
+        )
+        answer = result.stdout.strip()
+    except subprocess.TimeoutExpired:
+        send_dm_to_owner(owner_email, f"⏱️ Analyse #craft de {url} non terminée sous {CRAFT_RUN_TIMEOUT_SEC}s.", ttl_days=1)
+        return
+    except Exception as e:
+        send_dm_to_owner(owner_email, f"❌ Analyse IA indisponible : {e}", ttl_days=1)
+        return
+    finally:
+        if tmp_path:
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+
+    json_match = re.search(r"\{.*\}", answer, re.DOTALL)
+    reply = json_match.group(0) if json_match else (answer or '{"error":"IA indisponible — réessayez plus tard"}')
+    send_dm_to_owner(owner_email, reply, ttl_days=1)
+
+
+def _tool_badge(owner_email, text):
+    """Valide et LANCE en tâche détachée la génération du badge — ComfyUI
+    peut prendre jusqu'à BADGE_RUN_TIMEOUT_SEC, même raison que _tool_craft
+    ci-dessus : jamais d'appel bloquant dans _handle_command_text."""
+    skill = re.sub(r".*#badge\b", "", text, flags=re.IGNORECASE)
+    skill = re.sub(r"[^a-z0-9_-]", "", skill.strip().lower())[:40]
+    if not skill:
+        return "⚠️ Usage : #badge <compétence>  ex: #badge docker"
+    try:
+        subprocess.Popen(
+            ["python3", os.path.abspath(__file__), "run-badge-background", owner_email, skill],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+        )
+    except Exception as e:
+        return f"⚠️ Échec du lancement de la génération : {e}"
+    return (f"🎨 Génération du badge '{skill}'… Cela peut prendre jusqu'à {BADGE_RUN_TIMEOUT_SEC}s (ComfyUI) — "
+            "je vous enverrai le résultat par DM.")
+
+
+def _run_badge_background(owner_email, skill):
+    """Exécute réellement la génération ComfyUI (appelé en sous-processus
+    détaché par _tool_badge) et notifie le résultat par DM. Même prompt que
+    bro_dm_daemon.sh::_handle_badge — réutilise _call_generator (même
+    générateur que #image, donc même charge GPU qu'une génération d'image
+    normale, jamais de vidéo)."""
+    prompt = (f"A pixel art badge icon for the '{skill}' skill, hexagonal shape, vibrant colors, "
+              "dark background, technology emblem, professional logo, 8-bit style, clean design, WoTx2 skill badge")
+    url = _call_generator("generate_image.sh", prompt)
+    if url:
+        reply = (f"✅ Badge '{skill}' généré !\n🖼️ {url}\n\n"
+                 "Copiez ce lien pour l'ajouter comme ressource dans l'onglet Formation de my_wotx2.html")
+    else:
+        reply = f"❌ Échec de la génération pour '{skill}'. Vérifiez que ComfyUI est démarré (port 8188)."
+    send_dm_to_owner(owner_email, reply, ttl_days=1)
+
+
+def _tool_rec_skill(owner_email, text):
+    """Contribue à la mémoire collective d'une compétence — même backend
+    (skill_flashmem.py, fichier partagé ~/.zen/flashmem/skills/<skill>.md)
+    que bro_dm_daemon.sh::_handle_rec_skill, pour que la contribution soit
+    visible quel que soit le canal utilisé pour l'écrire."""
+    import skill_flashmem
+    m = re.search(r"#rec:([a-z0-9_-]+)\s+(.*)", text, re.IGNORECASE)
+    if not m:
+        return "⚠️ Usage : #rec:<skill> <votre note>  ex: #rec:devops Je maîtrise nginx"
+    skill, content = m.group(1).lower(), m.group(2).strip()
+    if not content:
+        return "⚠️ Usage : #rec:<skill> <votre note>  ex: #rec:devops Je maîtrise nginx"
+    npub = _owner_hex(owner_email)
+    if skill_flashmem.write_skill_memory(skill, content, npub):
+        return f"💾 Mémorisé dans la base partagée 'skills/{skill}'. Merci pour la contribution ! 🧠"
+    return f"❌ Échec mémorisation skill {skill}."
+
+
+def _tool_mem_skill(owner_email, text):
+    """Lit la mémoire collective d'une compétence (ou liste tous les skills
+    connus si aucun nom donné) — même backend que _tool_rec_skill."""
+    import skill_flashmem
+    m = re.search(r"#mem:([a-z0-9_-]*)", text, re.IGNORECASE)
+    skill = m.group(1).lower() if m else ""
+    if not skill:
+        skills = skill_flashmem.list_skills()
+        if not skills:
+            return ("📚 Aucune mémoire skill enregistrée sur ce node.\n"
+                     "Contribuez avec : #rec:<skill> <votre note>\nExemple : #rec:devops Je maîtrise nginx")
+        return ("📚 Skills mémorisés sur ce node :\n" + "\n".join(skills) +
+                "\n\nConsultez un skill : #mem:<skill>\nContribuez : #rec:<skill> <note>")
+    content = skill_flashmem.read_skill_memory(skill)
+    if not content:
+        return f"📚 Aucune note pour '{skill}'. Contribuez avec :\n#rec:{skill} <votre expérience ou ressource>"
+    lines = content.count("\n") + 1
+    return f"📚 Mémoire partagée '{skill}' ({lines} entrées) :\n{content}"
+
+
+def _register_system_tools():
+    bro_tools.register(bro_tools.Tool(
+        name="help", tags=("help",), handler=_tool_help,
+        description="« #help » ou « aide » : affiche la liste des commandes réellement disponibles.",
+        examples=("help", "aide", "commandes BRO", "quelles sont les commandes",
+                   "que peux-tu faire ?", "liste tes commandes"),
+    ))
+    bro_tools.register(bro_tools.Tool(
+        name="mem", tags=("mem",), handler=_tool_mem,
+        description="« #mem » : affiche les notes mémorisées explicitement (voir #rec) dans un slot personnel.",
+        examples=("montre-moi mes souvenirs", "qu'est-ce que tu as retenu de moi ?",
+                   "rappelle-moi ce qu'on s'est dit", "voir toutes mes mémoires"),
+    ))
+    bro_tools.register(bro_tools.Tool(
+        name="reset", tags=("reset",), handler=_tool_reset,
+        description="« #reset » : efface les notes mémorisées d'un slot personnel.",
+        examples=("oublie tout ce qu'on s'est dit", "efface toutes mes mémoires"),
+    ))
+    bro_tools.register(bro_tools.Tool(
+        name="rec", tags=("rec",), handler=_tool_rec,
+        description="« #rec TEXTE » : mémorise un fait précis dans un slot personnel.",
+        examples=("retiens que j'aime le jardinage", "mémorise ça pour plus tard", "note ça",
+                   "#rec j'adore le compost et les légumes anciens"),
+    ))
+    bro_tools.register(bro_tools.Tool(
+        name="scraper", tags=("scraper",), handler=_tool_scraper,
+        description="« lance le scraper DOMAINE » (ou « #scraper DOMAINE ») : exécute immédiatement la "
+                     "surveillance d'une source dont vous avez déjà déposé le cookie.",
+        examples=("lance le scraper mastodon maintenant", "exécute la surveillance mastodon.social",
+                   "relance la synchro de mon cookie", "vérifie mes mentions tout de suite"),
+    ))
+    bro_tools.register(bro_tools.Tool(
+        name="craft", tags=("craft",), min_access=ACCESS_LEVEL_ATOME,
+        handler=_make_gated_handler("craft", ACCESS_LEVEL_ATOME, _tool_craft),
+        description="« #craft <url> » : décompose un tutoriel en recette WoTx² (niveau atom4love requis).",
+        examples=("décompose ce tutoriel en recette", "transforme ce lien en étapes"),
+    ))
+    bro_tools.register(bro_tools.Tool(
+        name="badge", tags=("badge",), min_access=ACCESS_LEVEL_SATELLITE,
+        handler=_make_gated_handler("badge", ACCESS_LEVEL_SATELLITE, _tool_badge),
+        description="« #badge <compétence> » : génère une image de badge de compétence via ComfyUI "
+                     "(niveau satellite ẐEN requis).",
+        examples=("génère un badge pour cette compétence", "crée mon badge de compétence"),
+    ))
+    # #rec:<skill>/#mem:<skill> (niveau 2 — profil atom4love). Enregistrés avec
+    # tags=() : détectés via _detect_skill_tag (syntaxe à deux-points), pas le
+    # matcher générique #tag\b, pour ne pas collisionner avec #rec/#mem simples.
+    bro_tools.register(bro_tools.Tool(
+        name="rec_skill", tags=(), min_access=ACCESS_LEVEL_ATOME,
+        handler=_make_gated_handler("rec:<skill>", ACCESS_LEVEL_ATOME, _tool_rec_skill),
+        description="« #rec:<skill> NOTE » : contribue à la mémoire partagée d'une compétence "
+                     "(niveau atom4love requis).",
+        advertise=False,  # syntaxe #rec:<skill> non couverte par la description générique de #rec
+    ))
+    bro_tools.register(bro_tools.Tool(
+        name="mem_skill", tags=(), min_access=ACCESS_LEVEL_ATOME,
+        handler=_make_gated_handler("mem:<skill>", ACCESS_LEVEL_ATOME, _tool_mem_skill),
+        description="« #mem:<skill> » : lit la mémoire partagée d'une compétence "
+                     "(niveau atom4love requis).",
+        advertise=False,
+    ))
+
+
+_register_system_tools()
+
+
 def _execute_system_tag(target, owner_email, text):
-    """Exécute une commande système reconnue par match_intent (voir
-    SYSTEM_TAG_CORPUS) — jamais de réponse LLM inventée pour ces cas,
+    """Exécute une commande système reconnue par match_intent, via le
+    registre bro_tools — jamais de réponse LLM inventée pour ces cas,
     contrairement à l'incident du 2026-07-03. Retourne None si la cible
-    n'a pas (encore) d'implémentation réelle sur ce canal, pour repli
-    honnête côté appelant plutôt qu'une exécution hasardeuse."""
-    if target == "help":
-        lines = _bro_capabilities_description(owner_email).split("\n")
-        lines.append("")
-        lines.append("Voir aussi : #mem (souvenirs), #reset (les effacer), #rec <texte> (en noter un).")
-        return "\n".join(lines)
-
-    if target == "mem":
-        slots = _slots_from_text(text)
-        parts = []
-        for slot in slots:
-            summary = _format_slot_summary(owner_email, slot)
-            parts.append(f"Slot {slot} :\n{summary}" if summary else f"Slot {slot} : (vide)")
-        return "🧠 " + "\n\n".join(parts)
-
-    if target == "reset":
-        slots = _slots_from_text(text)
-        for slot in slots:
-            _clear_slot(owner_email, slot)
-        slots_str = ", ".join(str(s) for s in slots)
-        return f"🗑️ Mémoire effacée (slot{'s' if len(slots) > 1 else ''} {slots_str})."
-
-    if target == "rec":
-        slots = _slots_from_text(text)
-        # Texte à mémoriser : le message débarrassé des tags #rec/#N eux-mêmes.
-        content = re.sub(r"#rec\b", "", text, flags=re.IGNORECASE)
-        content = re.sub(r"#\d{1,2}\b", "", content).strip()
-        if not content:
-            return "🤔 Dites-moi quoi mémoriser, par exemple « #rec j'aime le jardinage »."
-        ok = all(_persist_slot_content(owner_email, slot, content) for slot in slots)
-        slots_str = ", ".join(str(s) for s in slots)
-        return f"✅ Noté dans le slot{'s' if len(slots) > 1 else ''} {slots_str}." if ok else \
-            "⚠️ Échec de la mémorisation (Qdrant indisponible ?)."
-
-    if target == "scraper":
-        domain = _extract_scraper_domain(owner_email, text)
-        if domain:
-            return _run_scraper_now(owner_email, domain)
-        available = _available_scraper_domains(owner_email)
-        if not available:
-            return "🍪 Aucun cookie déposé pour l'instant — déposez-en un sur /cookie pour activer un scraper."
-        return "🤔 Quel domaine ? " + ", ".join(available)
-
-    if target in ("craft", "badge"):
-        return (f"🔒 #{target} nécessite un profil/niveau d'accès non encore vérifiable sur ce canal self-DM — "
-                "utilisez ce tag en DM classique adressé à BRO (#BRO) plutôt qu'en self-DM.")
-
-    return None
+    n'est pas enregistrée, pour repli honnête côté appelant plutôt qu'une
+    exécution hasardeuse."""
+    tool = bro_tools.get(target)
+    if not tool:
+        return None
+    return tool.handler(owner_email, text)
 
 
 def _conversational_reply(owner_email, text, img_url=None):
@@ -2092,7 +2420,10 @@ def _handle_command_text(owner_email, text):
     # #help, #craft, #badge) — hashtag exact détecté en déterministe, langage
     # naturel équivalent reconnu via corpus Qdrant (match_intent). Jamais de
     # réponse LLM inventée pour ces cas (incident du 2026-07-03).
-    explicit_tag = _detect_system_tag(text)
+    # #rec:<skill>/#mem:<skill> testés EN PREMIER : syntaxe plus spécifique
+    # que #rec/#mem simples, avec laquelle elle chevaucherait sinon (cf.
+    # commentaire sur _detect_skill_tag).
+    explicit_tag = _detect_skill_tag(text) or _detect_system_tag(text)
     intent_target = explicit_tag or (match_intent(text) or (None,))[0]
     if intent_target:
         sys_reply = _execute_system_tag(intent_target, owner_email, text)
@@ -2349,11 +2680,36 @@ if __name__ == "__main__":
             print(f"{name}: {info.get('description', '?')} (activé {info.get('activated_at', '?')})")
         sys.exit(0)
 
+    elif len(sys.argv) >= 2 and sys.argv[1] == "describe-tools":
+        # Pont bash <-> registre bro_tools : permet à un autre canal (ex.
+        # UPlanet_IA_Responder.sh) de générer son texte d'aide depuis la MÊME
+        # source de vérité que le self-DM, plutôt que de maintenir sa propre
+        # doc statique séparée (cause structurelle de la divergence du
+        # 2026-07-03). EMAIL optionnel : sans lui, #arbor n'est pas listé
+        # (statut capitaine non vérifiable hors contexte owner).
+        email = sys.argv[2] if len(sys.argv) > 2 else ""
+        print(_bro_capabilities_description(email))
+        sys.exit(0)
+
     elif len(sys.argv) >= 6 and sys.argv[1] == "run-scraper-background":
         # Point d'entrée du sous-processus détaché lancé par _run_scraper_now —
         # jamais appelé directement par un humain.
         _, _, email, domain, script, cookie_file = sys.argv[:6]
         _run_scraper_background(email, domain, script, cookie_file)
+        sys.exit(0)
+
+    elif len(sys.argv) >= 4 and sys.argv[1] == "run-craft-background":
+        # Point d'entrée du sous-processus détaché lancé par _tool_craft —
+        # jamais appelé directement par un humain.
+        _, _, email, url = sys.argv[:4]
+        _run_craft_background(email, url)
+        sys.exit(0)
+
+    elif len(sys.argv) >= 4 and sys.argv[1] == "run-badge-background":
+        # Point d'entrée du sous-processus détaché lancé par _tool_badge —
+        # jamais appelé directement par un humain.
+        _, _, email, skill = sys.argv[:4]
+        _run_badge_background(email, skill)
         sys.exit(0)
 
     else:
