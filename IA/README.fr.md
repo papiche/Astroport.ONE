@@ -80,9 +80,9 @@ Le tag **#BRO** (ou **#BOT**) déclenche le script `UPlanet_IA_Responder.sh`. Se
 Le **slot mémoire** `#N` (1–12) est détecté dans le message ; s’il est présent et que l’utilisateur a accès (sociétaire), les 20 derniers messages de ce slot sont chargés comme contexte pour l’IA.
 
 #### 4. **Publication de la réponse**
-- **Clé utilisée** : UMAP (réponses PlantNet/inventory géolocalisées), sinon clé utilisateur (KNAME) si connue, sinon clé Capitaine.
-- **Mode secret** (réponse en DM) : si le script est appelé avec `--secret`, la réponse est envoyée en message privé NOSTR (kind 4) au lieu d’être publiée publiquement.
-- **Tags NOSTR de la réponse** :
+- **Réponses conversationnelles (déclencheur kind 1)** : toujours envoyées en message privé NOSTR chiffré (DM NIP-44, kind 4), adressé au pubkey déclencheur, signé par **NODE** (l'identité propre de la station, `~/.zen/game/secret.nostr`) — jamais la clé personnelle du Capitaine, jamais publiées publiquement. Le canal public kind 1 est retiré pour les réponses de l'IA.
+- **Publications de contenu** (blog kind 30023, etc.) : restent publiques, signées par le véritable propriétaire du contenu — UMAP (réponses PlantNet/inventory géolocalisées), sinon clé utilisateur (KNAME) si connue, sinon clé Capitaine.
+- **Tags NOSTR de la réponse** (publications de contenu uniquement) :
   - Si le **message déclencheur est éphémère** (tag NIP-40 `expiration`) : le bot **ne met pas** de lien `e` vers ce message (il sera supprimé). S’il répond à un **fil** (root/reply), le tag `e` pointe vers la racine ou le message parent du fil pour garder la conversation cohérente.
   - Sinon : tag `e` = id du message déclencheur, tag `p` = auteur. Les messages d’erreur reçoivent un tag `expiration` (TTL 1 h).
 - **#rec2** : si présent, la réponse du bot est enregistrée automatiquement dans le slot mémoire courant.

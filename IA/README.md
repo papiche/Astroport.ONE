@@ -88,9 +88,9 @@ The **#BRO** (or **#BOT**) tag triggers the `UPlanet_IA_Responder.sh` script. On
 The **memory slot** `#N` (1–12) is detected in the message; when present and the user has access (sociétaire), the last 20 messages of that slot are loaded as context for the IA.
 
 #### 4. **Publishing the Reply**
-- **Key used**: UMAP for geolocated PlantNet/inventory replies, else user key (KNAME) if known, else Captain key.
-- **Secret mode** (DM reply): If the script is invoked with `--secret`, the reply is sent as a NOSTR private message (kind 4) instead of being published publicly.
-- **NOSTR reply tags**:
+- **Conversational replies (kind 1 trigger)**: always sent as an encrypted NOSTR private message (NIP-44 DM, kind 4) addressed to the triggering pubkey, signed by **NODE** (the station's own identity, `~/.zen/game/secret.nostr`) — never the Captain's personal key, never published publicly. The public kind 1 channel has been retired for AI replies.
+- **Content publications** (blog kind 30023, etc.): still published publicly, signed with the actual content owner's key — UMAP for geolocated PlantNet/inventory replies, else user key (KNAME) if known, else Captain key.
+- **NOSTR reply tags** (content publications only):
   - If the **trigger message is ephemeral** (NIP-40 `expiration` tag): the bot **does not** add an `e` link to that message (it will be deleted). If the trigger is part of a **thread** (root/reply), the `e` tag points to the thread root or parent so the reply stays in the same thread.
   - Otherwise: `e` = trigger event id, `p` = author. Error messages get an `expiration` tag (1h TTL).
 - **#rec2**: When present, the bot’s reply is automatically recorded into the current memory slot.
@@ -156,10 +156,12 @@ The **memory slot** `#N` (1–12) is detected in the message; when present and t
 
 ### 🔐 **Privacy & Communication**
 
+All AI replies are now sent as private NIP-44 DMs by default (see §4 above) — `#secret` is no longer needed to get a private reply.
+
 | Command | Description | Example | Access |
 |---------|-------------|---------|---------|
-| `#secret` | Send private DM instead of public reply | `#BRO #secret Tell me something private` | All users |
-| `#secret #N` | Private DM with slot context | `#BRO #secret #3 Private meeting notes` | Sociétaires only |
+| `#secret` | Also hide *your own triggering message* from public relay storage (the reply is already private either way) | `#BRO #secret Tell me something private` | All users |
+| `#secret #N` | Hide the triggering message, with slot context | `#BRO #secret #3 Private meeting notes` | Sociétaires only |
 
 ## 🌳 **Complete Decision Tree**
 
@@ -264,7 +266,7 @@ The **memory slot** `#N` (1–12) is detected in the message; when present and t
 | `#reset #all` | Clear all slots (0-12) | - | Confirmation | Sociétaire |
 | `#rec2` | Auto-save bot response | `short_memory.py` | - | - |
 | `#cookie` | uDRIVE/Cookies delegation | MiroFish / Dify | Message uDRIVE path | - |
-| `#secret` | Private DM response | NOSTR kind 4 | Encrypted DM | - |
+| `#secret` | Also hide trigger message from public relay | - | - | - |
 | `#N` (1-12) | Use memory slot N | - | Context | Sociétaire |
 | (default) | AI conversation | `question.py` | Text response | Ollama |
 
@@ -441,8 +443,8 @@ The bot integrates with UPlanet's geolocation system:
 - **Optional sharing**: Choose what to share with the community
 - **Access control**: Slots 1-12 protected for CopyLaRadio sociétaires
 - **Secure verification**: User status verified via `~/.zen/game/players/` directory
-- **Private messaging**: `#secret` tag enables encrypted NOSTR direct messages
-- **Event filtering**: Secret messages are rejected from public relay storage
+- **Private messaging by default**: every AI reply is an encrypted NOSTR DM (NIP-44), signed by NODE, never published publicly
+- **Event filtering**: `#secret` additionally rejects the *triggering* message from public relay storage
 
 ## 🚀 **Advanced Features**
 
@@ -531,65 +533,58 @@ The bot integrates with UPlanet's geolocation system:
 - **Local storage** of all memories
 - **User isolation** for complete privacy
 - **No cloud dependencies**
-- **Encrypted private messaging** via NOSTR direct messages
-- **Event filtering** prevents secret messages from public storage
+- **Encrypted private messaging by default** for every AI reply (kind 1 trigger), signed by NODE
+- **Event filtering** on request (`#secret`) prevents the trigger message itself from public storage
 
-## 🔐 **Private Messaging with #secret**
+## 🔐 **Private Replies by Default (+ `#secret`)**
 
 ### How It Works
 
-The `#secret` tag enables completely private communication between you and the UPlanet IA Bot:
+Every reply to a kind 1 `#BRO`/`#BOT` message is sent as an encrypted NOSTR DM back to the sender — no opt-in needed:
 
-- **Encrypted delivery**: Messages are sent as NOSTR kind 4 (encrypted direct messages)
-- **Private storage**: Secret messages are not stored on public relays
-- **User verification**: Uses your NOSTR email (KNAME) for secure delivery
+- **Encrypted delivery**: Replies are sent as NIP-44 encrypted direct messages (NOSTR kind 4)
+- **Signing identity**: Signed by **NODE**, the station's own key (`~/.zen/game/secret.nostr`) — never the Captain's personal identity, so the bot's automated replies don't leak who currently operates the station
+- **Addressing**: Sent directly to the triggering pubkey (no lookup step required)
 - **Memory integration**: Works with all memory slots and AI generation features
+
+The `#secret` tag has a narrower, complementary role: it hides *your own triggering message* from public relay storage. The reply was already private either way.
 
 ### Usage Examples
 
-#### **Basic Private Communication**
+#### **Basic Communication (always private)**
 ```
-#BRO #secret Can you help me with a personal matter?
-#BOT #secret Tell me something private about AI
+#BRO Can you help me with a personal matter?
+#BOT Tell me something private about AI
 ```
 
-#### **Private Memory Operations**
+#### **Also hiding the triggering message**
 ```
 #rec #secret #3 Private meeting notes for tomorrow
 #mem #secret #5 Show my personal reminders privately
 #reset #secret #3 Clear private meeting memory
 ```
 
-#### **Private AI Generation**
-```
-#BRO #secret #image A private logo design for my startup
-#BOT #secret #music A personal theme song
-#BRO #secret #search Private research on sensitive topic
-```
-
 ### Technical Details
 
 #### **NOSTR Integration**
-- **Encryption**: Uses NIP-44 encryption for enhanced message privacy
-- **Key management**: Automatically retrieves user's hex key from `~/.zen/game/nostr/{KNAME}/HEX`
+- **Encryption**: Uses NIP-44 encryption for reply delivery
+- **Key management**: Reads NODE's key directly from `~/.zen/game/secret.nostr` — no per-user hex lookup needed
 - **Relay handling**: Sends via configured NOSTR relay with proper error handling
-- **Event filtering**: Secret messages return exit code 1 to prevent relay storage
+- **Event filtering**: `#secret` on the trigger message returns exit code 1 to prevent relay storage of that message
 
 #### **Memory Handling**
-- **Auto-recording**: `#rec2` works with secret messages using unique event IDs
+- **Auto-recording**: `#rec2` works the same way regardless of `#secret`, using unique local event IDs
 - **Context preservation**: Slot-based memory maintains conversation context
-- **Error suppression**: Public error messages are suppressed in secret mode
 
 #### **Security Features**
-- **No public trace**: Secret messages never appear in public feeds
-- **Encrypted content**: All message content is encrypted end-to-end
-- **User verification**: Requires valid NOSTR email and hex key
-- **Graceful fallback**: Handles missing keys or relay issues gracefully
+- **No public trace for replies**: AI replies never appear in public feeds, `#secret` or not
+- **Encrypted content**: All reply content is encrypted end-to-end
+- **Graceful fallback**: Handles missing NODE identity or relay issues gracefully
 
 ### Privacy Benefits
 
-1. **Complete confidentiality**: Your private conversations stay private
-2. **No public record**: Secret messages don't appear in public UPlanet feeds
+1. **Complete confidentiality by default**: Your conversations with the bot stay private without needing to remember a tag
+2. **No public record**: AI replies don't appear in public UPlanet feeds
 3. **Encrypted delivery**: All communication is encrypted using NOSTR standards
 4. **Memory privacy**: Private conversations can still use the memory system
 5. **AI privacy**: Generate content privately without public exposure

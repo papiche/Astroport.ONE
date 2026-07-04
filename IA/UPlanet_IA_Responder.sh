@@ -149,12 +149,18 @@ get_user_udrive_from_kname() {
 }
 
 # Build short help message
+# IMPORTANT : ce texte doit refléter UNIQUEMENT ce que CE script exécute lui-même.
+# #craft/#badge/#mem:<skill>/#rec:<skill> existent réellement, mais dans un AUTRE
+# canal (DM direct au pubkey de NODE, géré par bro_dm_daemon.sh) — les lister ici
+# serait aussi faux que le #rec fantôme corrigé le 2026-07-04 (documenté depuis
+# toujours, jamais implémenté dans CE script jusqu'à ce correctif).
 build_bro_help_message() {
   cat << 'HELPEOF'
 ℹ️ BRO Help
 
 Session / memory
-  #mem [#1..#12]  |  #rec  |  #rec2  |  #reset
+  #mem [#1..#12]  |  #rec <texte> [#1..#12]  |  #rec2  |  #reset [#1..#12|#all]
+  (#1..#12 réservés aux sociétaires CopyLaRadio, #0 par défaut pour tous)
 
 Search & media
   #search  |  #image  |  #video  |  #music  |  #youtube [#mp3|#mp4] [URL|Texte]
@@ -164,6 +170,7 @@ Voice (TTS)
 
 Tools
   #plantnet [image]  |  #cookie (uDRIVE)  |  #inventory [image]
+  (alias reconnaissance : #plant #insect #animal #person #object #place)
 
 Meta
   #url [URLs in message]  |  #status  |  #whoami
@@ -301,9 +308,16 @@ log() {
     echo "[$CURRENT_TIME_STR] $1" >&2
 }
 
-# Optimisation: Detect secret mode early
-SECRET_MODE=false
-[[ "$8" == "--secret" ]] && SECRET_MODE=true
+# Identité NODE (clone numérique de la station) — signe toutes les réponses
+# conversationnelles (kind 1 -> DM NIP-44 chiffré). Le canal public kind 1 est
+# retiré : l'IA ne publie plus ses réponses en clair, elle les adresse en privé
+# au pubkey qui l'a sollicitée.
+NODE_HEX=""
+NODE_NSEC=""
+if [[ -s "$HOME/.zen/game/secret.nostr" ]]; then
+    NODE_HEX=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
+    NODE_NSEC=$(sed 's/.*NSEC=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
+fi
 
 # Initialize PlantNet UMAP mode flag
 USE_UMAP_FOR_PLANTNET=false
@@ -318,6 +332,7 @@ TAGS[BRO]=false
 TAGS[BOT]=false
 TAGS[reset]=false
 TAGS[mem]=false
+TAGS[rec]=false
 TAGS[search]=false
 TAGS[image]=false
 TAGS[video]=false
@@ -345,7 +360,11 @@ TAGS[whoami]=false
 if [[ "$message_text" =~ \#BRO([[:space:]]|$) ]]; then TAGS[BRO]=true; fi
 if [[ "$message_text" =~ \#BOT\ + ]]; then TAGS[BOT]=true; fi
 if [[ "$message_text" =~ \#reset ]]; then TAGS[reset]=true; fi
-if [[ "$message_text" =~ \#mem ]]; then TAGS[mem]=true; fi
+# #mem mais pas #mem: (mémoire de compétence partagée — canal DM direct à
+# NODE via bro_dm_daemon.sh uniquement, pas ce script, voir plus bas)
+if [[ "$message_text" =~ \#mem([^:]|$) ]]; then TAGS[mem]=true; fi
+# #rec mais pas #rec2 (auto-record réponse bot) ni #rec: (idem #mem: ci-dessus)
+if [[ "$message_text" =~ \#rec([^0-9:]|$) ]]; then TAGS[rec]=true; fi
 if [[ "$message_text" =~ \#search ]]; then TAGS[search]=true; fi
 if [[ "$message_text" =~ \#image ]]; then TAGS[image]=true; fi
 if [[ "$message_text" =~ \#video ]]; then TAGS[video]=true; fi
@@ -693,19 +712,15 @@ https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-mo
 #CopyLaRadio #UPlanet"
 }
 
-# Function to send memory access denied message
+# Function to send memory access denied message (DM privé, signé NODE)
 send_memory_access_denied() {
     local pubkey="$1"
     local event_id="$2"
     local slot="$3"
-    
+
     (
     source $HOME/.zen/Astroport.ONE/tools/my.sh
-    source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ## CAPTAIN SPEAKING
-    if [[ "$pubkey" != "$HEX" && "$NSEC" != "" ]]; then
-        NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
-        KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
-        
+    if [[ "$pubkey" != "$NODE_HEX" && -n "$NODE_NSEC" ]]; then
         DENIED_MSG="⚠️ Accès refusé aux slots de mémoire 1-12.
 
 Pour utiliser les slots de mémoire 1-12, vous devez être sociétaire CopyLaRadio et posséder une ZenCard.
@@ -714,20 +729,10 @@ Le slot 0 reste accessible pour tous les utilisateurs autorisés.
 
 Pour devenir sociétaire : https://opencollective.com/monnaie-libre/contribute
 
-Votre Capitaine.
+Votre Station.
 #CopyLaRadio #mem"
 
-        # Add 1-hour TTL (NIP-40 expiration) for error messages
-        EXPIRATION_TS=$(($(date +%s) + 3600))
-        TAGS_JSON='[["e","'$event_id'"],["p","'$pubkey'"],["t","MemoryAccessDenied"],["expiration","'$EXPIRATION_TS'"]]'
-        
-        python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
-          --keyfile "$KEYFILE_PATH" \
-          --content "$DENIED_MSG" \
-          --relays "$myRELAY" \
-          --tags "$TAGS_JSON" \
-          --kind 1 \
-          --json >/dev/null 2>&1
+        python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py" "$NODE_NSEC" "$pubkey" "$DENIED_MSG" "$myRELAY" >/dev/null 2>&1
     fi
     ) &
 }
@@ -1173,9 +1178,22 @@ fi
 ################################################################### 
 # Optimisation: Main processing logic simplified
 if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
-    
+
+    # #mem:<skill>/#rec:<skill> (mémoire de compétence partagée, niveau atom4love)
+    # n'est PAS géré par ce script — c'est le canal DM direct au pubkey de NODE
+    # (bro_dm_daemon.sh, canal "plain") qui l'implémente. Répondre honnêtement
+    # ici plutôt que de mal router vers #mem/#rec génériques (qui ignoreraient
+    # silencieusement le nom du skill) ou de tomber sur une réponse LLM inventée.
+    if [[ "$message_text" =~ \#(mem|rec):[a-z0-9_-] ]]; then
+        KeyANSWER="📚 La mémoire de compétence partagée (#mem:<skill> / #rec:<skill>) se fait en DM privé "
+        KeyANSWER+="adressé directement à la station (pas via une mention publique #BRO). "
+        KeyANSWER+="Envoyez votre message en DM au pubkey de la station."
+    fi
+
     # Optimisation: Handle memory operations first
-    if [[ "${TAGS[reset]}" == true ]]; then
+    if [[ -n "$KeyANSWER" ]]; then
+        : # #mem:<skill>/#rec:<skill> déjà traité ci-dessus
+    elif [[ "${TAGS[reset]}" == true ]]; then
         # Memory reset logic
         reset_slot=0
         [[ $memory_slot -gt 0 ]] && reset_slot=$memory_slot
@@ -1261,6 +1279,31 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "No memory file found for USER: $user_id, SLOT: 0"
                 KeyANSWER="Aucune mémoire trouvée."
             fi
+        fi
+    elif [[ "${TAGS[rec]}" == true ]]; then
+        # Mémorise le message de L'UTILISATEUR (jamais la réponse du bot — voir
+        # #rec2 pour ça) : même sémantique que bro_watch_core.py::_tool_rec et
+        # bro_dm_daemon.sh::_handle_rec, pour que "#rec" fasse la même chose
+        # quel que soit le canal utilisé pour le taper. Documenté depuis
+        # toujours dans build_bro_help_message() mais jamais implémenté ici
+        # jusqu'à ce correctif.
+        rec_slot=0
+        [[ $memory_slot -gt 0 ]] && rec_slot=$memory_slot
+        if check_memory_slot_access "$user_id" "$rec_slot"; then
+            rec_content=$(echo "$message_text" | sed -E 's/#BOT//g; s/#BRO//g; s/#rec\b//g; s/#[0-9]{1,2}\b//g' | xargs)
+            if [[ -n "$rec_content" ]]; then
+                escaped_content=$(echo "$rec_content" | sed 's/\\/\\\\/g; s/"/\\"/g')
+                rec_event_json='{"event":{"pubkey":"'"$PUBKEY"'","content":"'"$escaped_content"'"}}'
+                $MY_PATH/short_memory.py "$rec_event_json" "$LAT" "$LON" "$rec_slot" "$user_id"
+                echo "Memory #rec saved for USER: $user_id, SLOT: $rec_slot"
+                KeyANSWER="💾 Mémorisé dans le slot $rec_slot (${#rec_content} caractères)."
+            else
+                KeyANSWER="🤔 Dites-moi quoi mémoriser, par exemple « #BRO #rec j'aime le jardinage »."
+            fi
+        else
+            echo "Memory access denied for #rec - USER: $user_id, SLOT: $rec_slot"
+            send_memory_access_denied "$PUBKEY" "$EVENT" "$rec_slot"
+            KeyANSWER="Accès refusé au slot $rec_slot. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12."
         fi
     fi
 
@@ -2211,43 +2254,40 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
         KeyANSWER=$(echo "$KeyANSWER" | sed 's/#BOT//g; s/#BRO//g; s/#bot//g; s/#bro//g')
 
         ## SEND REPLY MESSAGE
-        if [[ "$SECRET_MODE" == true ]]; then
-            # Send encrypted DM
-            if [[ -n "$KNAME" ]]; then
-                # Capitaine speaking
-                KNAME_HEX_FILE="$HOME/.zen/game/nostr/$KNAME/HEX"
-                if [[ -f "$KNAME_HEX_FILE" ]]; then
-                    KNAME_HEX=$(cat "$KNAME_HEX_FILE")
-                    echo "[SECRET] Found KNAME hex key: $KNAME_HEX for $KNAME"
-                    
-                    if [[ -z "$KeyANSWER" ]]; then
-                        echo "[SECRET] KeyANSWER is empty, sending fallback message" >&2
-                        KeyANSWER="Réponse IA non générée. Erreur technique. $CURRENT_TIME_STR"
-                    fi
-                    
-                    echo "[SECRET] Sending DM with content: $KeyANSWER" >&2
-                    # Note: DM functionality still uses nostr_send_secure_dm.py
-                    source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
-                    DM_RESULT=$($HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "$NSEC" "$KNAME_HEX" "$KeyANSWER" "$myRELAY" 2>&1)
-                    DM_EXIT_CODE=$?
-                    
-                    if [[ $DM_EXIT_CODE -eq 0 ]]; then
-                        echo "[SECRET] Private DM sent successfully to $KNAME ($KNAME_HEX) via NOSTR relay (event not stored in strfry)." >&2
-                    else
-                        echo "[SECRET] Failed to send DM. Exit code: $DM_EXIT_CODE" >&2
-                        echo "[SECRET] DM error output: $DM_RESULT" >&2
-                        send_error_email "Failed to send private DM to $KNAME. Exit code: $DM_EXIT_CODE. Error: $DM_RESULT" "~/.zen/tmp/IA.log"
-                        FALLBACK_MSG="Message privé non envoyé. Erreur technique. $CURRENT_TIME_STR"
-                        $HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "$NSEC" "$KNAME_HEX" "$FALLBACK_MSG" "$myRELAY" >/dev/null 2>&1
-                    fi
+        ## Kind 1 = réponse conversationnelle -> toujours en DM NIP-44, signée NODE.
+        ## Les autres kinds (30023 blog, ...) restent des publications publiques,
+        ## signées par le propriétaire réel du contenu (cf. sélection KEYFILE_PATH ci-dessus).
+        if [[ "$AnswerKind" == "1" ]]; then
+            # Send encrypted DM, signed by NODE (clone de la station, jamais l'identité
+            # personnelle du capitaine : cf. UPlanet_IA_Responder.sh migration canal1->DM44)
+            if [[ -z "$NODE_NSEC" || -z "$NODE_HEX" ]]; then
+                echo "[DM] NODE identity unavailable (~/.zen/game/secret.nostr), cannot send DM." >&2
+            elif [[ -n "$PUBKEY" ]]; then
+                echo "[DM] Replying to pubkey: $PUBKEY"
+
+                if [[ -z "$KeyANSWER" ]]; then
+                    echo "[DM] KeyANSWER is empty, sending fallback message" >&2
+                    KeyANSWER="Réponse IA non générée. Erreur technique. $CURRENT_TIME_STR"
+                fi
+
+                echo "[DM] Sending DM with content: $KeyANSWER" >&2
+                DM_RESULT=$($HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "$NODE_NSEC" "$PUBKEY" "$KeyANSWER" "$myRELAY" 2>&1)
+                DM_EXIT_CODE=$?
+
+                if [[ $DM_EXIT_CODE -eq 0 ]]; then
+                    echo "[DM] Private DM sent successfully to $PUBKEY via NOSTR relay (event not stored publicly)." >&2
                 else
-                    echo "[SECRET] KNAME hex key not found at $KNAME_HEX_FILE, cannot send DM."
+                    echo "[DM] Failed to send DM. Exit code: $DM_EXIT_CODE" >&2
+                    echo "[DM] DM error output: $DM_RESULT" >&2
+                    send_error_email "Failed to send private DM to $PUBKEY. Exit code: $DM_EXIT_CODE. Error: $DM_RESULT" "~/.zen/tmp/IA.log"
+                    FALLBACK_MSG="Message privé non envoyé. Erreur technique. $CURRENT_TIME_STR"
+                    $HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "$NODE_NSEC" "$PUBKEY" "$FALLBACK_MSG" "$myRELAY" >/dev/null 2>&1
                 fi
             else
-                echo "[SECRET] KNAME not set, cannot send DM."
+                echo "[DM] PUBKEY not set, cannot send DM."
             fi
-            
-            # Clean up temporary UMAP keyfile if it was created (even in SECRET mode)
+
+            # Clean up temporary UMAP keyfile if it was created (unused in DM path)
             if [[ "${USE_UMAP_FOR_PLANTNET:-false}" == true && -n "${UMAP_KEYFILE:-}" && -f "$UMAP_KEYFILE" ]]; then
                 echo "PlantNet: Cleaning up temporary UMAP keyfile: $UMAP_KEYFILE" >&2
                 rm -f "$UMAP_KEYFILE"
@@ -2375,17 +2415,11 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
         if [[ "${TAGS[rec2]}" == true ]]; then
             if check_memory_slot_access "$user_id" "$memory_slot"; then
                 echo "Auto-recording bot response for USER: $user_id, SLOT: $memory_slot"
-                if [[ "$SECRET_MODE" == true ]]; then
-                    bot_event_json='{"event":{"id":"secret_bot_response_'$CURRENT_TIMESTAMP'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$CURRENT_TIMESTAMP'}}'
-                else
-                    bot_event_json='{"event":{"id":"bot_response_'$CURRENT_TIMESTAMP'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$CURRENT_TIMESTAMP'}}'
-                fi
+                bot_event_json='{"event":{"id":"dm_bot_response_'$CURRENT_TIMESTAMP'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$CURRENT_TIMESTAMP'}}'
                 $MY_PATH/short_memory.py "$bot_event_json" "$LAT" "$LON" "$memory_slot" "$user_id"
             else
                 echo "Memory access denied for auto-recording - USER: $user_id, SLOT: $memory_slot"
-                if [[ "$SECRET_MODE" != true ]]; then
-                    send_memory_access_denied "$PUBKEY" "$EVENT" "$memory_slot"
-                fi
+                send_memory_access_denied "$PUBKEY" "$EVENT" "$memory_slot"
             fi
         fi
     fi
