@@ -132,7 +132,8 @@ BASE_ARGS="$DENO_ARGS $COOKIESRC $BGUTIL_ARG"
 
 log_debug "Extracting metadata for: $URL"
 # Attention : l'ordre ici DOIT être id | duration | uploader | title
-metadata_output=$(timeout 60 yt-dlp $BASE_ARGS --no-warnings \
+# --no-playlist : si l'URL contient v=ID&list=..., télécharge uniquement la vidéo v=ID
+metadata_output=$(timeout 60 yt-dlp $BASE_ARGS --no-playlist --no-warnings \
     --print '%(id)s|%(duration)s|%(uploader)s|%(title)s' "$URL" 2>>"$LOGFILE")
 
 metadata_line=$(echo "$metadata_output" | grep -E "^[a-zA-Z0-9_-]{11}\|" | head -n 1)
@@ -170,7 +171,7 @@ fi
 
 # --- 6. TÉLÉCHARGEMENT ---
 log_debug "Starting download"
-COMMON_ARGS="$BASE_ARGS --playlist-items 1 --concurrent-fragments 1 --socket-timeout 120"
+COMMON_ARGS="$BASE_ARGS --no-playlist --concurrent-fragments 1 --socket-timeout 120"
 case "$FORMAT" in
     mp3)
         download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS \

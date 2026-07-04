@@ -1032,10 +1032,33 @@ case ${CAT} in
         }' "$METADATA_FILE_FROM_JSON" > "$YOUTUBE_METADATA_JSON_FILE" 2>/dev/null || rm -f "$YOUTUBE_METADATA_JSON_FILE"
     fi
 
+    # Vérification dupliquée par YouTube ID (les re-téléchargements yt-dlp produisent
+    # des bytes différents → SHA256 ne correspond pas → is_reupload serait faux)
+    YT_VIDEO_ID=$(echo "$YOUTUBE_JSON" | jq -r '.id // empty' 2>/dev/null || true)
+    if [[ -n "$YT_VIDEO_ID" && -n "$NPUB_HEX" ]]; then
+        NOSTR_GET_EVENTS="${HOME}/.zen/Astroport.ONE/tools/nostr_get_events.sh"
+        if [[ -f "$NOSTR_GET_EVENTS" ]]; then
+            echo "🔍 Vérification si YouTube ID '$YT_VIDEO_ID' déjà publié..."
+            EXISTING_YT=$(bash "$NOSTR_GET_EVENTS" --kind 21 --author "$NPUB_HEX" --limit 200 2>/dev/null \
+                | jq -r "select(.tags[]? | select(.[0] == \"url\") | .[1] | contains(\"$YT_VIDEO_ID\")) | .id" 2>/dev/null | head -1)
+            if [[ -z "$EXISTING_YT" ]]; then
+                EXISTING_YT=$(bash "$NOSTR_GET_EVENTS" --kind 22 --author "$NPUB_HEX" --limit 200 2>/dev/null \
+                    | jq -r "select(.tags[]? | select(.[0] == \"url\") | .[1] | contains(\"$YT_VIDEO_ID\")) | .id" 2>/dev/null | head -1)
+            fi
+            if [[ -n "$EXISTING_YT" ]]; then
+                echo "⚠️ Vidéo YouTube '$YT_VIDEO_ID' déjà publiée (event ${EXISTING_YT:0:16}…) — upload ignoré."
+                espeak "YouTube video already published. Skipping." 2>/dev/null || true
+                rm -rf "$TEMP_YOUTUBE_DIR"
+                [[ -f "${YOUTUBE_METADATA_JSON_FILE:-}" ]] && rm -f "$YOUTUBE_METADATA_JSON_FILE"
+                exit 0
+            fi
+        fi
+    fi
+
     # API UPLOAD
     echo "📤 Uploading video via /api/fileupload..."
     espeak "Starting video upload to IPFS" 2>/dev/null || true
-    
+
     if [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]]; then
         UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" -F "file=@${FILE_PATH_DOWNLOADED}" -F "npub=${NPUB}" -F "youtube_metadata=@${YOUTUBE_METADATA_JSON_FILE}")
     else
@@ -1060,9 +1083,20 @@ case ${CAT} in
     DIMENSIONS=$(echo "$UPLOAD_RESPONSE" | jq -r '.dimensions // empty')
     UPLOAD_CHAIN=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload_chain // empty')
     FILE_SIZE=$(echo "$UPLOAD_RESPONSE" | jq -r '.file_size // .fileSize // 0')
+    IS_REUPLOAD=$(echo "$UPLOAD_RESPONSE" | jq -r '.provenance.is_reupload // false' 2>/dev/null || echo "false")
 
     echo "✅ Video uploaded to IPFS! CID: ${CIDIRECT:-$IPFS_CID}"
     espeak "Video uploaded successfully" 2>/dev/null || true
+
+    # Vérification re-upload (SHA256 identique déjà publié sur NOSTR)
+    if [[ "$IS_REUPLOAD" == "true" ]]; then
+        ORIG_AUTHOR=$(echo "$UPLOAD_RESPONSE" | jq -r '.provenance.original_author // ""' 2>/dev/null | head -c 16)
+        echo "⚠️ Fichier déjà publié sur NOSTR (SHA256 identique). Auteur original: ${ORIG_AUTHOR}... — publication ignorée."
+        espeak "Video already published. Skipping." 2>/dev/null || true
+        rm -rf "$TEMP_YOUTUBE_DIR"
+        [[ -f "${YOUTUBE_METADATA_JSON_FILE:-}" ]] && rm -f "$YOUTUBE_METADATA_JSON_FILE"
+        exit 0
+    fi
 
     # User Input & Description
     [ ! $2 ] && VIDEO_TITLE=$(zenity --entry --width 600 --title "Titre de la vidéo" --text "Confirmez le titre" --entry-text="$TITLE")

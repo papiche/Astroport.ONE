@@ -1816,6 +1816,67 @@ def _find_scraper_script(domain):
     return legacy if os.path.isfile(legacy) else None
 
 
+_SCRAPER_ICONS = {
+    "mastodon": "🦣", "youtube": "📺", "leboncoin": "🏷️",
+    "duniter": "🔐", "monnaie-libre": "🌻", "google": "🔍",
+}
+
+
+def list_station_scrapers():
+    """Retourne tous les scrapers disponibles sur cette station : domaine, catégorie, icône, description.
+    Lecture des en-têtes de scripts (ligne «  — …» dans les 10 premières lignes)."""
+    result = []
+    seen = set()
+    scrapers_dir = os.path.join(BRO_IA_PATH, "scrapers")
+    try:
+        for category in sorted(os.listdir(scrapers_dir)):
+            cat_path = os.path.join(scrapers_dir, category)
+            if not os.path.isdir(cat_path):
+                continue
+            for fname in sorted(os.listdir(cat_path)):
+                if not fname.endswith(".sh") or fname.startswith("process_"):
+                    continue
+                domain = fname[:-3]
+                if domain in seen:
+                    continue
+                seen.add(domain)
+                desc = ""
+                try:
+                    with open(os.path.join(cat_path, fname)) as fh:
+                        for _, line in zip(range(10), fh):
+                            line = line.strip().lstrip("#").strip()
+                            if "—" in line:
+                                desc = line.split("—", 1)[1].strip()
+                                break
+                except Exception:
+                    pass
+                result.append({
+                    "domain":      domain,
+                    "category":    category,
+                    "icon":        _SCRAPER_ICONS.get(category, "🍪"),
+                    "description": desc or f"Surveillance {domain}",
+                })
+    except Exception:
+        pass
+    return result
+
+
+def update_bro_capabilities(owner_email):
+    """Enrichit _bro_commands.available_scrapers dans le manifest avec le catalogue
+    des scrapers de la station, puis republie en kind 31903."""
+    try:
+        manifest = _load_manifest(owner_email)
+        scrapers_catalog = [
+            {"domain": s["domain"], "category": s["category"], "icon": s["icon"]}
+            for s in list_station_scrapers()
+        ]
+        manifest.setdefault(COMMAND_LAST_CHECK_KEY, {})["available_scrapers"] = scrapers_catalog
+        _save_manifest(owner_email, manifest)
+        _publish_manifest_to_nostr(owner_email, manifest)
+    except Exception as e:
+        print(f"[BRO_WATCH] update_bro_capabilities failed for {owner_email}: {e}")
+
+
 def _available_scraper_domains(owner_email):
     """Domaines pour lesquels le propriétaire a déposé un cookie ET dont le
     fichier cookie en clair existe encore localement (condition réelle

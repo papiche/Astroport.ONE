@@ -1,8 +1,6 @@
-# LIST OF NOSTR FRIENDS RELAYS
+# LIST OF NOSTR FRIENDS RELAYS 
+# -- automatic discover from ipfs swarm ---
 wss://relay.copylaradio.com
-wss://relay.primal.net
-wss://relay.damus.io
-wss://relay.snort.social
-wss://relay.nostr.band
-wss://nostr.wine
+wss://relay.guenoel.fr
+wss://relay.sagittarius.copylaradio.com
 
