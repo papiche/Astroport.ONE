@@ -2442,6 +2442,36 @@ def _conversational_reply(owner_email, text, img_url=None):
     return answer
 
 
+def _dispatch_conversational_reply(owner_email, text, img_url=None):
+    """Lance _conversational_reply en tâche détachée — dernier repli restant
+    qui pouvait bloquer process_incoming_commands (description d'image ~90s
+    + génération LLM ~45s, jusqu'à ~135s cumulés). Même remède, pour la même
+    raison, que le scraper/#craft/#badge/médias : un appel synchrone de
+    plusieurs dizaines de secondes à plusieurs minutes a déjà causé une
+    boucle de rejeu massive le 2026-07-03. _conversational_reply journalise/
+    mémorise déjà l'échange elle-même (voir sa fin) — inchangée, seul le
+    mode d'appel change."""
+    try:
+        payload = json.dumps({"text": text, "img_url": img_url or ""})
+        subprocess.Popen(
+            ["python3", os.path.abspath(__file__), "run-conversation-background", owner_email, payload],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+        )
+    except Exception as e:
+        print(f"[BRO_WATCH] Échec du lancement de la réponse conversationnelle : {e}")
+        return "🤔 Je n'ai pas pu traiter votre message, réessayez."
+    return "🤔 Je réfléchis à votre message, je vous réponds dans un instant…"
+
+
+def _run_conversation_background(owner_email, payload):
+    """Exécute réellement _conversational_reply (appelé en sous-processus
+    détaché par _dispatch_conversational_reply) et notifie le résultat par DM."""
+    text = payload.get("text", "")
+    img_url = payload.get("img_url") or None
+    answer = _conversational_reply(owner_email, text, img_url)
+    send_dm_to_owner(owner_email, answer, ttl_days=1)
+
+
 def _handle_command_text(owner_email, text):
     """Parse un message reçu en self-DM. Essaie d'abord l'interprétation en
     langage naturel (conversation fluide), puis retombe sur la syntaxe
@@ -2503,7 +2533,7 @@ def _handle_command_text(owner_email, text):
             tool_result = f"💬 {tool_result}"
         return tool_result
 
-    return _conversational_reply(owner_email, text, img_url)
+    return _dispatch_conversational_reply(owner_email, text, img_url)
 
 
 def process_incoming_commands(owner_email):
@@ -2768,6 +2798,13 @@ if __name__ == "__main__":
         # #pierre/#amelie) — jamais appelé directement par un humain.
         _, _, media_type, email, payload_json = sys.argv[:5]
         _run_media_background(media_type, email, json.loads(payload_json))
+        sys.exit(0)
+
+    elif len(sys.argv) >= 4 and sys.argv[1] == "run-conversation-background":
+        # Point d'entrée du sous-processus détaché lancé par
+        # _dispatch_conversational_reply — jamais appelé directement par un humain.
+        _, _, email, payload_json = sys.argv[:4]
+        _run_conversation_background(email, json.loads(payload_json))
         sys.exit(0)
 
     else:
