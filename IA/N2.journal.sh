@@ -629,7 +629,7 @@ generate_n2_journal() {
         --arg summary "$summary_text" \
         --arg published_at "$published_at" \
         --arg type "$summary_type" \
-        '[["d", $d], ["title", $title], ["summary", $summary], ["published_at", $published_at], ["t", "PersonalN2Journal"], ["t", "N2Network"], ["t", $type], ["t", "UPlanet"], ["t", "SummaryType:" + $type]]')
+        '[["d", $d], ["title", $title], ["summary", $summary], ["published_at", $published_at], ["t", "PersonalN2Journal"], ["t", "N2Network"], ["t", $type], ["t", "UPlanet"], ["t", "SummaryType:" + $type], ["subscription", "n2_journal"]]')
     
     # Validate NIP-23 compliance
     if ! validate_nip23_event "$summary_content" "$summary_title" "$d_tag" "$ExtraTags"; then
@@ -684,6 +684,17 @@ generate_n2_journal() {
             log "INFO" "✅ N² journal published for ${PLAYER} (ID: $EVENT_ID, $message_count messages, type: $summary_type)"
             log_metric "N2_JOURNAL_PUBLISHED" "$message_count" "${PLAYER}"
             echo "$EVENT_ID"
+
+            # Injection résumé dans BRO slot 14 (persona mémoire réseau).
+            # Seulement Monthly/Yearly — Daily/Weekly : trop granulaires pour le slot persona.
+            if [[ "$summary_type" == "Monthly" || "$summary_type" == "Yearly" ]]; then
+                _bro_content="Journal N² ${summary_type} (${TODATE}) : $(echo "$summary_content" | head -c 600)"
+                python3 "${MY_PATH}/memory_manager.py" upsert-slot \
+                    --user-id "$PLAYER" --slot 14 --content "$_bro_content" \
+                    >/dev/null 2>&1 \
+                    && log "INFO" "🧠 Résumé N² → BRO slot 14 pour ${PLAYER}" \
+                    || log "WARN" "⚠️ Injection BRO slot 14 indisponible pour ${PLAYER}"
+            fi
         else
             log "WARN" "⚠️ N² journal may not have been published correctly for ${PLAYER}"
             log "DEBUG" "Response: $SEND_RESULT"

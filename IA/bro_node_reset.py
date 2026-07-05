@@ -30,6 +30,7 @@ exécuter réellement.
 
 Usage :
   python3 bro_node_reset.py list-accounts
+  python3 bro_node_reset.py status EMAIL
   python3 bro_node_reset.py reset-bro EMAIL [--apply]
   python3 bro_node_reset.py reset-node [--apply]
   python3 bro_node_reset.py audit-tools
@@ -65,6 +66,24 @@ def _log(msg):
     print(msg)
 
 
+def _topics_entries_for_owner(owner_email):
+    """Compte les points bro_watch_topics de cet owner via API Qdrant REST."""
+    cname = bwc.QDRANT_TOPICS_COLLECTION
+    if not mm._curl("GET", f"{mm.QDRANT_URL}/collections/{cname}"):
+        return 0
+    result = mm._curl("POST", f"{mm.QDRANT_URL}/collections/{cname}/points/count",
+                      {"filter": {"must": [{"key": "owner", "match": {"value": owner_email}}]},
+                       "exact": True})
+    return result.get("result", {}).get("count", 0)
+
+
+def _delete_topics_entries(owner_email):
+    """Supprime les points bro_watch_topics de cet owner via API Qdrant REST."""
+    cname = bwc.QDRANT_TOPICS_COLLECTION
+    mm._curl("POST", f"{mm.QDRANT_URL}/collections/{cname}/points/delete",
+             {"filter": {"must": [{"key": "owner", "match": {"value": owner_email}}]}})
+
+
 # ── list-accounts ───────────────────────────────────────────────────────────
 
 def cmd_list_accounts(args):
@@ -78,6 +97,60 @@ def cmd_list_accounts(args):
             manifest = {}
         domains = [k for k in manifest if not k.startswith("_")]
         _log(f"  - {email}{tag} — {len(domains)} domaine(s) : {', '.join(domains) or '(aucun)'}")
+
+
+# ── status EMAIL ────────────────────────────────────────────────────────────
+
+def cmd_status(args):
+    """Audit mémoire BRO pour un compte — lecture seule, rien n'est modifié."""
+    owner_email = args.email
+    _log(f"── État mémoire BRO pour {owner_email} ──\n")
+
+    # Manifest
+    manifest = bwc._load_manifest(owner_email)
+    domains = [k for k in manifest if not k.startswith("_")]
+    last_check = manifest.get(bwc.COMMAND_LAST_CHECK_KEY, {}).get("last_check", 0)
+    pending = sum(len(entry.get("params", {}).get("pending_feedback", []))
+                  for k, entry in manifest.items()
+                  if not k.startswith("_") and isinstance(entry, dict))
+    learned = sum(len(ch.get("learned_keywords", []))
+                  for k, entry in manifest.items()
+                  if not k.startswith("_") and isinstance(entry, dict)
+                  for ch in entry.get("params", {}).get("channels", []))
+    _log(f"  Domaines surveillés  : {', '.join(domains) or '(aucun)'}")
+    _log(f"  Dernier check        : {'jamais' if not last_check else last_check}")
+    _log(f"  Suggestions en attente : {pending}")
+    _log(f"  Mots-clés appris     : {learned}")
+
+    # Flashmem
+    owner_flashmem = os.path.join(FLASHMEM_DIR, owner_email)
+    slot_files = sorted(glob.glob(os.path.join(owner_flashmem, "slot*.json")))
+    total_msgs = 0
+    for f in slot_files:
+        try:
+            data = json.load(open(f, encoding="utf-8"))
+            total_msgs += len(data.get("messages", []))
+        except Exception:
+            pass
+    _log(f"  Flashmem             : {len(slot_files)} slot(s), {total_msgs} message(s)")
+
+    # Qdrant mémoire sémantique
+    cname = f"memory_{mm._user_hex(owner_email)}"
+    qdrant_exists = bool(mm._curl("GET", f"{mm.QDRANT_URL}/collections/{cname}"))
+    _log(f"  Collection Qdrant    : {cname} — {'présente' if qdrant_exists else 'absente'}")
+
+    # Embeddings topics
+    n_topics = _topics_entries_for_owner(owner_email)
+    _log(f"  Topics Qdrant        : {n_topics} point(s) dans {bwc.QDRANT_TOPICS_COLLECTION}")
+
+    # Marqueurs dédup
+    owner_hash = hashlib.sha256(owner_email.encode()).hexdigest()[:16]
+    markers = glob.glob(os.path.join(bwc.PROCESSED_COMMAND_IDS_DIR, f"{owner_hash}_*"))
+    _log(f"  Marqueurs dédup      : {len(markers)}")
+
+    # Alertes proactives
+    alerts_path = os.path.join(bwc._owner_dir(owner_email), bwc.PROACTIVE_ALERTS_FILENAME)
+    _log(f"  Alertes proactives   : {'présentes' if os.path.isfile(alerts_path) else 'absentes'}")
 
 
 # ── reset-bro EMAIL ──────────────────────────────────────────────────────────
@@ -128,7 +201,7 @@ def cmd_reset_bro(args):
     # 1. Manifest : cache de commandes, suggestions en attente, mots-clés appris.
     actions += _reset_manifest(owner_email, apply_)
 
-    # 2. Mémoire locale (flashmem) : slots 0-13.
+    # 2. Mémoire locale (flashmem) : tous les slots (glob catch slot0.json…slot14.json+).
     owner_flashmem = os.path.join(FLASHMEM_DIR, owner_email)
     slot_files = sorted(glob.glob(os.path.join(owner_flashmem, "slot*.json")))
     for f in slot_files:
@@ -159,6 +232,14 @@ def cmd_reset_bro(args):
         if apply_:
             for m in markers:
                 os.remove(m)
+
+    # 6. Embeddings de mots-clés appris dans bro_watch_topics (collection partagée,
+    # filtrée par owner) — ces vecteurs survivent autrement au reset manifest.
+    n_topics = _topics_entries_for_owner(owner_email)
+    if n_topics:
+        actions.append(f"qdrant : {n_topics} point(s) dans {bwc.QDRANT_TOPICS_COLLECTION} (mots-clés appris)")
+        if apply_:
+            _delete_topics_entries(owner_email)
 
     if not actions:
         _log("Rien à nettoyer — BRO est déjà « propre » pour ce compte.")
@@ -278,6 +359,9 @@ def main():
 
     sub.add_parser("list-accounts")
 
+    p_status = sub.add_parser("status")
+    p_status.add_argument("email")
+
     p_bro = sub.add_parser("reset-bro")
     p_bro.add_argument("email")
     p_bro.add_argument("--apply", action="store_true", help="Exécute réellement (sinon dry-run)")
@@ -290,6 +374,7 @@ def main():
     args = parser.parse_args()
     {
         "list-accounts": cmd_list_accounts,
+        "status": cmd_status,
         "reset-bro": cmd_reset_bro,
         "reset-node": cmd_reset_node,
         "audit-tools": cmd_audit_tools,

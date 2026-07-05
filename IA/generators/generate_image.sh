@@ -152,11 +152,15 @@ send_workflow() {
   echo "Envoi du workflow à l'API ComfyUI..." >&2
 
   local response_body_file="$TMP_DIR/response_body_${UNIQUE_ID}.json"
-  
-  # Create proper API payload
   local api_payload_file="$TMP_DIR/api_payload_${UNIQUE_ID}.json"
-  jq '{prompt: .}' "$TMP_WORKFLOW" > "$api_payload_file"
-  
+
+  # Génère un client_id UUID pour recevoir les événements WebSocket ciblés
+  local client_id
+  client_id=$(python3 -c "import uuid; print(str(uuid.uuid4()))")
+
+  # Injecte client_id dans le payload pour que ComfyUI route les événements WS
+  jq --arg cid "$client_id" '{prompt: ., client_id: $cid}' "$TMP_WORKFLOW" > "$api_payload_file"
+
   echo "Contenu de la requête API :" >&2
   head -c 300 "$api_payload_file" >&2
   echo >&2
@@ -167,13 +171,12 @@ send_workflow() {
                 -X POST -H "Content-Type: application/json" \
                 --data-binary @"$api_payload_file" \
                 "$COMFYUI_URL/prompt")
-  
-  # Clean up API payload file
+
   rm -f "$api_payload_file"
-  
+
   local response_body
   response_body=$(cat "$response_body_file")
-  rm -f "$response_body_file" # Clean up the temp response file
+  rm -f "$response_body_file"
 
   echo "HTTP code: $http_status" >&2
   echo "API response: $response_body" >&2
@@ -193,45 +196,61 @@ send_workflow() {
     echo "API response (error details): $response_body" >&2
     exit 1
   fi
-  monitor_progress "$prompt_id"
+  monitor_progress "$prompt_id" "$client_id"
 }
 
-# Fonction pour surveiller la progression de la génération
+# Surveillance WebSocket (push) avec fallback polling si indisponible
 monitor_progress() {
   local prompt_id="$1"
+  local client_id="${2:-}"
+  local ws_script="${MY_PATH}/../comfyui_wait.py"
+
+  if [[ -n "$client_id" && -f "$ws_script" ]]; then
+    echo "Surveillance WebSocket (prompt_id: $prompt_id)..." >&2
+    local ws_result
+    ws_result=$(python3 "$ws_script" "$client_id" "$prompt_id" \
+                  --url "ws://${COMFYUI_HOST}:${COMFYUI_PORT}/ws" --timeout 120 2>/dev/null)
+    case "$ws_result" in
+      done)
+        echo "Image générée (WebSocket)." >&2
+        get_image_result "$prompt_id"
+        return $?
+        ;;
+      no_websocket)
+        echo "websocket-client absent — fallback polling." >&2
+        ;;
+      timeout)
+        echo "Erreur: Timeout WebSocket lors de la génération." >&2
+        return 1
+        ;;
+      error:*)
+        echo "Erreur WebSocket: ${ws_result#error:}" >&2
+        return 1
+        ;;
+    esac
+  fi
+
+  # Fallback : polling curl toutes les 2s
+  echo "Surveillance polling (prompt_id: $prompt_id)..." >&2
   local history_url="$COMFYUI_URL/history"
-  local max_attempts=120  # 2 minutes maximum d'attente
+  local max_attempts=120
   local attempts=0
 
-  echo "Surveillance de la progression avec l'ID : $prompt_id" >&2
-
-  # Attendre que l'image soit générée
   while [ $attempts -lt $max_attempts ]; do
-    # Vérifier d'abord dans l'historique si l'image est déjà terminée
     local history_response
     history_response=$(curl -s "$history_url")
-    
-    # Check if prompt_id exists in history
     if echo "$history_response" | jq -e --arg id "$prompt_id" '.[$id]' > /dev/null 2>&1; then
       echo "Image trouvée dans l'historique de ComfyUI!" >&2
       get_image_result "$prompt_id"
       return $?
     fi
-    
-    # If not in history, check in queue
     local queue_response
     queue_response=$(curl -s "$COMFYUI_URL/prompt")
-    
-    # Check if running or queued
     if echo "$queue_response" | jq -e --arg id "$prompt_id" '.running[$id] or .pending[$id]' > /dev/null 2>&1; then
       echo "Image en cours de génération ou en attente..." >&2
-      sleep 2
-      attempts=$((attempts + 2))
-      continue
+    else
+      echo "En attente de traitement par ComfyUI..." >&2
     fi
-    
-    # If not in queue or history yet, wait a bit and check again
-    echo "En attente de traitement par ComfyUI..." >&2
     sleep 2
     attempts=$((attempts + 2))
   done

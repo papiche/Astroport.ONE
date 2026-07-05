@@ -64,6 +64,12 @@ MANIFEST_FILENAME = ".cookie_manifest.json"
 MANIFEST_NOSTR_KIND = 31903
 MANIFEST_NOSTR_DTAG = "cookies"
 DIGEST_PREFIX = "📋 Rapport quotidien BRO"
+# Marqueurs caractéristiques des DMs "en cours" (progression différée) — utilisés
+# dans process_incoming_commands pour appliquer un TTL court (éphémère) sur ces
+# messages qui seront remplacés par le résultat réel, évitant de polluer l'historique.
+_PROGRESS_MARKER = "je vous enverrai le résultat"
+_THINKING_MARKER = "je vous réponds dans un instant"
+TTL_PROGRESS_SEC = 60  # Messages de progression — disparaissent au bout de 60s (NIP-40)
 # Tout message sortant de BRO (rapports, confirmations de commande, réponses
 # conversationnelles libres) commence par un de ces marqueurs — sert à les
 # ignorer en écoutant les commandes entrantes, sinon un message de BRO serait
@@ -360,7 +366,7 @@ RELAYS = _load_relays()
 BRO_ORIGIN_TAG = ["client", "bro"]
 
 
-def send_dm_to_owner(owner_email, message, ttl_days=DM_TTL_DAYS):
+def send_dm_to_owner(owner_email, message, ttl_days=DM_TTL_DAYS, ttl_seconds=None):
     """Publie un DM NOSTR chiffré 'à soi-même' : signé et adressé par la
     propre clé MULTIPASS du propriétaire (jamais la clé NODE de la station).
     Le message apparaît comme une note personnelle chiffrée dans son propre
@@ -380,8 +386,16 @@ def send_dm_to_owner(owner_email, message, ttl_days=DM_TTL_DAYS):
     # atomic_chat.html se connecte au relais LOCAL (ws://127.0.0.1:7777) en
     # dev mais au relais public en production — un choix fixe rate l'un des
     # deux cas (régression constatée le même jour, corrigée dans la foulée).
-    cmd = ["python3", script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
-           "--ttl-days", str(ttl_days), "--extra-tags", json.dumps([BRO_ORIGIN_TAG])]
+    extra_tags = [BRO_ORIGIN_TAG]
+    if ttl_seconds is not None:
+        # TTL court en secondes (messages éphémères "en cours") — NIP-40 direct
+        import time as _t
+        extra_tags.append(["expiration", str(int(_t.time()) + int(ttl_seconds))])
+        cmd = ["python3", script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
+               "--extra-tags", json.dumps(extra_tags)]
+    else:
+        cmd = ["python3", script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
+               "--ttl-days", str(ttl_days), "--extra-tags", json.dumps(extra_tags)]
     if len(RELAYS) > 1:
         cmd += ["--extra-relays", ",".join(RELAYS[1:])]
     try:
@@ -638,7 +652,13 @@ def matches_keywords(entry, text, owner_email=None, account=None, channel=None):
     return False
 
 
-def generate_suggestion(context_label, username, text, examples=None):
+def generate_suggestion(context_label, username, text, examples=None,
+                         persona_context="", network_context=""):
+    """Génère une suggestion de réponse.
+
+    persona_context  : traits de style/expertise du propriétaire (slot 14, optionnel)
+    network_context  : fiche de l'interlocuteur depuis uplanet_network (optionnel)
+    """
     examples_block = ""
     if examples:
         examples_block = (
@@ -650,11 +670,19 @@ def generate_suggestion(context_label, username, text, examples=None):
                 for e in examples
             )
         )
+    context_blocks = ""
+    if persona_context:
+        context_blocks += f"\n\n[MON STYLE / EXPERTISE] {persona_context}"
+    if network_context:
+        context_blocks += f"\n\n[PROFIL DE {username}] {network_context}"
+
     prompt = (
-        f"Voici un message reçu sur {context_label}, "
-        f"écrit par {username} :\n\n« {text} »"
+        f"Tu rédiges une réponse au nom du destinataire de ce message.\n"
+        f"Message reçu sur {context_label}, écrit par {username} :\n\n"
+        f"« {text} »"
+        f"{context_blocks}"
         f"{examples_block}\n\n"
-        "Propose une réponse brève et appropriée que le destinataire pourrait envoyer."
+        "Propose une réponse brève et appropriée."
     )
     result = subprocess.run([
         "python3", f"{BRO_IA_PATH}/question.py", prompt
@@ -796,10 +824,17 @@ def process_watch_digest(owner_email, account, channel, items, context_label=Non
         return True
 
     examples = get_good_examples(owner_email, account)
+    # Contexte de persona calculé une fois pour tout le digest (invariant par propriétaire)
+    persona_ctx = _recall_persona(owner_email)
+    if persona_ctx:
+        print(f"[BRO_WATCH] Persona rappelée pour {owner_email} : {persona_ctx[:80]}…")
     lines = []
     for it in relevant:
+        # Contexte réseau par interlocuteur (Qdrant uplanet_network)
+        network_ctx = _recall_network_profile(it.get("username", ""))
         suggestion = generate_suggestion(
-            context_label, it.get("username", "?"), it.get("text", ""), examples=examples
+            context_label, it.get("username", "?"), it.get("text", ""),
+            examples=examples, persona_context=persona_ctx, network_context=network_ctx,
         )
         _record_pending_suggestion(owner_email, account, channel, it, suggestion)
         line = f"- {it.get('username', '?')} : « {it.get('text', '')[:300]} »"
@@ -1277,7 +1312,23 @@ def _log_tool_request(owner_email, text, reply):
 # Réutilise l'infra Qdrant + cycle RÊVE déjà en production (flux NOSTR.UMAP,
 # slots 0-12 des sociétaires) plutôt qu'un nouveau système : slot dédié hors
 # de cette plage pour ne jamais mélanger avec la mémoire "société".
-BRO_MEMORY_SLOT = 13
+BRO_MEMORY_SLOT  = 13
+BRO_PERSONA_SLOT = 14   # traits de style/expertise extraits par bro_backfill.py
+
+# Seuil de rappel plus bas que MEMORY_RECALL_THRESHOLD : les traits de persona
+# sont des généralisations larges — une requête "écologie" doit retrouver
+# "Fred est convaincu que la transition doit être locale", même si les termes
+# exacts diffèrent. 0.65 calibré empiriquement pour éviter les faux positifs
+# tout en couvrant les paraphrases.
+PERSONA_RECALL_THRESHOLD = 0.65
+
+# Collection Qdrant des fiches interlocuteurs (alimentée par bro_backfill.py)
+QDRANT_NETWORK_COLLECTION = "uplanet_network"
+
+# Calibré empiriquement (nomic-embed-text) : un handle comme "alice" contre
+# une fiche "Alice est développeuse Duniter..." score ~0.70 ; les non-matchs
+# plafonnent à 0.55. Seuil 0.60 laisse de la marge.
+NETWORK_RECALL_THRESHOLD = 0.60
 
 # Calibré empiriquement (2026-07-03, nomic-embed-text) : sur un corpus de test
 # à 2 souvenirs, les vrais rappels scorent ≥0.777 et les faux positifs (sujet
@@ -1571,6 +1622,46 @@ def _remember_exchange(owner_email, text, answer):
             mm.reve_compress_slot(owner_email, BRO_MEMORY_SLOT, slot_file=slot_file)
     except Exception as e:
         print(f"[BRO_WATCH] Mémoire self-DM indisponible pour {owner_email} : {e}")
+
+
+def _recall_persona(owner_email, query="style communication opinion expertise", limit=2):
+    """Recherche sémantique dans les traits de persona du propriétaire (slot 14,
+    alimenté par bro_backfill.py). Retourne une chaîne formatée ou '' si vide /
+    Qdrant indisponible."""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, BRO_IA_PATH)
+        import memory_manager as mm
+        results = mm.search_user_slot(owner_email, query, slots=[BRO_PERSONA_SLOT],
+                                       limit=limit, score_threshold=PERSONA_RECALL_THRESHOLD)
+        traits = [r.get("payload", {}).get("content", "") for r in results]
+        traits = [t for t in traits if t]
+        return " | ".join(traits)
+    except Exception:
+        return ""
+
+
+def _recall_network_profile(username, limit=1):
+    """Recherche sémantique dans les fiches interlocuteurs (collection Qdrant
+    uplanet_network, alimentée par bro_backfill.py). Retourne la fiche texte
+    ou '' si pas de match / Qdrant indisponible."""
+    if not username:
+        return ""
+    clean = username.lstrip("@").split("@")[0]   # "alice" depuis "@alice@mastodon.social"
+    try:
+        client = _qdrant_client()
+        vec = _qdrant_embed(clean)
+        hits = client.query_points(
+            collection_name=QDRANT_NETWORK_COLLECTION,
+            query=vec,
+            limit=limit,
+            score_threshold=NETWORK_RECALL_THRESHOLD,
+        ).points
+        if hits:
+            return hits[0].payload.get("fiche", "")
+    except Exception:
+        pass
+    return ""
 
 
 def _forget_memory(owner_email):
@@ -2576,7 +2667,11 @@ def process_incoming_commands(owner_email):
             reply = _handle_command_text(owner_email, text)
             if reply:
                 handled += 1
-                if send_dm_to_owner(owner_email, reply, ttl_days=1):
+                # Messages "en cours" (progression différée) : TTL court (NIP-40)
+                # pour qu'ils disparaissent du UI dès que le résultat réel arrive.
+                is_progress = _PROGRESS_MARKER in reply or _THINKING_MARKER in reply
+                if send_dm_to_owner(owner_email, reply, ttl_days=1,
+                                     ttl_seconds=TTL_PROGRESS_SEC if is_progress else None):
                     print(f"[BRO_WATCH] Commande traitée pour {owner_email} : {text[:60]!r}")
                 else:
                     print(f"[BRO_WATCH] ⚠️ Envoi de la réponse échoué pour {owner_email} "

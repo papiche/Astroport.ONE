@@ -240,19 +240,27 @@ if __name__ == "__main__":
             context_parts.append(f"Contexte utilisateur :\n{pub_ctx}")
 
     # ── Prompt final ──────────────────────────────────────────────────────────
-    final_prompt = ""
-    if context_parts:
-        final_prompt = "\n\n".join(context_parts) + "\n\n"
-    final_prompt += f"Question: {question_text}"
+    # Question seule dans le rôle "user" — contexte et règles dans "system"
+    # (séparer les rôles réduit les hallucinations : le LLM ne confond plus
+    #  le contexte RAG avec la demande utilisateur)
+    final_prompt = question_text
 
-    # System prompt enrichi si skill actif
-    system_prompt = None
+    _base_rules = (
+        "RÉPONDS EN FRANÇAIS UNIQUEMENT.\n\n"
+        "RÈGLES:\n"
+        "1. Réponds en FRANÇAIS (ou dans la langue de la question)\n"
+        "2. Commence DIRECTEMENT par le contenu (sans introduction)\n"
+        "3. Pas de markdown\n"
+        "4. Utilise des emojis\n"
+        "5. Sois concis"
+    )
+    system_parts = []
     if system_extra:
-        system_prompt = (
-            system_extra +
-            "RÈGLES: réponds en FRANÇAIS, commence directement par le contenu, "
-            "utilise des emojis, sois concis et pratique."
-        )
+        system_parts.append(system_extra)
+    system_parts.append(_base_rules)
+    if context_parts:
+        system_parts.append("CONTEXTE:\n" + "\n\n".join(context_parts))
+    system_prompt = "\n\n".join(system_parts)
 
     # ── Log ──────────────────────────────────────────────────────────────────
     log_file_path = os.path.expanduser("~/.zen/tmp/IA.log")

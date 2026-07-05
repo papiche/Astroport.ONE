@@ -1348,6 +1348,7 @@ sync_youtube_likes() {
     local success_count=0
     local skipped_count=0
     local failed_count=0
+    local failed_videos_html=""
     
     # Compter le nombre total de vidéos déjà traitées
     local total_processed=0
@@ -1418,6 +1419,7 @@ sync_youtube_likes() {
                     # Échec du téléchargement
                     failed_count=$((failed_count + 1))
                     echo "❌ Failed count: $failed_count"
+                    failed_videos_html+="<li><strong>${title}</strong> — ${uploader} — <a href=\"${url}\" target=\"_blank\">${video_id}</a></li>"
                 fi
             fi
             
@@ -1441,7 +1443,7 @@ sync_youtube_likes() {
     
     # Envoyer une notification d'erreur si des échecs ont eu lieu
     if [[ $failed_count -gt 0 ]]; then
-        send_error_notification "$player" "download_failures" "$failed_count" "$success_count"
+        send_error_notification "$player" "download_failures" "$failed_count" "$success_count" "$failed_videos_html"
     fi
     
     return 0
@@ -1696,6 +1698,7 @@ send_error_notification() {
     local error_type="$2"
     local error_details="$3"
     local success_count="${4:-0}"
+    local failed_videos_html="${5:-}"
     
     log_debug "Sending error notification to $player: type=$error_type, details=$error_details"
     
@@ -1713,7 +1716,11 @@ send_error_notification() {
         "download_failures")
             error_title="⚠️ Échecs de Téléchargement"
             error_message="Certaines vidéos n'ont pas pu être téléchargées lors de la synchronisation."
-            error_instructions="<p><strong>Détails :</strong></p><ul><li><strong>Échecs :</strong> ${error_details}</li><li><strong>Succès :</strong> ${success_count}</li></ul><p>Les vidéos qui ont échoué seront réessayées lors de la prochaine synchronisation automatique.</p><p>Si le problème persiste, vérifiez :</p><ul><li>Votre connexion Internet</li><li>L'espace disque disponible dans votre uDRIVE</li><li>Les logs YouTube dans <code>~/.zen/tmp/ajouter_media.log</code></li></ul>"
+            local videos_section=""
+            if [[ -n "$failed_videos_html" ]]; then
+                videos_section="<p><strong>Vidéos concernées :</strong></p><ul>${failed_videos_html}</ul>"
+            fi
+            error_instructions="<p><strong>Résumé :</strong></p><ul><li><strong>Échecs :</strong> ${error_details}</li><li><strong>Succès :</strong> ${success_count}</li></ul>${videos_section}<p>Les vidéos qui ont échoué seront réessayées lors de la prochaine synchronisation automatique.</p><p>Si le problème persiste, vérifiez :</p><ul><li>Votre connexion Internet</li><li>L'espace disque disponible dans votre uDRIVE</li><li>Les logs YouTube dans <code>~/.zen/tmp/ajouter_media.log</code></li></ul>"
             ;;
         "sync_failed")
             error_title="⚠️ Échec de Synchronisation"

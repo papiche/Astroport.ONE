@@ -10,6 +10,7 @@ if os.path.exists(venv_path):
     if os.path.exists(site_packages):
         sys.path.insert(0, site_packages)
 
+import fcntl
 import hashlib
 import json
 import re
@@ -22,7 +23,6 @@ _HAS_MEMORY_MGR = os.path.isfile(_MEMORY_MGR)
 
 # Check if debug mode is enabled
 DEBUG_MODE = os.environ.get('DEBUG', '0') == '1'
-DEBUG_MODE = '1'
 
 def debug_print(*args, **kwargs):
     """Print debug messages only if DEBUG mode is enabled"""
@@ -182,24 +182,25 @@ def main():
     # Coordinate-based memory (legacy)
     coord_key = f"{latitude}_{longitude}".replace(".", "_").replace("-", "m")
     memory_file = os.path.join(MEMORY_DIR, f"{coord_key}.json")
-    if os.path.isfile(memory_file):
-        with open(memory_file, 'r') as f:
-            memory = json.load(f)
-    else:
-        memory = {
+    with open(memory_file, 'a+') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.seek(0)
+        raw = f.read().strip()
+        memory = json.loads(raw) if raw else {
             "latitude": latitude,
             "longitude": longitude,
             "messages": []
         }
-    memory['messages'].append({
-        "timestamp": datetime.utcnow().isoformat() + 'Z',
-        "event_id": event_id,
-        "pubkey": pubkey,
-        "content": content
-    })
-    # Fenêtre glissante géo : 200 entrées (RÊVE prend le relais via Qdrant pour les anciennes)
-    memory['messages'] = memory['messages'][-200:]
-    with open(memory_file, 'w') as f:
+        memory['messages'].append({
+            "timestamp": datetime.utcnow().isoformat() + 'Z',
+            "event_id": event_id,
+            "pubkey": pubkey,
+            "content": content
+        })
+        # Fenêtre glissante géo : 200 entrées (RÊVE prend le relais via Qdrant pour les anciennes)
+        memory['messages'] = memory['messages'][-200:]
+        f.seek(0)
+        f.truncate()
         json.dump(memory, f, indent=2)
 
     # --- Multi-user, multi-slot memory ---
@@ -207,25 +208,26 @@ def main():
         USER_DIR = os.path.expanduser(f"~/.zen/flashmem/{user_id}")
         os.makedirs(USER_DIR, exist_ok=True)
         slot_file = os.path.join(USER_DIR, f"slot{slot}.json")
-        if os.path.isfile(slot_file):
-            with open(slot_file, 'r') as f:
-                slot_mem = json.load(f)
-        else:
-            slot_mem = {
+        with open(slot_file, 'a+') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.seek(0)
+            raw = f.read().strip()
+            slot_mem = json.loads(raw) if raw else {
                 "user_id": user_id,
                 "slot": slot,
                 "messages": []
             }
-        slot_mem['messages'].append({
-            "timestamp": datetime.utcnow().isoformat() + 'Z',
-            "event_id": event_id,
-            "latitude": latitude,
-            "longitude": longitude,
-            "content": content
-        })
-        # Fenêtre glissante slot : 200 entrées — RÊVE compresse à 150 et garde 80 récentes
-        slot_mem['messages'] = slot_mem['messages'][-200:]
-        with open(slot_file, 'w') as f:
+            slot_mem['messages'].append({
+                "timestamp": datetime.utcnow().isoformat() + 'Z',
+                "event_id": event_id,
+                "latitude": latitude,
+                "longitude": longitude,
+                "content": content
+            })
+            # Fenêtre glissante slot : 200 entrées — RÊVE compresse à 150 et garde 80 récentes
+            slot_mem['messages'] = slot_mem['messages'][-200:]
+            f.seek(0)
+            f.truncate()
             json.dump(slot_mem, f, indent=2)
         ts_slot = slot_mem['messages'][-1]['timestamp']
         print(f"Memory updated for user: {user_id}, slot: {slot}")

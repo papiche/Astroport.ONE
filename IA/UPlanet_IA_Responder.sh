@@ -1292,8 +1292,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
         if check_memory_slot_access "$user_id" "$rec_slot"; then
             rec_content=$(echo "$message_text" | sed -E 's/#BOT//g; s/#BRO//g; s/#rec\b//g; s/#[0-9]{1,2}\b//g' | xargs)
             if [[ -n "$rec_content" ]]; then
-                escaped_content=$(echo "$rec_content" | sed 's/\\/\\\\/g; s/"/\\"/g')
-                rec_event_json='{"event":{"pubkey":"'"$PUBKEY"'","content":"'"$escaped_content"'"}}'
+                rec_event_json=$(jq -n --arg pubkey "$PUBKEY" --arg content "$rec_content" '{"event":{"pubkey":$pubkey,"content":$content}}')
                 $MY_PATH/short_memory.py "$rec_event_json" "$LAT" "$LON" "$rec_slot" "$user_id"
                 echo "Memory #rec saved for USER: $user_id, SLOT: $rec_slot"
                 KeyANSWER="💾 Mémorisé dans le slot $rec_slot (${#rec_content} caractères)."

@@ -62,9 +62,9 @@ def _load_qdrant_api_key() -> str:
 QDRANT_URL     = os.environ.get("QDRANT_URL",     "http://127.0.0.1:6333")
 QDRANT_API_KEY = _load_qdrant_api_key()
 OLLAMA_URL     = os.environ.get("OLLAMA_URL",     "http://127.0.0.1:11434")
-EMBED_MODEL    = "nomic-embed-text"
-OLLAMA_MODEL   = os.environ.get("OLLAMA_MODEL",   "llama3.2")
-VECTOR_SIZE    = 768
+EMBED_MODEL    = os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+OLLAMA_MODEL   = os.environ.get("OLLAMA_MODEL",       "llama3.2")
+VECTOR_SIZE    = int(os.environ.get("OLLAMA_EMBED_DIM", "768"))
 
 # Seuil de compression : ~2-3 mois d'activité quotidienne avant premier RÊVE
 # Après RÊVE : [1 résumé] + [80 récents] = 81 → prochain RÊVE à 150 de nouveau

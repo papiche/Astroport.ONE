@@ -1565,6 +1565,41 @@ ERRHTML
     else
         echo "IPNS update skipped for ${PLAYER} (no refresh needed)"
     fi
+    ########################################################################
+    ## N² JOURNAL (BRO Mémoire Réseau)
+    ## Réservé U.SOCIETY / Capitaine — opt-out via /mailjet canal n2_journal
+    ## N2.journal.sh décide seul du type (Daily/Weekly/Monthly/Yearly) selon
+    ## les jours depuis la création du compte. Garde-fou : un seul run par jour.
+    ########################################################################
+    _N2_ENABLED=false
+    if [[ -s "${HOME}/.zen/game/players/${PLAYER}/U.SOCIETY" ]] \
+        || [[ "${PLAYER}" == "${CAPTAINEMAIL}" ]]; then
+        _N2_ENABLED=true
+    fi
+    if [[ "$_N2_ENABLED" == "true" ]]; then
+        _N2_MJET="${HOME}/.zen/game/nostr/${PLAYER}/.mailjet"
+        if [[ -f "$_N2_MJET" ]]; then
+            _N2_OPT=$(jq -r '.flux_channels.n2_journal.nostr // true' "$_N2_MJET" 2>/dev/null)
+            [[ "$_N2_OPT" == "false" ]] && _N2_ENABLED=false
+        fi
+    fi
+    if [[ "$_N2_ENABLED" == "true" ]]; then
+        _N2_DONE="${HOME}/.zen/tmp/n2_journal_${PLAYER}_${TODATE}.done"
+        if [[ ! -f "$_N2_DONE" ]]; then
+            log "INFO" "📰 Lancement N² Journal pour ${PLAYER}…"
+            "${MY_PATH}/../IA/N2.journal.sh" "${PLAYER}" >>"$LOGFILE" 2>&1
+            _N2_EXIT=$?
+            if [[ $_N2_EXIT -eq 0 ]]; then
+                touch "$_N2_DONE"
+                log "INFO" "✅ N² Journal terminé pour ${PLAYER}"
+            else
+                log "WARN" "⚠️ N² Journal échoué pour ${PLAYER} (exit ${_N2_EXIT})"
+            fi
+        else
+            log "DEBUG" "N² Journal déjà exécuté aujourd'hui pour ${PLAYER}"
+        fi
+    fi
+
     stop=$(date +%s)
     player_duration=$((stop - start))
     log "DEBUG" "MULTIPASS refresh DONE for ${PLAYER} in ${player_duration}s"
