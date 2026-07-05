@@ -381,10 +381,13 @@ _find_best_node() {
 ##############################################################################
 cmd_connect() {
     local target="${1:-}"
+    local mode="${2:-power}"
 
     if [[ -z "$target" ]]; then
-        echo "Usage: astrosystemctl connect <service[@node]>"
+        echo "Usage: astrosystemctl connect <service[@node]> [power|closest|random]"
         echo "  ex:  astrosystemctl connect ollama"
+        echo "  ex:  astrosystemctl connect ollama random"
+        echo "  ex:  astrosystemctl connect strfry closest"
         echo "  ex:  astrosystemctl connect ollama@12D3Koo..."
         return 1
     fi
@@ -428,8 +431,8 @@ cmd_connect() {
 
     # ── Recherche du meilleur nœud si non spécifié ────────────────────────────
     if [[ -z "$node_id" ]]; then
-        echo "🔍 Recherche du meilleur nœud swarm pour '${service}'..."
-        node_id=$(_find_best_node "$service")
+        echo "🔍 Recherche du meilleur nœud swarm pour '${service}' [mode: ${mode}]..."
+        node_id=$(_find_best_node "$service" "$mode")
 
         if [[ -z "$node_id" ]]; then
             echo "❌ Service '${service}' introuvable dans le swarm."
@@ -439,7 +442,7 @@ cmd_connect() {
 
         local score
         score=$(jq -r '.capacities.power_score // 0' "$SWARM_DIR/$node_id/12345.json" 2>/dev/null)
-        echo "✅ Meilleur nœud : ...${node_id: -14} (score: ${score} $(power_label ${score}))"
+        echo "✅ Nœud sélectionné [${mode}] : ...${node_id: -14} (score: ${score} $(power_label ${score}))"
     fi
 
     # ── Trouver le script tunnel ───────────────────────────────────────────────
@@ -491,7 +494,8 @@ cmd_connect() {
 ##############################################################################
 cmd_enable() {
     local target="${1:-}"
-    [[ -z "$target" ]] && echo "Usage: astrosystemctl enable <service[@node]>" && return 1
+    local mode="${2:-power}"
+    [[ -z "$target" ]] && echo "Usage: astrosystemctl enable <service[@node]> [power|closest|random]" && return 1
 
     local service="${target%%@*}"
     local node_id="${target##*@}"
@@ -499,7 +503,7 @@ cmd_enable() {
 
     # Trouver le nœud si non spécifié
     if [[ -z "$node_id" ]]; then
-        node_id=$(_find_best_node "$service")
+        node_id=$(_find_best_node "$service" "$mode")
         [[ -z "$node_id" ]] && echo "❌ Service '${service}' introuvable dans le swarm" && return 1
     fi
 
@@ -1611,13 +1615,18 @@ Usage: astrosystemctl <commande> [service[@node]]
 Commandes :
   list                      Services locaux + Power-Score de cette station
   list-remote [service]     Services GPU disponibles dans le swarm
-  connect  <svc[@node]>     Connecte au meilleur nœud pour ce service
-  enable   <svc[@node]>     Tunnel persistant (watchdog 20h12)
+  connect  <svc[@node]> [mode]  Connecte au meilleur nœud pour ce service
+  enable   <svc[@node]> [mode]  Tunnel persistant (watchdog 20h12)
   disable  <service>        Retire de la surveillance automatique
   status                    Tunnels actifs + persistants + Power-Score
   health                    Vérification rapide de l'intégrité de la station
   local [list|start|stop|install|uninstall|feed] [service]
                             Panneau de contrôle des services IA locaux
+
+Modes de sélection (optionnel, défaut: power) :
+  power    Nœud au Power-Score le plus élevé
+  closest  Nœud le plus proche géographiquement (haversine STATION_LAT/LON)
+  random   Tirage aléatoire parmi le top 3 (répartition de charge)
 
 Power-Score = GPU×4 + CPU×2 + RAM×0.5
   0-10  🌿 Light   → consommateur (utilise le swarm)
@@ -1625,10 +1634,12 @@ Power-Score = GPU×4 + CPU×2 + RAM×0.5
   41+   🔥 Brain    → fournisseur GPU pour la constellation
 
 Exemples P2P (swarm) :
-  astrosystemctl list-remote                # Qui a un GPU dans l'essaim ?
-  astrosystemctl connect ollama             # Meilleur nœud ollama automatique
-  astrosystemctl connect comfyui@12D3Koo…  # Nœud spécifique
-  astrosystemctl enable ollama              # Watchdog: tunnel toujours actif
+  astrosystemctl list-remote                     # Qui a un GPU dans l'essaim ?
+  astrosystemctl connect ollama                  # Meilleur nœud (power_score max)
+  astrosystemctl connect ollama random           # Load-balancing top 3 Brain-Nodes
+  astrosystemctl connect strfry closest          # Relay NOSTR le plus proche
+  astrosystemctl connect comfyui@12D3Koo…        # Nœud spécifique
+  astrosystemctl enable ollama random            # Watchdog: tunnel toujours actif (load-balancing)
   astrosystemctl disable ollama             # Arrêt du watchdog
 
 Exemples local (services IA + outils système + partage constellation) :
