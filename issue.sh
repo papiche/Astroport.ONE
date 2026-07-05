@@ -1407,11 +1407,11 @@ ${code_context:0:20000}
             echo ""
             echo -e "══════════════════════════════════════════════════════"
             # Compter uniquement les fichiers de l'issue modifiés (pas tous les unstaged)
-            local _wf_issue_mods=0
-            local _cwd2; _cwd2=$(pwd)
+            _wf_issue_mods=0
+            _cwd2=$(pwd)
             for _ef in "${EXTRA_FILES[@]:-}"; do
                 [[ -z "$_ef" ]] && continue
-                local _rel2="${_ef#"${_cwd2}/"}"
+                _rel2="${_ef#"${_cwd2}/"}"
                 _rel2="${_rel2#./}"
                 git diff --name-only 2>/dev/null | grep -qxF "$_rel2" && (( _wf_issue_mods++ )) || true
             done

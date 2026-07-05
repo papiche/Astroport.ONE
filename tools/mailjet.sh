@@ -462,14 +462,19 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
         FULL_HTML="${IPFS_ONLINE_LINK}<p>Consultez le message ici.</p><h3><a href='${myLIBRA}/ipfs/${EMAILZ}'>👉 Cliquer ici pour voir le rapport complet</a></h3><br>${MESSAGESIGN}"
     fi
 
-    # 4. Construction du JSON sécurisé via jq (Gère automatiquement l'échappement des guillemets et retours à la ligne du HTML)
+    # 4. Construction du JSON sécurisé via jq (--rawfile évite ARG_MAX pour les gros HTML)
+    _mj_tmp_html=$(mktemp)
+    _mj_tmp_text=$(mktemp)
+    printf '%s' "$FULL_HTML"  > "$_mj_tmp_html"
+    printf '%s' "$PLAIN_TEXT" > "$_mj_tmp_text"
+
     json_payload=$(jq -n \
         --arg sender_email "$SENDER_EMAIL" \
         --arg recipient_email "$RECIPIENT_EMAIL" \
         --arg pseudo "$pseudo" \
         --arg subject "$SUBJECT" \
-        --arg text_part "$PLAIN_TEXT" \
-        --arg html_part "$FULL_HTML" \
+        --rawfile text_part "$_mj_tmp_text" \
+        --rawfile html_part "$_mj_tmp_html" \
         '{
             "Messages": [
                 {
@@ -496,8 +501,12 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
             ]
         }')
 
-    # Verify the JSON structure (optional, good for logs)
-    # echo "$json_payload" | jq .
+    rm -f "$_mj_tmp_html" "$_mj_tmp_text"
+
+    if [[ -z "$json_payload" ]]; then
+        echo "ERROR:mailjet: jq a échoué à construire le payload (HTML trop volumineux ?)" >&2
+        return 1
+    fi
 
     echo "Envoi du mail avec contenu HTML embarqué via Mailjet API v3.1..."
     curl -s -m 15 \
