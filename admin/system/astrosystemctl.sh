@@ -276,12 +276,18 @@ cmd_list_remote() {
 
 ##############################################################################
 # _find_best_node — cherche le meilleur nœud swarm pour un service
+# Usage   : _find_best_node <service> [power|closest|random]
+#   power   (défaut) — nœud au power_score le plus élevé
+#   closest           — nœud le plus proche géographiquement (haversine STATION_LAT/LON)
+#   random            — tirage aléatoire parmi le top 3 par power_score (répartition de charge)
 # Retourne : node_id ou "" si non trouvé
 ##############################################################################
 _find_best_node() {
     local service="$1"
-    local best_node="" best_score=-1
+    local mode="${2:-power}"
 
+    # ── Collecte des nœuds qualifiés ─────────────────────────────────────────
+    local -a cand_ids=() cand_scores=()
     for node_path in "$SWARM_DIR"/*/; do
         local nid json dragon score
         nid=$(basename "$node_path")
@@ -296,12 +302,78 @@ _find_best_node() {
         [[ ! -f "$node_path/x_${service}.sh" ]] && continue
 
         score=$(jq -r '.capacities.power_score // 0' "$json" 2>/dev/null || echo 0)
-        if [[ ${score:-0} -gt ${best_score:-0} ]]; then
-            best_score=$score
-            best_node=$nid
-        fi
+        cand_ids+=("$nid")
+        cand_scores+=("${score:-0}")
     done
-    echo "$best_node"
+
+    [[ ${#cand_ids[@]} -eq 0 ]] && echo "" && return 0
+
+    case "$mode" in
+
+        closest)
+            # Nœud le plus proche géographiquement via haversine sur STATION_LAT/LON
+            # Fallback → power si les coords locales sont absentes
+            local local_json="$HOME/.zen/tmp/$IPFSNODEID/12345.json"
+            local local_lat local_lon
+            local_lat=$(jq -r '.STATION_LAT // ""' "$local_json" 2>/dev/null)
+            local_lon=$(jq -r '.STATION_LON // ""' "$local_json" 2>/dev/null)
+
+            if [[ -z "$local_lat" || -z "$local_lon" ]]; then
+                _find_best_node "$service" "power"
+                return
+            fi
+
+            local best_node="" best_dist="999999"
+            for i in "${!cand_ids[@]}"; do
+                local nid="${cand_ids[$i]}" lat lon
+                lat=$(jq -r '.STATION_LAT // ""' "$SWARM_DIR/$nid/12345.json" 2>/dev/null)
+                lon=$(jq -r '.STATION_LON // ""' "$SWARM_DIR/$nid/12345.json" 2>/dev/null)
+                [[ -z "$lat" || -z "$lon" ]] && continue
+
+                local dist
+                dist=$(awk -v lat1="$local_lat" -v lon1="$local_lon" \
+                           -v lat2="$lat"       -v lon2="$lon" '
+                    BEGIN {
+                        pi = 3.14159265358979323846; R = 6371
+                        dLat = (lat2-lat1)*pi/180; dLon = (lon2-lon1)*pi/180
+                        a = sin(dLat/2)^2 + cos(lat1*pi/180)*cos(lat2*pi/180)*sin(dLon/2)^2
+                        printf "%.3f", R * 2 * atan2(sqrt(a), sqrt(1-a))
+                    }')
+
+                awk "BEGIN{exit !($dist < $best_dist)}" && {
+                    best_dist="$dist"; best_node="$nid"
+                }
+            done
+            echo "$best_node"
+            ;;
+
+        random)
+            # Tirage aléatoire parmi le top 3 par power_score (répartition de charge)
+            local top3
+            top3=$(for i in "${!cand_ids[@]}"; do
+                printf "%s\t%s\n" "${cand_scores[$i]}" "${cand_ids[$i]}"
+            done | sort -t$'\t' -k1 -rn | head -3 | cut -f2)
+
+            local -a pool=()
+            while IFS= read -r nid; do
+                [[ -n "$nid" ]] && pool+=("$nid")
+            done <<< "$top3"
+
+            [[ ${#pool[@]} -eq 0 ]] && echo "" && return 0
+            echo "${pool[$(( RANDOM % ${#pool[@]} ))]}"
+            ;;
+
+        power|*)
+            # Nœud au power_score le plus élevé (comportement par défaut)
+            local best_node="" best_score=-1
+            for i in "${!cand_ids[@]}"; do
+                if [[ ${cand_scores[$i]:-0} -gt ${best_score:-0} ]]; then
+                    best_score="${cand_scores[$i]}"; best_node="${cand_ids[$i]}"
+                fi
+            done
+            echo "$best_node"
+            ;;
+    esac
 }
 
 ##############################################################################
