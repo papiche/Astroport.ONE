@@ -15,6 +15,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Node local (même convention que NIP-101/relay.writePolicy.plugin/filter/common.sh)
+# — pour afficher en plus le flux structuré JSONL (node-activity.jsonl), sans
+# dépendre de tools/my.sh (ce script reste un outil de terminal autonome).
+IPFSNODEID=$(jq -r '.Identity.PeerID // empty' "$HOME/.ipfs/config" 2>/dev/null)
+NODE_ACTIVITY_LOG="$HOME/.zen/tmp/${IPFSNODEID}/observability/node-activity.jsonl"
+
 # Fonction d'aide
 show_help() {
     echo "
@@ -194,6 +200,15 @@ start_youtube_logs() {
         echo "  → IA.log (filtré YouTube)"
         tail -f "$HOME/.zen/tmp/IA.log" 2>/dev/null | grep -i "youtube\|yt-dlp" | sed 's/^/[IA] /' &
     }
+
+    # Flux structuré JSONL (additif — ne remplace pas le grep IA.log ci-dessus,
+    # qui reste le filet de sécurité si la station n'a pas encore d'évènements
+    # structurés). Filtre sur le champ "category" plutôt qu'un mot-clé dans du
+    # texte libre — cf. IA/bro/bro_common_lib.sh::bro_log_event().
+    [[ -f "$NODE_ACTIVITY_LOG" ]] && {
+        echo "  → node-activity.jsonl (structuré, catégorie youtube)"
+        tail -f "$NODE_ACTIVITY_LOG" 2>/dev/null | grep --line-buffered '"category": "youtube"' | sed 's/^/[NODE-JSON] /' &
+    }
 }
 
 # Fonction pour démarrer l'observation des logs TMDB
@@ -217,6 +232,15 @@ start_tmdb_logs() {
     [[ -f "$HOME/.zen/tmp/IA.log" ]] && {
         echo "  → IA.log (filtré TMDB)"
         tail -f "$HOME/.zen/tmp/IA.log" 2>/dev/null | grep -i "tmdb\|film\|serie" | sed 's/^/[IA-TMDB] /' &
+    }
+
+    # Flux structuré JSONL (additif — cf. start_youtube_logs ci-dessus). Rien
+    # n'émet encore de category="tmdb" aujourd'hui (scraper.TMDB.py n'est pas
+    # instrumenté) : cette ligne restera silencieuse jusqu'à ce que ce soit
+    # fait, sans casser le comportement actuel.
+    [[ -f "$NODE_ACTIVITY_LOG" ]] && {
+        echo "  → node-activity.jsonl (structuré, catégorie tmdb)"
+        tail -f "$NODE_ACTIVITY_LOG" 2>/dev/null | grep --line-buffered '"category": "tmdb"' | sed 's/^/[NODE-JSON] /' &
     }
 }
 

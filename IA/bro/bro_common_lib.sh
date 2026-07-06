@@ -62,6 +62,88 @@ bro_log() {
 }
 
 ########################################################################
+# bro_log_event ACTION SUCCESS [CATEGORY] [LATENCY_MS] [EXTRA_JSON]
+#   Journalise un évènement STRUCTURÉ (JSONL) niveau STATION/NODE, EN PLUS
+#   du texte libre écrit par bro_log()/log_debug() dans IA.log — additif,
+#   ne remplace ni ne modifie l'écriture existante. Miroir bash du schéma
+#   déjà utilisé côté BRO/utilisateur par IA/observability.py::log_event
+#   (timestamp/action/success/latency_ms), pour permettre au niveau NODE un
+#   filtrage par champ structuré au lieu des greps fragiles sur du texte
+#   libre (ex: "youtube|yt-dlp" ou "tmdb|film|serie" dans log_file_watch.sh).
+#
+#   ACTION       libellé court de l'évènement (ex: "dispatch", "sync", "backup")
+#   SUCCESS      0/1/true/false — tout le reste vaut false
+#   CATEGORY     optionnel — remplace le mot-clé grep par un champ dédié
+#                (ex: "youtube", "tmdb", "plain", "udrive", "backup")
+#   LATENCY_MS   optionnel — durée en millisecondes, omis du JSON si absent
+#   EXTRA_JSON   optionnel — objet JSON fusionné dans l'évènement
+#                (ex: '{"player":"alice@example.com"}')
+#
+#   Fichier : ~/.zen/tmp/${IPFSNODEID:-_local}/observability/node-activity.jsonl
+#   Ring buffer : BRO_ACTIVITY_RING_LIMIT lignes (défaut 200, même limite que
+#   IA/observability.py::ACTIVITY_RING_LIMIT côté BRO/utilisateur).
+#
+#   Échoue TOUJOURS silencieusement — l'observabilité ne doit jamais
+#   perturber ni ralentir l'appelant (même philosophie que bro_alert_captain).
+########################################################################
+BRO_ACTIVITY_RING_LIMIT="${BRO_ACTIVITY_RING_LIMIT:-200}"
+
+bro_log_event() {
+    local _action="$1" _success="$2" _category="${3:-}" _latency_ms="${4:-}" _extra="${5:-}"
+    local _node="${IPFSNODEID:-_local}"
+    local _dir="$HOME/.zen/tmp/${_node}/observability"
+    local _path="${_dir}/node-activity.jsonl"
+
+    mkdir -p "$_dir" 2>/dev/null || return 0
+
+    local _ok="false"
+    case "$_success" in
+        1|true|TRUE|True) _ok="true" ;;
+    esac
+
+    python3 - "$_path" "${BRO_SCRIPT_ID:-bro}" "$_action" "$_ok" "$_category" "$_latency_ms" "$_extra" "$BRO_ACTIVITY_RING_LIMIT" <<'PYEOF' 2>/dev/null
+import sys, json, time
+
+path, script, action, ok, category, latency_ms, extra, limit = sys.argv[1:9]
+
+event = {
+    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    "script": script,
+    "action": action,
+    "success": ok == "true",
+}
+if category:
+    event["category"] = category
+if latency_ms:
+    try:
+        event["latency_ms"] = round(float(latency_ms), 1)
+    except ValueError:
+        pass
+if extra:
+    try:
+        d = json.loads(extra)
+        if isinstance(d, dict):
+            event.update(d)
+    except Exception:
+        pass
+
+try:
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+    limit_n = int(limit)
+    with open(path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    if len(lines) > limit_n:
+        with open(path, "w", encoding="utf-8") as f:
+            f.writelines(lines[-limit_n:])
+except Exception:
+    pass
+PYEOF
+    return 0
+}
+
+########################################################################
 # bro_alert_captain MESSAGE
 #   Envoie un email HTML au capitaine via mailjet.sh.
 #   Rate-limitée à 1 alerte par 24h (verrou $HOME/.zen/flashmem/bro_alert.lock).

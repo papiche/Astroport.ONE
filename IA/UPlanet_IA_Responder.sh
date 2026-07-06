@@ -388,6 +388,18 @@ if [[ "$message_text" =~ \#url ]]; then TAGS[url]=true; fi
 if [[ "$message_text" =~ \#status ]]; then TAGS[status]=true; fi
 if [[ "$message_text" =~ \#whoami ]]; then TAGS[whoami]=true; fi
 
+## Observabilité NODE structurée (JSONL, additive à IA.log) — quels tags ont
+## été détectés dans ce message, avant tout dispatch. Un seul point
+## d'instrumentation ici plutôt que dans chacune des ~25 branches de
+## traitement qui suivent (le repli conversationnel final est aussi
+## instrumenté, voir plus bas — ces deux points couvrent l'essentiel sans
+## multiplier les risques de régression sur le plus gros script du dépôt).
+_active_tags=""
+for _t in "${!TAGS[@]}"; do
+    [[ "${TAGS[$_t]}" == true ]] && _active_tags="${_active_tags:+$_active_tags,}$_t"
+done
+bro_log_event "tags_detected" 1 "${_active_tags:-none}"
+
 # Only process messages that explicitly request the bot (#BRO or #BOT). Exit silently otherwise.
 # This avoids error reports when the relay filter forwards messages that were not meant for the IA.
 if [[ "${TAGS[BRO]}" != true && "${TAGS[BOT]}" != true ]]; then
@@ -2176,6 +2188,8 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
             else
                 # Default AI response
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$QUESTION")
+                _fallback_t0=$(date +%s.%N)
+                _fallback_category="ok"
                 if [[ -n "$user_id" ]]; then
                     if check_memory_slot_access "$user_id" "$memory_slot"; then
                         KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" \
@@ -2185,12 +2199,20 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
                         echo "Memory access denied for AI question - USER: $user_id, SLOT: $memory_slot"
                         send_memory_access_denied "$PUBKEY" "$EVENT" "$memory_slot"
                         KeyANSWER="Accès refusé au slot $memory_slot pour l'IA. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12. Utilisez le slot 0 ou devenez sociétaire."
+                        _fallback_category="access_denied"
                     fi
                 else
                 KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" \
                     --model gemma3:latest --ctx 8192 --max-tokens 1024 \
                     --pubkey ${PUBKEY})"
                 fi
+                ## Observabilité NODE structurée (JSONL, additive à IA.log) — repli
+                ## conversationnel zero-shot, seul autre point d'instrumentation de
+                ## ce script avec la détection de tags en tête (cf. plus haut).
+                _fallback_t1=$(date +%s.%N)
+                _fallback_latency_ms=$(echo "($_fallback_t1 - $_fallback_t0) * 1000" | bc 2>/dev/null)
+                bro_log_event "fallback_reply" "$([[ -n "$KeyANSWER" ]] && echo 1 || echo 0)" \
+                    "$_fallback_category" "${_fallback_latency_ms:-}"
             fi
         fi
 

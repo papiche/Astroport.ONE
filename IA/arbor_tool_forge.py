@@ -54,6 +54,7 @@ import sys
 import json
 import argparse
 import subprocess
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.expanduser("~/.zen/Astroport.ONE/IA"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -143,7 +144,16 @@ def _extract_json(text):
 def generate_spec(need_description):
     """Transforme un besoin en langage naturel en spec structurée — nom
     d'outil, description, exemple d'entrée/sortie. Sert aussi de base au
-    résumé final destiné au capitaine."""
+    résumé final destiné au capitaine.
+
+    routing_examples (distinct de example_query) : plusieurs paraphrases
+    réalistes de la requête, PAS la description formelle de l'outil — c'est
+    ce que bro_watch_core.py::activate_tool() indexe pour que l'outil soit
+    routé via match_intent() (marge positif/négatifs partagés) plutôt que
+    via le seuil fixe de match_tool(), moins robuste (cf. l'incident
+    documenté sur match_tool : comparer au texte de description seul a laissé
+    passer un faux positif que la marge sur exemples réels rejette
+    correctement, vérifié empiriquement avec nomic-embed-text)."""
     prompt = (
         "Tu es un développeur Python senior. Un besoin récurrent a été détecté chez "
         "des utilisateurs de BRO (assistant IA personnel décentralisé). Conçois la "
@@ -152,7 +162,12 @@ def generate_spec(need_description):
         "Réponds UNIQUEMENT en JSON, sans aucun texte autour, avec exactement ces champs : "
         '{"tool_name": "nom_court_snake_case", "description": "1 phrase claire", '
         '"example_query": "exemple concret de requête utilisateur", '
-        '"example_output": "exemple concret de sortie attendue"}'
+        '"example_output": "exemple concret de sortie attendue", '
+        '"routing_examples": ["paraphrase 1", "paraphrase 2", "paraphrase 3", "paraphrase 4"]}\n\n'
+        "routing_examples : 4 à 6 façons DIFFÉRENTES et réalistes dont un utilisateur "
+        "pourrait formuler cette même requête en conversation naturelle (pas de variations "
+        "triviales du même mot-à-mot — varie la structure de phrase, le niveau de langue, "
+        "les mots utilisés)."
     )
     return _extract_json(_ask_claude(prompt, timeout=60))
 
@@ -217,18 +232,58 @@ def generate_test_code(spec, tool_module):
     return _extract_code(_ask_claude(prompt, timeout=90))
 
 
+def _bwrap_available():
+    from shutil import which
+    return which("bwrap") is not None
+
+
 def _run_pytest_in_worktree(worktree_path, test_file_abs, extra_pythonpath):
-    env = {**os.environ, "PYTHONPATH": extra_pythonpath}
+    """Exécute pytest isolé via bubblewrap (bwrap) — le garde-fou statique
+    (_static_safety_check) ne bloque que des patterns textuels évidents et est
+    trivialement contournable (ex: getattr(__builtins__, 'ev'+'al', ...)) ;
+    l'isolation OS est la vraie ligne de défense pour du code généré par IA.
+    --unshare-net : aucun accès réseau pendant le test (les tests générés
+    doivent utiliser des assertions souples sans vraie requête, voir
+    generate_test_code) — bloque aussi une éventuelle exfiltration.
+    --ro-bind sur les libs système : rien d'écrivable hors le worktree lui-même.
+    Pas de bind sur $HOME/~/.zen/le reste du dépôt : le code généré n'y a pas
+    accès. --die-with-parent : pas de processus orphelin si pytest timeout."""
+    if not _bwrap_available():
+        return False, ("bwrap introuvable — bubblewrap est requis pour exécuter le code généré "
+                        "de façon isolée (apt install bubblewrap). Rien n'est exécuté sans sandbox.")
+    # pytest/requests vivent dans le venv ~/.astro (même auto-réinvocation
+    # qu'en tête de ce fichier) — sys.executable le reflète déjà si présent.
+    python_bin = sys.executable
+    venv_root = os.path.expanduser("~/.astro")
+    bwrap_venv_args = ["--ro-bind-try", venv_root, venv_root] if os.path.exists(venv_root) else []
+    env = {"PYTHONPATH": extra_pythonpath, "PATH": os.path.dirname(python_bin) + ":/usr/bin:/bin"}
+    cmd = [
+        "bwrap",
+        "--unshare-net", "--unshare-pid",
+        "--ro-bind", "/usr", "/usr",
+        "--ro-bind", "/lib", "/lib",
+        "--ro-bind-try", "/lib64", "/lib64",
+        "--ro-bind-try", "/etc/alternatives", "/etc/alternatives",
+        *bwrap_venv_args,
+        # tmpfs /tmp AVANT le bind du worktree : worktree_path vit sous
+        # tempfile.gettempdir() (voir arbor_self_improve.py::_create_worktree)
+        # — le monter dans l'autre ordre masquerait le bind sous le tmpfs.
+        "--tmpfs", "/tmp",
+        "--bind", worktree_path, worktree_path,
+        "--proc", "/proc",
+        "--dev", "/dev",
+        "--chdir", worktree_path,
+        "--die-with-parent",
+        "--",
+        python_bin, "-m", "pytest", test_file_abs, "-v", "--tb=short",
+    ]
     try:
-        result = subprocess.run(
-            ["python3", "-m", "pytest", test_file_abs, "-v", "--tb=short"],
-            cwd=worktree_path, capture_output=True, text=True, timeout=60, env=env,
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, env=env)
         return result.returncode == 0, (result.stdout + result.stderr)
     except subprocess.TimeoutExpired:
         return False, "Timeout (60s) — le test ou l'outil a probablement bloqué (réseau sans timeout ?)"
     except Exception as e:
-        return False, f"Erreur d'exécution pytest : {e}"
+        return False, f"Erreur d'exécution pytest (bwrap) : {e}"
 
 
 def _generate_ai_summary(spec, need_description, code, test_code, iterations):
@@ -242,6 +297,46 @@ def _generate_ai_summary(spec, need_description, code, test_code, iterations):
         f"Test (extrait) :\n```python\n{test_code[:600]}\n```"
     )
     return _ask_claude(prompt, timeout=60) or "(résumé indisponible)"
+
+
+def _write_tool_manifest(manifest_path, tool_module, spec, need_description, summary, attempts):
+    """Manifeste d'audit humain à côté de l'outil — même esprit que SKILL.md
+    (LifeOS) : description avec déclencheur explicite ("USE WHEN"), niveau
+    d'accès RÉEL (celui appliqué par _register_arbor_tool à l'activation :
+    ACCESS_ANY tant que le capitaine ne le restreint pas explicitement — pas
+    un palier inventé ici), et traçabilité de la génération. Committé dans le
+    même commit que l'outil, donc lu par le capitaine avant activate_tool()."""
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    description = spec.get("description", "").strip()
+    example_query = spec.get("example_query", "").strip()
+    frontmatter = (
+        "---\n"
+        f"name: {tool_module}\n"
+        f"description: \"{description} USE WHEN l'utilisateur demande quelque chose "
+        f"comme : « {example_query} »\"\n"
+        "min_access: 0\n"
+        "source: arbor\n"
+        f"generated_at: {generated_at}\n"
+        f"attempts: {attempts}/{MAX_ITERATIONS}\n"
+        "---\n"
+    )
+    routing_examples = [str(e).strip() for e in (spec.get("routing_examples") or []) if str(e).strip()]
+    routing_block = ""
+    if routing_examples:
+        examples_list = "\n".join(f"- {e}" for e in routing_examples)
+        routing_block = (
+            "\nExemples de routage (paraphrases pour le matching sémantique) :\n"
+            f"{examples_list}\n"
+        )
+    body = (
+        f"\nBesoin d'origine : {need_description}\n\n"
+        f"Exemple de requête : {example_query}\n"
+        f"Exemple de sortie attendue : {spec.get('example_output', '').strip()}\n"
+        f"{routing_block}\n"
+        f"Résumé :\n{summary}\n"
+    )
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        f.write(frontmatter + body)
 
 
 def _notify_captain(message):
@@ -337,14 +432,18 @@ def forge_tool(need_description, slug=None, notify_captain=False):
     rel_test = os.path.relpath(test_path, worktree_path)
     summary = _generate_ai_summary(spec, need_description, code, test_code, attempt)
 
-    _run_git(["add", rel_tool, rel_test], worktree_path)
+    manifest_path = os.path.join(tool_dir, f"{tool_module}.md")
+    _write_tool_manifest(manifest_path, tool_module, spec, need_description, summary, attempt)
+    rel_manifest = os.path.relpath(manifest_path, worktree_path)
+
+    _run_git(["add", rel_tool, rel_test, rel_manifest], worktree_path)
     _run_git(["commit", "-m",
               f"arbor: génère {tool_module}\n\nBesoin : {need_description}\n\n{summary}\n\n"
               f"Validé {attempt}/{MAX_ITERATIONS} tentative(s) — aucun fichier existant modifié."],
              worktree_path)
 
     print(f"\n✅ Outil généré et testé — branche {branch_name}")
-    print(f"   Fichiers : {rel_tool}, {rel_test}")
+    print(f"   Fichiers : {rel_tool}, {rel_test}, {rel_manifest}")
 
     if notify_captain:
         msg = (
@@ -352,7 +451,7 @@ def forge_tool(need_description, slug=None, notify_captain=False):
             f"Besoin : {need_description}\n\n"
             f"{summary}\n\n"
             f"Fichiers (nouveaux uniquement, rien d'existant modifié) :\n"
-            f"  - {rel_tool}\n  - {rel_test}\n\n"
+            f"  - {rel_tool}\n  - {rel_test}\n  - {rel_manifest}\n\n"
             f"Validé après {attempt}/{MAX_ITERATIONS} tentative(s) de test.\n\n"
             f"Branche  : {branch_name}\n"
             f"Worktree : {worktree_path}\n"
@@ -366,7 +465,7 @@ def forge_tool(need_description, slug=None, notify_captain=False):
             print("⚠️ Notification capitaine non envoyée (voir logs ci-dessus).")
 
     return {"branch": branch_name, "worktree": worktree_path, "tool": rel_tool,
-            "test": rel_test, "summary": summary, "attempts": attempt}
+            "test": rel_test, "manifest": rel_manifest, "summary": summary, "attempts": attempt}
 
 
 def main():

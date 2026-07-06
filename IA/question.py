@@ -36,6 +36,8 @@ import argparse
 import json
 
 MY_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, MY_DIR)
+from prompt_safety import wrap_untrusted
 
 
 def load_skill_context(skill: str, question: str = "") -> str:
@@ -65,6 +67,43 @@ def load_skill_context(skill: str, question: str = "") -> str:
     except Exception:
         pass  # Qdrant optionnel
 
+    return "\n\n".join(parts)
+
+
+_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+
+def load_identity(user_id: str) -> str:
+    """
+    Charge la biographie narrative de l'utilisateur — fichiers Markdown sous
+    ~/.zen/game/nostr/<user_id>/identity/ (.Core.md, .Style.md, .Rules.md,
+    .Preferences.md, .Objectifs.md). Injectée en tête du prompt système pour
+    que BRO reste le clone numérique du capitaine, pas un assistant générique.
+
+    Fichiers préfixés par un point : ~/.zen/game/nostr/<email>/ est publié
+    intégralement sur l'IPNS de l'essaim (NOSTRCARD.refresh.sh:
+    `ipfs add -rwq`), qui exclut par défaut tout chemin caché — l'identité
+    reste donc privée à la station du capitaine.
+
+    Les commentaires HTML (<!-- ... -->) sont retirés avant injection : les
+    templates par défaut ne contiennent que des instructions en commentaire,
+    donc un fichier non renseigné par l'utilisateur n'ajoute rien au prompt.
+    """
+    identity_dir = os.path.expanduser(f"~/.zen/game/nostr/{user_id}/identity")
+    if not os.path.isdir(identity_dir):
+        return ""
+    parts = []
+    for filename in (".Core.md", ".Style.md", ".Rules.md", ".Preferences.md", ".Objectifs.md"):
+        path = os.path.join(identity_dir, filename)
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = _HTML_COMMENT_RE.sub("", f.read()).strip()
+        except Exception:
+            continue
+        if content:
+            parts.append(content)
     return "\n\n".join(parts)
 
 
@@ -229,15 +268,15 @@ if __name__ == "__main__":
     if args.user_id is not None:
         user_ctx = load_context(user_id=args.user_id, slot=args.slot)
         if user_ctx:
-            context_parts.append(f"Historique personnel :\n{user_ctx}")
+            context_parts.append(f"Historique personnel :\n{wrap_untrusted('personal_history', user_ctx)}")
     elif args.lat and args.lon:
         geo_ctx = load_context(latitude=args.lat, longitude=args.lon)
         if geo_ctx:
-            context_parts.append(f"Contexte géographique :\n{geo_ctx}")
+            context_parts.append(f"Contexte géographique :\n{wrap_untrusted('geo_context', geo_ctx)}")
     elif args.pubkey:
         pub_ctx = load_context(pubkey=args.pubkey)
         if pub_ctx:
-            context_parts.append(f"Contexte utilisateur :\n{pub_ctx}")
+            context_parts.append(f"Contexte utilisateur :\n{wrap_untrusted('user_context', pub_ctx)}")
 
     # ── Prompt final ──────────────────────────────────────────────────────────
     # Question seule dans le rôle "user" — contexte et règles dans "system"
@@ -254,7 +293,14 @@ if __name__ == "__main__":
         "4. Utilise des emojis\n"
         "5. Sois concis"
     )
+    identity_block = load_identity(args.user_id) if args.user_id else ""
+
     system_parts = []
+    if identity_block:
+        system_parts.append(
+            "Tu es le clone numérique de l'utilisateur. Voici ton ADN :\n"
+            f"{wrap_untrusted('identity', identity_block)}"
+        )
     if system_extra:
         system_parts.append(system_extra)
     system_parts.append(_base_rules)

@@ -197,7 +197,7 @@ Déterminé par `bro_user_level.py` — lecture `contractStatus` (DID cache) + v
 | `IA/bro/bro_dm_daemon.sh` | 1 556 | Daemon principal — inotifywait, route, déchiffre, répond |
 | `IA/bro/bro_common_lib.sh` | 606 | Bibliothèque partagée — `send_dm`, `bro_resolve_email`, `bro_user_level`… |
 | `IA/bro_watch_core.py` | 1 187 | Surveillance Web2 multi-tenant + SELF DM + ARBOR (mining, trigger) |
-| `IA/tests/arbor_self_improve.py` | 523 | Auto-amélioration prompt/modèle + mining (discipline Arbor, gouvernance humaine) |
+| `IA/arbor_self_improve.py` | 523 | Auto-amélioration prompt/modèle + mining (discipline Arbor, gouvernance humaine) |
 | `IA/bro/love_handler.sh` | — | Fonctionnalités sociales (profil, matching, kin) — hors périmètre ARBOR |
 | `tools/nostr_node_intercom.py` | — | Transport DM NIP-44 inter-NODE (encrypt / decrypt) |
 | `IA/short_memory.py` | — | Slots mémoire personnelle (0-12) — `~/.zen/flashmem/EMAIL/` |

@@ -72,6 +72,10 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.expanduser("~/.zen/Astroport.ONE/IA"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# eval_command_interpretation.py est un harnais d'évaluation légitime, laissé
+# dans IA/tests/ (contrairement à ce fichier, déplacé de IA/tests/ vers IA/
+# car c'est un outil de production, pas un test) — chemin ajouté explicitement.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests"))
 import bro_watch_core as bwc
 from eval_command_interpretation import run_eval
 
@@ -84,6 +88,16 @@ BRANCH_PREFIX = "arbor/bro-cmd-interp"
 # implicite sur un `git checkout` qui les ignorerait).
 SANDBOX_FILES = [
     "IA/bro_watch_core.py",
+    "IA/prompt_safety.py",
+    "IA/bro/__init__.py",
+    "IA/bro/_shared.py",
+    "IA/bro/nostr.py",
+    "IA/bro/watch_store.py",
+    "IA/bro/rag.py",
+    "IA/bro/media.py",
+    "IA/bro/economy.py",
+    "IA/bro/identity.py",
+    "IA/bro/tools.py",
     "IA/tests/eval_command_interpretation.py",
     "IA/tests/bro_watch_command_eval_dev.json",
     "IA/tests/bro_watch_command_eval_heldout.json",
@@ -175,7 +189,9 @@ def _apply_model_change(worktree_path, new_model):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copyfile(src, dst)
 
-    target = os.path.join(worktree_path, "IA/bro_watch_core.py")
+    # COMMAND_INTERPRETATION_MODEL vit dans bro/_shared.py depuis le split du
+    # monolithe bro_watch_core.py (2026-07-06), pas dans bro_watch_core.py lui-même.
+    target = os.path.join(worktree_path, "IA/bro/_shared.py")
     with open(target, encoding="utf-8") as f:
         content = f.read()
     old_line = f'COMMAND_INTERPRETATION_MODEL = "{bwc.COMMAND_INTERPRETATION_MODEL}"'

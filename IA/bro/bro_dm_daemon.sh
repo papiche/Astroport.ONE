@@ -425,10 +425,56 @@ _handle_rec_skill() {
         _send_dm "$sender" \
             "💾 Mémorisé dans la base partagée 'skills/${skill}'. Merci pour la contribution ! 🧠" \
             "${_RELAYS[0]}" 2>/dev/null
+        ## Modération a posteriori : notifie le Capitaine de chaque nouvelle
+        ## contribution (jamais bloquant pour la confirmation ci-dessus).
+        if [[ -n "${CAPTAINEMAIL:-}" ]]; then
+            local _captain_hex
+            _captain_hex=$(bro_resolve_hex "$CAPTAINEMAIL")
+            if [[ -n "$_captain_hex" && "$_captain_hex" != "$sender" ]]; then
+                _send_dm "$_captain_hex" \
+                    "🧠 Nouvelle contribution mémoire partagée '${skill}' (DM-to-NODE) : « ${content:0:200} »
+Modération : #mod:${skill} pour lister, #rm:${skill} <n> pour retirer une entrée." \
+                    "${_RELAYS[0]}" 2>/dev/null
+            fi
+        fi
     else
         _send_dm "$sender" \
             "❌ Échec mémorisation skill $skill." \
             "${_RELAYS[0]}" 2>/dev/null
+    fi
+}
+
+## ── Modération Capitaine des contributions #rec:<skill> ───────────────────
+## Syntaxe : "#mod:devops" → liste les entrées de skills/devops.md avec leur index
+_handle_mod_skill() {
+    local sender="$1" skill="$2"
+    [[ -z "$skill" ]] && return
+    _log "🛡️ #mod:$skill (modération) de ${sender:0:12}..."
+
+    local entries
+    entries=$(python3 "$MY_PATH/../skill_flashmem.py" list-entries --skill "$skill" 2>/dev/null)
+    local reply
+    if [[ -z "$entries" ]]; then
+        reply="📚 Aucune entrée pour '${skill}'."
+    else
+        reply="📚 Entrées de '${skill}' :
+${entries}
+
+Supprimer : #rm:${skill} <n>"
+    fi
+    _send_dm "$sender" "$reply" "${_RELAYS[0]}" 2>/dev/null
+}
+
+## Syntaxe : "#rm:devops 2" → retire l'entrée d'index 2 de skills/devops.md
+_handle_rm_skill() {
+    local sender="$1" skill="$2" index="$3"
+    [[ -z "$skill" || -z "$index" ]] && return
+    _log "🗑️ #rm:$skill $index (modération) de ${sender:0:12}..."
+
+    if python3 "$MY_PATH/../skill_flashmem.py" remove-entry --skill "$skill" --index "$index" 2>/dev/null; then
+        _send_dm "$sender" "🗑️ Entrée ${index} supprimée de '${skill}'." "${_RELAYS[0]}" 2>/dev/null
+    else
+        _send_dm "$sender" "❌ Index ${index} invalide pour '${skill}' (voir #mod:${skill})." "${_RELAYS[0]}" 2>/dev/null
     fi
 }
 
@@ -1321,6 +1367,10 @@ _process_event() {
 
     [[ -z "$sender" ]] && return
 
+    ## Évènement structuré niveau NODE (JSONL, additif à IA.log) — category=$channel
+    ## permet un filtrage par canal sans dépendre d'un grep sur du texte libre.
+    bro_log_event "dispatch" 1 "$channel" "" "{\"sender\":\"${sender:0:12}\"}"
+
     ## ── Canal nostr_delete : inter-NODE, bypass level check ─────────────
     ## Authentifié par présence du HEX expéditeur dans ~/.zen/tmp/swarm/*/HEX
     if [[ "$channel" == "nostr_delete" ]]; then
@@ -1438,12 +1488,34 @@ _process_event() {
                 _handle_mem "$sender" "$slot"
 
             elif [[ "$question" =~ ^#rec:([a-z0-9_-]+)[[:space:]]+(.*) ]]; then
-                ## #rec:<skill> — requiert Level ≥ 2 (atom4love)
-                if [[ "$_USER_LEVEL" -lt 2 ]]; then
-                    _send_dm "$sender" "🔒 #rec:<skill> nécessite un profil atom4love.\nCrée le tien sur atomic.html !"
+                ## #rec:<skill> — requiert Level ≥ 3 (satellite ẐEN). Relevé
+                ## depuis ATOME (2, trivialement obtenable) pour introduire
+                ## une friction économique réelle contre l'empoisonnement de
+                ## la mémoire collective — même seuil que bro_watch_core.py.
+                if [[ "$_USER_LEVEL" -lt 3 ]]; then
+                    _send_dm "$sender" "🔒 #rec:<skill> nécessite une souscription ẐEN satellite ou constellation.\nhttps://opencollective.com/monnaie-libre/contribute"
                     return
                 fi
                 _handle_rec_skill "$sender" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+
+            elif [[ "$question" =~ ^#mod:([a-z0-9_-]+) ]]; then
+                ## #mod:<skill> — modération a posteriori des contributions
+                ## #rec:<skill>, réservée au Capitaine (Level 5) — liste les
+                ## entrées avec leur index, à retirer via #rm:<skill> <n>.
+                if [[ "$_USER_LEVEL" -lt 5 ]]; then
+                    _send_dm "$sender" "🔒 #mod:<skill> est réservé au capitaine de la station."
+                    return
+                fi
+                _handle_mod_skill "$sender" "${BASH_REMATCH[1]}"
+
+            elif [[ "$question" =~ ^#rm:([a-z0-9_-]+)[[:space:]]+([0-9]+) ]]; then
+                ## #rm:<skill> <n> — retire l'entrée n (voir #mod:<skill>),
+                ## réservé au Capitaine.
+                if [[ "$_USER_LEVEL" -lt 5 ]]; then
+                    _send_dm "$sender" "🔒 #rm:<skill> est réservé au capitaine de la station."
+                    return
+                fi
+                _handle_rm_skill "$sender" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
 
             elif echo "$question" | grep -qi '#rec'; then
                 ## Extraire le texte à mémoriser (sans #rec, sans tous les #N, sans #bro...)

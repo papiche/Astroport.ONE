@@ -155,6 +155,95 @@ cat "$HOME/.zen/game/firewall_candidates.txt" | sort -u >> $LOG_FILE
 echo "___________________bro_dm_daemon.log_______________"
 tail -n 300 $HOME/.zen/tmp/bro_dm_daemon.log 2>/dev/null >> $LOG_FILE
 
+########################################################################
+## NODE OBSERVABILITY DIGEST (24H) — résumé structuré JSONL, cf. bro_log_event()
+## dans IA/bro/bro_common_lib.sh (~/.zen/tmp/$IPFSNODEID/observability/
+## node-activity.jsonl). Vient EN PLUS des dumps texte libre ci-dessous
+## (IA.log, bro_dm_daemon.log) — ne les remplace pas, les rend juste lisibles
+## d'un coup d'œil dans l'email quotidien (comptage par script/catégorie/succès)
+## au lieu de forcer le capitaine à parcourir 300 lignes de texte libre.
+########################################################################
+echo "=== NODE OBSERVABILITY DIGEST (24H) ==========================" >> $LOG_FILE
+python3 - "$HOME/.zen/tmp/${IPFSNODEID}/observability/node-activity.jsonl" 24 <<'PYEOF' >> "$LOG_FILE" 2>/dev/null
+import sys, json, time
+
+path, hours = sys.argv[1], float(sys.argv[2])
+cutoff = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(time.time() - hours * 3600))
+
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+except FileNotFoundError:
+    print("(aucun évènement structuré — observabilité NODE pas encore active sur ce composant)")
+    sys.exit(0)
+
+counts = {}
+total = 0
+for line in lines:
+    try:
+        e = json.loads(line)
+    except Exception:
+        continue
+    if e.get("timestamp", "") < cutoff:
+        continue
+    key = (e.get("script", "?"), e.get("category", ""), bool(e.get("success")))
+    counts[key] = counts.get(key, 0) + 1
+    total += 1
+
+if total == 0:
+    print("(aucun évènement dans les dernières 24h)")
+else:
+    for (script, category, ok), n in sorted(counts.items(), key=lambda kv: -kv[1]):
+        label = f"{script}/{category}" if category else script
+        print(f"- {label} : {n}x ({'ok' if ok else 'echec'})")
+PYEOF
+
+########################################################################
+## BRO OBSERVABILITY DIGEST (24H) — pendant PAR UTILISATEUR du digest NODE
+## ci-dessus, cf. IA/observability.py::log_event (~/.zen/flashmem/<email>/
+## observability/activity.jsonl, câblé dans IA/bro_watch_core.py : dispatch
+## d'outils, réponses conversationnelles, alertes proactives). Glob direct
+## sous flashmem/ : seuls les comptes ayant eu une activité BRO possèdent un
+## sous-répertoire observability/, pas besoin de croiser avec game/nostr/.
+########################################################################
+echo "=== BRO OBSERVABILITY DIGEST (24H) ===========================" >> $LOG_FILE
+python3 - 24 <<'PYEOF' >> "$LOG_FILE" 2>/dev/null
+import sys, os, glob, json, time
+
+hours = float(sys.argv[1])
+cutoff = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(time.time() - hours * 3600))
+
+paths = glob.glob(os.path.expanduser("~/.zen/flashmem/*/observability/activity.jsonl"))
+counts = {}
+active_users = set()
+total = 0
+for path in paths:
+    email = path.split(os.sep + "flashmem" + os.sep, 1)[-1].split(os.sep, 1)[0]
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except Exception:
+        continue
+    for line in lines:
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        if e.get("timestamp", "") < cutoff:
+            continue
+        active_users.add(email)
+        key = (e.get("tool", "?"), bool(e.get("success")))
+        counts[key] = counts.get(key, 0) + 1
+        total += 1
+
+if total == 0:
+    print("(aucune activité BRO dans les dernières 24h)")
+else:
+    print(f"{len(active_users)} compte(s) BRO actif(s)")
+    for (tool, ok), n in sorted(counts.items(), key=lambda kv: -kv[1]):
+        print(f"- {tool} : {n}x ({'reussi' if ok else 'echec'})")
+PYEOF
+
 echo "=== YOUTUBE / IA SCRAPERS ===================================" >> $LOG_FILE
 tail -n 300 $HOME/.zen/tmp/IA.log 2>/dev/null >> $LOG_FILE
 tail -n 300 $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
@@ -667,7 +756,7 @@ fi
 ## N'écrit ni ne génère aucun code : signale au capitaine par DM NODE les
 ## patterns de demandes non satisfaites par BRO (voir arbor_self_improve.py).
 ########################################################################
-ARBOR_MINER="${MY_PATH}/IA/tests/arbor_self_improve.py"
+ARBOR_MINER="${MY_PATH}/IA/arbor_self_improve.py"
 if [[ -f "$ARBOR_MINER" ]]; then
     echo "🔍 BRO Arbor : analyse des besoins récurrents (tous comptes)..."
     python3 "$ARBOR_MINER" --mine-requests --notify-captain >> "$LOG_FILE" 2>&1 \
@@ -675,6 +764,39 @@ if [[ -f "$ARBOR_MINER" ]]; then
         || echo "⚠️  arbor_self_improve --mine-requests échoué (non bloquant)"
 else
     echo "ℹ️  arbor_self_improve.py introuvable — skip mining BRO"
+fi
+
+########################################################################
+## BRO PROACTIF — balayage quotidien de tous les comptes locaux.
+## check_proactive_alerts() (goal_drift, low_g1_balance) et
+## _resume_pending_algorithm_plan() ne se déclenchent normalement qu'en
+## réaction à un message reçu (fin de process_incoming_commands, appelé par
+## bro_dm_daemon.sh) — un compte qui ne reparle jamais à BRO ne verrait donc
+## jamais ses alertes proactives ni la reprise d'un plan ALGORITHM interrompu.
+## Ce balayage réutilise EXACTEMENT le même chemin (check-commands), sans
+## nouvelle logique : traiter 0 nouvelle commande puis vérifier
+## alertes/plans est déjà le comportement normal de cette fonction.
+########################################################################
+BRO_WATCH_CORE="${MY_PATH}/IA/bro_watch_core.py"
+BRO_CHECK_LOCKS_DIR="$HOME/.zen/tmp/bro_check_commands_locks"
+if [[ -x "$BRO_WATCH_CORE" || -f "$BRO_WATCH_CORE" ]]; then
+    echo "🔔 BRO proactif : balayage quotidien alertes/plans (tous comptes)..."
+    mkdir -p "$BRO_CHECK_LOCKS_DIR"
+    for _bro_account_dir in "$HOME"/.zen/game/nostr/*@*; do
+        [[ -d "$_bro_account_dir" ]] || continue
+        _bro_email="$(basename "$_bro_account_dir")"
+        # Même verrou que bro_dm_daemon.sh::_check_commands_locked — évite une
+        # exécution concurrente si le daemon temps réel traite ce compte au
+        # même moment (deux appels LLM / deux réponses pour la même fenêtre).
+        (
+            flock -n 9 || { echo "ℹ️  check-commands déjà en cours pour ${_bro_email} — passe son tour"; exit 0; }
+            timeout 60 python3 "$BRO_WATCH_CORE" check-commands "$_bro_email" >> "$LOG_FILE" 2>&1
+        ) 9>"$BRO_CHECK_LOCKS_DIR/$(echo -n "$_bro_email" | md5sum | cut -d' ' -f1).lock" \
+            || echo "⚠️  check-commands échoué pour ${_bro_email} (non bloquant)"
+    done
+    echo "✅ Balayage proactif BRO terminé"
+else
+    echo "ℹ️  bro_watch_core.py introuvable — skip balayage proactif BRO"
 fi
 
 ## MAIL LOG : support@qo-op.com ##

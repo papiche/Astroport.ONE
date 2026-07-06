@@ -2,24 +2,32 @@
 ''''exec "$HOME/.astro/bin/python3" "$0" "$@"
 '''
 __usage__ = """
-recorder.py — Surveillance vidéo VDO.ninja → uDRIVE
+vdo.ninja.motion.rec.py — Surveillance vidéo VDO.ninja → uDRIVE
 
+  Outil de monitoring du Capitaine (PAS un scraper BRO à cookie — vit sous
+  admin/monitor/, jamais dispatché par #scraper/list_station_scrapers).
   Ouvre une room VDO.ninja dans un navigateur Chromium headless (Playwright),
   capture les frames WebRTC, détecte les mouvements par différence d'image
   (OpenCV) et sauvegarde automatiquement les séquences en MP4 dans le uDRIVE
   du Capitaine de la station.
 
 USAGE
-  recorder.py <ROOM>              Lancer en avant-plan (Ctrl+C pour arrêter)
-  recorder.py <ROOM> --daemon     Lancer en arrière-plan (démon détaché)
-  recorder.py --list              Lister les rooms surveillées et leur état
-  recorder.py --close <ROOM>      Arrêter la surveillance d'une room
-  recorder.py --close all         Arrêter toutes les rooms actives
-  recorder.py --help | -h         Afficher cette aide
+  vdo.ninja.motion.rec.py <ROOM> [--email EMAIL]   Lancer en avant-plan (Ctrl+C pour arrêter)
+  vdo.ninja.motion.rec.py <ROOM> --daemon [--email EMAIL]
+                                                     Lancer en arrière-plan (démon détaché)
+  vdo.ninja.motion.rec.py --list              Lister les rooms surveillées et leur état
+  vdo.ninja.motion.rec.py --close <ROOM>      Arrêter la surveillance d'une room
+  vdo.ninja.motion.rec.py --close all         Arrêter toutes les rooms actives
+  vdo.ninja.motion.rec.py --help | -h         Afficher cette aide
 
 ARGUMENTS
-  <ROOM>    Nom de la room VDO.ninja (ex: maRoom42).
-            URL résolue : https://vdo.copylaradio.com/?scene&cleanoutput&autoplay&room=<ROOM>
+  <ROOM>            Nom de la room VDO.ninja (ex: maRoom42).
+                     URL résolue : https://vdo.copylaradio.com/?scene&cleanoutput&autoplay&room=<ROOM>
+  --email EMAIL      Email du MULTIPASS destinataire des enregistrements
+                     (optionnel — défaut : CAPTAINEMAIL, comme avant). Permet
+                     de dédier une room à un sociétaire précis plutôt qu'au
+                     Capitaine — le dossier uDRIVE/Videos ciblé change en
+                     conséquence, voir FICHIERS DE SORTIE ci-dessous.
 
 DÉTECTION DE MOUVEMENT
   Seuil     10 000 pixels activés après blur + seuillage (MOTION_THRESHOLD)
@@ -38,7 +46,7 @@ DÉMON (--daemon)
   Lance le processus en arrière-plan avec start_new_session.
   Logs  : ~/.zen/tmp/uplanet_udrive_<room>.log
   PID   : /tmp/uplanet_udrive_recorder_<room>.pid
-  Arrêt : recorder.py --close <ROOM>  (SIGTERM propre, sauvegarde le segment en cours)
+  Arrêt : vdo.ninja.motion.rec.py --close <ROOM>  (SIGTERM propre, sauvegarde le segment en cours)
   Un second lancement sur la même room est silencieusement ignoré (verrou PID).
 
 DÉPENDANCES
@@ -139,9 +147,11 @@ def release_pid_lock(room):
         pf.unlink()
 
 
-def run_as_daemon(room):
+def run_as_daemon(room, email=None):
     lf = log_file(room)
     cmd = [str(PYTHON), sys.argv[0], room]
+    if email:
+        cmd += ['--email', email]
     with open(lf, 'a') as f:
         proc = subprocess.Popen(cmd, stdout=f, stderr=f, start_new_session=True)
     print(f"[{room}] Démon lancé (PID {proc.pid})")
@@ -151,8 +161,19 @@ def run_as_daemon(room):
 
 
 def parse_args():
-    argv = [a for a in sys.argv[1:] if a != '--daemon']
-    daemon = '--daemon' in sys.argv[1:]
+    raw = sys.argv[1:]
+    daemon = '--daemon' in raw
+
+    email = None
+    if '--email' in raw:
+        idx = raw.index('--email')
+        if idx + 1 >= len(raw):
+            print("Usage : --email EMAIL (adresse MULTIPASS manquante après --email)")
+            sys.exit(1)
+        email = raw[idx + 1]
+        raw = raw[:idx] + raw[idx + 2:]
+
+    argv = [a for a in raw if a != '--daemon']
 
     if not argv:
         print(__usage__)
@@ -169,7 +190,7 @@ def parse_args():
             sys.exit(1)
         close_room(argv[1])
         sys.exit(0)
-    return argv[0], daemon
+    return argv[0], daemon, email
 
 
 def get_captainemail():
@@ -189,11 +210,20 @@ def get_captainemail():
     return ""
 
 
-def get_output_dir():
-    email = get_captainemail()
+def get_output_dir(email=None):
+    """Dossier de sortie des enregistrements — celui du MULTIPASS passé via
+    --email si fourni, sinon celui du Capitaine (comportement historique,
+    inchangé par défaut)."""
     if not email:
-        raise RuntimeError("CAPTAINEMAIL introuvable — source tools/my.sh ou définir la variable d'env")
-    path = Path.home() / ".zen" / "game" / "nostr" / email / "APP" / "uDRIVE" / "Videos"
+        email = get_captainemail()
+        if not email:
+            raise RuntimeError("CAPTAINEMAIL introuvable — source tools/my.sh ou définir la variable d'env")
+    else:
+        print(f"[init] Email MULTIPASS explicite (--email) : {email}")
+    multipass_dir = Path.home() / ".zen" / "game" / "nostr" / email
+    if not multipass_dir.is_dir():
+        raise RuntimeError(f"Aucun MULTIPASS trouvé pour {email} ({multipass_dir} absent)")
+    path = multipass_dir / "APP" / "uDRIVE" / "Videos"
     path.mkdir(parents=True, exist_ok=True)
     print(f"[init] Dossier de sortie : {path}")
     return path
@@ -217,7 +247,7 @@ def capture_frame(page):
     return cv2.imdecode(np.frombuffer(base64.b64decode(b64), np.uint8), cv2.IMREAD_COLOR)
 
 
-def detect_motion(room):
+def detect_motion(room, email=None):
     url = VDO_BASE + room
 
     # Flag d'arrêt propre (SIGTERM depuis --close ou systemd)
@@ -252,7 +282,7 @@ def detect_motion(room):
         SEGMENT_MAX = 60       # durée max d'un tronçon → rotation
         MOTION_THRESHOLD = 10000
 
-        output_dir = get_output_dir()
+        output_dir = get_output_dir(email)
         prev_frame = None
         recording = False
         out = None
@@ -380,11 +410,11 @@ def detect_motion(room):
 
 
 if __name__ == "__main__":
-    room, daemon = parse_args()
+    room, daemon, email = parse_args()
     if daemon:
-        run_as_daemon(room)
+        run_as_daemon(room, email)
     acquire_pid_lock(room)
     try:
-        detect_motion(room)
+        detect_motion(room, email)
     finally:
         release_pid_lock(room)

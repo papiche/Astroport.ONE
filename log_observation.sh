@@ -16,6 +16,10 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Node local (même convention que NIP-101/relay.writePolicy.plugin/filter/common.sh)
+IPFSNODEID=$(jq -r '.Identity.PeerID // empty' "$HOME/.ipfs/config" 2>/dev/null)
+NODE_ACTIVITY_LOG="$HOME/.zen/tmp/${IPFSNODEID}/observability/node-activity.jsonl"
+
 # Fonction d'aide
 show_help() {
     echo "
@@ -164,6 +168,7 @@ check_all_logs() {
     echo -e "${BLUE}📡 ASTROPORT CORE:${NC}"
     check_systemd_service "astroport" "Service Astroport"
     check_log_file "$HOME/.zen/tmp/IA.log" "Log IA"
+    check_log_file "$NODE_ACTIVITY_LOG" "Observabilité structurée NODE (JSONL, LifeOS/Arbor)"
     check_log_file "$HOME/.zen/tmp/12345.log" "Log 12345 API"
     check_log_file "$HOME/.zen/tmp/_12345.log" "Log _12345 Internal"
     check_log_file "$HOME/.zen/tmp/cron.log" "Log Cron"

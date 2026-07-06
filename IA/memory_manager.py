@@ -32,6 +32,9 @@ Usage bash :
 import os, sys, hashlib, json, subprocess
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import observability
+
 # ── Venv ~/.astro ──────────────────────────────────────────────────────────────
 _venv = os.path.expanduser("~/.astro")
 if os.path.exists(_venv):
@@ -289,14 +292,23 @@ def skill_content(skill: str) -> str:
 
 # ──────────────────── RÊVE : compression mémorielle ───────────────────────────
 
-def _ollama_summarize(text: str, max_tokens: int = 200) -> str:
-    """Résume un bloc de messages via Ollama — cœur du cycle RÊVE."""
+def _ollama_summarize(text: str, activity: str = "", max_tokens: int = 200) -> str:
+    """Résume un bloc de messages via Ollama — cœur du cycle RÊVE. `activity`
+    (digest structuré de observability.py, voir reve_compress_slot) permet au
+    résumé de couvrir aussi CE QUE BRO A FAIT pendant cette période (outils
+    invoqués, succès/échecs) — pas seulement ce qui a été dit."""
+    activity_section = (
+        f"\n\nActions techniques effectuées par BRO pendant cette période :\n{activity}"
+        if activity else ""
+    )
     payload = {
         "model": OLLAMA_MODEL,
         "prompt": (
             "Résume les échanges suivants en 2-3 phrases denses (en français). "
-            "Garde les faits, décisions et compétences clés. Ignore les redondances.\n\n"
-            f"{text}\n\n--- Résumé :"
+            "Garde les faits, décisions et compétences clés. Ignore les redondances. "
+            "Si des actions techniques sont listées, mentionne brièvement ce qui a été "
+            "tenté et si ça a fonctionné.\n\n"
+            f"{text}{activity_section}\n\n--- Résumé :"
         ),
         "stream": False,
         "options": {"num_predict": max_tokens, "temperature": 0.3},
@@ -332,7 +344,12 @@ def reve_compress_slot(user_id: str, slot: int,
         f"[{m.get('timestamp', '')[:10]}] {m.get('content', '')}"
         for m in to_compress
     )
-    summary = _ollama_summarize(block)
+    activity_block = observability.digest(
+        user_id,
+        since_ts=to_compress[0].get("timestamp") if to_compress else None,
+        until_ts=to_compress[-1].get("timestamp") if to_compress else None,
+    )
+    summary = _ollama_summarize(block, activity_block)
     if not summary:
         return False
 

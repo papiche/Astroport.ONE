@@ -41,6 +41,12 @@ else
     exit 1
 fi
 
+## Observabilité NODE structurée (JSONL, additive à IA.log) — cf. bro_log_event()
+## dans bro_common_lib.sh. Source optionnelle et non-fatale : n'affecte pas le
+## logging existant (log_debug ci-dessous continue d'écrire dans IA.log).
+BRO_SCRIPT_ID="youtube_scraper"
+source "$MY_PATH/../../bro/bro_common_lib.sh" 2>/dev/null || true
+
 DEBUG=0
 if [[ "$1" == "--debug" ]]; then
     DEBUG=1
@@ -1915,6 +1921,13 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube likes synchronization..." 
 # Lancer la synchronisation
 sync_youtube_likes "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE"
 sync_exit_code=$?
+
+## Évènement structuré niveau NODE (JSONL, additif à IA.log) — category=youtube
+## remplace pour ce cas précis le grep "youtube|yt-dlp" fragile de log_file_watch.sh.
+if command -v bro_log_event &>/dev/null; then
+    [[ $sync_exit_code -eq 0 ]] && _yt_ok=1 || _yt_ok=0
+    bro_log_event "sync_likes" "$_yt_ok" "youtube" "" "{\"player\":\"${PLAYER}\",\"exit_code\":${sync_exit_code}}"
+fi
 
 # Synchronisation des chaînes suivies (.youtube.com.channels) — best-effort :
 # ne modifie JAMAIS le code de sortie du script (les likes restent la référence)

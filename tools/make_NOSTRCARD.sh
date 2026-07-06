@@ -322,6 +322,45 @@ EOFNOSTR
     fi
     [[ -n "${CONCEPTION_PLACE}" ]] && echo "${CONCEPTION_PLACE}" > "${HOME}/.zen/game/nostr/${EMAIL}/.conception_place"
 
+    ## Biographie narrative de BRO (clone numérique) — fichiers préfixés par un
+    ## point : exclus de "ipfs add" (voir plus bas), donc jamais publiés sur
+    ## l'IPNS de l'essaim. Contenu librement éditable par le capitaine ou par
+    ## BRO lui-même (auto-mutation via #rec) ; jamais écrasés si déjà présents.
+    mkdir -p "${HOME}/.zen/game/nostr/${EMAIL}/identity/"
+    [[ ! -f "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Core.md" ]] && cat > "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Core.md" <<'EOFCORE'
+<!--
+  Qui es-tu ? Ton métier, ta mission, ce qui te définit.
+  Écris librement en dessous de ce commentaire — BRO le lira à chaque réponse.
+-->
+EOFCORE
+    [[ ! -f "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Style.md" ]] && cat > "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Style.md" <<'EOFSTYLE'
+<!--
+  Ton ton : tutoiement ou vouvoiement, concis ou verbeux, emojis préférés,
+  expressions à éviter ou à privilégier.
+-->
+EOFSTYLE
+    [[ ! -f "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Rules.md" ]] && cat > "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Rules.md" <<'EOFRULES'
+<!--
+  Ce que BRO ne doit jamais faire ou dire en ton nom.
+-->
+EOFRULES
+    [[ ! -f "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Preferences.md" ]] && cat > "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Preferences.md" <<'EOFPREFS'
+<!--
+  Tes préférences et contraintes personnelles (santé, alimentation,
+  centres d'intérêt...). BRO peut proposer d'y ajouter une ligne quand
+  tu lui confies une information durable via #rec.
+-->
+EOFPREFS
+    [[ ! -f "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Objectifs.md" ]] && cat > "${HOME}/.zen/game/nostr/${EMAIL}/identity/.Objectifs.md" <<'EOFGOALS'
+<!--
+  Tes objectifs en cours, un par ligne, au format checkbox :
+    - [ ] Avancer sur DevOps
+    - [x] Objectif déjà atteint (ignoré par BRO)
+  BRO relance ponctuellement sur un objectif non coché resté sans lien
+  avec la conversation récente (détecteur proactif 'goal_drift').
+-->
+EOFGOALS
+
     ##########################################################################
     ## Public metadata (safe for IPFS publishing)
     echo "${LANG}" > ${HOME}/.zen/game/nostr/${EMAIL}/LANG ## COPY LANG

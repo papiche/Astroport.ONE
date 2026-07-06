@@ -43,6 +43,8 @@ from pathlib import Path
 _IA_DIR = Path(__file__).parent
 sys.path.insert(0, str(_IA_DIR))
 
+import observability
+
 try:
     from embed import (
         get_embedding,
@@ -487,10 +489,14 @@ _HUMAN_LLM_MODE = False
 _BACKEND = "ollama"   # "ollama" | "claude"
 
 def call_llm(system: str, user_prompt: str, model: str,
-             json_format: bool = False) -> str:
+             json_format: bool = False, phase: str = "") -> str:
     """Appelle Ollama avec le système et le prompt utilisateur.
 
     H2: Si _HUMAN_LLM_MODE, affiche les prompts et permet modification avant envoi.
+
+    `phase` (analyse|correction|controle) sert uniquement à l'observabilité
+    structurée (voir l'appel log_node_event ci-dessous) — jamais utilisé pour
+    changer le comportement de l'appel LLM lui-même.
     """
     global _HUMAN_LLM_MODE
 
@@ -549,8 +555,16 @@ def call_llm(system: str, user_prompt: str, model: str,
                 # Enter ou tout autre chose = envoyer
                 break
 
+    _t0 = time.monotonic()
+
     if _BACKEND == "claude":
-        return call_claude_cli(actual_system, actual_prompt)
+        result = call_claude_cli(actual_system, actual_prompt)
+        observability.log_node_event(
+            "code_assistant", "call_llm", success=not result.startswith("Erreur"),
+            category=phase or None, latency_ms=(time.monotonic() - _t0) * 1000,
+            extra={"backend": "claude", "model": model},
+        )
+        return result
 
     if not OLLAMA_OK:
         return "Erreur: module 'ollama' absent — pip install ollama"
@@ -565,8 +579,19 @@ def call_llm(system: str, user_prompt: str, model: str,
         kwargs["format"] = "json"
     try:
         resp = ollama.chat(**kwargs)
-        return filter_think_tags(resp["message"]["content"])
+        result = filter_think_tags(resp["message"]["content"])
+        observability.log_node_event(
+            "code_assistant", "call_llm", success=True,
+            category=phase or None, latency_ms=(time.monotonic() - _t0) * 1000,
+            extra={"backend": "ollama", "model": model},
+        )
+        return result
     except Exception as e:
+        observability.log_node_event(
+            "code_assistant", "call_llm", success=False,
+            category=phase or None, latency_ms=(time.monotonic() - _t0) * 1000,
+            extra={"backend": "ollama", "model": model},
+        )
         return f"Erreur LLM Ollama: {e}"
 
 
@@ -614,7 +639,7 @@ def phase_analyse(kv: dict, code_summary: str, model: str,
     # Supplément humain (contexte/contrainte injectée)
     if supplement:
         prompt += f"\n\n## Focus demandé par l'utilisateur :\n{supplement}"
-    return call_llm(system, prompt, model)
+    return call_llm(system, prompt, model, phase="analyse")
 
 
 # A3: Prompt pour unified diff (économise les tokens, format standard)
@@ -655,10 +680,10 @@ def phase_correction(kv: dict, code_summary: str, model: str,
 
     if diff_format == "unified":
         # A3: format unified diff (pas de json_format=True ici, plain text)
-        return call_llm(UNIFIED_DIFF_PROMPT, prompt, model, json_format=False)
+        return call_llm(UNIFIED_DIFF_PROMPT, prompt, model, json_format=False, phase="correction")
     else:
         # Format JSON (défaut, plus robuste)
-        return call_llm(SYSTEM_PROMPTS["correction"], prompt, model, json_format=True)
+        return call_llm(SYSTEM_PROMPTS["correction"], prompt, model, json_format=True, phase="correction")
 
 
 def phase_controle(kv: dict, code_summary: str, model: str,
@@ -680,7 +705,7 @@ def phase_controle(kv: dict, code_summary: str, model: str,
     if supplement:
         prompt += f"\n\n## Contrainte utilisateur :\n{supplement}"
     system = _build_controle_prompt(test_mode=test_mode)
-    return call_llm(system, prompt, model)
+    return call_llm(system, prompt, model, phase="controle")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

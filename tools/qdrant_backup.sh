@@ -13,6 +13,12 @@ _log() {
     echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [qdrant_backup] $*" | tee -a "$LOGFILE"
 }
 
+## Observabilité NODE structurée (JSONL, additive à IA.log) — cf. bro_log_event()
+## dans bro_common_lib.sh. Source optionnelle et non-fatale : n'affecte pas _log()
+## ci-dessus, qui continue d'écrire dans IA.log comme avant.
+BRO_SCRIPT_ID="qdrant_backup"
+source "$MY_PATH/../IA/bro/bro_common_lib.sh" 2>/dev/null || true
+
 # Vérifier Qdrant disponible
 if ! curl -sf http://127.0.0.1:6333/healthz >/dev/null 2>&1; then
     exit 0
@@ -146,3 +152,7 @@ else
 fi
 
 _log "Backup Qdrant terminé avec succès. CID=$CID"
+
+## Évènement structuré niveau NODE (JSONL, additif à IA.log) — category=backup
+command -v bro_log_event &>/dev/null && \
+    bro_log_event "qdrant_backup" 1 "backup" "" "{\"cid\":\"${CID}\"}"
