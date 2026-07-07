@@ -75,7 +75,8 @@ def _ollama_vision(image_bytes, prompt, model='llama3.2-vision:11b'):
         return ollama.chat(
             model=model,
             messages=[{'role': 'user', 'content': prompt, 'images': [image_bytes]}],
-            options={'temperature': 0.1, 'num_predict': 400}
+            options={'temperature': 0.1, 'num_predict': 400},
+            format='json'
         )
     try:
         return _call()['message']['content']
@@ -103,7 +104,8 @@ def _ollama_text(prompt, model=None, num_predict=1200):
     resp = ollama.chat(
         model=model,
         messages=[{'role': 'user', 'content': prompt}],
-        options={'temperature': 0.2, 'num_predict': num_predict, 'repeat_penalty': 1.2}
+        options={'temperature': 0.2, 'num_predict': num_predict, 'repeat_penalty': 1.2},
+        format='json'
     )
     return resp['message']['content']
 

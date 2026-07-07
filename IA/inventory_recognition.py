@@ -179,7 +179,8 @@ IMPORTANT: Return ONLY valid JSON, no other text."""
                 'role': 'user',
                 'content': classification_prompt,
                 'images': [image_path]
-            }]
+            }],
+            format='json'
         )
         
         result_text = response['message']['content']
@@ -279,7 +280,8 @@ IMPORTANT: Return ONLY valid JSON."""
                 'role': 'user',
                 'content': identify_prompt,
                 'images': [image_path]
-            }]
+            }],
+            format='json'
         )
         
         result_text = response['message']['content']
