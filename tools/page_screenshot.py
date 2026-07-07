@@ -104,7 +104,12 @@ async def take_screenshot(url, output_file, width, height):
         finally:
             if browser:
                 try:
-                    await browser.close()
+                    # Timeout borné sur le cleanup lui-même : si browser.close()
+                    # pend (chromium ne répond plus), on ne veut pas que ce
+                    # nettoyage devienne à son tour un blocage sans fin — mieux
+                    # vaut abandonner proprement que de laisser le process
+                    # entier suspendu au-delà du timeout global de main().
+                    await asyncio.wait_for(browser.close(), timeout=10)
                 except Exception:
                     pass
 
@@ -127,17 +132,30 @@ def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
+    # Tâche créée explicitement (plutôt que passée directement à wait_for) pour
+    # pouvoir la ré-attendre nous-mêmes après un TimeoutError : asyncio.wait_for
+    # annule déjà la tâche interne et attend sa fin avant de lever l'exception
+    # (CPython >= 3.8, _cancel_and_wait), mais ce ré-await explicite est une
+    # garantie supplémentaire bon marché que le `finally: await browser.close()`
+    # de take_screenshot() a bien fini de tourner avant qu'on ferme la loop —
+    # sans ça, un chromium headless peut survivre en zombie si jamais ce
+    # comportement venait à changer (dépendance implicite non testée ici).
+    task = loop.create_task(take_screenshot(url, output_file, width, height))
     try:
-        success = loop.run_until_complete(
-            asyncio.wait_for(
-                take_screenshot(url, output_file, width, height),
-                timeout=90  # timeout global étendu pour IPFS lent
-            )
-        )
+        success = loop.run_until_complete(asyncio.wait_for(task, timeout=90))
         if not success:
             sys.exit(1)
     except asyncio.TimeoutError:
         print("Global timeout (90s): URL may be unreachable or IPFS slow", file=sys.stderr)
+        # Toujours consommer le résultat/l'exception de la tâche, qu'elle soit
+        # déjà terminée ou pas : entre l'annulation par wait_for et ce point,
+        # la tâche peut avoir fini (avec sa propre exception) sans que
+        # personne ne l'ait jamais lue — sinon asyncio log un warning
+        # "exception was never retrieved" à la destruction du Future.
+        try:
+            loop.run_until_complete(task)
+        except (asyncio.CancelledError, Exception):
+            pass
         sys.exit(1)
     except KeyboardInterrupt:
         print("Interrupted by user", file=sys.stderr)
