@@ -128,12 +128,18 @@ def _event_to_doc(event: dict) -> dict | None:
 
     embed_text = " ".join(text_parts)
 
-    # ID stable basé sur l'event id ou d-tag+pubkey
-    event_id = event.get("id") or hashlib.sha256(
-        f"{pubkey}:{d_tag}:{kind}".encode()
-    ).hexdigest()
-    # Qdrant needs unsigned int ID — use first 15 hex chars as int
-    point_id = int(event_id[:15], 16) % (2**63)
+    event_id = event.get("id") or ""
+    # ID stable basé sur (pubkey, kind, d_tag) — l'IDENTITÉ NIP-33 de la
+    # ressource, PAS sur event_id (2026-07-07). Kind 30500/30504 sont des
+    # addressable events : republier une ressource modifiée avec le même
+    # d_tag produit un NOUVEL event_id, mais logiquement REMPLACE l'ancien
+    # (strfry ne garde que la dernière version). Indexer par event_id créait
+    # un point Qdrant orphelin à chaque édition — l'ancienne version restait
+    # dans wotx2_resources pour toujours (jamais retrouvable depuis strfry,
+    # jamais nettoyée), polluant search_resources avec des doublons obsolètes.
+    # Indexer par identité logique fait de chaque édition un upsert du MÊME
+    # point, jamais un nouveau.
+    point_id = int(hashlib.sha256(f"{pubkey}:{kind}:{d_tag}".encode()).hexdigest()[:15], 16) % (2**63)
 
     return {
         "id":    point_id,
@@ -236,6 +242,23 @@ def build_qdrant_context(skill: str, question: str = "") -> str:
     return wrap_untrusted("community_resources", "\n".join(lines))
 
 
+def rebuild_collection():
+    """Supprime et recrée wotx2_resources — reconstruction complète depuis
+    strfry (source de vérité pour les events NIP-33 addressables : il ne sert
+    jamais que la dernière version de chaque ressource). Élimine en une passe
+    tout orphelin déjà accumulé (versions éditées avant le correctif du
+    2026-07-07, ou toute autre dérive) — à lancer une fois pour purger
+    l'historique, puis périodiquement (cron) en filet de sécurité ; le fix du
+    point_id par identité NIP-33 empêche déjà toute nouvelle accumulation au
+    fil de l'eau, donc ce n'est plus strictement nécessaire à chaque cycle."""
+    client = _client()
+    existing = [c.name for c in client.get_collections().collections]
+    if COLLECTION in existing:
+        client.delete_collection(COLLECTION)
+        print(f"[skill_qdrant] Collection '{COLLECTION}' supprimée (reconstruction).", file=sys.stderr)
+    _ensure_collection()
+
+
 def index_all_from_relay(strfry_path: str = None) -> int:
     """Indexe tous les Kind 30500/30504 du relay local strfry."""
     import subprocess
@@ -279,7 +302,11 @@ if __name__ == "__main__":
     ix = sub.add_parser("index")
     ix.add_argument("--event", required=True, help="Event JSON string")
 
-    sub.add_parser("index-all")
+    ia = sub.add_parser("index-all")
+    ia.add_argument("--rebuild", action="store_true",
+                     help="Supprime et recrée la collection avant réindexation "
+                          "(purge les orphelins accumulés par d'anciennes versions "
+                          "éditées d'une ressource — voir rebuild_collection()).")
 
     args = parser.parse_args()
 
@@ -296,5 +323,7 @@ if __name__ == "__main__":
         sys.exit(0 if ok else 1)
 
     elif args.cmd == "index-all":
+        if args.rebuild:
+            rebuild_collection()
         n = index_all_from_relay()
         print(f"[skill_qdrant] {n} événements indexés.")
