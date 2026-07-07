@@ -29,7 +29,9 @@ Usage bash :
   python3 memory_manager.py backup       --output /tmp/qdrant_backup.json
 """
 
-import os, sys, hashlib, json, subprocess
+import os, sys, hashlib, json
+import urllib.request
+import urllib.error
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -96,24 +98,42 @@ def _stable_id(*parts) -> int:
     return int(h, 16)
 
 
-def _auth_headers() -> list:
+def _auth_headers() -> dict:
     if QDRANT_API_KEY:
-        return ["-H", f"api-key: {QDRANT_API_KEY}"]
-    return []
+        return {"api-key": QDRANT_API_KEY}
+    return {}
 
 
 def _curl(method: str, url: str, payload: dict = None) -> dict:
-    """Appel HTTP via curl — évite la dépendance qdrant_client dans ce module."""
-    cmd = ["curl", "-sf", "-X", method, url, "-H", "Content-Type: application/json"]
-    cmd.extend(_auth_headers())
-    if payload is not None:
-        cmd += ["-d", json.dumps(payload)]
+    """Appel HTTP via urllib.request (stdlib) — plus de subprocess curl
+    (2026-07-06) : évitait la dépendance qdrant_client, mais forker/exec un
+    binaire externe à chaque appel (Qdrant ET Ollama, potentiellement
+    plusieurs fois par message) est plus lourd et moins fiable qu'un appel
+    HTTP natif Python (gestion des timeouts/erreurs sans parsing de code
+    retour + stderr). Même pattern que admin/ia_db/codebase_index.py.
+
+    Échec BRUYANT sur stderr (toute panne — Qdrant down, Ollama down, auth
+    invalide, timeout — remonte jusqu'à upsert_geo/upsert_user_slot puis
+    short_memory.py avec un détail exploitable dans les logs, jamais avalée
+    en silence)."""
+    headers = {"Content-Type": "application/json"}
+    headers.update(_auth_headers())
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(url, data=data, headers=headers, method=method.upper())
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-        if r.returncode != 0 or not r.stdout.strip():
-            return {}
-        return json.loads(r.stdout)
-    except Exception:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read()
+            return json.loads(body) if body.strip() else {}
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", errors="replace")[:200]
+        print(f"[memory_manager] ⚠️ Échec {method} {url} (HTTP {e.code}) : {detail or '(pas de corps)'}",
+              file=sys.stderr)
+        return {}
+    except urllib.error.URLError as e:
+        print(f"[memory_manager] ⚠️ Échec {method} {url} : {e.reason}", file=sys.stderr)
+        return {}
+    except Exception as e:
+        print(f"[memory_manager] ⚠️ Échec {method} {url} : {e}", file=sys.stderr)
         return {}
 
 
@@ -212,6 +232,19 @@ def upsert_user_slot(user_id: str, slot: int, content: str,
                 "event_id": event_id, "source": "nostr_rec",
             }
         }]
+    })
+    return bool(r)
+
+
+def _delete_points(collection: str, ids: list) -> bool:
+    """Supprime des points Qdrant par ID exact (pas par filtre) — utilisé pour
+    purger les vecteurs individuels remplacés par un résumé RÊVE. Best-effort :
+    un échec laisse simplement des points orphelins (état déjà tolérable
+    aujourd'hui), jamais bloquant pour l'appelant."""
+    if not ids:
+        return True
+    r = _curl("POST", f"{QDRANT_URL}/collections/{collection}/points/delete", {
+        "points": ids
     })
     return bool(r)
 
@@ -340,6 +373,32 @@ def reve_compress_slot(user_id: str, slot: int,
     to_compress = msgs[:-REVE_KEEP]
     recent      = msgs[-REVE_KEEP:]
 
+    # Sécurité anti-perte (2026-07-06) : to_compress est sur le point d'être
+    # PURGÉ du JSON ci-dessous — s'il contient un message jamais synchronisé
+    # dans Qdrant (qdrant_synced=false, posé par short_memory.py), c'est la
+    # SEULE copie qui en resterait, et elle va disparaître. Rattrapage avant
+    # toute purge ; abandon complet (rien n'est modifié) si le rattrapage
+    # échoue encore — nouvelle tentative au prochain cycle RÊVE plutôt qu'une
+    # perte silencieuse.
+    unsynced = [m for m in to_compress if not m.get("qdrant_synced", True)]
+    if unsynced:
+        print(f"[memory_manager] 🔄 RÊVE : rattrapage de {len(unsynced)} message(s) "
+              f"jamais synchronisés avant compression ({user_id}, slot {slot})")
+        failed = sum(
+            0 if upsert_user_slot(user_id, slot, m.get("content", ""),
+                                   timestamp=m.get("timestamp"), event_id=m.get("event_id", ""))
+            else 1
+            for m in unsynced
+        )
+        if failed:
+            print(f"[memory_manager] ❌ RÊVE abandonné pour {user_id}/slot{slot} : "
+                  f"{failed}/{len(unsynced)} message(s) toujours non synchronisés après "
+                  f"rattrapage — rien n'est purgé du JSON, nouvelle tentative au prochain cycle.")
+            observability.log_event(user_id, "reve_compression", "abort_unsynced",
+                                     success=False, extra={"failed": failed, "total": len(unsynced)})
+            return False
+        print(f"[memory_manager] ✅ RÊVE : rattrapage réussi pour {len(unsynced)} message(s)")
+
     block = "\n".join(
         f"[{m.get('timestamp', '')[:10]}] {m.get('content', '')}"
         for m in to_compress
@@ -369,6 +428,18 @@ def reve_compress_slot(user_id: str, slot: int,
         json.dump(data, f, indent=2, ensure_ascii=False)
 
     upsert_user_slot(user_id, slot, summary_entry["content"], timestamp=ts_now)
+
+    # Purge des vecteurs individuels remplacés par le résumé ci-dessus — sans
+    # ça, ils restent orphelins dans Qdrant pour toujours : ni retrouvables
+    # depuis le JSON local (déjà purgé plus haut), ni jamais nettoyés, et
+    # continuent de polluer search_user_slot (2026-07-06).
+    old_ids = [_stable_id(user_id, m.get("timestamp"))
+               for m in to_compress if m.get("timestamp")]
+    cname = f"memory_{_user_hex(user_id)}"
+    if not _delete_points(cname, old_ids):
+        print(f"[memory_manager] ⚠️ RÊVE : {len(old_ids)} vecteur(s) compressé(s) "
+              f"non purgés de Qdrant pour {user_id}/slot{slot} (orphelins, sans impact "
+              f"fonctionnel — nettoyage différé).")
     return True
 
 
@@ -390,6 +461,29 @@ def reve_compress_geo(lat: str, lon: str, geo_file: str = None) -> bool:
     to_compress = msgs[:-REVE_KEEP]
     recent      = msgs[-REVE_KEEP:]
 
+    # Sécurité anti-perte — même garde que reve_compress_slot (voir son
+    # commentaire) : jamais de purge JSON d'un message pas encore confirmé
+    # dans Qdrant.
+    unsynced = [m for m in to_compress if not m.get("qdrant_synced", True)]
+    if unsynced:
+        print(f"[memory_manager] 🔄 RÊVE géo : rattrapage de {len(unsynced)} message(s) "
+              f"jamais synchronisés avant compression ({lat}, {lon})")
+        failed = sum(
+            0 if upsert_geo(lat, lon, m.get("content", ""), m.get("pubkey", ""),
+                             timestamp=m.get("timestamp"), event_id=m.get("event_id", ""))
+            else 1
+            for m in unsynced
+        )
+        if failed:
+            print(f"[memory_manager] ❌ RÊVE géo abandonné pour ({lat}, {lon}) : "
+                  f"{failed}/{len(unsynced)} message(s) toujours non synchronisés après "
+                  f"rattrapage — rien n'est purgé du JSON, nouvelle tentative au prochain cycle.")
+            observability.log_event("geo", "reve_compression", "abort_unsynced",
+                                     success=False, extra={"failed": failed, "total": len(unsynced),
+                                                            "lat": lat, "lon": lon})
+            return False
+        print(f"[memory_manager] ✅ RÊVE géo : rattrapage réussi pour {len(unsynced)} message(s)")
+
     block = "\n".join(
         f"[{m.get('timestamp', '')[:10]}] {m.get('content', '')}"
         for m in to_compress
@@ -410,6 +504,15 @@ def reve_compress_geo(lat: str, lon: str, geo_file: str = None) -> bool:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
     upsert_geo(lat, lon, summary_entry["content"], timestamp=ts_now)
+
+    # Purge des vecteurs individuels remplacés — même raisonnement que
+    # reve_compress_slot (voir son commentaire).
+    old_ids = [_stable_id(lat, lon, m.get("timestamp"), m.get("pubkey", ""))
+               for m in to_compress if m.get("timestamp")]
+    if not _delete_points("uplanet_geo", old_ids):
+        print(f"[memory_manager] ⚠️ RÊVE géo : {len(old_ids)} vecteur(s) compressé(s) "
+              f"non purgés de Qdrant pour ({lat}, {lon}) (orphelins, sans impact "
+              f"fonctionnel — nettoyage différé).")
     return True
 
 
