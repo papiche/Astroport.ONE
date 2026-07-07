@@ -369,7 +369,7 @@ echo -e "${_GRN}🚀  ÉTAPE 1 — Créez votre MULTIPASS / ZEN Card personnelle
 echo -e "${_CYN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_NC}"
 echo ""
 echo -e "   Visitez votre portail local pour créer votre identité souveraine :"
-echo -e "   ${_CYN}${uSPOT/g1:-http://127.0.0.1:54321/g1}${_NC}"
+echo -e "   ${_CYN}${uSPOT/g1:-http://127.0.0.1:54321/earth/atomic.html}${_NC}"
 echo ""
 echo -e "   Inscrivez-vous sur Open Collective :"
 echo -e "   ${_CYN}https://opencollective.com/monnaie-libre${_NC}"

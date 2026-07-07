@@ -1631,7 +1631,7 @@ echo "║     → Souscrivez sur : https://opencollective.com/monnaie-libre     
 echo "║                                                                              ║"
 echo "║  👉 VOTRE MISSION POUR DEVENIR CAPITAINE :                                   ║"
 echo "║                                                                              ║"
-echo "║  1. Ouvrez votre navigateur :  http://127.0.0.1:54321/g1                     ║"
+echo "║  1. Ouvrez votre navigateur :  http://127.0.0.1:54321/earth/atomic.html                     ║"
 echo "║  2. Créez votre MULTIPASS avec votre VÉRITABLE adresse email.                ║"
 echo "║  3. Lisez les ZINEs quotidiens que le système va vous envoyer.               ║"
 echo "║  4. Contactez support@qo-op.com pour valider votre formation DRAGON.         ║"

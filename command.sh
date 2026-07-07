@@ -199,7 +199,7 @@ handle_nostr_payment() {
         print_error "Aucun compte NOSTR trouvé."
         echo ""
         echo -e "${YELLOW}Pour créer un compte NOSTR:${NC}"
-        echo "  1. Utilisez l'interface web: http://127.0.0.1:54321/g1"
+        echo "  1. Utilisez l'interface web: http://127.0.0.1:54321/earth/atomic.html"
         echo "  2. Ou utilisez l'option 'Créer une ZEN Card' dans le menu principal"
         echo ""
         read -p "Appuyez sur ENTRÉE pour continuer..."
@@ -2264,7 +2264,7 @@ main() {
             echo ""
             echo -e "${YELLOW}Pour configurer votre identité plus tard:${NC}"
             echo "  • Relancez: ./command.sh"
-            echo "  • Ou utilisez l'interface web: http://127.0.0.1:54321/g1"
+            echo "  • Ou utilisez l'interface web: http://127.0.0.1:54321/earth/atomic.html"
             echo ""
         fi
     fi

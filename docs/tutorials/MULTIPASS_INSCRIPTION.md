@@ -25,7 +25,7 @@
 Rendez-vous sur la page MULTIPASS de votre station :
 
 ```
-http://127.0.0.1:54321/g1
+http://127.0.0.1:54321/earth/atomic.html
 ```
 
 Ou depuis l'interface UPlanet, cliquez sur **✨ MULTIPASS** dans le menu de navigation.

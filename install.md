@@ -36,7 +36,7 @@ Le moteur d'orchestration de tous les services de la station.
 Les modules applicatifs de votre nœud communautaire.
 
 * **UPassport** (`install/install_upassport.sh`) : Gestionnaire d'identité décentralisée et passeport numérique Web3. Interface : `http://localhost:54321`.  
-  Créez votre MULTIPASS : `http://127.0.0.1:54321/g1`
+  Créez votre MULTIPASS : `http://127.0.0.1:54321/earth/atomic.html`
 
 * **strfry / NIP-101** (relay Nostr) : Relai NOSTR haute-performance conforme au protocole NIP-101. Filtrage avancé par plugins bash (`relay.writePolicy.plugin/`). Écoute sur `ws://localhost:7777`.
 
