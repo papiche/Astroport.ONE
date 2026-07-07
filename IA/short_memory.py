@@ -10,6 +10,7 @@ if os.path.exists(venv_path):
     if os.path.exists(site_packages):
         sys.path.insert(0, site_packages)
 
+import contextlib
 import fcntl
 import hashlib
 import json
@@ -20,6 +21,56 @@ from datetime import datetime
 # Importer le gestionnaire Qdrant unifié (même répertoire)
 _MEMORY_MGR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory_manager.py")
 _HAS_MEMORY_MGR = os.path.isfile(_MEMORY_MGR)
+
+@contextlib.contextmanager
+def _file_lock(target_path):
+    """Verrou sur un fichier .lock SÉPARÉ et STABLE (jamais remplacé) pour
+    protéger la région critique read-modify-write d'un fichier de données
+    écrit par ailleurs de façon atomique (tmp + os.replace).
+
+    Bug corrigé (2026-07-06) : la version précédente faisait flock() sur le
+    fd ouvert sur le fichier de DONNÉES lui-même, puis le remplaçait via
+    os.replace(). Or flock() verrouille l'INODE, pas le CHEMIN. Une fois
+    os.replace() exécuté, le chemin pointe vers un NOUVEL inode — mais un
+    processus B qui avait déjà ouvert l'ANCIEN inode (avant le replace de A)
+    et attendait le flock sur CET inode continue d'attendre sur l'inode
+    maintenant orphelin (plus aucune entrée de répertoire ne le désigne).
+    Quand B obtient enfin le lock (à la fermeture du fd de A), il lit encore
+    l'ANCIEN contenu (pré-update de A), écrit sa propre mise à jour dessus,
+    et son propre os.replace ÉCRASE la mise à jour de A — perte de donnée
+    silencieuse. En verrouillant un fichier .lock qui n'est JAMAIS remplacé,
+    tous les processus se disputent toujours le MÊME inode stable, donc la
+    sérialisation reste correcte quel que soit l'ordre des replace()."""
+    lock_path = f"{target_path}.lock"
+    lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)
+
+
+def _read_json_or_default(path, default_factory):
+    """Lecture protégée — à appeler UNIQUEMENT sous _file_lock(path)."""
+    if not os.path.isfile(path):
+        return default_factory()
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = f.read().strip()
+        return json.loads(raw) if raw else default_factory()
+    except Exception:
+        return default_factory()
+
+
+def _write_json_atomic(path, data):
+    """Écriture atomique (tmp + os.replace) — à appeler UNIQUEMENT sous
+    _file_lock(path), jamais en dehors (voir le commentaire de _file_lock)."""
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as tf:
+        json.dump(data, tf, indent=2)
+    os.replace(tmp_path, path)
+
 
 # Check if debug mode is enabled
 DEBUG_MODE = os.environ.get('DEBUG', '0') == '1'
@@ -100,33 +151,61 @@ def parse_event_json(json_input):
         else:
             raise Exception(f"Input is neither valid JSON nor a file path: {json_input}")
 
-def _upsert_to_qdrant(user_id, content, timestamp, slot):
-    """Délègue à memory_manager.py — gère slot + geo séparément, RÊVE inclus."""
-    if not _HAS_MEMORY_MGR:
-        return
+def _log_qdrant_failure(context, detail):
+    """Échec BRUYANT (plus de `except Exception: pass` silencieux) — le
+    flag qdrant_synced posé par l'appelant (voir main()) dépend de savoir
+    la VRAIE issue de l'upsert ; reve_compress_slot (memory_manager.py) s'en
+    sert pour ne jamais purger un message qui n'a jamais atteint Qdrant."""
+    print(f"[short_memory] ⚠️ Échec upsert Qdrant ({context}) : {detail}", file=sys.stderr)
     try:
-        subprocess.run(
-            [sys.executable, _MEMORY_MGR, "upsert-slot",
-             "--user-id", user_id, "--slot", str(slot), "--content", content],
-            capture_output=True, timeout=20
-        )
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import observability
+        observability.log_event("system", "qdrant_upsert", context,
+                                 success=False, extra={"detail": str(detail)[:300]})
     except Exception:
         pass
+
+
+def _upsert_to_qdrant(user_id, content, timestamp, slot):
+    """Délègue à memory_manager.py — retourne True SEULEMENT si l'upsert a
+    réellement réussi (code retour du sous-processus), jamais un optimisme
+    silencieux comme avant."""
+    if not _HAS_MEMORY_MGR:
+        return False
+    try:
+        result = subprocess.run(
+            [sys.executable, _MEMORY_MGR, "upsert-slot",
+             "--user-id", user_id, "--slot", str(slot), "--content", content],
+            capture_output=True, timeout=20, text=True,
+        )
+        if result.returncode != 0:
+            _log_qdrant_failure("upsert-slot", result.stderr.strip()[:300] or f"exit code {result.returncode}")
+            return False
+        return True
+    except Exception as e:
+        _log_qdrant_failure("upsert-slot", e)
+        return False
 
 
 def _upsert_geo_to_qdrant(lat, lon, content, pubkey, timestamp, event_id=""):
-    """Upsert la mémoire géo dans la collection uplanet_geo (séparée des slots)."""
+    """Upsert la mémoire géo dans la collection uplanet_geo (séparée des
+    slots) — même contrat que _upsert_to_qdrant (retour fidèle au résultat réel)."""
     if not _HAS_MEMORY_MGR:
-        return
+        return False
     try:
-        subprocess.run(
+        result = subprocess.run(
             [sys.executable, _MEMORY_MGR, "upsert-geo",
              "--lat", lat, "--lon", lon, "--content", content,
              "--pubkey", pubkey, "--event-id", event_id],
-            capture_output=True, timeout=20
+            capture_output=True, timeout=20, text=True,
         )
-    except Exception:
-        pass
+        if result.returncode != 0:
+            _log_qdrant_failure("upsert-geo", result.stderr.strip()[:300] or f"exit code {result.returncode}")
+            return False
+        return True
+    except Exception as e:
+        _log_qdrant_failure("upsert-geo", e)
+        return False
 
 
 def _maybe_reve(user_id, slot, slot_file):
@@ -174,6 +253,11 @@ def main():
     event_id = event_json.get('event', {}).get('id', '')
     content = event_json.get('event', {}).get('content', '')
     pubkey = event_json.get('event', {}).get('pubkey', '')
+    # Un seul timestamp pour tout ce passage — avant ce fix, la mémoire géo et
+    # l'upsert Qdrant correspondant utilisaient chacun leur propre
+    # datetime.utcnow() (millisecondes différentes, incohérence bénigne mais
+    # réelle entre le JSON et son statut de synchro).
+    _ts = datetime.utcnow().isoformat() + 'Z'
 
     # Directory for contextual memory
     MEMORY_DIR = os.path.expanduser("~/.zen/flashmem/uplanet_memory")
@@ -182,65 +266,56 @@ def main():
     # Coordinate-based memory (legacy)
     coord_key = f"{latitude}_{longitude}".replace(".", "_").replace("-", "m")
     memory_file = os.path.join(MEMORY_DIR, f"{coord_key}.json")
-    with open(memory_file, 'a+') as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        f.seek(0)
-        raw = f.read().strip()
-        memory = json.loads(raw) if raw else {
+    with _file_lock(memory_file):
+        memory = _read_json_or_default(memory_file, lambda: {
             "latitude": latitude,
             "longitude": longitude,
             "messages": []
-        }
+        })
+        # Qdrant AVANT l'écriture JSON : qdrant_synced reflète le résultat RÉEL
+        # de cet upsert (jamais un optimisme par défaut) — voir
+        # memory_manager.py::reve_compress_slot pour l'usage de ce flag : ne
+        # jamais purger du JSON un message qui n'a jamais atteint Qdrant.
+        geo_synced = _upsert_geo_to_qdrant(latitude, longitude, content, pubkey, _ts, event_id)
         memory['messages'].append({
-            "timestamp": datetime.utcnow().isoformat() + 'Z',
+            "timestamp": _ts,
             "event_id": event_id,
             "pubkey": pubkey,
-            "content": content
+            "content": content,
+            "qdrant_synced": geo_synced,
         })
         # Fenêtre glissante géo : 200 entrées (RÊVE prend le relais via Qdrant pour les anciennes)
         memory['messages'] = memory['messages'][-200:]
-        f.seek(0)
-        f.truncate()
-        json.dump(memory, f, indent=2)
+        _write_json_atomic(memory_file, memory)
 
     # --- Multi-user, multi-slot memory ---
     if user_id:
         USER_DIR = os.path.expanduser(f"~/.zen/flashmem/{user_id}")
         os.makedirs(USER_DIR, exist_ok=True)
         slot_file = os.path.join(USER_DIR, f"slot{slot}.json")
-        with open(slot_file, 'a+') as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
-            f.seek(0)
-            raw = f.read().strip()
-            slot_mem = json.loads(raw) if raw else {
+        with _file_lock(slot_file):
+            slot_mem = _read_json_or_default(slot_file, lambda: {
                 "user_id": user_id,
                 "slot": slot,
                 "messages": []
-            }
+            })
+            slot_synced = _upsert_to_qdrant(user_id, content, _ts, slot)
             slot_mem['messages'].append({
-                "timestamp": datetime.utcnow().isoformat() + 'Z',
+                "timestamp": _ts,
                 "event_id": event_id,
                 "latitude": latitude,
                 "longitude": longitude,
-                "content": content
+                "content": content,
+                "qdrant_synced": slot_synced,
             })
             # Fenêtre glissante slot : 200 entrées — RÊVE compresse à 150 et garde 80 récentes
             slot_mem['messages'] = slot_mem['messages'][-200:]
-            f.seek(0)
-            f.truncate()
-            json.dump(slot_mem, f, indent=2)
-        ts_slot = slot_mem['messages'][-1]['timestamp']
+            _write_json_atomic(slot_file, slot_mem)
         print(f"Memory updated for user: {user_id}, slot: {slot}")
-        # Qdrant : slot personnel + geo séparés
-        _upsert_to_qdrant(user_id, content, ts_slot, slot)
-        _upsert_geo_to_qdrant(latitude, longitude, content, pubkey, ts_slot, event_id)
         # RÊVE : comprimer à partir de 170 entrées (REVE_THRESHOLD=150 dans memory_manager)
         if len(slot_mem['messages']) >= 170:
             _maybe_reve(user_id, slot, slot_file)
     else:
-        # Pas d'user_id : géo seule dans uplanet_geo
-        _upsert_geo_to_qdrant(latitude, longitude, content, pubkey,
-                              datetime.utcnow().isoformat() + 'Z', event_id)
         print("No user_id provided, slot memory not updated.")
 
     print(f"Memory updated for coordinates: {latitude}, {longitude}")
