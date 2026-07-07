@@ -16,7 +16,7 @@ import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # IA/
 from prompt_safety import wrap_untrusted
-from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, _owner_dir
+from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, PYTHON_BIN, _owner_dir
 from bro.nostr import send_dm_to_owner
 from bro.watch_store import _load_manifest, is_scraper_enabled, store_log
 
@@ -420,7 +420,7 @@ def _run_craft_background(owner_email, url):
             f.write(prompt)
             tmp_path = f.name
         result = subprocess.run(
-            ["python3", os.path.join(BRO_IA_PATH, "question.py"),
+            [PYTHON_BIN, os.path.join(BRO_IA_PATH, "question.py"),
              "--prompt-file", tmp_path, "--model", "gemma3:latest",
              "--ctx", "8192", "--max-tokens", "256", "--temperature", "0.2"],
             capture_output=True, text=True, timeout=CRAFT_RUN_TIMEOUT_SEC,

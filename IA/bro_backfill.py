@@ -32,6 +32,13 @@ TOOLS_PATH   = os.path.expanduser("~/.zen/Astroport.ONE/tools")
 NOSTR_DIR    = os.path.expanduser("~/.zen/game/nostr")
 NETWORK_DIR  = os.path.expanduser("~/.zen/flashmem/network")
 
+# Interpréteur venv ~/.astro (si présent) — évite le double boot Python que
+# provoquerait "python3" nu sur question.py, qui se ré-exécute lui-même via
+# os.execv vers ce même interpréteur (cf. bro/_shared.py:PYTHON_BIN).
+PYTHON_BIN = (os.path.expanduser("~/.astro/bin/python3")
+              if os.path.isfile(os.path.expanduser("~/.astro/bin/python3"))
+              else "python3")
+
 QDRANT_NETWORK_COLLECTION = "uplanet_network"
 QDRANT_EMBED_MODEL        = "nomic-embed-text"
 QDRANT_VECTOR_SIZE        = 768
@@ -69,7 +76,7 @@ def _question(prompt, dry_run=False):
         return f"[DRY-RUN] {prompt[:80]}…"
     try:
         result = subprocess.run(
-            ["python3", f"{BRO_IA_PATH}/question.py", prompt],
+            [PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt],
             capture_output=True, text=True, timeout=60,
         )
         return result.stdout.strip()

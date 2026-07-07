@@ -16,7 +16,19 @@ import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # IA/
 
-__all__ = ['BRO_IA_PATH', 'TOOLS_PATH', 'NOSTR_DIR', 'DEFAULT_RELAY', 'DM_TTL_DAYS', '_owner_dir', '_owner_hex', '_owner_nsec', '_owner_g1_pubkey', '_load_relays', 'RELAYS', '_now_iso', 'COMMAND_INTERPRETATION_MODEL', 'BRO_WATCH_CORE_PATH']
+__all__ = ['BRO_IA_PATH', 'TOOLS_PATH', 'NOSTR_DIR', 'DEFAULT_RELAY', 'DM_TTL_DAYS', '_owner_dir', '_owner_hex', '_owner_nsec', '_owner_g1_pubkey', '_load_relays', 'RELAYS', '_now_iso', 'COMMAND_INTERPRETATION_MODEL', 'BRO_WATCH_CORE_PATH', 'PYTHON_BIN']
+
+# Interpréteur venv ~/.astro (si présent) — à utiliser à la place du "python3"
+# système pour invoquer question.py et les autres scripts IA/*.py en sous-
+# processus. Ces scripts contiennent tous le même garde d'auto-réinvocation
+# (`if sys.executable != ~/.astro/bin/python3: os.execv(...)`) : les appeler
+# via "python3" nu force donc SYSTÉMATIQUEMENT un boot Python complet suivi
+# d'un second (execv) — jusqu'à 8 fois par requête ALGORITHM (classify +
+# jusqu'à 6 étapes + synthèse, voir _run_algorithm_step). Invoquer directement
+# PYTHON_BIN élimine ce second boot pour tous ces appels.
+PYTHON_BIN = (os.path.expanduser("~/.astro/bin/python3")
+              if os.path.isfile(os.path.expanduser("~/.astro/bin/python3"))
+              else "python3")
 
 # Chemin stable de bro_watch_core.py (le point d'entrée CLI, avec le dispatch
 # des sous-commandes run-*-background) — à utiliser pour toute auto-

@@ -311,7 +311,7 @@ def _notify_captain_arbor(winner, branch_name, worktree_path):
     script = os.path.join(REPO_ROOT, "tools", "nostr_send_secure_dm.py")
     try:
         proc = subprocess.run(
-            ["python3", script, "--nsec-stdin", captain_hex, message, "wss://relay.copylaradio.com",
+            [bwc.PYTHON_BIN, script, "--nsec-stdin", captain_hex, message, "wss://relay.copylaradio.com",
              "--ttl-days", "14"],
             input=nsec + "\n", capture_output=True, text=True, timeout=15,
         )
@@ -410,7 +410,7 @@ def _summarize_tool_cluster(sample_texts):
     )
     try:
         result = subprocess.run(
-            ["python3", os.path.join(REPO_ROOT, "IA", "question.py"), prompt,
+            [bwc.PYTHON_BIN, os.path.join(REPO_ROOT, "IA", "question.py"), prompt,
              "--temperature", "0.2", "--max-tokens", "100"],
             capture_output=True, text=True, timeout=30,
         )
@@ -474,7 +474,7 @@ def _notify_captain_tool_requests(reports):
     script = os.path.join(REPO_ROOT, "tools", "nostr_send_secure_dm.py")
     try:
         proc = subprocess.run(
-            ["python3", script, "--nsec-stdin", captain_hex, message, "wss://relay.copylaradio.com",
+            [bwc.PYTHON_BIN, script, "--nsec-stdin", captain_hex, message, "wss://relay.copylaradio.com",
              "--ttl-days", "14"],
             input=nsec + "\n", capture_output=True, text=True, timeout=15,
         )

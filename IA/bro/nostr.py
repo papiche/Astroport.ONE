@@ -15,7 +15,7 @@ import tempfile
 import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # IA/
-from bro._shared import DM_TTL_DAYS, RELAYS, TOOLS_PATH, _owner_dir, _owner_g1_pubkey, _owner_hex, _owner_nsec
+from bro._shared import DM_TTL_DAYS, PYTHON_BIN, RELAYS, TOOLS_PATH, _owner_dir, _owner_g1_pubkey, _owner_hex, _owner_nsec
 
 __all__ = ['_natools_encrypt', '_natools_decrypt', 'BRO_ORIGIN_TAG', 'send_dm_to_owner', 'PROCESSED_COMMAND_IDS_DIR', 'PROCESSED_COMMAND_IDS_MAX_AGE_SEC', '_claim_event_id', '_cleanup_old_command_markers', '_fetch_self_dms_since', '_decrypt_self_dm']
 
@@ -106,10 +106,10 @@ def send_dm_to_owner(owner_email, message, ttl_days=DM_TTL_DAYS, ttl_seconds=Non
         # TTL court en secondes (messages éphémères "en cours") — NIP-40 direct
         import time as _t
         extra_tags.append(["expiration", str(int(_t.time()) + int(ttl_seconds))])
-        cmd = ["python3", script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
+        cmd = [PYTHON_BIN, script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
                "--extra-tags", json.dumps(extra_tags)]
     else:
-        cmd = ["python3", script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
+        cmd = [PYTHON_BIN, script, "--nsec-stdin", recipient_hex, message, RELAYS[0],
                "--ttl-days", str(ttl_days), "--extra-tags", json.dumps(extra_tags)]
     if len(RELAYS) > 1:
         cmd += ["--extra-relays", ",".join(RELAYS[1:])]
@@ -131,9 +131,9 @@ def _claim_event_id(owner_email, ev_id):
     os.makedirs(PROCESSED_COMMAND_IDS_DIR, exist_ok=True)
     marker = os.path.join(PROCESSED_COMMAND_IDS_DIR,
                            f"{hashlib.sha256(owner_email.encode()).hexdigest()[:16]}_{ev_id}")
+    fd = None
     try:
         fd = os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        os.close(fd)
         return True
     except FileExistsError:
         return False
@@ -141,6 +141,17 @@ def _claim_event_id(owner_email, ev_id):
         # Dégradation gracieuse : en cas d'erreur imprévue, ne bloque jamais
         # le traitement (mieux vaut un risque de doublon qu'un silence total).
         return True
+    finally:
+        # finally plutôt qu'un close() dans le corps du try : si os.close()
+        # lui-même levait une exception (I/O disque), le except Exception
+        # générique ci-dessus l'aurait interceptée SANS jamais fermer fd —
+        # fuite de descripteur silencieuse sur un daemon qui traite des
+        # milliers de messages/jour.
+        if fd is not None:
+            try:
+                os.close(fd)
+            except Exception:
+                pass
 
 def _cleanup_old_command_markers():
     """Purge les marqueurs de dédup plus vieux que PROCESSED_COMMAND_IDS_MAX_AGE_SEC
@@ -206,7 +217,7 @@ def _decrypt_self_dm(owner_email, event):
     script = os.path.join(TOOLS_PATH, "nostr_node_intercom.py")
     try:
         proc = subprocess.run(
-            ["python3", script, "decrypt"],
+            [PYTHON_BIN, script, "decrypt"],
             input=json.dumps(event), capture_output=True, text=True, timeout=15,
             env={**os.environ, "NOSTR_NSEC": nsec},
         )
