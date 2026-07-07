@@ -82,9 +82,14 @@ canonicalize_json_file() {
             return 1
         fi
     else
-        echo -e "${YELLOW}⚠️  Failed to canonicalize JSON, using original${NC}" >&2
+        # FATAL (pas un simple warning) : le JCS (RFC 8785) garantit que
+        # deux stations produisent le MÊME sha256/event_id Nostr pour un
+        # contenu identique. Continuer avec l'original divergerait du
+        # consensus dès qu'une seule station échoue à canonicaliser alors
+        # que les autres réussissent — même bug pour le même document.
+        echo -e "${RED}❌ Failed to canonicalize JSON — aborting to avoid Nostr event_id consensus divergence${NC}" >&2
         rm -f "$temp_canonical"
-        return 0  # Non-fatal, continue with original
+        return 1
     fi
 }
 
@@ -256,11 +261,15 @@ create_initial_did() {
     fi
     
     # Canonicalize JSON according to RFC 8785 (JCS) before returning
-    # This ensures consistent signatures when the DID is published to Nostr
+    # This ensures consistent signatures when the DID is published to Nostr —
+    # fatal si ça échoue (voir canonicalize_json_file), pas un simple warning :
+    # continuer publierait un event_id divergent du reste du swarm.
     if ! canonicalize_json_file "$temp_template" "$temp_template" 2>/dev/null; then
-        echo -e "${YELLOW}⚠️  Failed to canonicalize initial DID, continuing with original${NC}" >&2
+        echo -e "${RED}❌ Failed to canonicalize initial DID — aborting${NC}" >&2
+        rm -f "$temp_template"
+        return 1
     fi
-    
+
     # Output the processed template (JSON only, no debug messages)
     cat "$temp_template"
     
@@ -907,7 +916,11 @@ update_did_document() {
     # This ensures consistent signatures when the DID is published to Nostr
     echo -e "${BLUE}🔧 Canonicalizing DID JSON (RFC 8785)...${NC}"
     if ! canonicalize_json_file "$did_updated" "$did_updated" 2>/dev/null; then
-        echo -e "${YELLOW}⚠️  Failed to canonicalize DID, continuing with original${NC}" >&2
+        # Fatal (voir canonicalize_json_file) : publier un DID non-canonicalisé
+        # produirait un event_id Nostr divergent du reste du swarm.
+        echo -e "${RED}❌ Failed to canonicalize DID — aborting${NC}" >&2
+        rm -f "$did_temp" "$did_updated"
+        return 1
     fi
     
     # Step 3: Validate updated DID
