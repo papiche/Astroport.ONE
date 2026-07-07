@@ -84,11 +84,22 @@ def extract_main_content(html: str, url: str) -> str:
     return strip_html_fallback(html)
 
 
+# User-Agent navigateur standard plutôt qu'un UA s'identifiant comme bot
+# (2026-07-06) : #craft <url> est un fetch PERSONNEL déclenché explicitement
+# par le propriétaire pour analyser UNE page qu'il a lui-même choisie — pas
+# du crawling de masse. Un UA "bot" déclenchait des rejets Cloudflare/403
+# sur des sites publics par ailleurs légitimement accessibles à un navigateur.
+BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
+
+
 def fetch_url(url: str, timeout: int = DEFAULT_TIMEOUT) -> str | None:
     try:
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "BRO-url-content/1.0 (UPlanet IA)"},
+            headers={"User-Agent": BROWSER_USER_AGENT},
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             if resp.headers.get_content_type().split(";")[0].strip().lower() != "text/html":
