@@ -291,30 +291,50 @@ class SecureNostrWebSocketClient:
             print(f"❌ Failed to send event: {e}")
             return False
     
-    def wait_for_response(self, timeout: int = PUBLISH_TIMEOUT) -> bool:
-        """Wait for OK response from relay with enhanced error handling"""
+    def wait_for_response(self, timeout: int = PUBLISH_TIMEOUT, event_id: str = None) -> bool:
+        """Wait for OK response from relay with enhanced error handling.
+
+        Correctif (2026-07-06) : cette méthode ne parsait PAS le JSON reçu —
+        elle testait juste la présence de la sous-chaîne '"OK"' dans le texte
+        brut, donc un REJET explicite du relais (["OK", id, false, "raison"])
+        était traité comme un succès (le mot "OK" apparaît dans les deux cas).
+        Découvert en validant nostr_pool_daemon.py (qui lui parse
+        correctement le 3e élément booléen) sur ce même relais local."""
         if not self.connected:
             return False
-        
+
         try:
             print(f"⏳ Waiting for response (timeout: {timeout}s)...")
             start_time = time.time()
-            
+
             while time.time() - start_time < timeout:
                 try:
                     # Set a short timeout for receiving
                     self.ws.settimeout(1.0)
                     response = self.ws.recv()
-                    
+
                     if response:
                         print(f"📨 Received: {response}")
-                        if '"OK"' in response:
-                            print("✅ Secure message accepted by relay")
-                            return True
-                        elif '"CLOSED"' in response:
+                        try:
+                            msg = json.loads(response)
+                        except Exception:
+                            continue
+                        if not isinstance(msg, list) or not msg:
+                            continue
+                        if msg[0] == "OK" and len(msg) >= 3:
+                            if event_id and msg[1] != event_id:
+                                continue  # OK d'un autre event (peu probable ici, robustesse)
+                            accepted = bool(msg[2])
+                            reason = msg[3] if len(msg) > 3 else ""
+                            if accepted:
+                                print("✅ Secure message accepted by relay")
+                            else:
+                                print(f"❌ Message rejeté par le relais : {reason or '(aucune raison donnée)'}")
+                            return accepted
+                        elif msg[0] == "CLOSED":
                             print("❌ Relay closed connection")
                             return False
-                        elif '"NOTICE"' in response:
+                        elif msg[0] == "NOTICE":
                             print(f"⚠️ Relay notice: {response}")
                 except websocket.WebSocketTimeoutException:
                     # Timeout on receive, continue waiting
@@ -322,7 +342,7 @@ class SecureNostrWebSocketClient:
                 except Exception as e:
                     print(f"⚠️ Error receiving: {e}")
                     break
-            
+
             print("❌ No OK response received within timeout")
             return False
             
@@ -366,7 +386,22 @@ def _publish_event_to_relay(event_dict: dict, relay_url: str) -> bool:
     N relais ne doit jamais produire N events distincts (bug constaté en
     prod le 2026-07-03 : boucler sur une liste de relais en resignant à
     chaque fois faisait apparaître chaque réponse de BRO en double dans
-    atomic_chat.html)."""
+    atomic_chat.html).
+
+    Tente d'abord le daemon de pool de connexions (nostr_pool_daemon.py,
+    2026-07-06) — évite de repayer le coût de connexion WebSocket à chaque
+    envoi. Purement optionnel : si le daemon n'écoute pas, repli silencieux
+    et immédiat sur la connexion directe historique ci-dessous, comportement
+    strictement inchangé."""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from nostr_connection_pool import try_publish_via_pool
+        pooled_result = try_publish_via_pool(event_dict, relay_url)
+        if pooled_result is not None:
+            return pooled_result
+    except Exception:
+        pass  # module de pool absent/en erreur -> mode direct ci-dessous
+
     client = SecureNostrWebSocketClient(relay_url, enable_rate_limiting=True)
     try:
         if not client.connect():
@@ -374,7 +409,7 @@ def _publish_event_to_relay(event_dict: dict, relay_url: str) -> bool:
         event_json = json.dumps(["EVENT", event_dict])
         if not client.send_event(event_json):
             return False
-        return client.wait_for_response()
+        return client.wait_for_response(event_id=event_dict.get("id"))
     except Exception as e:
         print(f"⚠️ Publication vers {relay_url} échouée : {e}")
         return False
