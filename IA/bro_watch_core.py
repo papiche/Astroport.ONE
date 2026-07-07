@@ -101,7 +101,7 @@ def learn_from_message(owner_email, entry, account, channel, text):
           "sous forme de liste séparée par des virgules, sans phrase d'introduction, sans numérotation."
     )
     result = subprocess.run([
-        "python3", f"{BRO_IA_PATH}/question.py", prompt
+        PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt
     ], capture_output=True, text=True)
     raw = result.stdout.strip()
     learned = sorted({k.strip().lower() for k in raw.replace("\n", ",").split(",") if k.strip()})
@@ -185,7 +185,7 @@ def generate_suggestion(context_label, username, text, examples=None,
         "Propose une réponse brève et appropriée."
     )
     result = subprocess.run([
-        "python3", f"{BRO_IA_PATH}/question.py", prompt
+        PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt
     ], capture_output=True, text=True)
     return result.stdout.strip() or "(BRO n'a pas pu générer de suggestion.)"
 
@@ -449,7 +449,7 @@ def interpret_command_with_context(text, context_summary, pending_line="", model
     prompt = _build_interpretation_prompt(text, context_summary, pending_line)
     try:
         result = subprocess.run([
-            "python3", f"{BRO_IA_PATH}/question.py", prompt,
+            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
             "--temperature", "0.1", "--model", model or COMMAND_INTERPRETATION_MODEL,
             "--format-json",
         ], capture_output=True, text=True, timeout=60)
@@ -848,6 +848,92 @@ def _detect_hallucinated_tags(answer, known_tags):
     mentioned = {m.split(":")[0] for m in mentioned}  # #rec:skill -> "rec" (variante connue)
     return mentioned - known_tags
 
+_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+def _load_rules_and_style(owner_email):
+    """Contenu de .Rules.md/.Style.md (sans les commentaires HTML des
+    templates vides) — même logique que question.py::load_identity, réduite
+    aux deux fichiers pertinents pour le Critic (comportement/ton), pas
+    l'identité complète (.Preferences.md/.Core.md n'apportent rien ici)."""
+    identity_dir = os.path.join(_owner_dir(owner_email), "identity")
+    parts = []
+    for filename in (".Rules.md", ".Style.md"):
+        path = os.path.join(identity_dir, filename)
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = _HTML_COMMENT_RE.sub("", f.read()).strip()
+        except Exception:
+            continue
+        if content:
+            parts.append(content)
+    return "\n\n".join(parts)
+
+# Incident réel (2026-07-06, cf. _conversational_reply) : le prompt de
+# génération interdit déjà ces formules ("interdiction d'employer..."), mais
+# une consigne seule ne suffit pas avec ce modèle — heuristique de repli pour
+# déclencher le Critic (MoA léger, voir _evaluate_and_correct_draft) quand la
+# Draft prétend avoir exécuté une action au lieu de donner la phrase exacte.
+_SUSPECT_PROMISE_PHRASES = (
+    "je commence", "je m'en occupe", "je m'y mets", "j'ai bien noté",
+    "j'ai noté", "c'est fait", "c'est en cours", "je vais m'en occuper",
+)
+
+def _evaluate_and_correct_draft(owner_email, text, draft_answer, hallucinated_tags):
+    """Passe 2 (Critic) du MoA léger — UN SEUL appel LLM supplémentaire
+    maximum, jamais de 3e appel pour régénérer : le Critic renvoie soit
+    valid=true (Draft gardée telle quelle), soit directement la correction
+    (jamais un texte à rédiger nous-mêmes). Retourne le texte corrigé à
+    envoyer, ou None si le Critic est indisponible/incohérent — l'appelant
+    retombe alors sur son garde-fou statique existant (jamais de régression
+    de sûreté par rapport à l'ancien comportement)."""
+    rules_block = _load_rules_and_style(owner_email)
+    tags_hint = (
+        f"Tags/commandes inventés détectés par analyse factuelle du texte "
+        f"(n'existent nulle part dans les capacités ci-dessous — c'est un FAIT, "
+        f"pas une supposition) : {', '.join(sorted(hallucinated_tags))}\n\n"
+        if hallucinated_tags else ""
+    )
+    prompt = (
+        "Tu es le superviseur de sécurité (Critic) de l'assistant BRO. Voici la "
+        "réponse qu'il a rédigée (Draft) pour son propriétaire :\n"
+        f"{wrap_untrusted('draft', draft_answer)}\n\n"
+        f"{tags_hint}"
+        f"Capacités RÉELLES de BRO (aucune autre commande/tag n'existe) :\n"
+        f"{_bro_capabilities_description(owner_email)}\n\n"
+        + (f"Règles de style/comportement du propriétaire :\n{wrap_untrusted('rules', rules_block)}\n\n"
+           if rules_block else "")
+        + "Vérifie UNIQUEMENT deux choses :\n"
+        "1. La Draft mentionne-t-elle une commande/tag absent des capacités ci-dessus ?\n"
+        "2. Prétend-elle qu'une action est déjà faite ou en cours (« je commence », « c'est fait »...) "
+        "au lieu de donner la phrase exacte à envoyer pour l'exécuter réellement ?\n\n"
+        "Réponds UNIQUEMENT en JSON, sans texte autour : "
+        '{"valid": true|false, "correction": "texte corrigé, chaîne vide si valid=true"}\n'
+        "Si valid=false : correction doit être la réponse ENTIÈRE réécrite (même ton chaleureux, "
+        "longueur comparable), jamais juste un fragment."
+    )
+    try:
+        result = subprocess.run([
+            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
+            "--temperature", "0.1", "--model", COMMAND_INTERPRETATION_MODEL,
+            "--format-json", "--max-tokens", "400", "--ctx", "8192",
+        ], capture_output=True, text=True, timeout=30)
+        data = json.loads(result.stdout.strip())
+        valid = bool(data.get("valid"))
+        correction = (data.get("correction") or "").strip()
+        if valid and hallucinated_tags:
+            # Contradiction : la regex a factuellement trouvé un tag inexistant,
+            # le Critic dit pourtant "valide" sans correction — réponse
+            # incohérente du modèle, on ne lui fait pas confiance ici.
+            return None
+        if valid:
+            return draft_answer
+        return correction or None
+    except Exception as e:
+        print(f"[BRO_WATCH] Critic (MoA) indisponible pour {owner_email} : {e}")
+        return None
+
 def _conversational_reply(owner_email, text, img_url=None):
     """Réponse en langage naturel quand le message ne correspond à aucune
     commande de surveillance reconnue — pour que le canal self-DM avec BRO
@@ -883,7 +969,7 @@ def _conversational_reply(owner_email, text, img_url=None):
     _t0 = time.monotonic()
     try:
         result = subprocess.run(
-            ["python3", f"{BRO_IA_PATH}/question.py", prompt,
+            [PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
              "--user-id", owner_email, "--slot", str(BRO_MEMORY_SLOT),
              "--temperature", "0.4", "--max-tokens", "300", "--ctx", "8192"],
             capture_output=True, text=True, timeout=45,
@@ -895,18 +981,36 @@ def _conversational_reply(owner_email, text, img_url=None):
                              success=bool(answer), latency_ms=(time.monotonic() - _t0) * 1000)
     answer = answer or "Je n'ai pas bien compris — dites-moi par exemple « désactive mastodon.social »."
 
-    # Garde-fou post-génération : le prompt interdit déjà d'inventer une
-    # commande (voir _bro_capabilities_description), mais l'incident réel
-    # ci-dessus montre que l'instruction seule ne suffit pas avec ce modèle —
-    # une vérification factuelle après coup, pas seulement une consigne.
+    # Garde-fou post-génération, MoA léger (Draft + Critic, 2 appels LLM max
+    # au total) : le prompt interdit déjà d'inventer une commande ou de
+    # prétendre qu'une action est faite (voir plus haut), mais l'incident réel
+    # ci-dessus montre que l'instruction seule ne suffit pas avec ce modèle.
+    # Fast-path (regex, ~0ms) pour les tags — ne déclenche le Critic (2e appel
+    # LLM, ~coûteux) que si un signal concret existe, jamais systématiquement.
     hallucinated = _detect_hallucinated_tags(answer, _known_hashtags())
-    if hallucinated:
-        print(f"[BRO_WATCH] ⚠️ Commande(s) hallucinée(s) dans la réponse conversationnelle "
-              f"pour {owner_email} : {sorted(hallucinated)} — remplacement par un repli honnête.")
-        observability.log_event(owner_email, "conversational_llm", "hallucinated_tag",
-                                 success=False, extra={"tags": sorted(hallucinated)})
-        answer = ("Je ne sais pas encore faire précisément ce que tu demandes — envoie #help "
-                  "pour voir la liste exacte de mes commandes réelles.")
+    is_suspect_promise = any(p in answer.lower() for p in _SUSPECT_PROMISE_PHRASES)
+
+    if hallucinated or is_suspect_promise:
+        print(f"[BRO_WATCH] 🕵️ Critic (MoA) déclenché pour {owner_email} "
+              f"(tags={sorted(hallucinated) or 'aucun'}, promesse suspecte={is_suspect_promise})")
+        corrected = _evaluate_and_correct_draft(owner_email, text, answer, hallucinated)
+        if corrected:
+            observability.log_event(owner_email, "conversational_llm", "critic_corrected",
+                                     success=True, extra={"tags": sorted(hallucinated)})
+            answer = corrected
+        elif hallucinated:
+            # Le Critic a échoué/été incohérent ET la regex confirme un FAIT
+            # (tag inexistant) — jamais d'envoi d'une réponse qu'on SAIT
+            # fautive : repli statique honnête (comportement historique).
+            print(f"[BRO_WATCH] ⚠️ Commande(s) hallucinée(s) confirmées pour {owner_email} : "
+                  f"{sorted(hallucinated)} — Critic indisponible, repli honnête.")
+            observability.log_event(owner_email, "conversational_llm", "hallucinated_tag",
+                                     success=False, extra={"tags": sorted(hallucinated)})
+            answer = ("Je ne sais pas encore faire précisément ce que tu demandes — envoie #help "
+                      "pour voir la liste exacte de mes commandes réelles.")
+        # else : seule l'heuristique molle (promesse suspecte) a déclenché, et
+        # le Critic n'a rien à corriger ou est indisponible — un signal faible
+        # seul ne justifie pas de remplacer une réponse par ailleurs correcte.
 
     # Marqueur BOT_REPLY_MARKERS obligatoire (voir sa définition) : sans lui,
     # cette réponse serait relue comme un nouveau message au prochain cycle.
@@ -942,7 +1046,7 @@ def classify_request_complexity(text):
     )
     try:
         result = subprocess.run([
-            "python3", f"{BRO_IA_PATH}/question.py", prompt,
+            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
             "--temperature", "0.1", "--model", COMMAND_INTERPRETATION_MODEL,
             "--format-json",
         ], capture_output=True, text=True, timeout=30)
@@ -993,7 +1097,7 @@ def _run_algorithm_step(step, plan, owner_email):
     )
     try:
         result = subprocess.run(
-            ["python3", f"{BRO_IA_PATH}/question.py", prompt,
+            [PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
              "--temperature", "0.3", "--max-tokens", "400", "--ctx", "8192"],
             capture_output=True, text=True, timeout=60,
         )
@@ -1021,7 +1125,7 @@ def _synthesize_algorithm_answer(owner_email, plan):
     )
     try:
         result = subprocess.run(
-            ["python3", f"{BRO_IA_PATH}/question.py", prompt,
+            [PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
              "--user-id", owner_email, "--slot", str(BRO_MEMORY_SLOT),
              "--temperature", "0.4", "--max-tokens", "400", "--ctx", "8192"],
             capture_output=True, text=True, timeout=45,
