@@ -1391,23 +1391,45 @@ ERRHTML
         ipfs_end=$(date +%s)
         ipfs_duration=$((ipfs_end - ipfs_start))
         log "DEBUG" "IPFS add completed in ${ipfs_duration}s for ${PLAYER}"
-        
-        log "DEBUG" "Starting IPNS publish for ${PLAYER}"
-        ipns_start=$(date +%s)
-        ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
-        ipns_end=$(date +%s)
-        ipns_duration=$((ipns_end - ipns_start))
-        log "DEBUG" "IPNS publish completed in ${ipns_duration}s for ${PLAYER}"
 
-        ## DNSLink MULTIPASS subdomain : _dnslink.<YOUSER>.astroport.one → /ipns/$NOSTRNS
-        OVH_TOOL="${MY_PATH}/../admin/system/ovh.me.sh"
-        if [[ -x "$OVH_TOOL" ]]; then
-            _nostrns_raw="${NOSTRNS#/ipns/}"
-            "$OVH_TOOL" upsert "${YOUSER}" "/ipns/${_nostrns_raw}" 2>/dev/null || true
+        # Garde-fou : si `ipfs add` échoue/renvoie vide (disque plein, daemon
+        # instable...), NE JAMAIS appeler `ipfs name publish` avec un CID vide.
+        # `ipfs name publish --key K /ipfs/` échoue déjà proprement côté IPFS
+        # ("invalid path", record IPNS inchangé — vérifié empiriquement), donc
+        # l'ancien CID publié reste résolvable ; le vrai risque était que ce
+        # script continue malgré tout et enregistre .last_ipns_update comme si
+        # la publication avait réussi — should_refresh() sauterait alors les
+        # tentatives suivantes jusqu'au prochain cycle programmé, laissant le
+        # profil NOSTR silencieusement obsolète (même esprit que le fix
+        # canonicalize_json_file : conserver l'ancienne valeur plutôt que de
+        # publier/valider un état cassé).
+        if [[ -z "$NOSTRIPFS" ]]; then
+            log "WARN" "ipfs add a échoué pour ${PLAYER} (CID vide) — publication IPNS annulée, ancien CID conservé, nouvelle tentative au prochain cycle"
+            echo "⚠️  IPFS add failed for ${PLAYER} — keeping previous NOSTRNS CID, will retry"
+        else
+            log "DEBUG" "Starting IPNS publish for ${PLAYER}"
+            ipns_start=$(date +%s)
+            if ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}; then
+                ipns_end=$(date +%s)
+                ipns_duration=$((ipns_end - ipns_start))
+                log "DEBUG" "IPNS publish completed in ${ipns_duration}s for ${PLAYER}"
+
+                ## DNSLink MULTIPASS subdomain : _dnslink.<YOUSER>.astroport.one → /ipns/$NOSTRNS
+                OVH_TOOL="${MY_PATH}/../admin/system/ovh.me.sh"
+                if [[ -x "$OVH_TOOL" ]]; then
+                    _nostrns_raw="${NOSTRNS#/ipns/}"
+                    "$OVH_TOOL" upsert "${YOUSER}" "/ipns/${_nostrns_raw}" 2>/dev/null || true
+                fi
+
+                # Record the last IPNS update time — UNIQUEMENT en cas de succès
+                # réel, sinon should_refresh() croirait ce joueur à jour alors
+                # que son profil publié est resté sur l'ancien CID.
+                date +%s > ${HOME}/.zen/game/nostr/${PLAYER}/.last_ipns_update
+            else
+                log "WARN" "ipfs name publish a échoué pour ${PLAYER} — ancien CID conservé, nouvelle tentative au prochain cycle"
+                echo "⚠️  IPNS publish failed for ${PLAYER} — keeping previous NOSTRNS CID, will retry"
+            fi
         fi
-
-        # Record the last IPNS update time
-        date +%s > ${HOME}/.zen/game/nostr/${PLAYER}/.last_ipns_update
 
         # Update .todate only for daily updates, not for new files
         if [[ "$REFRESH_REASON" == "daily_update" ]]; then
