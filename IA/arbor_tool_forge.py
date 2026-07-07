@@ -50,6 +50,7 @@ del _sys, _os
 
 import os
 import re
+import ast
 import sys
 import json
 import argparse
@@ -67,14 +68,39 @@ CODE_BLOCK_RE = re.compile(r"```(?:python)?\s*\n(.*?)```", re.DOTALL)
 # Garde-fou statique — appliqué AVANT tout test sandboxé, sur chaque tentative.
 # Ne remplace pas une revue humaine, mais coûte rien et bloque les cas évidents
 # avant même de dépenser un cycle pytest dessus.
-_DANGEROUS_PATTERNS = [
-    (r"\beval\s*\(", "eval() interdit"),
-    (r"\bexec\s*\(", "exec() interdit"),
-    (r"\bos\.system\s*\(", "os.system() interdit"),
-    (r"shell\s*=\s*True", "shell=True interdit (subprocess)"),
-    (r"__import__\s*\(", "__import__() dynamique interdit"),
-    (r"\.\./", "chemin relatif parent (../) suspect"),
-]
+#
+# AST plutôt que regex (2026-07-06) : les regex précédentes (\beval\s*\(...)
+# ne survivent pas à une reformulation triviale (espaces, retour à la ligne,
+# ré-affectation) et laissent passer shell=True hors du seul mot "subprocess"
+# (ex: n'importe quel appel avec shell=True). L'analyse AST résout ces deux
+# problèmes en inspectant la STRUCTURE réelle du code, pas son apparence
+# textuelle.
+#
+# LIMITE HONNÊTE : une analyse statique de la structure syntaxique ne peut
+# PAS résoudre `getattr(__builtins__, 'ev' + 'al')` comme «un appel à eval» —
+# ce n'est structurellement pas un appel à eval, c'est un appel à getattr
+# (bloqué ci-dessous en tant que tel, comme tout accès au nom __builtins__).
+# Aucune analyse purement statique (regex OU AST) ne peut fermer cette classe
+# de contournement en toute généralité — c'est exactement pour cette raison
+# que bwrap (sandbox OS, voir _run_pytest_in_worktree) reste la VRAIE ligne de
+# défense. Ce garde-fou n'est qu'un filtre rapide en amont, pas une preuve.
+_FORBIDDEN_CALL_NAMES = {
+    "eval", "exec", "compile", "__import__",
+    "getattr", "setattr", "delattr", "vars", "globals", "locals",
+}
+_FORBIDDEN_IMPORT_MODULES = {
+    "subprocess", "ctypes", "pickle", "shelve", "marshal", "importlib",
+    "code", "pty", "multiprocessing",
+}
+_FORBIDDEN_OS_ATTRS = {
+    "system", "popen", "fork", "forkpty", "posix_spawn",
+    "spawnl", "spawnle", "spawnlp", "spawnlpe", "spawnv", "spawnve", "spawnvp", "spawnvpe",
+    "execl", "execle", "execlp", "execlpe", "execv", "execve", "execvp", "execvpe",
+}
+_FORBIDDEN_DUNDER_NAMES = {
+    "__builtins__", "__globals__", "__class__", "__subclasses__",
+    "__mro__", "__bases__", "__loader__", "__import__",
+}
 
 
 def _extract_code(text):
@@ -82,14 +108,93 @@ def _extract_code(text):
     return (match.group(1) if match else (text or "")).strip()
 
 
+def _attr_root_name(attr_node):
+    """Pour un ast.Attribute (ex: os.system), remonte à travers les accès
+    chaînés jusqu'au nom racine (ex: os.path.join -> 'os'). Retourne None si
+    la racine n'est pas un simple identifiant (ex: (a+b).system)."""
+    node = attr_node.value
+    while isinstance(node, ast.Attribute):
+        node = node.value
+    return node.id if isinstance(node, ast.Name) else None
+
+
+def _collect_import_aliases(tree):
+    """Mappe chaque nom LOCAL introduit par `import X as alias` vers son
+    module racine réel X — sans ça, `import os as o; o.system(...)` contourne
+    toute vérification qui compare littéralement contre le nom "os"."""
+    aliases = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                top_module = alias.name.split(".")[0]
+                aliases[alias.asname or alias.name.split(".")[0]] = top_module
+    return aliases
+
+
 def _static_safety_check(code):
+    """Analyse AST du code généré — voir le commentaire au-dessus de
+    _FORBIDDEN_CALL_NAMES pour la portée et les limites de cette analyse."""
     issues = []
-    for pattern, msg in _DANGEROUS_PATTERNS:
-        if re.search(pattern, code):
-            issues.append(msg)
-    for call in re.finditer(r"requests\.(get|post)\s*\(([^)]*)\)", code, re.DOTALL):
-        if "timeout" not in call.group(2):
-            issues.append(f"appel requests.{call.group(1)}() sans paramètre timeout")
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as e:
+        return [f"code non parsable (SyntaxError, ligne {e.lineno}) : {e.msg}"]
+
+    import_aliases = _collect_import_aliases(tree)
+
+    def _resolved_root(attr_node):
+        root = _attr_root_name(attr_node)
+        return import_aliases.get(root, root)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            func = node.func
+            call_name = func.id if isinstance(func, ast.Name) else (
+                func.attr if isinstance(func, ast.Attribute) else None)
+
+            if call_name in _FORBIDDEN_CALL_NAMES:
+                issues.append(f"appel interdit : {call_name}()")
+            elif isinstance(func, ast.Attribute) and func.attr in _FORBIDDEN_OS_ATTRS \
+                    and _resolved_root(func) == "os":
+                issues.append(f"os.{func.attr}() interdit")
+            elif call_name in ("get", "post") and isinstance(func, ast.Attribute) \
+                    and _resolved_root(func) == "requests":
+                if not any(kw.arg == "timeout" for kw in node.keywords):
+                    issues.append(f"appel requests.{call_name}() sans paramètre timeout")
+
+            # shell=True interdit sur N'IMPORTE QUEL appel, pas seulement
+            # subprocess.* par son nom — un import subprocess renommé
+            # (import subprocess as sp) reste de toute façon bloqué ci-dessous.
+            for kw in node.keywords:
+                if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
+                    issues.append("shell=True interdit (subprocess)")
+
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                top_module = alias.name.split(".")[0]
+                if top_module in _FORBIDDEN_IMPORT_MODULES:
+                    issues.append(f"import {alias.name} interdit")
+
+        elif isinstance(node, ast.ImportFrom):
+            if node.module and node.module.split(".")[0] in _FORBIDDEN_IMPORT_MODULES:
+                issues.append(f"from {node.module} import ... interdit")
+
+        elif isinstance(node, ast.Name) and node.id in _FORBIDDEN_DUNDER_NAMES:
+            issues.append(f"accès interdit : {node.id}")
+        elif isinstance(node, ast.Attribute) and node.attr in _FORBIDDEN_DUNDER_NAMES:
+            issues.append(f"accès interdit : .{node.attr}")
+        # sys.modules — trou trouvé le 2026-07-06 : sys.modules["os"].system(...)
+        # passait inaperçu (Subscript, pas un Attribute simple — _resolved_root
+        # ne le résout pas jusqu'à "os"). "modules" seul serait trop large
+        # (nom d'attribut plausible ailleurs) : on vérifie précisément la
+        # racine "sys", comme pour os.system ci-dessus.
+        elif isinstance(node, ast.Attribute) and node.attr == "modules" \
+                and _resolved_root(node) == "sys":
+            issues.append("accès interdit : sys.modules")
+
+    if ".." in code and re.search(r"\.\./", code):
+        issues.append("chemin relatif parent (../) suspect")
+
     return issues
 
 
@@ -177,7 +282,12 @@ _TOOL_CONSTRAINTS = (
     "- Un seul fichier autonome, sans dépendance au reste du dépôt Astroport.ONE\n"
     "- Expose EXACTEMENT : def run(query: str) -> str\n"
     "- Toute requête réseau (requests.get/post) DOIT avoir un paramètre timeout\n"
-    "- Ne jamais utiliser eval(), exec(), os.system(), ou subprocess avec shell=True\n"
+    "- INTERDIT (bloqué par une analyse statique du code, pas juste une consigne) : "
+    "eval, exec, compile, __import__, getattr, setattr, delattr, vars, globals, locals, "
+    "shell=True (sur n'importe quel appel), tout import de subprocess/ctypes/pickle/"
+    "importlib/multiprocessing, et tout appel os.system/os.popen/os.fork/os.exec*/os.spawn*\n"
+    "- N'utilise JAMAIS de sous-processus ou de commande shell pour cette tâche — "
+    "requests (HTTP) suffit toujours pour appeler une API publique\n"
     "- Gérer les erreurs réseau/API avec un retour texte clair, jamais une exception non attrapée, "
     "MAIS ce message d'erreur doit inclure le détail technique réel (ex: f\"Erreur API : {e}\", "
     "ou le code HTTP retourné) — jamais un message générique du type \"problème avec l'API\" qui "
@@ -352,7 +462,7 @@ def _notify_captain(message):
     script = os.path.join(REPO_ROOT, "tools", "nostr_send_secure_dm.py")
     try:
         proc = subprocess.run(
-            ["python3", script, "--nsec-stdin", captain_hex, message, "wss://relay.copylaradio.com",
+            [bwc.PYTHON_BIN, script, "--nsec-stdin", captain_hex, message, "wss://relay.copylaradio.com",
              "--ttl-days", "14"],
             input=nsec + "\n", capture_output=True, text=True, timeout=15,
         )
