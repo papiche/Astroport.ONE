@@ -7,7 +7,7 @@
 #
 # Fonctionnalités:
 # - Analyse des messages et médias reçus via UPlanet
-# - Détection automatique des #tags (#search, #mp3, #video, etc.)
+# - Détection automatique des #tags (#search, #mp3, etc.)
 # - Traitement selon ta tag et médias (conversion, téléchargement, stockage IPFS)
 # - Génération de réponses IA via Ollama
 # - Publication des réponses sur la clé NOSTR du Capitaine
@@ -15,7 +15,6 @@
 # - #BRO #BOT : Active la réponse IA (par défaut)
 # - #search : Vane Search (ex-Perplexica)
 # - #image : Générer une image avec ComfyUI
-# - #video : Générer une vidéo avec ComfyUI
 # - #music : Générer une musique avec ComfyUI (#parole pour les paroles)
 # - #youtube : Télécharger une vidéo (YouTube, Rumble, Vimeo, etc.) (720p max) #mp3 pour convertir en audio
 # - #mem : Afficher le contenu de la mémoire de conversation
@@ -148,6 +147,26 @@ get_user_udrive_from_kname() {
     fi
 }
 
+# Construction sûre de tags NOSTR (2026-07-06) — remplace la construction
+# ExtraTags="[['t', 'x'], ['imeta', 'url $URL']]" + conversion sed "s/'/\"/g"
+# qui casse (ou pire, injecte une structure JSON différente) dès qu'une
+# valeur dynamique ($URL, $ITEM_NAME, un tag généré par le LLM...) contient un
+# guillemet. jq échappe systématiquement chaque valeur, quel que soit son
+# contenu.
+# _json_tag "imeta" "url $URL" "m image/jpeg"  ->  ["imeta","url ...","m ..."]
+_json_tag() {
+    jq -cn --args '$ARGS.positional' -- "$@"
+}
+# _json_tags_array "$(_json_tag t x)" "$(_json_tag imeta "url $URL")" -> [["t","x"],["imeta","url ..."]]
+# Sans argument -> [] (tableau vide, jamais une chaîne vide qui casserait un --argjson en aval).
+_json_tags_array() {
+    if [[ $# -eq 0 ]]; then
+        echo "[]"
+        return
+    fi
+    printf '%s\n' "$@" | jq -cs '.'
+}
+
 # Build short help message
 # IMPORTANT : ce texte doit refléter UNIQUEMENT ce que CE script exécute lui-même.
 # #craft/#badge/#mem:<skill>/#rec:<skill> existent réellement, mais dans un AUTRE
@@ -163,7 +182,7 @@ Session / memory
   (#1..#12 réservés aux sociétaires CopyLaRadio, #0 par défaut pour tous)
 
 Search & media
-  #search  |  #image  |  #video  |  #music  |  #youtube [#mp3|#mp4] [URL|Texte]
+  #search  |  #image  |  #music  |  #youtube [#mp3|#mp4] [URL|Texte]
 
 Voice (TTS)
   #pierre  |  #amelie
@@ -335,7 +354,6 @@ TAGS[mem]=false
 TAGS[rec]=false
 TAGS[search]=false
 TAGS[image]=false
-TAGS[video]=false
 TAGS[music]=false
 TAGS[youtube]=false
 TAGS[pierre]=false
@@ -367,7 +385,6 @@ if [[ "$message_text" =~ \#mem([^:]|$) ]]; then TAGS[mem]=true; fi
 if [[ "$message_text" =~ \#rec([^0-9:]|$) ]]; then TAGS[rec]=true; fi
 if [[ "$message_text" =~ \#search ]]; then TAGS[search]=true; fi
 if [[ "$message_text" =~ \#image ]]; then TAGS[image]=true; fi
-if [[ "$message_text" =~ \#video ]]; then TAGS[video]=true; fi
 if [[ "$message_text" =~ \#music ]]; then TAGS[music]=true; fi
 if [[ "$message_text" =~ \#youtube ]]; then TAGS[youtube]=true; fi
 if [[ "$message_text" =~ \#pierre ]]; then TAGS[pierre]=true; fi
@@ -406,97 +423,6 @@ if [[ "${TAGS[BRO]}" != true && "${TAGS[BOT]}" != true ]]; then
     echo "Message does not contain #BRO or #BOT - skipping (no reply)." >&2
     exit 0
 fi
-
-## ── Helpers génération GPU ───────────────────────────────────────────────────
-## Vrai si ComfyUI est disponible localement (sans ouvrir de tunnel)
-_comfyui_local_available() {
-    curl -s --max-time 3 "http://localhost:8188/system_stats" -o /dev/null 2>/dev/null
-}
-
-## Retourne le NODE_HEX du meilleur Brain disponible dans le swarm (comfyui exposé,
-## power_score le plus élevé). Retourne chaîne vide si aucun.
-_find_brain_node_hex() {
-    local best_hex="" best_score=-1
-    for _script in "$HOME/.zen/tmp/swarm/"*/x_comfyui.sh; do
-        [[ ! -f "$_script" ]] && continue
-        local _node_id _j _score _hex
-        _node_id=$(basename "$(dirname "$_script")")
-        _j="$HOME/.zen/tmp/swarm/$_node_id/12345.json"
-        [[ ! -f "$_j" ]] && continue
-        _score=$(jq -r '.capacities.power_score // 0' "$_j" 2>/dev/null || echo 0)
-        _hex=$(jq -r '.NODEHEX // ""' "$_j" 2>/dev/null || echo "")
-        [[ ${#_hex} -ne 64 ]] && continue
-        if awk -v a="$_score" -v b="$best_score" 'BEGIN{exit !(a > b)}' 2>/dev/null; then
-            best_score="$_score"
-            best_hex="$_hex"
-        fi
-    done
-    echo "$best_hex"
-}
-
-## Dispatch un job vidéo : local si ComfyUI dispo, sinon DM "comfyui_job" vers Brain.
-## $1=mode (t2v|i2v), $2=prompt, $3=source_url, $4=udrive_videos_path
-## Outputs :
-##   URL IPFS si génération locale réussie
-##   "__DISPATCHED__" si envoyé au Brain (résultat viendra par DM)
-##   "" en cas d'échec
-_dispatch_comfyui_video_job() {
-    local _mode="$1" _prompt="$2" _src_url="${3:-}" _udrive_videos="${4:-}"
-
-    ## Cas local : ComfyUI disponible directement
-    if _comfyui_local_available; then
-        if [[ "$_mode" == "i2v" ]]; then
-            bash "$MY_PATH/generators/image_to_video.sh" "$_prompt" "$_src_url" "$_udrive_videos" 2>/dev/null
-        else
-            bash "$MY_PATH/generators/generate_video.sh" "$_prompt" \
-                "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" "$_udrive_videos" 2>/dev/null
-        fi
-        return
-    fi
-
-    ## Cas distant : chercher un Brain dans le swarm
-    local _brain_hex
-    _brain_hex=$(_find_brain_node_hex)
-    if [[ -z "$_brain_hex" ]]; then
-        echo "" ; return 1
-    fi
-
-    ## Charger les clés NODE
-    local _node_nsec _node_hex
-    if [[ -s "$HOME/.zen/game/secret.nostr" ]]; then
-        _node_hex=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
-        _node_nsec=$(sed 's/.*NSEC=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
-    fi
-    [[ -z "$_node_nsec" || -z "$_node_hex" ]] && echo "" && return 1
-
-    local _job_id="${CURRENT_TIMESTAMP}_${PUBKEY:0:8}"
-    local _payload
-    _payload=$(python3 -c "
-import json, sys
-print(json.dumps({
-    'email':          sys.argv[1],
-    'prompt':         sys.argv[2],
-    'mode':           sys.argv[3],
-    'source_url':     sys.argv[4],
-    'reply_node_hex': sys.argv[5],
-    'reply_pubkey':   sys.argv[6],
-    'job_id':         sys.argv[7],
-}))
-" "$KNAME" "$_prompt" "$_mode" "$_src_url" "$_node_hex" "$PUBKEY" "$_job_id" 2>/dev/null)
-
-    if python3 "$HOME/.zen/Astroport.ONE/tools/nostr_node_intercom.py" send \
-            --nsec    "$_node_nsec" \
-            --to      "$_brain_hex" \
-            --channel "comfyui_job" \
-            --payload "$_payload" \
-            --ttl     7200 \
-            --relays  "${myRELAY:-wss://relay.copylaradio.com}" \
-            2>/dev/null; then
-        echo "__DISPATCHED__"
-    else
-        echo ""
-    fi
-}
 
 ## ── Détection roaming : rediriger les commandes BRO vers la home station ──
 ## Si le KNAME est marqué .roaming sur cette station visiteur (B), on envoie
@@ -686,42 +612,6 @@ is_constellation_from_did() {
             return 1
             ;;
     esac
-}
-
-# Function to get societaire status message for non-members
-get_societaire_required_message() {
-    local feature="$1"
-    echo "⚠️ Accès réservé aux sociétaires CopyLaRadio.
-
-La fonctionnalité $feature est réservée aux membres de la coopérative.
-
-Pour devenir sociétaire et accéder à :
-- 🎬 Génération vidéo Text-to-Video (Satellite)
-- 🎥 Génération vidéo Image-to-Video (Constellation)
-- 🧠 Slots mémoire 1-12 (#mem)
-- 📁 128 Go de stockage NextCloud
-- 🗳️ Droit de vote sur les évolutions
-
-Rejoignez la coopérative : https://opencollective.com/monnaie-libre
-
-#CopyLaRadio #UPlanet"
-}
-
-# Function to get constellation-required message
-get_constellation_required_message() {
-    local feature="$1"
-    echo "⚠️ Accès réservé aux sociétaires CONSTELLATION.
-
-La fonctionnalité $feature nécessite le niveau Constellation.
-
-📊 Niveaux d'accès #video :
-- ⭐ Satellite : Text-to-Video (T2V)
-- 🌟 Constellation : Text-to-Video + Image-to-Video (I2V)
-
-Vous avez un abonnement Satellite ? Passez à Constellation :
-https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385
-
-#CopyLaRadio #UPlanet"
 }
 
 # Function to send memory access denied message (DM privé, signé NODE)
@@ -1482,37 +1372,25 @@ Détails: ${ERROR_LINE}"
                 # Create a temporary JSON file for jq processing
                 temp_json="$HOME/.zen/tmp/tags_${RANDOM}.json"
                 
-                # Convert intelligent tags to JSON array format
+                # Convert intelligent tags to JSON array format — construction
+                # via _json_tag (jq --args), plus d'injection possible via un
+                # hashtag généré par le LLM contenant un guillemet (2026-07-07).
+                _intelligent_tag_parts=()
                 if [[ -n "$INTELLIGENT_TAGS" ]]; then
-                    # Split tags by space and create JSON array
-                    TAG_ARRAY=""
                     IFS=' ' read -ra TAG_LIST <<< "$INTELLIGENT_TAGS"
                     for tag in "${TAG_LIST[@]}"; do
-                        if [[ -n "$tag" ]]; then
-                            TAG_ARRAY="${TAG_ARRAY}[\"t\", \"$tag\"],"
-                        fi
+                        [[ -n "$tag" ]] && _intelligent_tag_parts+=("$(_json_tag t "$tag")")
                     done
-                    # Remove trailing comma
-                    TAG_ARRAY="${TAG_ARRAY%,}"
-                else
-                    TAG_ARRAY=""
                 fi
-                
-                # Add standard tags
-                STANDARD_TAGS='["t", "search"], ["t", "vane"]'
-                if [[ -n "$TAG_ARRAY" ]]; then
-                    ALL_TAGS="${STANDARD_TAGS}, ${TAG_ARRAY}"
-                else
-                    ALL_TAGS="${STANDARD_TAGS}"
-                fi
-                
+                ALL_TAGS_JSON=$(_json_tags_array "$(_json_tag t search)" "$(_json_tag t vane)" "${_intelligent_tag_parts[@]}")
+
                 if [[ -n "$ILLUSTRATION_URL" ]]; then
                     jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg image "$ILLUSTRATION_URL" --arg published_at "$(date -u +%s)" --arg d_tag "search_$(date -u +%s)_$(echo -n "$cleaned_text" | md5sum | cut -d' ' -f1 | head -c 8)" \
-                        --argjson tags "[${ALL_TAGS}]" \
+                        --argjson tags "$ALL_TAGS_JSON" \
                         '[["d", $d_tag], ["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image]] + $tags' > "$temp_json"
                 else
                     jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg published_at "$(date -u +%s)" --arg d_tag "search_$(date -u +%s)_$(echo -n "$cleaned_text" | md5sum | cut -d' ' -f1 | head -c 8)" \
-                        --argjson tags "[${ALL_TAGS}]" \
+                        --argjson tags "$ALL_TAGS_JSON" \
                         '[["d", $d_tag], ["title", $title], ["summary", $summary], ["published_at", $published_at]] + $tags' > "$temp_json"
                 fi
                 
@@ -1552,60 +1430,9 @@ Détails: ${ERROR_LINE}"
                 if [ -n "$IMAGE_URL" ]; then
                     KeyANSWER=$(echo -e "🖼️ $CURRENT_TIME_STR (⏱️ ${execution_time%.*} s)\n📝 Description: $cleaned_text\n🔗 $IMAGE_URL")
                     # Add tags for image generation
-                    ExtraTags="[['t', 'image'], ['t', 'comfyui'], ['t', 'ai-generated']]"
+                    ExtraTags=$(_json_tags_array "$(_json_tag t image)" "$(_json_tag t comfyui)" "$(_json_tag t ai-generated)")
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
-                fi
-            elif [[ "${TAGS[video]}" == true ]]; then
-                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g; s/#i2v//g; s/"//g' <<< "$message_text")
-
-                # Check if an image is attached - determines T2V vs I2V mode
-                if [[ -n "$URL" ]]; then
-                    # IMAGE-TO-VIDEO (I2V) - Requires CONSTELLATION tier
-                    if ! is_constellation_from_did "$user_id"; then
-                        echo "VIDEO I2V: Access denied - user $user_id is not CONSTELLATION tier" >&2
-                        KeyANSWER=$(get_constellation_required_message "#BRO #video I2V (Image-to-Video)")
-                        EXPIRATION_TS=$(($(date +%s) + 3600))
-                        ExtraTags="[['t', 'I2VAccessDenied'], ['expiration', '$EXPIRATION_TS']]"
-                    else
-                        echo "Image detected: I2V — dispatching via comfyui queue" >&2
-                        USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
-                        local _udv="${USER_UDRIVE_PATH:+$USER_UDRIVE_PATH/Videos}"
-                        [[ -n "$_udv" ]] && mkdir -p "$_udv"
-                        VIDEO_AI_RETURN=$(_dispatch_comfyui_video_job "i2v" "$cleaned_text" "$URL" "$_udv")
-                        if [[ "$VIDEO_AI_RETURN" == "__DISPATCHED__" ]]; then
-                            KeyANSWER="⏳ Génération I2V lancée sur un Brain de la constellation... Vous recevrez le résultat par DM dès qu'il sera prêt. 🎬"
-                            ExtraTags="[['t', 'video'], ['t', 'i2v'], ['t', 'comfyui'], ['t', 'queued']]"
-                        elif [[ -n "$VIDEO_AI_RETURN" ]]; then
-                            KeyANSWER="$VIDEO_AI_RETURN"
-                            ExtraTags="[['t', 'video'], ['t', 'i2v'], ['t', 'comfyui'], ['t', 'ai-generated'], ['imeta', 'url $URL']]"
-                        else
-                            KeyANSWER="Désolé, je n'ai pas pu générer la vidéo à partir de l'image fournie."
-                        fi
-                    fi
-                else
-                    # TEXT-TO-VIDEO (T2V) - Requires SATELLITE tier minimum
-                    if ! is_societaire_from_did "$user_id"; then
-                        echo "VIDEO T2V: Access denied - user $user_id is not a sociétaire" >&2
-                        KeyANSWER=$(get_societaire_required_message "#BRO #video T2V (Text-to-Video)")
-                        EXPIRATION_TS=$(($(date +%s) + 3600))
-                        ExtraTags="[['t', 'T2VAccessDenied'], ['expiration', '$EXPIRATION_TS']]"
-                    else
-                        echo "No image: T2V — dispatching via comfyui queue" >&2
-                        USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
-                        local _udv="${USER_UDRIVE_PATH:+$USER_UDRIVE_PATH/Videos}"
-                        [[ -n "$_udv" ]] && mkdir -p "$_udv"
-                        VIDEO_AI_RETURN=$(_dispatch_comfyui_video_job "t2v" "$cleaned_text" "" "$_udv")
-                        if [[ "$VIDEO_AI_RETURN" == "__DISPATCHED__" ]]; then
-                            KeyANSWER="⏳ Génération T2V lancée sur un Brain de la constellation... Vous recevrez le résultat par DM dès qu'il sera prêt. 🎬"
-                            ExtraTags="[['t', 'video'], ['t', 't2v'], ['t', 'comfyui'], ['t', 'queued']]"
-                        elif [[ -n "$VIDEO_AI_RETURN" ]]; then
-                            KeyANSWER="$VIDEO_AI_RETURN"
-                            ExtraTags="[['t', 'video'], ['t', 't2v'], ['t', 'comfyui'], ['t', 'ai-generated']]"
-                        else
-                            KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
-                        fi
-                    fi
                 fi
             ######################################################### #music
             elif [[ "${TAGS[music]}" == true ]]; then
@@ -1627,7 +1454,7 @@ Détails: ${ERROR_LINE}"
                 if [ -n "$MUSIC_URL" ]; then
                     KeyANSWER="$MUSIC_URL"
                     # Add tags for music generation
-                    ExtraTags="[['t', 'music'], ['t', 'comfyui'], ['t', 'ai-generated']]"
+                    ExtraTags=$(_json_tags_array "$(_json_tag t music)" "$(_json_tag t comfyui)" "$(_json_tag t ai-generated)")
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la musique demandée."
                 fi
@@ -1803,7 +1630,7 @@ Détails: ${ERROR_LINE}"
                         echo "PlantNet: Adding Nostr tags: #plantnet #UPlanet (for recognized plants)" >&2
                         echo "PlantNet: Adding precise coordinates (g tag): ${ORIGINAL_LAT}, ${ORIGINAL_LON}" >&2
                         echo "PlantNet: Adding UMAP coordinates (umap tag): ${UMAP_LAT}, ${UMAP_LON}" >&2
-                        ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'plantnet'], ['t', 'UPlanet']]"
+                        ExtraTags=$(_json_tags_array "$(_json_tag imeta "url $image_url")" "$(_json_tag g "${ORIGINAL_LAT},${ORIGINAL_LON}")" "$(_json_tag umap "${UMAP_LAT},${UMAP_LON}")" "$(_json_tag t plantnet)" "$(_json_tag t UPlanet)")
                         
                         # Note: Tags #plantnet and #UPlanet are in ExtraTags (Nostr tags), NOT in KeyANSWER content
                         # User requests use #BRO #plantnet tags, bot responses use #plantnet #UPlanet tags
@@ -1819,7 +1646,7 @@ Détails: ${ERROR_LINE}"
                         echo "PlantNet: Recognition failed - not adding tags" >&2
                         # Don't add #plantnet #UPlanet tags if recognition failed
                         # Still preserve precise coordinates and add UMAP coordinates
-                        ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}']]"
+                        ExtraTags=$(_json_tags_array "$(_json_tag imeta "url $image_url")" "$(_json_tag g "${ORIGINAL_LAT},${ORIGINAL_LON}")" "$(_json_tag umap "${UMAP_LAT},${UMAP_LON}")")
                     fi
                 else
                     echo "PlantNet: No valid image URL found in message" >&2
@@ -1920,7 +1747,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
 #UPlanet #inventory #${ITEM_TYPE} #ORE"
                             
                             # Add tags for inventory (includes imeta for image)
-                            ExtraTags="[['imeta', 'url $image_url', 'm image/jpeg'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME']]"
+                            ExtraTags=$(_json_tags_array "$(_json_tag imeta "url $image_url" "m image/jpeg")" "$(_json_tag g "${ORIGINAL_LAT},${ORIGINAL_LON}")" "$(_json_tag umap "${UMAP_LAT},${UMAP_LON}")" "$(_json_tag t inventory)" "$(_json_tag t UPlanet)" "$(_json_tag t "$ITEM_TYPE")" "$(_json_tag inventory_type "$ITEM_TYPE")" "$(_json_tag inventory_name "$ITEM_NAME")")
                             
                             # Use UMAP key for inventory responses (like plantnet)
                             USE_UMAP_FOR_PLANTNET=true
@@ -2107,7 +1934,20 @@ except Exception as e:
 📄 Contrat ORE: nostr:nevent1${ORE_EVENT_ID:0:20}..."
                                     
                                     # Add ORE-compatible tags with blog reference
-                                    ExtraTags="[['imeta', 'url $image_url', 'm image/jpeg'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', 'ORE'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME'], ['e', '$ORE_EVENT_ID', '', 'mention']$(if [[ -n "$BLOG_EVENT_ID" ]]; then echo ", ['e', '$BLOG_EVENT_ID', '', 'mention']"; fi)]"
+                                    _ore_tags=(
+                                        "$(_json_tag imeta "url $image_url" "m image/jpeg")"
+                                        "$(_json_tag g "${ORIGINAL_LAT},${ORIGINAL_LON}")"
+                                        "$(_json_tag umap "${UMAP_LAT},${UMAP_LON}")"
+                                        "$(_json_tag t inventory)"
+                                        "$(_json_tag t UPlanet)"
+                                        "$(_json_tag t ORE)"
+                                        "$(_json_tag t "$ITEM_TYPE")"
+                                        "$(_json_tag inventory_type "$ITEM_TYPE")"
+                                        "$(_json_tag inventory_name "$ITEM_NAME")"
+                                        "$(_json_tag e "$ORE_EVENT_ID" "" mention)"
+                                    )
+                                    [[ -n "$BLOG_EVENT_ID" ]] && _ore_tags+=("$(_json_tag e "$BLOG_EVENT_ID" "" mention)")
+                                    ExtraTags=$(_json_tags_array "${_ore_tags[@]}")
                                 else
                                     echo "Inventory: Warning - Failed to publish ORE contract" >&2
                                 fi
@@ -2272,7 +2112,14 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
         fi
 
         # Clean KeyANSWER of BOT and BRO tags
-        KeyANSWER=$(echo "$KeyANSWER" | sed 's/#BOT//g; s/#BRO//g; s/#bot//g; s/#bro//g')
+        # Expansion bash plutôt que echo|sed (2026-07-06) : echo, sans -e, n'interprète
+        # pas les backslashes, mais si $KeyANSWER correspond exactement à une combinaison
+        # de flags (ex. "-n", "-e", "-ne"), le builtin echo les avale et la réponse devient
+        # vide. L'expansion bash ne passe jamais par un sous-shell/echo, donc ce risque disparaît.
+        KeyANSWER="${KeyANSWER//#BOT/}"
+        KeyANSWER="${KeyANSWER//#BRO/}"
+        KeyANSWER="${KeyANSWER//#bot/}"
+        KeyANSWER="${KeyANSWER//#bro/}"
 
         ## SEND REPLY MESSAGE
         ## Kind 1 = réponse conversationnelle -> toujours en DM NIP-44, signée NODE.
@@ -2353,28 +2200,40 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
             # When not ephemeral, REPLY_TO_EVENT was set above; when ephemeral with no thread, REPLY_TO_EVENT is empty
             [[ -z "$REPLY_TO_EVENT" && -n "$EVENT" && "$TRIGGER_IS_EPHEMERAL" != true ]] && REPLY_TO_EVENT="$EVENT"
 
-            # Prepare tags in JSON format
+            # Prepare tags in JSON format — construction via jq -n (2026-07-06),
+            # jamais par concaténation de chaîne : REPLY_TO_EVENT/PUBKEY sont en
+            # pratique toujours des hex NOSTR valides, mais ExtraTagsContent peut
+            # embarquer une valeur dynamique (ex: ['imeta','url $URL'] avec un
+            # $URL généré) — un seul guillemet ou caractère de contrôle dans une
+            # valeur aurait cassé le JSON produit par concaténation, sans que
+            # jq -n --arg puisse jamais produire un JSON invalide.
             if [[ -n "$ExtraTags" ]]; then
                 # For kind 30023, use only the specific blog tags
                 if [[ "$AnswerKind" == "30023" ]]; then
                     TAGS_JSON="$ExtraTags"
                 else
-                    # For other kinds, combine standard tags with extra tags
-                    # Convert Python list format to proper JSON
-                    ExtraTagsJSON=$(echo "$ExtraTags" | sed "s/'/\"/g")
-                    # Remove outer brackets and add standard tags
-                    ExtraTagsContent=$(echo "$ExtraTagsJSON" | sed 's/^\[//' | sed 's/\]$//')
+                    # ExtraTags est désormais toujours du JSON valide produit par
+                    # _json_tags_array/_json_tag (2026-07-07) — plus de conversion
+                    # sed "s/'/\"/g" fragile sur guillemet embarqué. On garde tout
+                    # de même --argjson (pas d'interpolation directe) : si
+                    # ExtraTags était malgré tout invalide, jq échoue explicitement
+                    # (TAGS_JSON vide) plutôt que de publier un JSON corrompu.
+                    ExtraTagsJSON="$ExtraTags"
                     if [[ -n "$REPLY_TO_EVENT" ]]; then
                         if [[ "$IS_ERROR_MESSAGE" == true ]]; then
-                            TAGS_JSON='[["e","'$REPLY_TO_EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"],'$ExtraTagsContent']'
+                            TAGS_JSON=$(jq -cn --arg e "$REPLY_TO_EVENT" --arg p "$PUBKEY" --arg exp "$EXPIRATION_TS" --argjson extra "$ExtraTagsJSON" \
+                                '[["e",$e],["p",$p],["expiration",$exp]] + $extra')
                         else
-                            TAGS_JSON='[["e","'$REPLY_TO_EVENT'"],["p","'$PUBKEY'"],'$ExtraTagsContent']'
+                            TAGS_JSON=$(jq -cn --arg e "$REPLY_TO_EVENT" --arg p "$PUBKEY" --argjson extra "$ExtraTagsJSON" \
+                                '[["e",$e],["p",$p]] + $extra')
                         fi
                     else
                         if [[ "$IS_ERROR_MESSAGE" == true ]]; then
-                            TAGS_JSON='[["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"],'$ExtraTagsContent']'
+                            TAGS_JSON=$(jq -cn --arg p "$PUBKEY" --arg exp "$EXPIRATION_TS" --argjson extra "$ExtraTagsJSON" \
+                                '[["p",$p],["expiration",$exp]] + $extra')
                         else
-                            TAGS_JSON='[["p","'$PUBKEY'"],'$ExtraTagsContent']'
+                            TAGS_JSON=$(jq -cn --arg p "$PUBKEY" --argjson extra "$ExtraTagsJSON" \
+                                '[["p",$p]] + $extra')
                         fi
                     fi
                 fi
@@ -2382,15 +2241,18 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
                 # Use standard tags only
                 if [[ -n "$REPLY_TO_EVENT" ]]; then
                     if [[ "$IS_ERROR_MESSAGE" == true ]]; then
-                        TAGS_JSON='[["e","'$REPLY_TO_EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"]]'
+                        TAGS_JSON=$(jq -cn --arg e "$REPLY_TO_EVENT" --arg p "$PUBKEY" --arg exp "$EXPIRATION_TS" \
+                            '[["e",$e],["p",$p],["expiration",$exp]]')
                     else
-                        TAGS_JSON='[["e","'$REPLY_TO_EVENT'"],["p","'$PUBKEY'"]]'
+                        TAGS_JSON=$(jq -cn --arg e "$REPLY_TO_EVENT" --arg p "$PUBKEY" \
+                            '[["e",$e],["p",$p]]')
                     fi
                 else
                     if [[ "$IS_ERROR_MESSAGE" == true ]]; then
-                        TAGS_JSON='[["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"]]'
+                        TAGS_JSON=$(jq -cn --arg p "$PUBKEY" --arg exp "$EXPIRATION_TS" \
+                            '[["p",$p],["expiration",$exp]]')
                     else
-                        TAGS_JSON='[["p","'$PUBKEY'"]]'
+                        TAGS_JSON=$(jq -cn --arg p "$PUBKEY" '[["p",$p]]')
                     fi
                 fi
             fi
