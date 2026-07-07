@@ -114,15 +114,31 @@ done
 is_message_in_umap_zone() {
     local message_json="$1"
     
-    # Extract GPS coordinates from message tags
+    # Extract GPS coordinates from message tags — un seul appel jq pour les 3
+    # champs (latitude/longitude/g) plutôt que jusqu'à 4 appels séparés, même
+    # esprit que le pattern @tsv déjà utilisé ailleurs dans ce fichier (voir
+    # process_market_messages_from_friends / process_recent_messages) — mais
+    # séparateur \x1f (Unit Separator) plutôt que tab : ces champs sont
+    # souvent VIDES (latitude/longitude absents quand seul "g" est présent),
+    # et `read` avec IFS=tab traite le tab comme "IFS whitespace" — les
+    # délimiteurs consécutifs/en tête sont alors collapsés, décalant les
+    # valeurs vers la gauche (bug vérifié empiriquement). \x1f n'est jamais
+    # traité comme whitespace par read, donc les champs vides sont préservés.
+    local message_lat message_lon g_tag_val
+    IFS=$'\x1f' read -r message_lat message_lon g_tag_val <<< \
+        "$(jq -r '
+            [ (first(.tags[] | select(.[0] == "latitude")) | .[1]) // "",
+              (first(.tags[] | select(.[0] == "longitude")) | .[1]) // "",
+              (first(.tags[] | select(.[0] == "g")) | .[1]) // "" ]
+            | join("\u001f")' <<< "$message_json" 2>/dev/null)"
+
     # Priority: latitude/longitude tags > g tag
-    local message_lat=$(echo "$message_json" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
-    local message_lon=$(echo "$message_json" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
-    
-    # Fallback to "g" tag if latitude/longitude not found
+    # Fallback to "g" tag if latitude/longitude not found (bash, pas de subprocess cut)
     if [[ -z "$message_lat" || -z "$message_lon" || "$message_lat" == "null" || "$message_lon" == "null" ]]; then
-        message_lat=$(echo "$message_json" | jq -r '.tags[] | select(.[0] == "g") | .[1]' | head -n 1 | cut -d',' -f1)
-        message_lon=$(echo "$message_json" | jq -r '.tags[] | select(.[0] == "g") | .[1]' | head -n 1 | cut -d',' -f2)
+        if [[ -n "$g_tag_val" && "$g_tag_val" != "null" && "$g_tag_val" == *,* ]]; then
+            message_lat="${g_tag_val%%,*}"
+            message_lon="${g_tag_val#*,}"
+        fi
     fi
     
     # If no GPS coordinates found, only include if this is the global UMAP (0.00, 0.00)
