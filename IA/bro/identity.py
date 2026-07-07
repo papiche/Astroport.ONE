@@ -17,9 +17,9 @@ import subprocess
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # IA/
 import observability
 from prompt_safety import wrap_untrusted
-from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, COMMAND_INTERPRETATION_MODEL, _owner_dir
+from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, COMMAND_INTERPRETATION_MODEL, PYTHON_BIN, _now_iso, _owner_dir
 
-__all__ = ['_dispatch_identity_update_check', '_check_and_update_identity', 'MAX_PREFERENCES_LINES', '_synthesize_preferences', '_IDENTITY_TEMPLATES', '_ensure_identity_templates']
+__all__ = ['_dispatch_identity_update_check', '_check_and_update_identity', 'MAX_PREFERENCES_LINES', '_synthesize_preferences', '_IDENTITY_TEMPLATES', '_ensure_identity_templates', 'PREFERENCES_HISTORY_MAX_ENTRIES', 'list_preferences_history', 'rollback_preferences']
 
 
 
@@ -58,7 +58,7 @@ def _check_and_update_identity(owner_email, content):
     )
     try:
         result = subprocess.run([
-            "python3", f"{BRO_IA_PATH}/question.py", prompt,
+            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
             "--temperature", "0.1", "--model", COMMAND_INTERPRETATION_MODEL,
             "--format-json",
         ], capture_output=True, text=True, timeout=30)
@@ -81,6 +81,11 @@ def _check_and_update_identity(owner_email, content):
         observability.log_event(owner_email, "identity_auto_update", "preferences", success=False)
         print(f"[BRO_WATCH] Échec synthèse Preferences.md pour {owner_email} — document inchangé.")
         return
+    # Journal AVANT la réécriture : si le LLM hallucine ou tronque une
+    # information dans _synthesize_preferences (ex: "allergique aux noix"
+    # disparaît), rien n'est irrémédiablement perdu — #pref rollback restaure
+    # l'état d'avant. Best-effort, ne bloque jamais la mise à jour elle-même.
+    _append_preferences_history(owner_email, existing, line, lines)
     try:
         with open(path, "w", encoding="utf-8") as f:
             f.write("\n".join(f"- {l}" for l in lines) + "\n")
@@ -116,7 +121,7 @@ def _synthesize_preferences(existing_content, new_line):
     )
     try:
         result = subprocess.run([
-            "python3", f"{BRO_IA_PATH}/question.py", prompt,
+            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
             "--temperature", "0.1", "--model", COMMAND_INTERPRETATION_MODEL,
             "--format-json",
         ], capture_output=True, text=True, timeout=30)
@@ -127,6 +132,86 @@ def _synthesize_preferences(existing_content, new_line):
         return [str(l).strip() for l in lines if str(l).strip()][:MAX_PREFERENCES_LINES]
     except Exception:
         return None
+
+PREFERENCES_HISTORY_MAX_ENTRIES = 100  # fenêtre glissante, même esprit que skill_flashmem.MAX_LINES
+
+def _preferences_history_path(owner_email):
+    return os.path.join(_owner_dir(owner_email), "identity", ".Preferences.history.jsonl")
+
+def _append_preferences_history(owner_email, before_content, trigger_line, after_lines):
+    """Journal append-only d'audit/rollback — un JSON par réécriture de
+    .Preferences.md, AVANT que celle-ci ne soit appliquée. `before_content`
+    est le contenu COMPLET précédent (jamais perdu, contrairement au fichier
+    vivant qui lui est écrasé) — voir rollback_preferences()."""
+    entry = {
+        "timestamp": _now_iso(),
+        "before": before_content,
+        "trigger_line": trigger_line,
+        "after": "\n".join(f"- {l}" for l in after_lines) + "\n",
+    }
+    path = _preferences_history_path(owner_email)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        _trim_preferences_history(path)
+    except Exception as e:
+        print(f"[BRO_WATCH] Échec journalisation historique Preferences pour {owner_email} : {e}")
+
+def _trim_preferences_history(path):
+    """Fenêtre glissante — écriture atomique (tmp+os.replace), même pattern
+    que short_memory.py/save_plan (jamais de fichier tronqué sur crash)."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = f.readlines()
+        if len(lines) <= PREFERENCES_HISTORY_MAX_ENTRIES:
+            return
+        lines = lines[-PREFERENCES_HISTORY_MAX_ENTRIES:]
+        tmp = f"{path}.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+        os.replace(tmp, path)
+    except Exception:
+        pass
+
+def list_preferences_history(owner_email, limit=10):
+    """Retourne les `limit` dernières entrées d'historique (ordre
+    chronologique croissant : la dernière de la liste est la plus récente)."""
+    path = _preferences_history_path(owner_email)
+    if not os.path.isfile(path):
+        return []
+    entries = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for raw_line in f:
+                raw_line = raw_line.strip()
+                if not raw_line:
+                    continue
+                try:
+                    entries.append(json.loads(raw_line))
+                except Exception:
+                    continue
+    except Exception:
+        return []
+    return entries[-limit:]
+
+def rollback_preferences(owner_email, steps_back=1):
+    """Restaure .Preferences.md à l'état d'AVANT la Nième réécriture la plus
+    récente (steps_back=1 -> annule la dernière mise à jour, 2 -> annule les
+    deux dernières, etc.). Écriture atomique. Retourne (ok: bool, message)."""
+    entries = list_preferences_history(owner_email, limit=steps_back)
+    if steps_back < 1 or len(entries) < steps_back:
+        return False, f"Pas assez d'historique pour remonter de {steps_back} étape(s)."
+    target = entries[-steps_back]
+    path = os.path.join(_owner_dir(owner_email), "identity", ".Preferences.md")
+    try:
+        tmp = f"{path}.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(target["before"])
+        os.replace(tmp, path)
+        return True, f"Restauré à l'état d'avant : « {target.get('trigger_line', '?')} »"
+    except Exception as e:
+        return False, f"Échec de la restauration : {e}"
 
 _IDENTITY_TEMPLATES = {
     ".Core.md": (
