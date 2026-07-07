@@ -22,12 +22,11 @@ try:
 except Exception:
     bro_user_level = None
 from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, RELAYS, _now_iso, _owner_hex
-from bro.rag import _cosine, _qdrant_embed
 from bro.media import BADGE_RUN_TIMEOUT_SEC, CRAFT_RUN_TIMEOUT_SEC, _available_scraper_domains, _extract_scraper_domain, _run_scraper_now
-from bro.identity import _dispatch_identity_update_check
+from bro.identity import _dispatch_identity_update_check, list_preferences_history, rollback_preferences
 from bro.nostr import send_dm_to_owner
 
-__all__ = ['ACTIVE_TOOLS_FILE', 'TOOLS_GENERATED_DIR', 'list_active_tools', '_extract_tool_docstring', '_call_tool', '_extract_manifest_routing_examples', '_register_arbor_tool', 'activate_tool', 'add_tool_examples', 'deactivate_tool', '_load_arbor_tools_into_registry', 'TOOL_MATCH_THRESHOLD', '_META_CAPABILITY_PHRASES', 'match_tool', '_try_registered_tools', '_slots_from_text', '_generic_slot_file', '_persist_slot_content', '_format_slot_summary', '_clear_slot', '_tool_help', '_tool_mem', '_tool_reset', '_tool_rec', '_tool_scraper', 'ACCESS_LEVEL_ATOME', 'ACCESS_LEVEL_SATELLITE', 'ACCESS_LEVEL_CAPITAINE', '_owner_access_level', '_ACCESS_LEVEL_LABEL', '_make_gated_handler', '_tool_craft', '_tool_badge', '_tool_rec_skill', '_tool_mem_skill', '_tool_mod_skill', '_tool_rm_skill', '_notify_captain_skill_contribution', '_run_skill_notify_background', '_register_system_tools']
+__all__ = ['ACTIVE_TOOLS_FILE', 'TOOLS_GENERATED_DIR', 'list_active_tools', '_extract_tool_docstring', '_call_tool', '_extract_manifest_routing_examples', '_register_arbor_tool', 'activate_tool', 'add_tool_examples', 'deactivate_tool', '_load_arbor_tools_into_registry', 'TOOL_ROUTING_MODEL', '_META_CAPABILITY_PHRASES', 'match_tool', '_try_registered_tools', '_slots_from_text', '_generic_slot_file', '_persist_slot_content', '_format_slot_summary', '_clear_slot', '_tool_help', '_tool_mem', '_tool_reset', '_tool_pref', '_tool_rec', '_tool_scraper', 'ACCESS_LEVEL_ATOME', 'ACCESS_LEVEL_SATELLITE', 'ACCESS_LEVEL_CAPITAINE', '_owner_access_level', '_ACCESS_LEVEL_LABEL', '_make_gated_handler', '_tool_craft', '_tool_badge', '_tool_rec_skill', '_tool_mem_skill', '_tool_mod_skill', '_tool_rm_skill', '_notify_captain_skill_contribution', '_run_skill_notify_background', '_register_system_tools']
 
 
 
@@ -171,8 +170,6 @@ def _load_arbor_tools_into_registry():
     for module_name, info in list_active_tools().items():
         _register_arbor_tool(module_name, info)
 
-TOOL_MATCH_THRESHOLD = 0.63
-
 _META_CAPABILITY_PHRASES = (
     "que sais-tu faire", "qu'est-ce que tu sais faire", "à quels outils",
     "a quels outils", "quelles sont tes capacités", "que peux-tu faire",
@@ -189,53 +186,79 @@ _META_CAPABILITY_PHRASES = (
     "quelle heure est il", "l'heure", "donne moi l'heure", "what time",
 )
 
+TOOL_ROUTING_MODEL = "hermes3:latest"
+
 def match_tool(text):
     """Détermine quel outil actif correspond sémantiquement à la requête,
     SANS l'exécuter — séparé de _try_registered_tools pour permettre de
-    tester le ROUTAGE seul (déterministe, pas d'appel réseau à une API
-    tierce). Retourne (module_name, score) ou None.
+    tester le ROUTAGE seul. Retourne (module_name, score) ou None.
 
-    Note d'architecture (2026-07-06) : une marge outil/négatifs-partagés
-    (même mécanisme que match_intent, cf. INTENT_SHARED_NEGATIVES) a été
-    testée empiriquement (nomic-embed-text réel) pour remplacer
-    _META_CAPABILITY_PHRASES — ABANDONNÉE : elle corrigeait bien le faux
-    positif observé ("existe-t-il une série de commandes..." → tool_meteo à
-    0.67) mais cassait aussi une VRAIE requête météo ("quel temps fait-il à
-    Lyon ?", score 0.639 contre tool_meteo mais 0.716 contre le négatif "à
-    quels outils as-tu accès ?"). nomic-embed-text ne sépare pas assez ces
-    phrases courtes pour ce couple tool/négatifs précis — contrairement aux
-    tags système, où la marge fonctionne. La liste de phrases exactes reste
-    donc le seul filtre validé sans régression pour les outils Arbor."""
+    Historique (jusqu'au 2026-07-06) : routage par similarité cosinus
+    (nomic-embed-text) entre l'embedding du texte et celui de la description
+    de chaque outil — remplacé ci-dessous par du function calling natif
+    Ollama, pour la raison suivante, vérifiée empiriquement en conditions
+    réelles : nomic-embed-text ne sépare pas assez les commandes courtes et
+    impératives pour un seuil fixe fiable. Deux faux positifs réels ont dû
+    être patchés au cas par cas (_META_CAPABILITY_PHRASES, exclusion des
+    outils déjà couverts par match_intent) plutôt que résolus structurellement
+    — "existe-t-il une série de commandes que tu comprends ?" scorait 0.67
+    contre tool_meteo, "Je veux que tu améliore ton code..." scorait 0.69.
+
+    Function calling natif : le modèle lit les VRAIES descriptions des outils
+    (jamais un texte séparé qui pourrait diverger, même principe que le reste
+    du registre bro_tools) et décide lui-même s'il y a lieu d'appeler l'un
+    d'eux — plus de calcul de distance vectorielle. Testé sur les 6 cas
+    documentés ci-dessus (0 faux positif) avec TOOL_ROUTING_MODEL.
+
+    Note modèle (2026-07-06) : COMMAND_INTERPRETATION_MODEL (qwen2.5-coder:14b)
+    déclare la capability "tools" côté Ollama mais ne renvoie JAMAIS de
+    tool_calls structurés dans cet environnement — le JSON de l'appel reste
+    piégé dans `message.content`, jamais extrait (vérifié directement contre
+    l'API Ollama, reproductible). hermes3:latest et mistral-small3.1:latest
+    fonctionnent correctement ; hermes3 retenu pour la latence (~2.5s contre
+    ~11s à froid pour un modèle 24B) — ce chemin ne s'exécute de toute façon
+    que pour des outils Arbor SANS examples encore (fenêtre transitoire avant
+    add_tool_examples), pas sur le flux conversationnel général."""
     lowered = text.strip().lower()
     if any(phrase in lowered for phrase in _META_CAPABILITY_PHRASES):
         return None
-    # Incident réel (2026-07-06) : une fois tool_meteo doté d'examples (voir
-    # add_tool_examples), il devient routable par match_intent() — MAIS
-    # restait aussi dans cette liste, donc encore exposé au seuil fixe ici en
-    # repli. Résultat observé en conditions réelles : match_intent() rejette
-    # correctement "Je veux que tu améliore ton code..." (pas de marge
-    # suffisante), le message retombe sur ce match_tool() qui, lui, l'accepte
-    # à tort (score 0.69) — appel réel à wttr.in, timeout, erreur technique
-    # brute renvoyée à l'utilisateur. Un outil déjà couvert par le mécanisme
-    # robuste ne doit plus repasser par le seuil fragile : exclusion stricte.
+    # Un outil déjà couvert par match_intent() (a des examples) ne doit pas
+    # repasser par ce mécanisme de repli — voir historique ci-dessus.
     arbor_tools = [t for t in bro_tools.all_tools() if t.source == "arbor" and not t.examples]
     if not arbor_tools:
         return None
+    tools_spec = [{
+        "type": "function",
+        "function": {
+            "name": t.name,
+            "description": t.description,
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string",
+                                          "description": "La requête de l'utilisateur"}},
+                "required": ["query"],
+            },
+        },
+    } for t in arbor_tools]
+    valid_names = {t.name for t in arbor_tools}
     try:
-        text_vec = _qdrant_embed(text)
-    except Exception:
+        import ollama
+        response = ollama.chat(
+            model=TOOL_ROUTING_MODEL,
+            messages=[{"role": "user", "content": text}],
+            tools=tools_spec,
+            options={"temperature": 0.0},
+        )
+        calls = response.get("message", {}).get("tool_calls") or []
+        if not calls:
+            return None
+        name = calls[0].get("function", {}).get("name")
+        if name in valid_names:
+            return name, 1.0
         return None
-    best_module, best_score = None, 0.0
-    for tool in arbor_tools:
-        try:
-            score = _cosine(text_vec, _qdrant_embed(tool.description))
-        except Exception:
-            continue
-        if score > best_score:
-            best_module, best_score = tool.name, score
-    if best_module and best_score >= TOOL_MATCH_THRESHOLD:
-        return best_module, best_score
-    return None
+    except Exception as e:
+        print(f"[BRO_WATCH] match_tool (function calling) indisponible : {e}")
+        return None
 
 def _try_registered_tools(owner_email, text):
     """Route vers un outil activé si sa description matche sémantiquement la
@@ -344,6 +367,26 @@ def _tool_reset(owner_email, text):
         _clear_slot(owner_email, slot)
     slots_str = ", ".join(str(s) for s in slots)
     return f"🗑️ Mémoire effacée (slot{'s' if len(slots) > 1 else ''} {slots_str})."
+
+def _tool_pref(owner_email, text):
+    """#pref history : liste les dernières mises à jour de .Preferences.md.
+    #pref rollback <n> : annule les n dernières réécritures (défaut 1).
+    Données personnelles de l'utilisateur — jamais gated, comme #rec/#reset."""
+    m = re.search(r"#pref\s+rollback(?:\s+(\d+))?", text, re.IGNORECASE)
+    if m:
+        steps = int(m.group(1)) if m.group(1) else 1
+        ok, msg = rollback_preferences(owner_email, steps)
+        return f"✅ {msg}" if ok else f"❌ {msg}"
+    if re.search(r"#pref\s+history", text, re.IGNORECASE):
+        entries = list_preferences_history(owner_email, limit=10)
+        if not entries:
+            return "📚 Aucun historique de préférences pour l'instant."
+        lines = [f"{i}. [{e.get('timestamp', '?')[:10]}] {e.get('trigger_line', '?')}"
+                 for i, e in enumerate(reversed(entries), start=1)]
+        return ("📚 Historique de vos préférences (1 = plus récente) :\n" + "\n".join(lines) +
+                "\n\nRestaurer : #pref rollback <n>  (n = nombre de mises à jour à annuler)")
+    return ("⚠️ Usage : #pref history (voir les mises à jour récentes) ou "
+            "#pref rollback <n> (annuler les n dernières, défaut 1)")
 
 def _tool_rec(owner_email, text):
     slots = _slots_from_text(text)
@@ -567,6 +610,13 @@ def _register_system_tools():
         name="reset", tags=("reset",), handler=_tool_reset,
         description="« #reset » : efface les notes mémorisées d'un slot personnel.",
         examples=("oublie tout ce qu'on s'est dit", "efface toutes mes mémoires"),
+    ))
+    bro_tools.register(bro_tools.Tool(
+        name="pref", tags=("pref",), handler=_tool_pref,
+        description="« #pref history » : liste vos dernières mises à jour de préférences (#rec durable) — "
+                     "« #pref rollback <n> » pour en annuler.",
+        examples=("montre l'historique de mes préférences", "annule la dernière mise à jour de mon profil",
+                   "reviens en arrière sur mes préférences"),
     ))
     bro_tools.register(bro_tools.Tool(
         name="rec", tags=("rec",), handler=_tool_rec,
