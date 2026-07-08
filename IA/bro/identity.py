@@ -18,6 +18,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 import observability
 from prompt_safety import wrap_untrusted
 from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, COMMAND_INTERPRETATION_MODEL, PYTHON_BIN, _now_iso, _owner_dir
+# Import direct (pas de subprocess) : question.py garde son garde `if __name__
+# == "__main__"` autour de la réinvocation venv, l'import seul ne remplace
+# donc jamais ce process — voir question.py et bro_watch_core.py.
+from question import answer_question
 
 __all__ = ['_dispatch_identity_update_check', '_check_and_update_identity', 'MAX_PREFERENCES_LINES', '_synthesize_preferences', '_IDENTITY_TEMPLATES', '_ensure_identity_templates', 'PREFERENCES_HISTORY_MAX_ENTRIES', 'list_preferences_history', 'rollback_preferences']
 
@@ -57,12 +61,9 @@ def _check_and_update_identity(owner_email, content):
         "false — mieux vaut rater une mise à jour que polluer le profil avec du bruit."
     )
     try:
-        result = subprocess.run([
-            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
-            "--temperature", "0.1", "--model", COMMAND_INTERPRETATION_MODEL,
-            "--format-json",
-        ], capture_output=True, text=True, timeout=30)
-        data = json.loads(result.stdout.strip())
+        raw = answer_question(prompt, model_name=COMMAND_INTERPRETATION_MODEL,
+                              temperature=0.1, format_json=True)
+        data = json.loads(raw.strip())
         should_update = bool(data.get("update"))
         line = (data.get("line") or "").strip()
     except Exception as e:
@@ -120,12 +121,9 @@ def _synthesize_preferences(existing_content, new_line):
         "plus importantes/récentes."
     )
     try:
-        result = subprocess.run([
-            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
-            "--temperature", "0.1", "--model", COMMAND_INTERPRETATION_MODEL,
-            "--format-json",
-        ], capture_output=True, text=True, timeout=30)
-        data = json.loads(result.stdout.strip())
+        raw = answer_question(prompt, model_name=COMMAND_INTERPRETATION_MODEL,
+                              temperature=0.1, format_json=True)
+        data = json.loads(raw.strip())
         lines = data.get("lines")
         if not isinstance(lines, list):
             return None

@@ -442,6 +442,39 @@ for PLAYER in ${PLAYERONE[@]}; do
         [[ -z "$UPLANETG1PUB" ]] && UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}" 2>/dev/null)
         [[ -z "$PAF" ]] && PAF=$(grep "^PAF=" ~/.zen/.env 2>/dev/null | cut -d'=' -f2 || echo "14")
 
+        ## ── Bulletin Capitaine : LifeOS + vrais chiffres → narration IA ──────────
+        ## Best-effort intégral : jq/python absents ou economy_health.json manquant
+        ## (station jamais passée par ECONOMY.broadcast.sh) → replis génériques,
+        ## jamais un bulletin cassé ou vide (voir templates/UPlanetZINE/day_/captain.html).
+        AI_NARRATIVE="Consultez votre dashboard economy.html pour le détail de la semaine."
+        HEALTH_LABEL="niveau non disponible"
+        WEEKS_RUNWAY="?"
+        MULTIPASS_USED="?"; MULTIPASS_CAPACITY="?"
+        ZENCARD_RENTERS="?"; ZENCARD_CAPACITY="?"
+        if [[ "$IS_CAPTAIN" == "true" ]]; then
+            ECONOMY_SNAPSHOT="$HOME/.zen/tmp/${IPFSNODEID}/economy_health.json"
+            if [[ -s "$ECONOMY_SNAPSHOT" ]] && command -v jq >/dev/null 2>&1; then
+                _status=$(jq -r '.health.status // ""' "$ECONOMY_SNAPSHOT" 2>/dev/null)
+                case "$_status" in
+                    healthy)           HEALTH_LABEL="Niveau 0 — Abondance" ;;
+                    assets_solidarity) HEALTH_LABEL="Niveau 1 — Solidarité Actifs" ;;
+                    rnd_solidarity)    HEALTH_LABEL="Niveau 2 — Solidarité R et D" ;;
+                    volunteer)         HEALTH_LABEL="Niveau 3 — Bénévolat Actif" ;;
+                esac
+                WEEKS_RUNWAY=$(jq -r '.health.weeks_runway // "?"' "$ECONOMY_SNAPSHOT" 2>/dev/null)
+                MULTIPASS_USED=$(jq -r '.capacity.multipass.used // "?"' "$ECONOMY_SNAPSHOT" 2>/dev/null)
+                MULTIPASS_CAPACITY=$(jq -r '.capacity.multipass.total // "?"' "$ECONOMY_SNAPSHOT" 2>/dev/null)
+                ZENCARD_RENTERS=$(jq -r '.capacity.zencard.renters // "?"' "$ECONOMY_SNAPSHOT" 2>/dev/null)
+                ZENCARD_CAPACITY=$(jq -r '.capacity.zencard.total // "?"' "$ECONOMY_SNAPSHOT" 2>/dev/null)
+            fi
+
+            NARRATIVE_SCRIPT="${MY_PATH}/../IA/captain_bulletin_narrative.py"
+            if [[ -f "$NARRATIVE_SCRIPT" ]]; then
+                _generated=$(python3 "$NARRATIVE_SCRIPT" --email "${PLAYER}" --ipfsnodeid "${IPFSNODEID}" 2>/dev/null)
+                [[ -n "$_generated" ]] && AI_NARRATIVE="$_generated"
+            fi
+        fi
+
         cat ${TODAYZINE} \
             | sed -e "s~_MOATS_~${MOATS}~g" \
                 -e "s~_PLAYER_~${PLAYER}~g" \
@@ -457,6 +490,13 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_SLON_~${SLON}~g" \
                 -e "s~_SALT_~[PROTECTED]~g" \
                 -e "s~_PEPPER_~[PROTECTED]~g" \
+                -e "s~_AI_NARRATIVE_~${AI_NARRATIVE}~g" \
+                -e "s~_HEALTH_LABEL_~${HEALTH_LABEL}~g" \
+                -e "s~_WEEKS_RUNWAY_~${WEEKS_RUNWAY}~g" \
+                -e "s~_MULTIPASS_USED_~${MULTIPASS_USED}~g" \
+                -e "s~_MULTIPASS_CAPACITY_~${MULTIPASS_CAPACITY}~g" \
+                -e "s~_ZENCARD_RENTERS_~${ZENCARD_RENTERS}~g" \
+                -e "s~_ZENCARD_CAPACITY_~${ZENCARD_CAPACITY}~g" \
                 > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
         ${MY_PATH}/../tools/mailjet.sh --channel zine --template "${TODAYZINE}" --expire 48h "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \

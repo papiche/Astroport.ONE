@@ -20,6 +20,8 @@
 # - Publie via /webcam (NIP-71 kind 21/22)
 # - Organise automatiquement dans uDRIVE/Videos/ via /api/fileupload
 # - Met à jour le fichier de dernière synchronisation
+# - Publie l'historique de visionnage en traces NOSTR (Kind 10600, #t=atom4love)
+#   pour le matching LOVE/MUSE (voir sync_youtube_history_traces)
 ########################################################################
 
 # Enhanced logging setup
@@ -1636,6 +1638,131 @@ sync_youtube_channels() {
     return 0
 }
 
+# Fonction de synchronisation de l'historique de visionnage vers des traces
+# NOSTR (Kind 10600, #t=atom4love) — alimente le score "traces communes" du
+# matching LOVE/MUSE (love_handler.sh::_love_trace_score) : deux profils qui
+# ont regardé les mêmes vidéos révèlent une affinité que ni les intérêts
+# déclarés ni le KIN ne capturent. Même forme d'évènement que la construction
+# côté navigateur (atom4love-ext::stampPage(), earth/astro.js::uPlanetAnalytics
+# — kind 10600, tags t=analytics/atom4love/trace + url) : la lecture côté
+# matching (_love_get_traces) n'a besoin d'aucune modification.
+# Best-effort : ne fait JAMAIS échouer le script (comme sync_youtube_channels).
+sync_youtube_history_traces() {
+    local player="$1"
+    local cookie_file="$2"
+
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube watch-history trace sync for $player" >&2
+    log_debug "Starting YouTube watch-history trace sync for $player"
+
+    local secret_nostr_file="$HOME/.zen/game/nostr/${player}/.secret.nostr"
+    local nostr_send_script="${HOME}/.zen/Astroport.ONE/tools/nostr_send_note.py"
+    local nostr_relay="${myRELAY:-ws://127.0.0.1:7777}"
+    if [[ ! -f "$secret_nostr_file" || ! -f "$nostr_send_script" ]]; then
+        log_debug "Missing .secret.nostr or nostr_send_note.py for $player — skipping trace sync"
+        return 0
+    fi
+
+    # Historique privé (nécessite les cookies, comme la playlist "likes" list=LL).
+    # --flat-playlist : id seul par vidéo, sans requête individuelle (léger).
+    # --playlist-end : bornée pour rester rapide sur un run quotidien.
+    local max_fetch="${MAX_HISTORY_FETCH:-100}"
+    local yt_dlp_stderr_file="$HOME/.zen/tmp/yt_dlp_history_stderr_$$.txt"
+    local history_lines
+    history_lines=$(timeout 60 yt-dlp \
+        $YT_PLAYLIST_EXTRACTOR_ARGS \
+        --cookies "$cookie_file" \
+        --flat-playlist \
+        --print '%(id)s' \
+        --playlist-end "$max_fetch" \
+        --no-warnings \
+        --ignore-errors \
+        -- "https://www.youtube.com/feed/history" 2>"$yt_dlp_stderr_file")
+    local exit_code=$?
+
+    if [[ $exit_code -ne 0 && -s "$yt_dlp_stderr_file" ]]; then
+        log_debug "yt-dlp history stderr: $(tail -5 "$yt_dlp_stderr_file")"
+    fi
+    rm -f "$yt_dlp_stderr_file"
+
+    # Ne garder que les lignes ressemblant à un vrai ID vidéo (11 caractères) —
+    # défense en profondeur contre toute sortie inattendue de yt-dlp avant
+    # construction de l'URL/tags publiés en NOSTR.
+    history_lines=$(echo "$history_lines" | grep -E '^[a-zA-Z0-9_-]{11}$')
+    if [[ -z "$history_lines" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ No watch-history entries retrieved for $player (cookie expired, history private, or empty) — skipping" >&2
+        log_debug "No watch-history entries for $player"
+        return 0
+    fi
+
+    # Cache de dédoublonnage local — une même vidéo n'est publiée qu'une fois ;
+    # la republier à chaque run serait du bruit pur pour le relais (le score
+    # de matching ne compte que la présence, pas le nombre d'occurrences).
+    local seen_dir="$HOME/.zen/flashmem/${player}/love"
+    mkdir -p "$seen_dir"
+    local seen_file="$seen_dir/yt_traces_seen.json"
+    [[ -s "$seen_file" ]] || echo "[]" > "$seen_file"
+
+    declare -A seen_map=()
+    while IFS= read -r sid; do
+        [[ -n "$sid" ]] && seen_map["$sid"]=1
+    done < <(python3 -c "
+import json
+try:
+    for x in json.load(open('$seen_file')): print(x)
+except Exception:
+    pass
+" 2>/dev/null)
+
+    local max_new="${MAX_HISTORY_TRACES_PER_RUN:-30}"
+    local published=0
+    local newly_seen=()
+
+    while IFS= read -r vid; do
+        [[ -z "$vid" ]] && continue
+        [[ -n "${seen_map[$vid]:-}" ]] && continue
+        [[ $published -ge $max_new ]] && break
+
+        local video_url="https://www.youtube.com/watch?v=${vid}"
+        local trace_content
+        trace_content=$(python3 -c "
+import json,sys
+print(json.dumps({'type':'page_trace','source':'youtube_history','url':sys.argv[1]}, ensure_ascii=False))
+" "$video_url")
+        local trace_tags='[["t","analytics"],["t","atom4love"],["t","trace"],["url","'"${video_url}"'"]]'
+
+        if timeout 15 python3 "$nostr_send_script" \
+            --keyfile "$secret_nostr_file" \
+            --content "$trace_content" \
+            --kind 10600 \
+            --tags "$trace_tags" \
+            --relays "$nostr_relay" \
+            >/dev/null 2>>"$LOGFILE"; then
+            newly_seen+=("$vid")
+            published=$((published + 1))
+        else
+            log_debug "Failed to publish trace for $video_url"
+        fi
+    done <<< "$history_lines"
+
+    if [[ ${#newly_seen[@]} -gt 0 ]]; then
+        python3 -c "
+import json,sys
+f = sys.argv[1]
+try:
+    seen = json.load(open(f))
+except Exception:
+    seen = []
+seen.extend(sys.argv[2:])
+seen = seen[-2000:]
+json.dump(seen, open(f, 'w'), ensure_ascii=False)
+" "$seen_file" "${newly_seen[@]}"
+    fi
+
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Watch-history trace sync completed: $published new trace(s) published for $player" >&2
+    log_debug "Watch-history trace sync completed for $player: $published new trace(s)"
+    return 0
+}
+
 # Fonction d'envoi de notification par email
 send_sync_notification() {
     local player="$1"
@@ -1934,6 +2061,12 @@ fi
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube channels synchronization (best-effort)..." >&2
 sync_youtube_channels "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE" || \
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: channels sync encountered errors (ignored)" >&2
+
+# Traces de visionnage pour le matching LOVE/MUSE (Kind 10600) — best-effort :
+# ne modifie JAMAIS le code de sortie du script (comme les chaînes suivies).
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube watch-history trace sync (best-effort)..." >&2
+sync_youtube_history_traces "$PLAYER" "$COOKIE_FILE" || \
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: watch-history trace sync encountered errors (ignored)" >&2
 
 if [[ $sync_exit_code -eq 0 ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: YouTube likes sync completed successfully for $PLAYER" >&2

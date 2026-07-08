@@ -1685,9 +1685,7 @@ _constellation_subscriber_loop() {
                 [[ "${_ts:-0}" -gt "$_max_ts" ]] && _max_ts="$_ts"
                 [[ -n "$_eid" ]] && _new_ids="${_new_ids}${_eid},"
                 (( _count++ ))
-            done < <(python3 -c \
-                "import json,sys; [print(json.dumps(e)) for e in json.loads(sys.stdin.read() or '[]')]" \
-                <<< "$_decoded_json" 2>/dev/null)
+            done < <(jq -c '.[]' <<< "$_decoded_json" 2>/dev/null)
 
             if [[ "$_count" -gt 0 ]]; then
                 _log "🌐 ${_count} DM(s) constellation reçu(s) → queue"

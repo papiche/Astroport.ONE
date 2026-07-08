@@ -21,6 +21,11 @@
     </p>
   </header>
 
+  <section class="zine-page page-1b" style="background:#e8f0fe; padding:0.6rem 0.8rem; border-radius:4px;">
+    <h2 style="margin-top:0">🤖 Le mot de BRO</h2>
+    <p>_AI_NARRATIVE_</p>
+  </section>
+
   <section class="zine-page page-2">
     <h2>🩺 Santé de votre station</h2>
     <p>Vérifiez l'état en temps réel depuis votre terminal :</p>
@@ -67,7 +72,10 @@ docker compose logs -f --tail=20</code></pre>
       <li class="zine-li">🔬 <strong>Niveau 2 — Solidarité R&amp;D</strong> : ASSETS épuisés → le budget R&amp;D couvre</li>
       <li class="zine-li">❤️ <strong>Niveau 3 — Bénévolat Actif</strong> : don du Capitaine aux Communs → <em>Ğ1=Liberté · Ẑen=Égalité · ❤️=Fraternité</em></li>
     </ul>
-    <p style="font-size:85%">Le niveau actuel est visible dans votre dashboard <code>economy.html</code>.</p>
+    <p style="font-size:90%; background:#fff2cc; padding:0.4rem">
+      📍 <strong>Cette semaine :</strong> _HEALTH_LABEL_ — autonomie estimée à <strong>_WEEKS_RUNWAY_ semaine(s)</strong>.
+    </p>
+    <p style="font-size:85%">Détail complet dans votre dashboard <code>economy.html</code>.</p>
   </section>
 
   <section class="zine-page page-3c">
@@ -87,6 +95,10 @@ docker compose logs -f --tail=20</code></pre>
 
   <section class="zine-page page-4">
     <h2>👥 Vos utilisateurs actifs</h2>
+    <p style="font-size:90%; background:#c9daf8; padding:0.4rem">
+      🆓 <strong>MULTIPASS</strong> : _MULTIPASS_USED_ / _MULTIPASS_CAPACITY_ &nbsp;·&nbsp;
+      ☁️ <strong>ZEN Card</strong> : _ZENCARD_RENTERS_ / _ZENCARD_CAPACITY_
+    </p>
     <p>Pour voir qui est actif sur votre station :</p>
     <pre><code class="language-bash"># Liste des joueurs locaux
 ls ~/.zen/game/players/

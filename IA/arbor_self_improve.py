@@ -50,12 +50,16 @@ Usage :
                                                    # notifie le capitaine des patterns récurrents
 """
 
-# Auto-reinvocation dans le venv ~/.astro/ si dépendances absentes
+# Auto-reinvocation dans le venv ~/.astro/ si dépendances absentes — UNIQUEMENT
+# en exécution directe (`__main__`), jamais au simple import (même garde et
+# même raison que question.py : un import ne doit jamais remplacer le process
+# appelant via execv).
 import sys as _sys
 import os as _os
-_venv_python = _os.path.expanduser("~/.astro/bin/python3")
-if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
-    _os.execv(_venv_python, [_venv_python] + _sys.argv)
+if __name__ == "__main__":
+    _venv_python = _os.path.expanduser("~/.astro/bin/python3")
+    if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
+        _os.execv(_venv_python, [_venv_python] + _sys.argv)
 del _sys, _os
 
 import sys
@@ -78,6 +82,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests"))
 import bro_watch_core as bwc
 from eval_command_interpretation import run_eval
+from question import answer_question  # import direct — voir question.py (garde __main__)
 
 REPO_ROOT = os.path.expanduser("~/.zen/Astroport.ONE")
 BRANCH_PREFIX = "arbor/bro-cmd-interp"
@@ -409,12 +414,8 @@ def _summarize_tool_cluster(sample_texts):
         "révèlent-elles ? Réponds uniquement par cette phrase, sans préambule."
     )
     try:
-        result = subprocess.run(
-            [bwc.PYTHON_BIN, os.path.join(REPO_ROOT, "IA", "question.py"), prompt,
-             "--temperature", "0.2", "--max-tokens", "100"],
-            capture_output=True, text=True, timeout=30,
-        )
-        return result.stdout.strip() or "(résumé indisponible)"
+        answer = answer_question(prompt, temperature=0.2, max_tokens=100)
+        return (answer.strip() if answer else "") or "(résumé indisponible)"
     except Exception:
         return "(résumé indisponible)"
 

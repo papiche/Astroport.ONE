@@ -347,6 +347,21 @@ def _bwrap_available():
     return which("bwrap") is not None
 
 
+def _prlimit_available():
+    from shutil import which
+    return which("prlimit") is not None
+
+
+# bwrap isole réseau/filesystem mais ne plafonne ni mémoire ni nombre de
+# process : un test généré par IA qui alloue en boucle peut faire OOM-killer
+# la station entière (pas juste le sandbox) avant que le timeout de 60s
+# n'intervienne. prlimit pose ces limites au niveau rlimit — héritées par
+# bwrap et tous ses enfants (pytest, sous-process) — sans dépendre d'un
+# service systemd --user (souvent absent sur nœuds légers / conteneurs).
+_SANDBOX_MEM_LIMIT_BYTES = 512 * 1024 * 1024
+_SANDBOX_NPROC_LIMIT = 64
+
+
 def _run_pytest_in_worktree(worktree_path, test_file_abs, extra_pythonpath):
     """Exécute pytest isolé via bubblewrap (bwrap) — le garde-fou statique
     (_static_safety_check) ne bloque que des patterns textuels évidents et est
@@ -357,7 +372,9 @@ def _run_pytest_in_worktree(worktree_path, test_file_abs, extra_pythonpath):
     generate_test_code) — bloque aussi une éventuelle exfiltration.
     --ro-bind sur les libs système : rien d'écrivable hors le worktree lui-même.
     Pas de bind sur $HOME/~/.zen/le reste du dépôt : le code généré n'y a pas
-    accès. --die-with-parent : pas de processus orphelin si pytest timeout."""
+    accès. --die-with-parent : pas de processus orphelin si pytest timeout.
+    prlimit (si disponible) plafonne mémoire et nombre de process — voir
+    _SANDBOX_MEM_LIMIT_BYTES."""
     if not _bwrap_available():
         return False, ("bwrap introuvable — bubblewrap est requis pour exécuter le code généré "
                         "de façon isolée (apt install bubblewrap). Rien n'est exécuté sans sandbox.")
@@ -387,9 +404,16 @@ def _run_pytest_in_worktree(worktree_path, test_file_abs, extra_pythonpath):
         "--",
         python_bin, "-m", "pytest", test_file_abs, "-v", "--tb=short",
     ]
+    mem_capped = _prlimit_available()
+    if mem_capped:
+        cmd = ["prlimit", f"--as={_SANDBOX_MEM_LIMIT_BYTES}",
+               f"--nproc={_SANDBOX_NPROC_LIMIT}", "--"] + cmd
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, env=env)
-        return result.returncode == 0, (result.stdout + result.stderr)
+        output = result.stdout + result.stderr
+        if not mem_capped:
+            output += "\n[garde-fou] prlimit introuvable — test exécuté sans plafond mémoire/process (apt install util-linux)."
+        return result.returncode == 0, output
     except subprocess.TimeoutExpired:
         return False, "Timeout (60s) — le test ou l'outil a probablement bloqué (réseau sans timeout ?)"
     except Exception as e:

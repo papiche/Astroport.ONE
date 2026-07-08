@@ -291,8 +291,11 @@ bro_load_user_keys() {
 
 ########################################################################
 # bro_resolve_email HEX_PUBKEY
-#   Cherche l'email associé au hex dans ~/.zen/game/nostr/*/HEX.
-#   Retourne chaîne vide si inconnu sur cette station.
+#   Cherche l'email associé au hex dans ~/.zen/game/nostr/*/HEX, puis (si
+#   absent) dans ~/.zen/game/nostr/*/HEX_LOVE — la clé LOVE dédiée dérivée
+#   par atom4love_publish.py (.secret.love), utilisée pour signer le canal
+#   DM "LOVE" et le kind 30078 d=atom4love. Retourne chaîne vide si inconnu
+#   sur cette station.
 #   Préfère un répertoire nommé comme un email réel (contient "@") : des
 #   alias non-canoniques comme CAPTAIN/ peuvent porter le même HEX sans
 #   avoir de .secret.nostr correspondant (copie partielle) — matcher un tel
@@ -305,6 +308,10 @@ bro_resolve_email() {
     _hex_file=$(grep -rl "^${_hex}$" "$HOME/.zen/game/nostr/"*"@"*"/HEX" 2>/dev/null | head -1)
     [[ -z "$_hex_file" ]] && \
         _hex_file=$(grep -rl "^${_hex}$" "$HOME/.zen/game/nostr/"*"/HEX" 2>/dev/null | head -1)
+    [[ -z "$_hex_file" ]] && \
+        _hex_file=$(grep -rl "^${_hex}$" "$HOME/.zen/game/nostr/"*"@"*"/HEX_LOVE" 2>/dev/null | head -1)
+    [[ -z "$_hex_file" ]] && \
+        _hex_file=$(grep -rl "^${_hex}$" "$HOME/.zen/game/nostr/"*"/HEX_LOVE" 2>/dev/null | head -1)
     [[ -n "$_hex_file" ]] && basename "$(dirname "$_hex_file")" || echo ""
 }
 

@@ -58,6 +58,12 @@ import bro_tools
 import observability
 import algorithm_planner as aplan
 from prompt_safety import wrap_untrusted
+# Import direct (pas de subprocess) : question.py garde son garde `if __name__
+# == "__main__"` autour de la réinvocation venv (voir question.py), l'import
+# seul ne remplace donc jamais ce process. Économise l'overhead d'un
+# interpréteur Python complet (~1-3s) à chaque appel Ollama.
+from question import answer_question
+import memory_manager as mm  # stdlib pur (urllib), aucun risque de réinvocation venv
 
 from bro._shared import *
 from bro.nostr import *
@@ -100,15 +106,207 @@ def learn_from_message(owner_email, entry, account, channel, text):
         + "\n\nExtrait 5 à 10 mots-clés ou thèmes qui reviennent, en français, "
           "sous forme de liste séparée par des virgules, sans phrase d'introduction, sans numérotation."
     )
-    result = subprocess.run([
-        PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt
-    ], capture_output=True, text=True)
-    raw = result.stdout.strip()
+    raw = answer_question(prompt) or ""
     learned = sorted({k.strip().lower() for k in raw.replace("\n", ",").split(",") if k.strip()})
 
     print(f"[BRO_WATCH] Mots-clés appris pour {owner_email} — {account}/{channel} : {learned}")
     update_watch_entry(owner_email, account, channel, learn_messages=messages, learned_keywords=learned)
     return learned
+
+# ── Apprentissage passif du profil LifeOS depuis les réseaux sociaux ────────
+# À partir des messages PUBLICS que le propriétaire a lui-même postés (jamais
+# ceux d'autrui — voir own_posts dans scraper_mastodon.py), alimente
+# identity/.Preferences.md via le pipeline déjà éprouvé pour les mises à jour
+# issues de #rec (_check_and_update_identity : classification + synthèse/merge/
+# historique-rollback). BRO n'entretient volontairement AUCUNE identité
+# parallèle : le profil LOVE (love/profile.json bio+interests, utilisé par le
+# matching) est un simple CACHE dérivé de ce même profil LifeOS — voir
+# sync_love_profile_from_identity, appelée juste après une mise à jour réussie.
+PERSONALITY_MIN_NEW_POSTS = 3   # attendre assez de matière fraîche avant d'appeler l'IA
+PERSONALITY_MAX_POSTS     = 15  # borné : un run quotidien n'a pas besoin de tout l'historique
+
+def _social_learned_seen_path(owner_email):
+    identity_dir = os.path.join(_owner_dir(owner_email), "identity")
+    os.makedirs(identity_dir, exist_ok=True)
+    return os.path.join(identity_dir, ".social_learned_seen.json")
+
+def _load_personality_seen(owner_email):
+    try:
+        with open(_social_learned_seen_path(owner_email)) as f:
+            return set(json.load(f))
+    except Exception:
+        return set()
+
+def _save_personality_seen(owner_email, seen):
+    with open(_social_learned_seen_path(owner_email), "w") as f:
+        json.dump(list(seen)[-2000:], f, ensure_ascii=False)
+
+def learn_personality_from_posts(owner_email, posts, source_label="réseau social", force=False):
+    """Déduit des centres d'intérêt récurrents depuis des posts publics du
+    propriétaire et les confie à identity/.Preferences.md (profil LifeOS,
+    cf. bro.identity._check_and_update_identity) — jamais un stockage
+    parallèle. Best-effort, jamais bloquant.
+
+    force=True : déclenchement manuel explicite (bouton "Régénérer depuis
+    Mastodon") — ignore le dédoublonnage (réutilise même des posts déjà vus)
+    et le seuil PERSONALITY_MIN_NEW_POSTS (1 post suffit), puisque
+    l'utilisateur demande explicitement une régénération immédiate plutôt
+    que d'attendre l'accumulation passive du prochain run quotidien."""
+    if not posts:
+        return
+
+    seen = _load_personality_seen(owner_email)
+    fresh = []
+    for p in posts:
+        text = (p.get("text") or "").strip()
+        if not text:
+            continue
+        key = p.get("url") or text[:120]
+        if not force and key in seen:
+            continue
+        seen.add(key)
+        fresh.append(text)
+
+    min_required = 1 if force else PERSONALITY_MIN_NEW_POSTS
+    if len(fresh) < min_required:
+        # Pas assez de nouvelle matière ce run-ci — les clés déjà vues sont
+        # conservées (jamais deux fois le même post) ; on retente demain avec
+        # ce qui se sera accumulé.
+        _save_personality_seen(owner_email, seen)
+        return
+
+    sample = fresh[:PERSONALITY_MAX_POSTS]
+    prompt = (
+        "Voici des messages publics écrits par une personne sur les réseaux sociaux :\n\n"
+        + "\n".join(f"- {t[:280]}" for t in sample)
+        + "\n\nDéduis, dans un style neutre et respectueux (jamais intrusif, ne devine "
+          "rien de privé ou de sensible), 3 à 6 centres d'intérêt qui reviennent "
+          "(mots simples, en français).\n\n"
+          'Réponds UNIQUEMENT en JSON strict : {"interests": ["...", "..."]}'
+    )
+    try:
+        raw = answer_question(prompt, temperature=0.3, format_json=True)
+        data = json.loads(raw.strip())
+        interests = sorted({i.strip().lower() for i in data.get("interests", [])
+                             if isinstance(i, str) and i.strip()})
+    except Exception as e:
+        print(f"[BRO_WATCH] Apprentissage personnalité ({source_label}) échoué pour {owner_email} : {e}")
+        _save_personality_seen(owner_email, seen)
+        return
+
+    if interests:
+        # Réutilise le pipeline identité existant (classification puis
+        # synthèse/merge/historique dans identity/.Preferences.md) — même
+        # chemin que celui déclenché par un #rec explicite, ici pour un
+        # signal observé passivement plutôt que confié directement.
+        content = f"Sur {source_label}, s'exprime régulièrement sur : {', '.join(interests)}."
+        _check_and_update_identity(owner_email, content)
+        sync_love_profile_from_identity(owner_email)
+
+    # Mémoire sémantique LOVE (love_{hex16}) — matière brute pour le matching
+    # MUSE (résonance poétique, cf. memory_manager.py::love_resonance) et la
+    # recherche contextuelle (_love_query). Ceci reste un JOURNAL de recherche,
+    # pas un profil structuré : aucune duplication avec identity ci-dessus.
+    for text in sample[:5]:  # borné : pas plus de 5 upserts Qdrant par run
+        try:
+            mm.upsert_love_mem(owner_email, text[:400])
+        except Exception:
+            pass
+
+    _save_personality_seen(owner_email, seen)
+
+_IDENTITY_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+def _read_identity_text(owner_email, filename):
+    """Lit un template identity/ en retirant le commentaire d'instructions
+    par défaut (<!-- ... -->) — sans ça, un template jamais rempli par
+    l'utilisateur renvoie ces instructions comme s'il s'agissait de contenu."""
+    path = os.path.join(_owner_dir(owner_email), "identity", filename)
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = f.read()
+    except Exception:
+        return ""
+    return _IDENTITY_COMMENT_RE.sub("", raw).strip()
+
+def sync_love_profile_from_identity(owner_email):
+    """Aligne love/profile.json (bio + interests, consommé par le matching
+    LOVE/MUSE) sur le profil LifeOS (identity/.Core.md + .Preferences.md) —
+    LOVE ne maintient plus sa propre identité parallèle, il consomme celle
+    déjà entretenue par BRO (via #rec, l'apprentissage passif réseaux sociaux,
+    ou une édition manuelle des templates).
+
+    Garde-fou coût/dérive : un hash SHA256 du texte identity (stocké dans
+    profile.json["_source_hash"]) évite de rappeler Ollama si rien n'a changé
+    depuis la dernière synchro — sans ça, chaque refresh (quotidien, appel
+    manuel #love_status...) relance une extraction LLM pour rien.
+
+    .Preferences.md étant la source de vérité, les intérêts sont ÉCRASÉS
+    (jamais fusionnés en union) : sinon un intérêt retiré par l'utilisateur
+    ("je n'aime plus le football") resterait éternellement dans le cache
+    LOVE. La bio n'est comblée que si vide (elle reste un choix explicite
+    possible via #love_profile, jamais écrasée automatiquement).
+    Best-effort, jamais bloquant."""
+    identity_text = "\n".join(filter(None, (
+        _read_identity_text(owner_email, ".Core.md"),
+        _read_identity_text(owner_email, ".Preferences.md"),
+    ))).strip()
+    if not identity_text:
+        return
+
+    source_hash = hashlib.sha256(identity_text.encode("utf-8")).hexdigest()
+
+    love_dir = os.path.join(os.path.expanduser("~/.zen/flashmem"), owner_email, "love")
+    os.makedirs(love_dir, exist_ok=True)
+    profile_path = os.path.join(love_dir, "profile.json")
+    try:
+        with open(profile_path) as f:
+            profile = json.load(f)
+    except Exception:
+        profile = {}
+
+    if profile.get("_source_hash") == source_hash:
+        # Identity inchangée depuis la dernière synchro — aucun appel Ollama.
+        return
+
+    prompt = (
+        "Voici le profil identitaire d'un utilisateur (notes libres + préférences durables) :\n\n"
+        f"{identity_text[:2000]}\n\n"
+        "Déduis, dans un style neutre et respectueux :\n"
+        "1. 3 à 6 centres d'intérêt (mots simples, en français)\n"
+        "2. Une courte bio à la 3e personne (1-2 phrases, ton chaleureux) — chaîne vide "
+        "si rien de descriptif n'est présent\n\n"
+        'Réponds UNIQUEMENT en JSON strict : {"interests": ["...", "..."], "bio": "..."}'
+    )
+    try:
+        raw = answer_question(prompt, temperature=0.2, format_json=True)
+        data = json.loads(raw.strip())
+    except Exception as e:
+        print(f"[BRO_WATCH] Synchronisation profil LOVE↔identity échouée pour {owner_email} : {e}")
+        return
+
+    interests = sorted({i.strip().lower() for i in data.get("interests", [])
+                         if isinstance(i, str) and i.strip()})
+    bio = (data.get("bio") or "").strip()
+
+    changed = False
+    if bio and not profile.get("bio"):
+        profile["bio"] = bio
+        changed = True
+    if interests != sorted(profile.get("interests", []) or []):
+        profile["interests"] = interests
+        changed = True
+
+    # Le hash est mémorisé même si bio/interests n'ont finalement pas bougé
+    # (ex: extraction vide) — sans ça, un profil pauvre en signal relancerait
+    # Ollama à chaque refresh au lieu de se stabiliser une fois pour toutes.
+    profile["_source_hash"] = source_hash
+    with open(profile_path, "w") as f:
+        json.dump(profile, f, ensure_ascii=False)
+    os.chmod(profile_path, 0o600)
+    if changed:
+        print(f"[BRO_WATCH] Profil LOVE synchronisé depuis identity pour {owner_email} "
+              f"({len(interests)} intérêt(s))")
 
 def _timeline_always_alert_enabled(owner_email):
     """Préférence capitaine (fichier .mailjet, mêmes préférences que les
@@ -184,10 +382,8 @@ def generate_suggestion(context_label, username, text, examples=None,
         f"{examples_block}\n\n"
         "Propose une réponse brève et appropriée."
     )
-    result = subprocess.run([
-        PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt
-    ], capture_output=True, text=True)
-    return result.stdout.strip() or "(BRO n'a pas pu générer de suggestion.)"
+    answer = answer_question(prompt)
+    return (answer.strip() if answer else "") or "(BRO n'a pas pu générer de suggestion.)"
 
 FEEDBACK_WINDOW_DAYS = 5
 
@@ -448,11 +644,8 @@ def interpret_command_with_context(text, context_summary, pending_line="", model
     (contexte figé, reproductible, comparaison inter-modèles)."""
     prompt = _build_interpretation_prompt(text, context_summary, pending_line)
     try:
-        result = subprocess.run([
-            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
-            "--temperature", "0.1", "--model", model or COMMAND_INTERPRETATION_MODEL,
-            "--format-json",
-        ], capture_output=True, text=True, timeout=60)
+        raw = answer_question(prompt, model_name=model or COMMAND_INTERPRETATION_MODEL,
+                              temperature=0.1, format_json=True) or ""
     except Exception:
         return None
 
@@ -460,10 +653,10 @@ def interpret_command_with_context(text, context_summary, pending_line="", model
     # direct en priorité ; la regex ne sert plus que de repli pour un modèle
     # qui ignorerait la contrainte ou une sortie stdout parasite (log, etc.).
     try:
-        return json.loads(result.stdout.strip())
+        return json.loads(raw.strip())
     except Exception:
         pass
-    match = re.search(r"\{.*\}", result.stdout, re.DOTALL)
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
     if not match:
         return None
     try:
@@ -914,12 +1107,9 @@ def _evaluate_and_correct_draft(owner_email, text, draft_answer, hallucinated_ta
         "longueur comparable), jamais juste un fragment."
     )
     try:
-        result = subprocess.run([
-            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
-            "--temperature", "0.1", "--model", COMMAND_INTERPRETATION_MODEL,
-            "--format-json", "--max-tokens", "400", "--ctx", "8192",
-        ], capture_output=True, text=True, timeout=30)
-        data = json.loads(result.stdout.strip())
+        raw = answer_question(prompt, model_name=COMMAND_INTERPRETATION_MODEL,
+                              temperature=0.1, format_json=True, max_tokens=400, ctx=8192)
+        data = json.loads(raw.strip())
         valid = bool(data.get("valid"))
         correction = (data.get("correction") or "").strip()
         if valid and hallucinated_tags:
@@ -968,13 +1158,8 @@ def _conversational_reply(owner_email, text, img_url=None):
     )
     _t0 = time.monotonic()
     try:
-        result = subprocess.run(
-            [PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
-             "--user-id", owner_email, "--slot", str(BRO_MEMORY_SLOT),
-             "--temperature", "0.4", "--max-tokens", "300", "--ctx", "8192"],
-            capture_output=True, text=True, timeout=45,
-        )
-        answer = result.stdout.strip()
+        answer = (answer_question(prompt, user_id=owner_email, slot=BRO_MEMORY_SLOT,
+                                  temperature=0.4, max_tokens=300, ctx=8192) or "").strip()
     except Exception:
         answer = ""
     observability.log_event(owner_email, "conversational_llm", "zero_shot_reply",
@@ -1023,7 +1208,7 @@ def _conversational_reply(owner_email, text, img_url=None):
 def classify_request_complexity(text):
     """Classification MINIMAL/ALGORITHM d'une requête en langage libre — un
     seul appel LLM fermé (--format-json), même pattern que
-    interpret_command_with_context (subprocess vers question.py, modèle de
+    interpret_command_with_context (answer_question, modèle de
     classification partagé). MINIMAL : une réponse directe zero-shot suffit.
     ALGORITHM : la requête implique plusieurs actions distinctes et
     séquentielles (chercher PUIS résumer, comparer PUIS conclure...) qui
@@ -1045,12 +1230,9 @@ def classify_request_complexity(text):
         "étapes indépendantes apporte de la valeur — dans le doute, choisis MINIMAL."
     )
     try:
-        result = subprocess.run([
-            PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
-            "--temperature", "0.1", "--model", COMMAND_INTERPRETATION_MODEL,
-            "--format-json",
-        ], capture_output=True, text=True, timeout=30)
-        data = json.loads(result.stdout.strip())
+        raw = answer_question(prompt, model_name=COMMAND_INTERPRETATION_MODEL,
+                              temperature=0.1, format_json=True)
+        data = json.loads(raw.strip())
         mode = data.get("mode")
         steps = data.get("steps") or []
         if mode == "ALGORITHM" and isinstance(steps, list) and 2 <= len(steps) <= 6:
@@ -1096,12 +1278,7 @@ def _run_algorithm_step(step, plan, owner_email):
         "Réponds de façon concise et factuelle, uniquement le résultat de cette étape."
     )
     try:
-        result = subprocess.run(
-            [PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
-             "--temperature", "0.3", "--max-tokens", "400", "--ctx", "8192"],
-            capture_output=True, text=True, timeout=60,
-        )
-        answer = result.stdout.strip()
+        answer = (answer_question(prompt, temperature=0.3, max_tokens=400, ctx=8192) or "").strip()
         return bool(answer), (answer or "Aucune réponse générée.")
     except Exception as e:
         return False, f"Erreur : {e}"
@@ -1124,13 +1301,8 @@ def _synthesize_algorithm_answer(owner_email, plan):
         "fait d'avoir suivi un plan en plusieurs étapes."
     )
     try:
-        result = subprocess.run(
-            [PYTHON_BIN, f"{BRO_IA_PATH}/question.py", prompt,
-             "--user-id", owner_email, "--slot", str(BRO_MEMORY_SLOT),
-             "--temperature", "0.4", "--max-tokens", "400", "--ctx", "8192"],
-            capture_output=True, text=True, timeout=45,
-        )
-        answer = result.stdout.strip()
+        answer = (answer_question(prompt, user_id=owner_email, slot=BRO_MEMORY_SLOT,
+                                  temperature=0.4, max_tokens=400, ctx=8192) or "").strip()
     except Exception:
         answer = ""
     return answer or ("J'ai bien avancé sur ta demande mais je n'arrive pas à en faire une synthèse "

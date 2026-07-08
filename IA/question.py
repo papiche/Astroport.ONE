@@ -10,12 +10,18 @@ Sources de contexte (priorité décroissante, toutes cumulables) :
   5. Pubkey memory   --pubkey <hex>   → ~/.zen/flashmem/uplanet_memory/pubkey/<hex>.json
 """
 
-# Auto-reinvocation dans le venv ~/.astro/ si dépendances absentes
+# Auto-reinvocation dans le venv ~/.astro/ si dépendances absentes — UNIQUEMENT
+# en exécution directe (`__main__`), jamais au simple import : un appelant qui
+# importerait ce module (ex. bro_watch_core.py pour appeler get_ollama_answer
+# sans passer par un sous-processus) verrait sinon TOUT SON PROCESS remplacé
+# par execv — catastrophique pour un serveur long-lived (ex. FastAPI) qui
+# importerait ce module transitivement.
 import sys as _sys
 import os as _os
-_venv_python = _os.path.expanduser("~/.astro/bin/python3")
-if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
-    _os.execv(_venv_python, [_venv_python] + _sys.argv)
+if __name__ == "__main__":
+    _venv_python = _os.path.expanduser("~/.astro/bin/python3")
+    if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
+        _os.execv(_venv_python, [_venv_python] + _sys.argv)
 del _sys, _os
 
 
@@ -204,6 +210,98 @@ def get_ollama_answer(prompt: str, model_name: str = "gemma3:12b",
         return None
 
 
+def answer_question(question_text: str, model_name: str = "gemma3:12b",
+                    skill: str = "", npub: str = "",
+                    lat=None, lon=None, pubkey=None, user_id=None, slot: int = 0,
+                    temperature: float = None, ctx: int = None, max_tokens: int = None,
+                    top_p: float = None, repeat_penalty: float = None,
+                    format_json: bool = False) -> str | None:
+    """Assemble contexte (skill/slot/UMAP/pubkey) + identité LifeOS + règles de
+    base, journalise dans IA.log, puis appelle Ollama — cœur partagé par le
+    CLI (main()) et tout appelant Python qui importe ce module directement
+    (ex. bro_watch_core.py, bro/identity.py : un import évite le coût d'un
+    sous-processus Python complet — allocation mémoire, interpréteur, rechargement
+    d'ollama/qdrant_client — à chaque appel, ~1-3s d'overhead selon la machine)."""
+    context_parts = []
+    system_extra  = ""
+
+    # 1. Contexte skill (flashmem + Qdrant)
+    if skill:
+        skill_ctx = load_skill_context(skill, question_text)
+        if skill_ctx:
+            context_parts.append(skill_ctx)
+        system_extra = (
+            f"Tu es un formateur expert en '{skill}'. "
+            f"Tu guides l'utilisateur dans son apprentissage de façon pédagogique et pratique. "
+        )
+
+    # 2. Contexte utilisateur (slot / UMAP / pubkey)
+    if user_id is not None:
+        user_ctx = load_context(user_id=user_id, slot=slot)
+        if user_ctx:
+            context_parts.append(f"Historique personnel :\n{wrap_untrusted('personal_history', user_ctx)}")
+    elif lat and lon:
+        geo_ctx = load_context(latitude=lat, longitude=lon)
+        if geo_ctx:
+            context_parts.append(f"Contexte géographique :\n{wrap_untrusted('geo_context', geo_ctx)}")
+    elif pubkey:
+        pub_ctx = load_context(pubkey=pubkey)
+        if pub_ctx:
+            context_parts.append(f"Contexte utilisateur :\n{wrap_untrusted('user_context', pub_ctx)}")
+
+    # ── Prompt final ──────────────────────────────────────────────────────────
+    # Question seule dans le rôle "user" — contexte et règles dans "system"
+    # (séparer les rôles réduit les hallucinations : le LLM ne confond plus
+    #  le contexte RAG avec la demande utilisateur)
+    final_prompt = question_text
+
+    _base_rules = (
+        "RÉPONDS EN FRANÇAIS UNIQUEMENT.\n\n"
+        "RÈGLES:\n"
+        "1. Réponds en FRANÇAIS (ou dans la langue de la question)\n"
+        "2. Commence DIRECTEMENT par le contenu (sans introduction)\n"
+        "3. Pas de markdown\n"
+        "4. Utilise des emojis\n"
+        "5. Sois concis"
+    )
+    identity_block = load_identity(user_id) if user_id else ""
+
+    system_parts = []
+    if identity_block:
+        system_parts.append(
+            "Tu es le clone numérique de l'utilisateur. Voici ton ADN :\n"
+            f"{wrap_untrusted('identity', identity_block)}"
+        )
+    if system_extra:
+        system_parts.append(system_extra)
+    system_parts.append(_base_rules)
+    if context_parts:
+        system_parts.append("CONTEXTE:\n" + "\n\n".join(context_parts))
+    system_prompt = "\n\n".join(system_parts)
+
+    # ── Log ──────────────────────────────────────────────────────────────────
+    log_file_path = os.path.expanduser("~/.zen/tmp/IA.log")
+    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+    with open(log_file_path, "a") as lf:
+        npub_tag = f"[{npub[:12]}] " if npub else ""
+        skill_tag = f"[skill:{skill}] " if skill else ""
+        lf.write(f"{npub_tag}{skill_tag}{final_prompt}\n")
+
+    # ── Réponse Ollama ────────────────────────────────────────────────────────
+    answer = get_ollama_answer(final_prompt, model_name, system_prompt,
+                               temperature=temperature,
+                               num_ctx=ctx,
+                               num_predict=max_tokens,
+                               top_p=top_p,
+                               repeat_penalty=repeat_penalty,
+                               format_json=format_json)
+
+    if answer:
+        with open(log_file_path, "a") as lf:
+            lf.write(f"{answer}\n")
+    return answer
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Répond à une question via Ollama, avec contexte multi-source."
@@ -250,84 +348,18 @@ if __name__ == "__main__":
         print("Erreur : fournir la question en argument ou via --prompt-file.")
         sys.exit(1)
 
-    # ── Construire le contexte ────────────────────────────────────────────────
-    context_parts = []
-    system_extra  = ""
-
-    # 1. Contexte skill (flashmem + Qdrant)
-    if args.skill:
-        skill_ctx = load_skill_context(args.skill, question_text)
-        if skill_ctx:
-            context_parts.append(skill_ctx)
-        system_extra = (
-            f"Tu es un formateur expert en '{args.skill}'. "
-            f"Tu guides l'utilisateur dans son apprentissage de façon pédagogique et pratique. "
-        )
-
-    # 2. Contexte utilisateur (slot / UMAP / pubkey)
-    if args.user_id is not None:
-        user_ctx = load_context(user_id=args.user_id, slot=args.slot)
-        if user_ctx:
-            context_parts.append(f"Historique personnel :\n{wrap_untrusted('personal_history', user_ctx)}")
-    elif args.lat and args.lon:
-        geo_ctx = load_context(latitude=args.lat, longitude=args.lon)
-        if geo_ctx:
-            context_parts.append(f"Contexte géographique :\n{wrap_untrusted('geo_context', geo_ctx)}")
-    elif args.pubkey:
-        pub_ctx = load_context(pubkey=args.pubkey)
-        if pub_ctx:
-            context_parts.append(f"Contexte utilisateur :\n{wrap_untrusted('user_context', pub_ctx)}")
-
-    # ── Prompt final ──────────────────────────────────────────────────────────
-    # Question seule dans le rôle "user" — contexte et règles dans "system"
-    # (séparer les rôles réduit les hallucinations : le LLM ne confond plus
-    #  le contexte RAG avec la demande utilisateur)
-    final_prompt = question_text
-
-    _base_rules = (
-        "RÉPONDS EN FRANÇAIS UNIQUEMENT.\n\n"
-        "RÈGLES:\n"
-        "1. Réponds en FRANÇAIS (ou dans la langue de la question)\n"
-        "2. Commence DIRECTEMENT par le contenu (sans introduction)\n"
-        "3. Pas de markdown\n"
-        "4. Utilise des emojis\n"
-        "5. Sois concis"
+    # ── Contexte + appel Ollama (logique partagée, voir answer_question) ──────
+    answer = answer_question(
+        question_text, model_name=args.ollama_model_name,
+        skill=args.skill, npub=args.npub,
+        lat=args.lat, lon=args.lon, pubkey=args.pubkey,
+        user_id=args.user_id, slot=args.slot,
+        temperature=args.temperature, ctx=args.ctx, max_tokens=args.max_tokens,
+        top_p=args.top_p, repeat_penalty=args.repeat_penalty,
+        format_json=args.format_json,
     )
-    identity_block = load_identity(args.user_id) if args.user_id else ""
-
-    system_parts = []
-    if identity_block:
-        system_parts.append(
-            "Tu es le clone numérique de l'utilisateur. Voici ton ADN :\n"
-            f"{wrap_untrusted('identity', identity_block)}"
-        )
-    if system_extra:
-        system_parts.append(system_extra)
-    system_parts.append(_base_rules)
-    if context_parts:
-        system_parts.append("CONTEXTE:\n" + "\n\n".join(context_parts))
-    system_prompt = "\n\n".join(system_parts)
-
-    # ── Log ──────────────────────────────────────────────────────────────────
-    log_file_path = os.path.expanduser("~/.zen/tmp/IA.log")
-    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
-    with open(log_file_path, "a") as lf:
-        npub_tag = f"[{args.npub[:12]}] " if args.npub else ""
-        skill_tag = f"[skill:{args.skill}] " if args.skill else ""
-        lf.write(f"{npub_tag}{skill_tag}{final_prompt}\n")
-
-    # ── Réponse Ollama ────────────────────────────────────────────────────────
-    answer = get_ollama_answer(final_prompt, args.ollama_model_name, system_prompt,
-                               temperature=args.temperature,
-                               num_ctx=args.ctx,
-                               num_predict=args.max_tokens,
-                               top_p=args.top_p,
-                               repeat_penalty=args.repeat_penalty,
-                               format_json=args.format_json)
 
     if answer:
-        with open(log_file_path, "a") as lf:
-            lf.write(f"{answer}\n")
         if args.json:
             print(json.dumps({"answer": answer}))
         else:

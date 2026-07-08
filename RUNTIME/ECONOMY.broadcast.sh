@@ -583,6 +583,13 @@ if ! echo "$CONTENT_JSON" | jq empty 2>/dev/null; then
     exit 1
 fi
 
+# Snapshot local pour consommation hors-NOSTR (ex: narration IA du bulletin
+# hebdomadaire captain.html — voir IA/captain_bulletin_narrative.py, appelé
+# depuis RUNTIME/PLAYER.refresh.sh) : évite de recalculer ces chiffres ou
+# d'interroger le relay pour les retrouver, toujours la donnée la plus
+# fraîche disponible localement.
+echo "$CONTENT_JSON" > "$HOME/.zen/tmp/${IPFSNODEID}/economy_health.json" 2>/dev/null
+
 # Escape content for NOSTR event
 CONTENT_ESCAPED=$(echo "$CONTENT_JSON" | jq -c .)
 

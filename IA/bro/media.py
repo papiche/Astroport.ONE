@@ -232,6 +232,87 @@ _MEDIA_TAG_HANDLERS = (
 
 SCRAPER_RUN_TIMEOUT_SEC = 180
 
+# ── Self-healing : suivi des échecs consécutifs ──────────────────────────
+# Seuil : 3 cycles en erreur/0-item → déclenchement automatique d'arbor_scraper_forge --heal.
+# Les codes de sortie distincts viennent de run_generated_scraper.py :
+#   0 = succès avec items   → reset du compteur
+#   1 = exception run()     → incrément "erreur"
+#   2 = run() retourne []   → incrément "0 items" (scrapers générés uniquement)
+#   3 = config manquante    → ignoré (pas une panne du scraper lui-même)
+# Les scrapers existants (mastodon, discourse…) n'émettent que 0 ou !=0 ;
+# le code 2 est réservé aux scrapers générés par arbor_scraper_forge.py.
+
+HEAL_FAILURE_THRESHOLD = 3
+
+
+def _scraper_failure_path(owner_email, domain):
+    slug = re.sub(r"[^a-zA-Z0-9_-]", "_", domain)
+    email_slug = re.sub(r"[^a-zA-Z0-9_-]", "_", owner_email)[:20]
+    return os.path.expanduser(f"~/.zen/tmp/bro_scraper_health_{slug}_{email_slug}.json")
+
+
+def _get_scraper_failure_state(owner_email, domain):
+    """Retourne (count, last_error) — (0, '') si aucun échec enregistré."""
+    try:
+        with open(_scraper_failure_path(owner_email, domain)) as f:
+            data = json.load(f)
+        return data.get("count", 0), data.get("last_error", "")
+    except Exception:
+        return 0, ""
+
+
+def _increment_scraper_failure(owner_email, domain, error_msg):
+    """Incrémente le compteur d'échecs consécutifs. Retourne le nouveau count."""
+    path = _scraper_failure_path(owner_email, domain)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except Exception:
+        data = {"count": 0}
+    data["count"] = data.get("count", 0) + 1
+    data["last_error"] = str(error_msg)[:500]
+    try:
+        with open(path, "w") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
+    return data["count"]
+
+
+def _reset_scraper_failure(owner_email, domain):
+    """Remet le compteur à 0 après un cycle réussi avec items."""
+    try:
+        os.remove(_scraper_failure_path(owner_email, domain))
+    except Exception:
+        pass
+
+
+def _trigger_scraper_heal(owner_email, domain, error_msg):
+    """Lance arbor_scraper_forge.py --heal DOMAIN en tâche détachée.
+    Appelé automatiquement après HEAL_FAILURE_THRESHOLD cycles en échec.
+    Retourne True si le lancement a réussi."""
+    forge_script = os.path.join(BRO_IA_PATH, "arbor_scraper_forge.py")
+    if not os.path.isfile(forge_script):
+        print(f"[BRO_WATCH] arbor_scraper_forge.py introuvable — self-healing désactivé pour {domain}")
+        return False
+    try:
+        subprocess.Popen(
+            [PYTHON_BIN, forge_script,
+             "--heal", domain,
+             "--owner-email", owner_email,
+             "--error", error_msg[:500],
+             "--notify-captain"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+        )
+        print(f"[BRO_WATCH] Self-healing lancé pour {domain} "
+              f"(seuil {HEAL_FAILURE_THRESHOLD} atteint)")
+        return True
+    except Exception as e:
+        print(f"[BRO_WATCH] Échec lancement self-healing pour {domain} : {e}")
+        return False
+
+
 def _cookie_file_path(owner_email, domain):
     return os.path.join(_owner_dir(owner_email), f".{domain}.cookie")
 
@@ -343,7 +424,11 @@ def _run_scraper_now(owner_email, domain):
 
 def _run_scraper_background(owner_email, domain, script, cookie_file):
     """Exécute réellement le scraper (appelé en sous-processus détaché par
-    _run_scraper_now — voir sa docstring) et notifie le résultat par DM."""
+    _run_scraper_now — voir sa docstring) et notifie le résultat par DM.
+
+    Intègre le suivi des échecs consécutifs pour le self-healing (Pilier 3
+    d'arbor_scraper_forge.py) : 3 cycles en erreur ou sans item (exit 2 des
+    scrapers générés) déclenchent automatiquement arbor_scraper_forge --heal."""
     log_path = os.path.expanduser(f"~/.zen/tmp/{domain}_sync_{owner_email}.log")
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
     try:
@@ -357,6 +442,14 @@ def _run_scraper_background(owner_email, domain, script, cookie_file):
         send_dm_to_owner(owner_email,
                           f"⏱️ Le scraper {domain} n'a pas terminé sous {SCRAPER_RUN_TIMEOUT_SEC}s.",
                           ttl_days=1)
+        error_msg = f"timeout après {SCRAPER_RUN_TIMEOUT_SEC}s"
+        new_count = _increment_scraper_failure(owner_email, domain, error_msg)
+        if new_count >= HEAL_FAILURE_THRESHOLD:
+            _reset_scraper_failure(owner_email, domain)
+            if _trigger_scraper_heal(owner_email, domain, error_msg):
+                send_dm_to_owner(owner_email,
+                    f"🔧 Le scraper {domain} est en timeout depuis {HEAL_FAILURE_THRESHOLD} jours. "
+                    "Réparation automatique lancée.", ttl_days=1)
         return
     except Exception as e:
         send_dm_to_owner(owner_email, f"⚠️ Échec du scraper {domain} : {e}", ttl_days=1)
@@ -373,10 +466,53 @@ def _run_scraper_background(owner_email, domain, script, cookie_file):
     # type "Terminé — N nouvelle(s) mention(s)…") plutôt que tout le log brut.
     summary_lines = [l for l in output.strip().splitlines() if l.strip()]
     summary = summary_lines[-1] if summary_lines else "(aucune sortie)"
+
+    # ── Suivi des échecs consécutifs pour le self-healing ─────────────────
     if returncode == 0:
+        # Succès avec items → réinitialiser le compteur d'échecs
+        _reset_scraper_failure(owner_email, domain)
         msg = f"✅ Scraper {domain} exécuté :\n{summary}"
+
+    elif returncode == 2:
+        # 0 items retournés (scrapers générés via run_generated_scraper.py) —
+        # peut être légitime un jour calme, mais 3 fois consécutifs = suspect.
+        new_count = _increment_scraper_failure(owner_email, domain, "0 items retournés")
+        print(f"[BRO_WATCH] Scraper {domain} : 0 item "
+              f"(cycle {new_count}/{HEAL_FAILURE_THRESHOLD})")
+        if new_count >= HEAL_FAILURE_THRESHOLD:
+            _reset_scraper_failure(owner_email, domain)
+            heal_msg = "0 items retournés pendant 3 cycles consécutifs"
+            if _trigger_scraper_heal(owner_email, domain, heal_msg):
+                send_dm_to_owner(owner_email,
+                    f"🔧 Le scraper {domain} retourne 0 item depuis "
+                    f"{HEAL_FAILURE_THRESHOLD} jours. Réparation automatique lancée "
+                    "(plusieurs minutes).", ttl_days=1)
+        # Pas de DM séparé pour le résumé — le rapport quotidien de process_watch_digest
+        # a déjà été envoyé (ou indique "rien de pertinent") depuis run_generated_scraper.py
+        return
+
+    elif returncode == 3:
+        # Erreur de configuration (module manquant, cookie absent) — ne compte pas
+        # comme panne du scraper lui-même, pas de déclenchement heal.
+        msg = f"⚠️ Scraper {domain} : erreur de configuration (code 3) :\n{summary}"
+
     else:
+        # returncode != 0, 2, 3 → exception réelle dans le scraper
+        error_lines = [l for l in output.strip().splitlines()
+                       if "ERROR:" in l or "Traceback" in l or l.strip()]
+        error_msg = error_lines[-1][:300] if error_lines else f"code de sortie {returncode}"
+        new_count = _increment_scraper_failure(owner_email, domain, error_msg)
+        print(f"[BRO_WATCH] Scraper {domain} : erreur "
+              f"(cycle {new_count}/{HEAL_FAILURE_THRESHOLD})")
+        if new_count >= HEAL_FAILURE_THRESHOLD:
+            _reset_scraper_failure(owner_email, domain)
+            if _trigger_scraper_heal(owner_email, domain, error_msg):
+                send_dm_to_owner(owner_email,
+                    f"🔧 Le scraper {domain} est en erreur depuis "
+                    f"{HEAL_FAILURE_THRESHOLD} jours. Réparation automatique lancée "
+                    "(plusieurs minutes).", ttl_days=1)
         msg = f"⚠️ Scraper {domain} terminé avec une erreur (code {returncode}) :\n{summary}"
+
     send_dm_to_owner(owner_email, msg, ttl_days=1)
 
 CRAFT_RUN_TIMEOUT_SEC = 90     # question.py, cf. _run_craft_background

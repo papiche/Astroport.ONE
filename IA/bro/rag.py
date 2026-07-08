@@ -204,6 +204,10 @@ BRO_MEMORY_SLOT  = 13
 
 BRO_PERSONA_SLOT = 14   # traits de style/expertise extraits par bro_backfill.py
 
+# Slot 15 = LOVE_MEMORY_SLOT (memory_manager.py) — souvenirs MUSE/LOVE
+# (#love_rec), fusionnés dans cette même mémoire personnelle memory_{hex16}
+# plutôt qu'une collection dédiée, mais toujours filtrables séparément.
+
 PERSONA_RECALL_THRESHOLD = 0.65
 
 QDRANT_NETWORK_COLLECTION = "uplanet_network"

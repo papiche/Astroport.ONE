@@ -19,6 +19,10 @@
 #     Kind 30078 d=love-profile — profil de rencontre (opt-in explicite)
 #     Kind 30078 d=atom4love   — données Phi² ATOM4LOVE (opt-in)
 #   Le fichier profile.json local sert de BROUILLON (non publié par défaut).
+#   bio/interests y sont un CACHE dérivé du profil LifeOS (identity/.Core.md +
+#   .Preferences.md, cf. bro_watch_core.sync_love_profile_from_identity) —
+#   jamais une identité parallèle. #love_profile reste prioritaire : la bio
+#   n'est comblée par le cache que si vide, les intérêts sont fusionnés en union.
 #
 # Quota journalier : LOVE_DAILY_QUOTA (défaut 3) prompts de type "ask/suggest/kin/intro"
 # Prompts IA modifiables sans redémarrer le daemon :
@@ -35,6 +39,7 @@ _LOVE_OLLAMA_URL="${OLLAMA_URL:-http://127.0.0.1:11434}"
 _LOVE_MODEL="${LOVE_MODEL:-gemma3:latest}"
 _LOVE_DAILY_QUOTA="${LOVE_DAILY_QUOTA:-3}"   # max prompts IA/jour par utilisateur
 _LOVE_STRFRY="$HOME/.zen/strfry/strfry"      # binaire strfry pour lectures NOSTR
+_LOVE_MEMORY_MGR="$_LOVE_PATH/../memory_manager.py"  # collection Qdrant love_{hex16}
 
 # Tables Dreamspell embarquées (pas de dépendance kin_oracle.sh au runtime)
 _LOVE_KIN_SEALS=("Dragon" "Wind" "Night" "Seed" "Serpent" "WorldBridger" "Hand" "Star"
@@ -116,21 +121,20 @@ else:
 }
 
 ## ── Publier le profil love sur NOSTR (kind-30078 d=love-profile) ─────────────
-## Nécessite le .secret.nostr de l'email (nsec)
+## Signé avec .secret.love (clé LOVE dédiée, cf. atom4love_publish.py) si déjà
+## activée, sinon fallback sur .secret.nostr (clé principale du MULTIPASS).
 _love_publish_nostr_profile() {
     local email="$1" content="$2"
-    local secret_file="$HOME/.zen/game/nostr/${email}/.secret.nostr"
-    [[ ! -f "$secret_file" ]] && return 1
-    local nsec; nsec=$(grep -m1 "^USER_NSEC=" "$secret_file" | cut -d= -f2- | tr -d '"' 2>/dev/null)
-    [[ -z "$nsec" ]] && return 1
+    local secret_file="$HOME/.zen/game/nostr/${email}/.secret.love"
+    [[ ! -s "$secret_file" ]] && secret_file="$HOME/.zen/game/nostr/${email}/.secret.nostr"
+    [[ ! -s "$secret_file" ]] && return 1
     local send_py="$_LOVE_PATH/../../../tools/nostr_send_note.py"
     [[ ! -f "$send_py" ]] && return 1
     python3 "$send_py" \
-        --nsec "$nsec" \
+        --keyfile "$secret_file" \
         --kind 30078 \
         --content "$content" \
-        --tag "d" "love-profile" \
-        --tag "t" "love" \
+        --tags '[["d","love-profile"],["t","love"]]' \
         2>/dev/null
 }
 
@@ -181,7 +185,10 @@ _love_get_mem() {
     [[ -f "$f" ]] && cat "$f" || echo "[]"
 }
 
-## ── Ajouter un souvenir (max 50) ─────────────────────────────────────────────
+## ── Ajouter un souvenir (cache local 50 + Qdrant illimité/sémantique) ────────
+## Le cache JSON local reste la copie rapide pour l'affichage (#love_mem) ;
+## Qdrant (love_{hex16}) est la mémoire long terme interrogée par _love_query
+## et par le matching (résonance poétique entre deux profils, cf. love_resonance).
 _love_add_mem() {
     local email="$1" content="$2"
     local dir; dir="$(_love_dir "$email")"
@@ -196,13 +203,43 @@ data.append({'timestamp': sys.argv[2], 'content': sys.argv[3]})
 data = data[-50:]
 print(json.dumps(data, ensure_ascii=False))
 " "$existing" "$ts" "$content" > "$f" 2>/dev/null
+    _love_upsert_qdrant_mem "$email" "$content"
 }
 
-## ── Effacer tous les souvenirs ────────────────────────────────────────────────
+## ── Upsert Qdrant best-effort (silencieux — jamais bloquant pour l'utilisateur) ─
+_love_upsert_qdrant_mem() {
+    local email="$1" content="$2"
+    [[ ! -f "$_LOVE_MEMORY_MGR" ]] && return 1
+    timeout 15 python3 "$_LOVE_MEMORY_MGR" upsert-love \
+        --user-id "$email" --content "$content" >/dev/null 2>&1
+}
+
+## ── Recherche sémantique dans les souvenirs LOVE (contexte pertinent, pas juste récent) ─
+## Retourne "" si Qdrant indisponible ou aucun résultat pertinent → l'appelant
+## doit alors retomber sur les derniers souvenirs chronologiques (voir _love_query).
+_love_search_qdrant_mem() {
+    local email="$1" query="$2" limit="${3:-5}"
+    [[ ! -f "$_LOVE_MEMORY_MGR" ]] && return 1
+    timeout 15 python3 "$_LOVE_MEMORY_MGR" search-love \
+        --user-id "$email" --query "$query" --limit "$limit" 2>/dev/null \
+        | python3 -c "
+import json, sys
+try: hits = json.load(sys.stdin)
+except Exception: hits = []
+for h in hits:
+    c = h.get('payload', {}).get('content', '')
+    if c: print(f'• {c[:200]}')
+" 2>/dev/null
+}
+
+## ── Effacer tous les souvenirs (cache local + Qdrant) ─────────────────────────
 _love_clear_mem() {
-    local dir; dir="$(_love_dir "$1")"
+    local email="$1"
+    local dir; dir="$(_love_dir "$email")"
     mkdir -p "$dir"
     echo "[]" > "$dir/memories.json"
+    [[ -f "$_LOVE_MEMORY_MGR" ]] && \
+        timeout 15 python3 "$_LOVE_MEMORY_MGR" delete-love --user-id "$email" >/dev/null 2>&1
 }
 
 ## ── Lire l'historique de dialogue ────────────────────────────────────────────
@@ -624,16 +661,21 @@ for k,v in p.items():
     # 2. Signe KIN Dreamspell
     [[ -n "$kin_info" ]] && context+="=== Signe KIN Dreamspell ===\n${kin_info}\n\n"
 
-    # 3. Souvenirs récents (5 derniers, triés par date)
-    if [[ "$memories" != "[]" ]]; then
-        local recent_mems
-        recent_mems=$(python3 -c "
+    # 3. Souvenirs pertinents pour CETTE question (recherche sémantique Qdrant) —
+    # permet des associations poétiques à long terme (ex: retrouver "aime l'odeur
+    # du café" en réponse à une question sur les petits-déjeuners, même mémorisé
+    # il y a des mois) plutôt que les 5 derniers souvenirs chronologiques.
+    # Repli sur la recency si Qdrant est indisponible ou ne retrouve rien.
+    local relevant_mems
+    relevant_mems=$(_love_search_qdrant_mem "$email" "$question" 5)
+    if [[ -z "$relevant_mems" && "$memories" != "[]" ]]; then
+        relevant_mems=$(python3 -c "
 import json,sys
 ms=json.load(sys.stdin)[-5:]
 for m in ms: print(f'• {m[\"content\"][:200]}')
 " 2>/dev/null <<< "$memories")
-        [[ -n "$recent_mems" ]] && context+="=== Préférences mémorisées ===\n${recent_mems}\n\n"
     fi
+    [[ -n "$relevant_mems" ]] && context+="=== Préférences mémorisées ===\n${relevant_mems}\n\n"
 
     # 4. Historique de dialogue (4 derniers échanges)
     local dialog_context=""
@@ -942,17 +984,34 @@ _handle_love_intro() {
     [[ -z "$target_desc" ]] && \
         _send_dm "$sender" "💕 Précise quelque chose sur la personne pour générer une intro.\nEx : \"aime la musique et la randonnée, curieux et créatif\"" "${_RELAYS[0]}" && return
 
-    local question="Rédige un message d'accroche authentique et chaleureux que je pourrais envoyer à quelqu'un dont voici le profil : ${target_desc}
+    local email; email=$(bro_resolve_email "$sender")
+
+    # Souvenirs personnels sémantiquement liés au profil visé (Qdrant) — permet
+    # une accroche qui pioche un détail poétique vécu plutôt qu'une formule
+    # générique (ex: cible "aime la randonnée" → ressort "j'ai découvert la
+    # marche au lever du jour cet automne").
+    local echo_hint=""
+    [[ -n "$email" ]] && echo_hint=$(_love_search_qdrant_mem "$email" "$target_desc" 3)
+
+    local question="Rédige un message d'accroche authentique et chaleureux que je pourrais envoyer à quelqu'un dont voici le profil : ${target_desc}"
+    [[ -n "$echo_hint" ]] && question+="
+
+Voici quelques éléments vécus qui me caractérisent et qui font écho à ce profil (pioche-en un, subtilement, sans le citer mot pour mot) :
+${echo_hint}"
+    question+="
 Le message doit être court (3-5 phrases max), naturel, sincère, et refléter ma personnalité. Pas de clichés. Il doit donner envie de répondre sans être intrusif."
     _handle_love_ask "$sender" "$question"
 }
 
 ## ── Handler : matching local (Tier 2, +18 requis) ───────────────────────────
-## Score composite (120 pts max) :
-##   • Intérêts communs  : 0-40 pts  (15 pts/intérêt commun, max 40)
-##   • Compatibilité KIN : 0-30 pts  (formule Dreamspell seal/tone/couleur)
-##   • Résonance Phi²    : 0-30 pts  (k=1/(1+|sin(Δφ)|) + bonus ω, ATOM4LOVE)
-##   • Traces communes   : 0-20 pts  (URLs Kind 10600 visitées en commun)
+## Score composite (135 pts max) :
+##   • Intérêts communs   : 0-40 pts  (15 pts/intérêt commun, max 40)
+##   • Compatibilité KIN  : 0-30 pts  (formule Dreamspell seal/tone/couleur)
+##   • Résonance Phi²     : 0-30 pts  (k=1/(1+|sin(Δφ)|) + bonus ω, ATOM4LOVE)
+##   • Traces communes    : 0-20 pts  (URLs Kind 10600 visitées en commun)
+##   • Résonance mémoire  : 0-15 pts  (associations poétiques Qdrant love_{hex},
+##                           cf. memory_manager.py::love_resonance — ex: "aime le
+##                           café" ↔ "lit Rimbaud au petit matin")
 _handle_love_match() {
     local sender="$1"
     local email; email=$(bro_resolve_email "$sender")
@@ -1103,6 +1162,35 @@ else:
             fi
         fi
 
+        # ── Score 7 : résonance mémorielle poétique (0-15 pts bonus) ─────────
+        # Compare les souvenirs LOVE Qdrant des deux profils (love_resonance) :
+        # une paire sémantiquement proche (score cosinus ≥ 0.55) révèle une
+        # affinité subtile que ni les intérêts déclarés ni le KIN ne capturent.
+        local score_memory=0 memory_label=""
+        if [[ -f "$_LOVE_MEMORY_MGR" ]]; then
+            local resonance_json
+            resonance_json=$(timeout 15 python3 "$_LOVE_MEMORY_MGR" resonance-love \
+                --user-a "$email" --user-b "$other_email" --top-k 1 2>/dev/null)
+            if [[ -n "$resonance_json" && "$resonance_json" != "[]" ]]; then
+                local mem_raw
+                mem_raw=$(python3 -c "
+import json,sys
+pairs = json.loads(sys.argv[1])
+if pairs:
+    p = pairs[0]
+    pts = min(15, round((p.get('score', 0) - 0.55) / 0.45 * 15))
+    ca = p.get('content_a', '')[:40]
+    cb = p.get('content_b', '')[:40]
+    print(f'{max(0,pts)} 🌸 «{ca}» ↔ «{cb}»')
+else:
+    print('0')
+" "$resonance_json" 2>/dev/null)
+                score_memory=$(echo "$mem_raw" | awk '{print $1}')
+                memory_label="${mem_raw#* }"
+                [[ "$memory_label" == "$score_memory" ]] && memory_label=""
+            fi
+        fi
+
         # ── Score total : interférence non-linéaire (Géométrie de la Confiance) ─
         # k = score_phi2x normalisé sur [0,1] pilote le régime d'interférence.
         # k ≥ 0.95 → Singularité (fusion exponentielle)
@@ -1111,7 +1199,7 @@ else:
         local total_score
         total_score=$(python3 -c "
 import math
-si=$score_interest; sk=$score_kin; sp=$score_phi2x; st=$score_traces; sa=$score_a5l
+si=$score_interest; sk=$score_kin; sp=$score_phi2x; st=$score_traces; sa=$score_a5l; sm=$score_memory
 k = sp / 30.0  # sp est borné à 30 pts → k ∈ [0,1]
 if k >= 0.95:
     total = (si + sk + st) * 1.5 + sp
@@ -1122,10 +1210,11 @@ else:
     h = max(k - abs(social - sp * 3) / 100.0, 0.0)
     total = min(social, sp * 3) - h * h * 0.25 * 100
     total = total / 3.0 + sp
-# Le bonus cymatique a5l s'additionne toujours (indépendant du régime d'interférence)
-total += sa
-print(min(120, max(0, int(total))))
-" 2>/dev/null) || total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l ))
+# Les bonus cymatique (a5l) et mémoriel (sm) s'additionnent toujours,
+# indépendamment du régime d'interférence choisi ci-dessus.
+total += sa + sm
+print(min(135, max(0, int(total))))
+" 2>/dev/null) || total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l + score_memory ))
         [[ $total_score -lt 10 ]] && continue
 
         local bio
@@ -1144,6 +1233,8 @@ print(min(120, max(0, int(total))))
             affinity_parts+=("🌐 ${trace_label}")
         [[ $score_a5l -gt 0 && -n "$a5l_label" ]] && \
             affinity_parts+=("$a5l_label")
+        [[ $score_memory -gt 0 && -n "$memory_label" ]] && \
+            affinity_parts+=("$memory_label")
 
         candidate_scores["$other_email"]=$total_score
         local _sep="" _lbl=""
@@ -1206,7 +1297,7 @@ print(json.loads(sys.argv[1]).get('about','')[:150])
         matches_text+="${count}. **${nostr_name:-Profil anonyme}**\n"
         [[ -n "$nostr_about" ]] && matches_text+="   ${nostr_about}\n"
         [[ -n "$bio" && "$bio" != "…" ]] && matches_text+="   _(Love)_ ${bio}\n"
-        matches_text+="   ⭐ ${sc}/120 | ${lbl}\n"
+        matches_text+="   ⭐ ${sc}/135 | ${lbl}\n"
         if [[ -n "$recent_posts" ]]; then
             matches_text+="\n   📝 Posts récents :\n"
             while IFS= read -r post; do

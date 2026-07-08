@@ -93,6 +93,17 @@ BIRTH_PLACE="$8"
 BIRTH_WEIGHT="$9"
 CONCEPTION_DATETIME="${10}"
 CONCEPTION_PLACE="${11}"
+BIRTH_LAT="${12}"
+BIRTH_LON="${13}"
+POLARITY="${14}"
+
+## Le compte principal est-il déjà "birth-derived" ? (atomic.html/miz.html/
+## Cabine-33 : SALT/PEPPER fournis par le client, dérivés eux-mêmes des
+## données de naissance → la clé .secret.nostr EST déjà la clé ATOM4LOVE,
+## inutile d'en dériver une .secret.love distincte). Capturé AVANT le bloc
+## "PREPARE SALT PEPPER" ci-dessous qui peut régénérer SALT/PEPPER aléatoirement.
+_A4L_PRIMARY_IS_BIRTH_DERIVED="no"
+[[ -n "$SALT" && -n "$PEPPER" && -n "$BIRTH_DATETIME" ]] && _A4L_PRIMARY_IS_BIRTH_DERIVED="yes"
 
 YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${EMAIL})
 echo "🎫 MULTIPASS Creation for $EMAIL"
@@ -291,36 +302,21 @@ EOFNOSTR
     [[ -s ${IMAGE} ]] && cp ${IMAGE} ${HOME}/.zen/game/nostr/${EMAIL}/picture.png 2>/dev/null
     [[ "${IMAGE}" =~ ^[a-z]{2}$ ]] && LANG="${IMAGE}" || LANG="fr" ## Contains IMAGE or Navigator language
 
-    ## Données de naissance/conception
-    # .BIRTHDATE (YYYY-MM-DD) : en clair — utilisé par kin.sh et did_manager_nostr.sh
-    # .birth_datetime.enc, .birth_weight.enc, .conception_datetime.enc : chiffrés avec
-    # la clé publique G1PUBNOSTR du joueur → seul le joueur peut déchiffrer.
-    # La reconstruction du DISCO se fait via SSSS (cf. NOSTRCARD.refresh.sh), pas via ces fichiers.
-    if [[ -n "${BIRTH_DATETIME}" ]]; then
-        _birth_date="${BIRTH_DATETIME%%T*}"
-        [[ "${_birth_date}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
-            && echo "${_birth_date}" > "${HOME}/.zen/game/nostr/${EMAIL}/.BIRTHDATE"
-        # Chiffrer le datetime complet (heure = facteur SALT) avec la clé publique du joueur
-        echo "${BIRTH_DATETIME}" \
-            | ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" \
-                -o "${HOME}/.zen/game/nostr/${EMAIL}/.birth_datetime.enc" >/dev/null \
-            && rm -f "${HOME}/.zen/game/nostr/${EMAIL}/.birth_datetime"
-        unset _birth_date
+    ## Données de naissance/conception + activation ATOM4LOVE (clé LOVE dédiée
+    ## .secret.love, résonance Phi², publication kind 30078) — délégué à
+    ## atom4love_activate.sh, réutilisé aussi pour la complétion via l'email +a4l
+    ## d'un compte déjà existant (UPassport/routers/identity.py).
+    ## Sauté si la clé principale est déjà birth-derived (atomic.html/miz.html/
+    ## Cabine-33) : .secret.nostr sert alors déjà de clé LOVE (fallback déjà
+    ## câblé dans bro_resolve_email() et _love_publish_nostr_profile) — créer
+    ## une .secret.love distincte serait une seconde identité incohérente,
+    ## d'autant que les tailles réelles birth_height/current_height collectées
+    ## par ces pages web ne sont pas transmises ici (voir atom4love_publish.py).
+    if [[ -n "${BIRTH_DATETIME}" && "${_A4L_PRIMARY_IS_BIRTH_DERIVED}" != "yes" ]]; then
+        "${MY_PATH}/atom4love_activate.sh" "${EMAIL}" \
+            "${BIRTH_DATETIME}" "${BIRTH_PLACE}" "${BIRTH_LAT}" "${BIRTH_LON}" "${BIRTH_WEIGHT}" \
+            "${CONCEPTION_DATETIME}" "${CONCEPTION_PLACE}" "${POLARITY}"
     fi
-    [[ -n "${BIRTH_PLACE}" ]] && echo "${BIRTH_PLACE}" > "${HOME}/.zen/game/nostr/${EMAIL}/.birth_place"
-    if [[ -n "${BIRTH_WEIGHT}" ]]; then
-        echo "${BIRTH_WEIGHT}" \
-            | ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" \
-                -o "${HOME}/.zen/game/nostr/${EMAIL}/.birth_weight.enc" >/dev/null \
-            && rm -f "${HOME}/.zen/game/nostr/${EMAIL}/.birth_weight"
-    fi
-    if [[ -n "${CONCEPTION_DATETIME}" ]]; then
-        echo "${CONCEPTION_DATETIME}" \
-            | ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" \
-                -o "${HOME}/.zen/game/nostr/${EMAIL}/.conception_datetime.enc" >/dev/null \
-            && rm -f "${HOME}/.zen/game/nostr/${EMAIL}/.conception_datetime"
-    fi
-    [[ -n "${CONCEPTION_PLACE}" ]] && echo "${CONCEPTION_PLACE}" > "${HOME}/.zen/game/nostr/${EMAIL}/.conception_place"
 
     ## Biographie narrative de BRO (clone numérique) — fichiers préfixés par un
     ## point : exclus de "ipfs add" (voir plus bas), donc jamais publiés sur

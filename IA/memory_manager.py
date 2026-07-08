@@ -4,7 +4,13 @@ memory_manager.py — Gestionnaire unifié de mémoire Qdrant pour UPlanet/Astro
 
 Architecture des collections :
   uplanet_geo       — mémoires de lieu (multi-utilisateurs, par coordonnée GPS)
-  memory_{hex16}    — mémoires personnelles par slot (per-MULTIPASS)
+  memory_{hex16}    — mémoires personnelles par slot (per-MULTIPASS) — MUSE/LOVE
+                       (#love_rec) y a son propre slot (LOVE_MEMORY_SLOT=15,
+                       cf. bro/rag.py BRO_MEMORY_SLOT=13/BRO_PERSONA_SLOT=14) :
+                       une seule mémoire par utilisateur, jamais d'identité
+                       parallèle — un souvenir de rencontre reste privé (jamais
+                       publié sur NOSTR) et n'est retrouvable qu'en filtrant ce
+                       slot, mais partage le même espace de stockage que le reste.
   station_skills    — base de connaissance collective partagée par skill
 
 Cycle ÉVEIL/RÊVE :
@@ -21,9 +27,14 @@ Usage bash :
   python3 memory_manager.py ensure-collections
   python3 memory_manager.py upsert-geo   --lat 43.6 --lon 1.4 --content "..." --pubkey hex
   python3 memory_manager.py upsert-slot  --user-id email --slot 0 --content "..."
+  python3 memory_manager.py upsert-love  --user-id email --content "..."
+  python3 memory_manager.py search-love  --user-id email --query "café le matin"
+  python3 memory_manager.py resonance-love --user-a email1 --user-b email2
   python3 memory_manager.py upsert-skill --skill devops --content "..." --npub hex
   python3 memory_manager.py reve         --user-id email --slot 0
   python3 memory_manager.py delete-slot  --user-id email --slot 0
+  python3 memory_manager.py count-slot   --user-id email --slot 0
+  python3 memory_manager.py slot-counts  --user-id email --slots 0 13 14 15
   python3 memory_manager.py reve-geo     --lat 43.6 --lon 1.4
   python3 memory_manager.py skill-hash   --skill devops
   python3 memory_manager.py backup       --output /tmp/qdrant_backup.json
@@ -151,7 +162,17 @@ def _qdrant_available() -> bool:
 # ──────────────────────────── collections ─────────────────────────────────────
 
 def ensure_collection(name: str, size: int = VECTOR_SIZE):
-    """Crée la collection si elle n'existe pas (idempotent)."""
+    """Crée la collection si elle n'existe pas (idempotent).
+
+    Vérifie d'abord son existence (GET) plutôt que de foncer sur un PUT à
+    chaque appel : Qdrant répond HTTP 409 sur un PUT "create" d'une collection
+    déjà là, que _curl logue bruyamment sur stderr par design (jamais avaler
+    une vraie panne en silence) — dans le cas ultra-majoritaire (collection
+    déjà créée depuis longtemps), ce 409 n'est qu'un faux positif qui pollue
+    les logs à CHAQUE upsert/search, sans jamais rien signaler d'utile."""
+    existing = _curl("GET", f"{QDRANT_URL}/collections/{name}")
+    if existing.get("result"):
+        return
     _curl("PUT", f"{QDRANT_URL}/collections/{name}",
           {"vectors": {"size": size, "distance": "Cosine"}})
 
@@ -274,6 +295,102 @@ def search_user_slot(user_id: str, query: str, slots: list = None,
                                     "match": {"any": slots}}]}
     r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/search", body)
     return r.get("result", [])
+
+
+def count_user_slot(user_id: str, slot: int) -> int:
+    """Nombre de points Qdrant d'un slot — pas de recherche sémantique
+    nécessaire (contrairement à search_user_slot), utilisé pour l'affichage
+    admin/self-service de l'état des mémoires (UPassport services/memory_status.py)."""
+    cname = f"memory_{_user_hex(user_id)}"
+    r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/count", {
+        "filter": {"must": [{"key": "slot", "match": {"value": slot}}]},
+        "exact": True,
+    })
+    return int(r.get("result", {}).get("count", 0))
+
+
+def slot_counts(user_id: str, slots: list) -> dict:
+    """Compte les points Qdrant de plusieurs slots en un seul appel pratique
+    (clés en chaînes pour rester directement sérialisable en JSON)."""
+    return {str(s): count_user_slot(user_id, s) for s in slots}
+
+
+# ──────────────────────────── love memory (MUSE) ───────────────────────────────
+# Mémoire du canal "love" de BRO (alias MUSE, facilitation de rencontres) —
+# FUSIONNÉE avec la mémoire personnelle unifiée (memory_{hex16}, LifeOS) :
+# aucune collection séparée, aucune identité parallèle. Un souvenir de
+# rencontre (#love_rec) est un souvenir personnel comme un autre, simplement
+# rangé dans son propre slot pour rester filtrable et jamais mélangé
+# accidentellement à la mémoire "classique" (#rec) dans une recherche.
+LOVE_MEMORY_SLOT = 15  # registre des slots réservés : cf. bro/rag.py BRO_MEMORY_SLOT=13, BRO_PERSONA_SLOT=14
+
+def upsert_love_mem(user_id: str, content: str,
+                    timestamp: str = None, event_id: str = "") -> bool:
+    """Upsert un souvenir LOVE (préférence mémorisée via #love_rec) — slot
+    dédié de la mémoire personnelle unifiée memory_{hex16}."""
+    return upsert_user_slot(user_id, LOVE_MEMORY_SLOT, content,
+                            timestamp=timestamp, event_id=event_id)
+
+
+def search_love_mem(user_id: str, query: str, limit: int = 5,
+                    score_threshold: float = 0.3) -> list:
+    """Recherche sémantique dans les souvenirs LOVE d'un utilisateur — utilisé
+    pour bâtir un contexte pertinent (et non plus seulement récent) à chaque
+    question posée à MUSE."""
+    return search_user_slot(user_id, query, slots=[LOVE_MEMORY_SLOT],
+                            limit=limit, score_threshold=score_threshold)
+
+
+def delete_love_mem(user_id: str) -> bool:
+    """Supprime tous les souvenirs du slot LOVE (miroir de #love_reset) — les
+    autres slots (mémoire classique, persona...) du même utilisateur ne sont
+    pas affectés."""
+    return delete_user_slot(user_id, LOVE_MEMORY_SLOT)
+
+
+def love_resonance(user_id_a: str, user_id_b: str,
+                   sample: int = 15, score_threshold: float = 0.55,
+                   top_k: int = 3) -> list:
+    """Associations poétiques entre deux utilisateurs LOVE : cherche, pour un
+    échantillon de souvenirs LOVE de A, le souvenir LOVE de B le plus proche
+    sémantiquement (ex: 'aime l'odeur du café' ↔ 'lit des poèmes de Rimbaud'
+    au petit matin). Retourne jusqu'à top_k paires {content_a, content_b,
+    score}, triées par score décroissant — alimente le matching (_handle_love_match)
+    et la génération d'intros (_handle_love_intro). Filtre explicitement sur
+    LOVE_MEMORY_SLOT des deux côtés : memory_{hex16} contient aussi d'autres
+    slots (mémoire classique, persona...) qui ne doivent jamais entrer dans
+    cette comparaison."""
+    cname_a = f"memory_{_user_hex(user_id_a)}"
+    cname_b = f"memory_{_user_hex(user_id_b)}"
+    slot_filter = {"must": [{"key": "slot", "match": {"value": LOVE_MEMORY_SLOT}}]}
+    scrolled = _curl("POST", f"{QDRANT_URL}/collections/{cname_a}/points/scroll", {
+        "limit": sample, "with_payload": True, "with_vector": True,
+        "filter": slot_filter,
+    })
+    points = scrolled.get("result", {}).get("points", [])
+    if not points:
+        return []
+
+    pairs = []
+    for pt in points:
+        vec = pt.get("vector")
+        content_a = pt.get("payload", {}).get("content", "")
+        if not vec or not content_a:
+            continue
+        r = _curl("POST", f"{QDRANT_URL}/collections/{cname_b}/points/search", {
+            "vector": vec, "limit": 1, "score_threshold": score_threshold,
+            "with_payload": True, "filter": slot_filter,
+        })
+        hits = r.get("result", [])
+        if hits:
+            pairs.append({
+                "content_a": content_a,
+                "content_b": hits[0].get("payload", {}).get("content", ""),
+                "score": hits[0].get("score", 0),
+            })
+
+    pairs.sort(key=lambda p: -p["score"])
+    return pairs[:top_k]
 
 
 # ──────────────────────────── station skills ──────────────────────────────────
@@ -629,6 +746,32 @@ if __name__ == "__main__":
     pd.add_argument("--user-id", required=True)
     pd.add_argument("--slot",    type=int, required=True)
 
+    pcs = sub.add_parser("count-slot")
+    pcs.add_argument("--user-id", required=True)
+    pcs.add_argument("--slot",    type=int, required=True)
+
+    psc = sub.add_parser("slot-counts")
+    psc.add_argument("--user-id", required=True)
+    psc.add_argument("--slots",   nargs="+", type=int, required=True)
+
+    pl = sub.add_parser("upsert-love")
+    pl.add_argument("--user-id",  required=True)
+    pl.add_argument("--content",  required=True)
+    pl.add_argument("--event-id", default="")
+
+    psl = sub.add_parser("search-love")
+    psl.add_argument("--user-id", required=True)
+    psl.add_argument("--query",   required=True)
+    psl.add_argument("--limit",   type=int, default=5)
+
+    pdl = sub.add_parser("delete-love")
+    pdl.add_argument("--user-id", required=True)
+
+    prl = sub.add_parser("resonance-love")
+    prl.add_argument("--user-a", required=True)
+    prl.add_argument("--user-b", required=True)
+    prl.add_argument("--top-k",  type=int, default=3)
+
     pr = sub.add_parser("reve")
     pr.add_argument("--user-id", required=True)
     pr.add_argument("--slot",    type=int, default=0)
@@ -683,6 +826,28 @@ if __name__ == "__main__":
     elif args.cmd == "delete-slot":
         ok = delete_user_slot(args.user_id, args.slot)
         sys.exit(0 if ok else 1)
+
+    elif args.cmd == "count-slot":
+        print(count_user_slot(args.user_id, args.slot))
+
+    elif args.cmd == "slot-counts":
+        print(json.dumps(slot_counts(args.user_id, args.slots)))
+
+    elif args.cmd == "upsert-love":
+        ok = upsert_love_mem(args.user_id, args.content, event_id=args.event_id)
+        sys.exit(0 if ok else 1)
+
+    elif args.cmd == "search-love":
+        results = search_love_mem(args.user_id, args.query, args.limit)
+        print(json.dumps(results, ensure_ascii=False, indent=2))
+
+    elif args.cmd == "delete-love":
+        ok = delete_love_mem(args.user_id)
+        sys.exit(0 if ok else 1)
+
+    elif args.cmd == "resonance-love":
+        results = love_resonance(args.user_a, args.user_b, top_k=args.top_k)
+        print(json.dumps(results, ensure_ascii=False, indent=2))
 
     elif args.cmd == "reve":
         ok = reve_compress_slot(args.user_id, args.slot)
