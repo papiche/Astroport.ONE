@@ -39,6 +39,16 @@ sys.path.insert(0, MY_PATH)
 import phi2x  # noqa: E402
 from nostr_send_note import send_nostr_event  # noqa: E402
 
+try:
+    # nostr_sdk (rust-nostr officiel) — déjà dans UPassport/requirements.txt et
+    # installé dans le venv ~/.astro/ (voir la ré-exécution ci-dessus, déclenchée
+    # par l'import de nostr_send_note). Implémentation NIP-44 auditée — on évite
+    # volontairement toute réimplémentation maison (HKDF/ChaCha20/HMAC à la main).
+    from nostr_sdk import SecretKey, PublicKey, nip44_encrypt, Nip44Version
+    _NIP44_AVAILABLE = True
+except ImportError:
+    _NIP44_AVAILABLE = False
+
 DOMAIN_SALT = b"uplanet-a4l-v1"
 PBKDF2_ITERATIONS = 600_000
 BIRTH_HEIGHT_CM_DEFAULT = 50    # constante — non collectée, identique à atomic_keys.dart
@@ -108,6 +118,34 @@ def derive_love_keypair(stretched_salt: str, stretched_pepper: str) -> tuple[str
             os.remove(cred_path)
         except OSError:
             pass
+
+
+def _nip44_encrypt_try(priv_bech32_or_hex: str, recipient_hex: str, plaintext: str):
+    """Chiffre en NIP-44 v2, ou renvoie None en cas d'échec (jamais fatal)."""
+    if not _NIP44_AVAILABLE:
+        return None
+    try:
+        sk = SecretKey.parse(priv_bech32_or_hex)
+        pk = PublicKey.parse(recipient_hex)
+        return nip44_encrypt(sk, pk, plaintext, Nip44Version.V2)
+    except Exception as e:
+        print(f"⚠️ NIP-44 encrypt skipped ({recipient_hex[:8]}…): {e}", file=sys.stderr)
+        return None
+
+
+def _resolve_umap_hex(lat: float, lon: float):
+    """Clé NOSTR déterministe de l'UMAP (grille 0.01°) — Umap2hex.sh, ou None."""
+    umap2hex = os.path.join(MY_PATH, "Umap2hex.sh")
+    if not os.path.exists(umap2hex):
+        return None
+    try:
+        out = subprocess.run([umap2hex, str(lat), str(lon)],
+                              capture_output=True, text=True, timeout=15, check=True)
+        hex_key = out.stdout.strip()
+        return hex_key if len(hex_key) == 64 else None
+    except Exception as e:
+        print(f"⚠️ UMAP hex resolution skipped: {e}", file=sys.stderr)
+        return None
 
 
 def write_secret_love(email: str, nsec: str, npub: str, hex_pub: str) -> str:
@@ -199,15 +237,25 @@ def main() -> None:
     a4l_proof = phi2x.compute_a4l_proof(love_hex)
     kin = phi2x.calc_kin_unix(birth_unix) or {}
 
+    # Tags géo/cymatiques — mêmes formules que atomic.html::publishIncarnationCert,
+    # nécessaires à atomic_map.html pour localiser/afficher le profil.
+    geo_tag = phi2x.geo_tag_a4l(birth_lat, birth_lon, birth_unix)
+    a5l_amplitude = phi2x.compute_resonance_field(birth_lat, birth_lon, birth_unix)
+    a5l_tag = phi2x.encode_a5l_tag(a5l_amplitude)
+
     content = {
         "personal_phase": round(personal_phase, 6),
         "omega_bio": round(omega_bio, 4),
+        "a5l_amplitude": round(a5l_amplitude, 6),
         "biological_sex": polarity,
         "kin_num": kin.get("kin", 0),
         "version": 1,
         "email": email,
     }
-    tags = [["d", "atom4love"], ["a4l_proof", a4l_proof], ["email", email]]
+    tags = [
+        ["d", "atom4love"], ["a4l_proof", a4l_proof], ["email", email],
+        ["g", geo_tag["penta"]], ["g", geo_tag["hex"]], ["a5l", a5l_tag],
+    ]
     if kin:
         tags += [
             ["kin", str(kin["kin"])], ["glyph", kin["glyph_fr"]],
@@ -228,18 +276,53 @@ def main() -> None:
     publish_result = send_nostr_event(love_keyfile, json.dumps(content), tags=tags,
                                        kind=30078, json_output=True)
 
-    # ── Companion "atom4love-home" (position de résidence, si connue) ───────
+    # ── Companion "atom4love-home" + "atom4love-priv" (résidence, si connue) ─
     gps_file = os.path.expanduser(f"~/.zen/game/nostr/{email}/GPS")
     if os.path.exists(gps_file):
+        home_lat_s = home_lon_s = None
         try:
             gps_content = open(gps_file).read()
-            home_lat = gps_content.split("LAT=")[1].split(";")[0].strip()
-            home_lon = gps_content.split("LON=")[1].split(";")[0].strip()
+            home_lat_s = gps_content.split("LAT=")[1].split(";")[0].strip()
+            home_lon_s = gps_content.split("LON=")[1].split(";")[0].strip()
+            home_geo_tag = phi2x.geo_tag_a4l(float(home_lat_s), float(home_lon_s), birth_unix)
             home_tags = [["d", "atom4love-home"], ["app", "atom4love"],
-                         ["a4l_proof", a4l_proof], ["lat", home_lat], ["lon", home_lon]]
+                         ["a4l_proof", a4l_proof], ["g", home_geo_tag["penta"]],
+                         ["lat", home_lat_s], ["lon", home_lon_s]]
             send_nostr_event(love_keyfile, "", tags=home_tags, kind=30078, json_output=True)
         except Exception as e:
             print(f"⚠️ atom4love-home publish skipped: {e}", file=sys.stderr)
+
+        # d=atom4love-priv — préférences privées chiffrées NIP-44 (résidence +
+        # heure de naissance), chiffrées vers soi-même et vers la clé UMAP de
+        # résidence si résoluble. Silencieusement sauté si aucun chiffrement
+        # n'aboutit (comme l'ancien client atomic.html::_publishA4lCompanion).
+        if home_lat_s is not None and home_lon_s is not None:
+            try:
+                priv_data = json.dumps({
+                    "home_lat": float(home_lat_s),
+                    "home_lon": float(home_lon_s),
+                    "birth_time_utc": birth_unix,
+                    "privacy_prefs": {},
+                })
+                self_cipher = _nip44_encrypt_try(love_nsec, love_hex, priv_data)
+                station_cipher = None
+                umap_hex = _resolve_umap_hex(float(home_lat_s), float(home_lon_s))
+                if umap_hex:
+                    station_cipher = _nip44_encrypt_try(love_nsec, umap_hex, priv_data)
+
+                if self_cipher or station_cipher:
+                    priv_content = json.dumps({
+                        **({"self": self_cipher} if self_cipher else {}),
+                        **({"station": station_cipher} if station_cipher else {}),
+                    })
+                    priv_tags = [["d", "atom4love-priv"], ["app", "atom4love"],
+                                 ["a4l_proof", a4l_proof]]
+                    send_nostr_event(love_keyfile, priv_content, tags=priv_tags,
+                                      kind=30078, json_output=True)
+                else:
+                    print("ℹ️ atom4love-priv ignoré — NIP-44 indisponible", file=sys.stderr)
+            except Exception as e:
+                print(f"⚠️ atom4love-priv publish skipped: {e}", file=sys.stderr)
 
     print(json.dumps({
         "activated": bool(publish_result.get("success")),

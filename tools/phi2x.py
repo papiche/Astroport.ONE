@@ -61,11 +61,107 @@ def haversine_km(lat1, lon1, lat2, lon2):
     a = math.sin(dφ/2)**2 + math.cos(φ1)*math.cos(φ2)*math.sin(dλ/2)**2
     return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
 
-# ── Pentagon offset (moyenne circulaire pondérée exponentielle) ──────────────
-def _pentagon_offset(lat, lon):
-    """Moyenne circulaire pondérée exp(-d/1500) sur les 12 pentagones."""
-    sum_sin = sum_cos = 0.0
+# ── Grille dynamique + géo-adressage hexagonal (port de phi2x.js) ───────────
+# GRID_ROT_S : période de rotation complète de la grille pentagonale (~14.83h).
+# NOTE : compute_personal_phase() ci-dessous utilise encore PENTAGONS_GPS
+# statique (drift pré-existant avec phi2x.js, non corrigé ici pour ne pas
+# changer les phases déjà publiées) — seules les fonctions géo-tag/résonance
+# ci-dessous utilisent la grille dynamique, comme phi2x.js.
+GRID_ROT_S = ORBITAL_DAY_S / PHI  # ≈ 53406 s (~14.83h)
+
+
+def get_dynamic_pentagons(unix_ts: float):
+    """Fait tourner les 10 pentagones non-polaires autour de l'axe des pôles."""
+    angle = (unix_ts % GRID_ROT_S) / GRID_ROT_S * TAU
+    result = []
     for i, (plat, plon) in enumerate(PENTAGONS_GPS):
+        if i <= 1:
+            result.append((plat, plon))
+            continue
+        new_lon = (plon + math.degrees(angle)) % 360
+        result.append((plat, new_lon - 360 if new_lon > 180 else new_lon))
+    return result
+
+
+def get_nearest_pentagon_id(lat: float, lon: float, unix_ts: float) -> int:
+    pentagons = get_dynamic_pentagons(unix_ts)
+    best_idx, best_d = 0, float("inf")
+    for i, (plat, plon) in enumerate(pentagons):
+        d = haversine_km(lat, lon, plat, plon)
+        if d < best_d:
+            best_d, best_idx = d, i
+    return best_idx
+
+
+_HEX_SIZE_KM = 1.0
+
+
+def _hex_round(x: float, z: float):
+    y = -x - z
+    rx, ry, rz = round(x), round(y), round(z)
+    dx, dy, dz = abs(rx - x), abs(ry - y), abs(rz - z)
+    if dx > dy and dx > dz:
+        rx = -ry - rz
+    elif dy > dz:
+        ry = -rx - rz
+    else:
+        rz = -rx - ry
+    return rx, rz
+
+
+def gps_to_hex_axial(lat: float, lon: float):
+    """Coordonnées axiales (q, r) de la grille hexagonale pointy-top."""
+    x = lat * (math.pi / 180) * EARTH_RADIUS_KM
+    y = lon * (math.pi / 180) * EARTH_RADIUS_KM * math.cos(lat * math.pi / 180)
+    q = (math.sqrt(3) / 3 * x - 1 / 3 * y) / _HEX_SIZE_KM
+    r = (2 / 3 * y) / _HEX_SIZE_KM
+    return _hex_round(q, r)
+
+
+def geo_tag_a4l(lat: float, lon: float, unix_ts: float) -> dict:
+    """
+    Adresse hexagonale a4l pour une position GPS + timestamp.
+    Format : "a4l:P<pp>H<qqqq><rrrr>" — identique à phi2x.js::geoTagA4L.
+    """
+    pid = get_nearest_pentagon_id(lat, lon, unix_ts)
+    q, r = gps_to_hex_axial(lat, lon)
+    qenc = format((q + 32768) & 0xFFFF, "04X")
+    renc = format((r + 32768) & 0xFFFF, "04X")
+    penta = f"a4l:P{pid:02d}"
+    hex_tag = f"a4l:P{pid:02d}H{qenc}{renc}"
+    return {"penta": penta, "hex": hex_tag, "pentagon_id": pid, "q": q, "r": r}
+
+
+def compute_resonance_field(lat: float, lon: float, unix_ts: float) -> float:
+    """
+    Amplitude Ψ ∈ [0,1] du champ de résonance cymatique planétaire en (lat,lon).
+    Identique à phi2x.js::computeResonanceField.
+    """
+    poles = get_dynamic_pentagons(unix_ts)
+    amplitude = 0.0
+    for plat, plon in poles:
+        dist = haversine_km(lat, lon, plat, plon)
+        phase = (dist / EARTH_RADIUS_KM) * WAVE_STRETCH
+        amplitude += math.cos(phase) * math.exp(-dist / 1500.0)
+    return (amplitude + 12) / 24  # ∈ [0, 1]
+
+
+def encode_a5l_tag(a5l_amplitude: float) -> str:
+    """Format : "a5l:<XXXX>" — amplitude quantifiée sur 16 bits hex."""
+    v = max(0.0, min(1.0, a5l_amplitude))
+    return f"a5l:{round(v * 65535):04X}"
+
+
+# ── Pentagon offset (moyenne circulaire pondérée exponentielle) ──────────────
+def _pentagon_offset(lat, lon, unix_ts=None):
+    """
+    Moyenne circulaire pondérée exp(-d/1500) sur les 12 pentagones.
+    Utilise la grille dynamique (Sphère Temps Phi, cf. get_dynamic_pentagons)
+    quand unix_ts est fourni — identique à phi2x.js::_pentagonOffset.
+    """
+    grid = get_dynamic_pentagons(unix_ts) if unix_ts is not None else PENTAGONS_GPS
+    sum_sin = sum_cos = 0.0
+    for i, (plat, plon) in enumerate(grid):
         d = haversine_km(lat, lon, plat, plon)
         w = math.exp(-d / 1500.0)
         angle = i / 12.0 * TAU
@@ -89,13 +185,14 @@ def compute_personal_phase(birth_unix: int, birth_lat: float, birth_lon: float,
     WAVE_STRETCH = F_PHI/F_2 ≈ 1.059 est un multiplicateur d'onde,
     PAS un modulo (erreur corrigée par rapport à l'implémentation originale atomic.html).
     """
-    utc_corr_s   = -utc_offset_h * 3600.0
-    solar_corr_s = birth_lon / 360.0 * ORBITAL_DAY_S
+    utc_corr_s     = -utc_offset_h * 3600.0
+    birth_unix_utc = birth_unix + utc_corr_s        # temps cosmique (UTC)
+    solar_corr_s   = birth_lon / 360.0 * ORBITAL_DAY_S
 
-    theta_annual = (birth_unix % ORBITAL_YEAR_S) / ORBITAL_YEAR_S * TAU
-    birth_solar  = float(birth_unix) + utc_corr_s + solar_corr_s
-    theta_daily  = (birth_solar % ORBITAL_DAY_S) / ORBITAL_DAY_S * TAU
-    offset_penta = _pentagon_offset(birth_lat, birth_lon)
+    theta_annual = (birth_unix_utc % ORBITAL_YEAR_S) / ORBITAL_YEAR_S * TAU
+    theta_daily  = ((birth_unix_utc + solar_corr_s) % ORBITAL_DAY_S) / ORBITAL_DAY_S * TAU
+    # Géométrie de la grille pentagonale au moment exact de la naissance (dynamique)
+    offset_penta = _pentagon_offset(birth_lat, birth_lon, birth_unix_utc)
 
     return math.fmod((theta_annual + theta_daily + offset_penta) * WAVE_STRETCH, TAU)
 
