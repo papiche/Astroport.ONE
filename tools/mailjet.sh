@@ -509,12 +509,15 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
     fi
 
     echo "Envoi du mail avec contenu HTML embarqué via Mailjet API v3.1..."
-    curl -s -m 15 \
+    _mj_json_tmp=$(mktemp)
+    printf '%s' "$json_payload" > "$_mj_json_tmp"
+    curl -s -m 30 \
         -X POST \
         --user "${MJ_APIKEY_PUBLIC}:${MJ_APIKEY_PRIVATE}" \
         https://api.mailjet.com/v3.1/send \
         -H 'Content-Type: application/json' \
-        -d "$json_payload"
+        --data-binary "@${_mj_json_tmp}"
+    rm -f "$_mj_json_tmp"
 
 elif [[ "$_email_active" == "false" ]]; then
     echo "ℹ️  ${mail} — canal email inactif pour flux '${MAIL_CHANNEL:-}', envoi email ignoré"

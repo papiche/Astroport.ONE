@@ -18,6 +18,8 @@ CONFIG_REGISTRY="$HOME/.claude-accounts.conf"
 LOCAL_BIN="$HOME/.local/bin"
 SELF_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 
+[[ ! -e "${LOCAL_BIN}/${SCRIPT_NAME}" ]] && mkdir -p "$LOCAL_BIN" && ln -sf "$SELF_PATH" "${LOCAL_BIN}/${SCRIPT_NAME}" && echo "Auto install symlink: ~/.local/bin/${SCRIPT_NAME}"
+
 # ── Couleurs ──────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'

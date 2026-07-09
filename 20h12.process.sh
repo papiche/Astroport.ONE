@@ -122,9 +122,12 @@ mkdir -p "$(dirname "$ASTRO_PROFILE")"
         else
             echo "  BROKEN  $_name -> $_target"
             ((_broken++))
-            # Chercher le script dans admin/ ou tools/ de ASTRO
+            # Chercher le script dans admin/, tools/ ou racine du repo
             _found=$(find "${MY_PATH}/admin" "${MY_PATH}/tools" \
                 -maxdepth 3 \( -name "$_name" -o -name "${_name%.sh}.sh" \) 2>/dev/null \
+                | head -1)
+            [[ -z "$_found" ]] && _found=$(find "${MY_PATH}" \
+                -maxdepth 1 \( -name "$_name" -o -name "${_name%.sh}.sh" \) 2>/dev/null \
                 | head -1)
             if [[ -n "$_found" && -f "$_found" ]]; then
                 ln -f -s "$_found" "$_lnk"
@@ -135,7 +138,7 @@ mkdir -p "$(dirname "$ASTRO_PROFILE")"
     done
     echo "  TOTAL: ${_ok} OK, ${_broken} broken (${_fixed} auto-réparés)"
     echo "=========================================================="
-} >> "$ASTRO_PROFILE"
+} > "$ASTRO_PROFILE"
 
 ########################################################################
 # show Ustats.sh cache of the day
