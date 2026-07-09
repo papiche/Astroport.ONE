@@ -79,9 +79,14 @@ fi
 ## Dérivation clé LOVE + résonance Phi² + publication kind 30078 — seule sortie
 ## stdout attendue par les appelants (dernière ligne = JSON du résultat).
 if [[ -n "${BIRTH_DATETIME}" && -n "${BIRTH_LAT}" && -n "${BIRTH_LON}" ]]; then
-    python3 "${MY_PATH}/atom4love_publish.py" "${EMAIL}" "${BIRTH_DATETIME}" \
+    _PY_RESULT=$(python3 "${MY_PATH}/atom4love_publish.py" "${EMAIL}" "${BIRTH_DATETIME}" \
         "${BIRTH_LAT}" "${BIRTH_LON}" "${BIRTH_WEIGHT:-3.5}" "${POLARITY:-0}" \
-        "${CONCEPTION_DATETIME}"
+        "${CONCEPTION_DATETIME}")
+    # Inscrire la Singularité ATOM4LOVE dans le Kind 30800 (DID) de l'utilisateur
+    # La mise à jour recalcule aussi le badge MayaKin depuis .BIRTHDATE
+    "${MY_PATH}/did_manager_nostr.sh" update "${EMAIL}" ATOM4LOVE >&2 || \
+        echo "[atom4love_activate] did_manager_nostr.sh update KO (non-bloquant)" >&2
+    echo "${_PY_RESULT}"
 else
     echo "⚠️  Missing birth_lat/birth_lon — skipping ATOM4LOVE key derivation/publish" >&2
     echo "{\"activated\":false,\"email\":\"${EMAIL}\",\"error\":\"MISSING_BIRTH_COORDINATES\"}"

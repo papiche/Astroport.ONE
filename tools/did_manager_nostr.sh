@@ -529,6 +529,11 @@ update_did_document() {
             services="UPlanet Inventory - Commons maintenance item registered"
             contract_status="inventory_item_registered"
             ;;
+        "ATOM4LOVE")
+            quota="N/A"
+            services="ATOM4LOVE - Vibratoire singularity activated on constellation"
+            contract_status="atom4love_singularity_activated"
+            ;;
         *)
             echo -e "${RED}❌ Unknown update type: ${update_type}${NC}"
             rm -f "$did_temp" "$did_updated"
