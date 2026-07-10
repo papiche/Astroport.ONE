@@ -39,20 +39,28 @@ Administrateur humain de la station, identifié par `$CAPTAINEMAIL`. Seul décid
 
 ### ARBOR — Auto-amélioration encadrée
 
-Boucle d'amélioration du prompt d'interprétation de commandes BRO, inspirée du projet Arbor (RUC-NLPIR). Ne touche jamais au code principal.
+Boucle d'amélioration du prompt d'interprétation de commandes BRO, inspirée du projet Arbor (RUC-NLPIR). Ne touche jamais au code principal sans validation humaine.
 
-**Portée strictement limitée :**
-- Amélioration exclusive du prompt et du modèle Ollama d'interprétation des commandes (`_build_interpretation_prompt()` / `COMMAND_INTERPRETATION_MODEL` dans `bro_watch_core.py`)
-- Aucun merge automatique — validation CAPTAIN obligatoire avant intégration
-- Mine aussi le corpus `~/.zen/flashmem/bro_tool_requests.jsonl` pour détecter des besoins non-satisfaits → notifie CAPTAIN (mais ne génère jamais de code automatiquement)
+**Trois volets, même discipline de gouvernance (jamais de merge automatique) :**
 
-**Workflow :**
+1. **Prompt/modèle d'interprétation** — amélioration exclusive de `_build_interpretation_prompt()` / `COMMAND_INTERPRETATION_MODEL` (`bro/_shared.py`), validée par éval dev + held-out avant proposition.
+2. **Mining des besoins non satisfaits** — analyse `~/.zen/flashmem/bro_tool_requests.jsonl` pour détecter des demandes récurrentes → notifie CAPTAIN (jamais de génération de code automatique).
+3. **Observation du canal LOVE** *(depuis 2026-07-10)* — `arbor_self_improve.py --observe-love-channel` surveille en continu la santé du code (`shellcheck`/`py_compile` sur `love_handler.sh`, `phi2x.py`, `atom4love_dream_publish.py`, `atom4love_follow.py`) et l'usage réel (profils LOVE actifs, dream_vector publiés, exécutions de `LOVE MATCH`) pour **piloter de futures décisions d'évolution et d'optimisation** du code du canal LOVE. Observation et rapport uniquement en Stage Alpha — une boucle d'optimisation par éval dev/held-out sur les poids de `LOVE MATCH` n'a de sens qu'une fois un volume d'usage réel suffisant accumulé (fabriquer une vérité de terrain arbitraire serait prématuré et contraire à la discipline anti-surapprentissage d'ARBOR). Toute anomalie détectée (avertissement shellcheck nouveau, échec py_compile) est publiée en **issue Git** via `POST /api/feedback` (UPassport) — pas de secret Git connu d'ARBOR : l'endpoint résout `GIT_HOST`/`GIT_TOKEN`/`GIT_OWNER` depuis le DID coopératif (Kind 30800, `cooperative_config.sh`), avec repli email puis stockage local si Git est indisponible. Une seule issue par changement d'état (empreinte shellcheck/py_compile), jamais une par exécution de cron.
+
+**Workflow (volet 1 — prompt/modèle) :**
 1. CAPTAIN tape `#arbor` en SELF DM
 2. `arbor_self_improve.py --apply --notify-captain` s'exécute en arrière-plan
 3. Teste des candidats (modèles ou correctifs) sur le jeu eval dev
 4. Valide le gagnant sur le jeu held-out (détection surapprentissage)
 5. Crée une branch `arbor/bro-cmd-interp/*` dans un worktree git isolé
 6. Notifie le CAPTAIN : diff proposé → validation manuelle avant merge
+
+**Workflow (volet 3 — observation LOVE) :**
+1. `arbor_self_improve.py --observe-love-channel --notify-captain` (cron ou déclenchement manuel)
+2. Rapport shellcheck/py_compile + statistiques d'usage agrégées (aucune donnée personnelle)
+3. Si l'empreinte de santé du code a changé ET révèle une anomalie → issue Git ouverte (`POST /api/feedback`, repo `{GIT_OWNER}/Astroport.ONE`)
+4. DM NODE au CAPTAIN : lien vers l'issue si ouverte, sinon rapport complet — aucune modification de code à ce stade
+5. Une fois l'usage suffisant : décision humaine d'ouvrir une boucle d'évolution dédiée (même infra worktree/branche que le volet 1, réutilisable via `LOVE_CHANNEL_FILES`)
 
 ---
 
@@ -186,7 +194,7 @@ Déterminé par `bro_user_level.py` — lecture `contractStatus` (DID cache) + v
 | `comfyui_job` | NODE light | Génération vidéo (t2v / i2v) — verrou GPU exclusif |
 | `comfyui_result` | NODE brain | Résultat vidéo → `uDRIVE/Videos` + notif DM |
 | `nostr_delete` | NODE swarm | Suppression strfry authentifiée par HEX swarm |
-| `love` | Utilisateur | Fonctionnalités sociales (profil, matching, kin) — `love_handler.sh`, sans rapport avec ARBOR |
+| `love` | Utilisateur | Fonctionnalités sociales (profil, matching, kin) — `love_handler.sh`, code observé (pas modifié) par ARBOR volet 3 |
 
 ---
 
@@ -197,8 +205,8 @@ Déterminé par `bro_user_level.py` — lecture `contractStatus` (DID cache) + v
 | `IA/bro/bro_dm_daemon.sh` | 1 556 | Daemon principal — inotifywait, route, déchiffre, répond |
 | `IA/bro/bro_common_lib.sh` | 606 | Bibliothèque partagée — `send_dm`, `bro_resolve_email`, `bro_user_level`… |
 | `IA/bro_watch_core.py` | 1 187 | Surveillance Web2 multi-tenant + SELF DM + ARBOR (mining, trigger) |
-| `IA/arbor_self_improve.py` | 523 | Auto-amélioration prompt/modèle + mining (discipline Arbor, gouvernance humaine) |
-| `IA/bro/love_handler.sh` | — | Fonctionnalités sociales (profil, matching, kin) — hors périmètre ARBOR |
+| `IA/arbor_self_improve.py` | — | Auto-amélioration prompt/modèle + mining + observation canal LOVE (3 volets, discipline Arbor, gouvernance humaine) |
+| `IA/bro/love_handler.sh` | — | Fonctionnalités sociales (profil, matching, kin) — observé (pas modifié) par ARBOR volet 3, cf. `LOVE_CHANNEL_FILES` |
 | `tools/nostr_node_intercom.py` | — | Transport DM NIP-44 inter-NODE (encrypt / decrypt) |
 | `IA/short_memory.py` | — | Slots mémoire personnelle (0-12) — `~/.zen/flashmem/EMAIL/` |
 | `IA/question.py` | — | Interface Ollama + Qdrant pour questions RAG |

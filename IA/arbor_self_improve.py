@@ -113,6 +113,26 @@ SANDBOX_FILES = [
 # src/coordinator/tools/git_ops.py::_PROTECTED_BRANCHES).
 _PROTECTED_BRANCHES = frozenset({"main", "master"})
 
+# ── Troisième volet : observation du canal "love" (love_handler.sh + backend
+# ATOM4LOVE dream_vector). Portée décidée avec le capitaine (2026-07-10) :
+# ARBOR observe en continu la santé du code et l'usage réel du canal LOVE
+# pour PILOTER de futures décisions d'évolution/optimisation — il ne modifie
+# jamais ce code automatiquement (même discipline que --mine-requests
+# ci-dessous : détection + rapport, jamais de génération de code). Une
+# boucle hypothèse→éval dev/held-out comme pour COMMAND_INTERPRETATION_MODEL
+# n'a de sens qu'une fois un vrai jeu de données d'usage accumulé
+# (~/.zen/flashmem/*/love/matches.json) — prématuré en Stage Alpha, ce
+# serait fabriquer une vérité de terrain arbitraire.
+LOVE_CHANNEL_FILES = [
+    "IA/bro/love_handler.sh",
+    "tools/phi2x.py",
+    "tools/atom4love_dream_publish.py",
+    "tools/atom4love_dream.sh",
+    "tools/atom4love_follow.py",
+    "tools/atom4love_follow.sh",
+]
+LOVE_FLASHMEM_BASE = os.path.expanduser("~/.zen/flashmem")
+
 # ── Hypothèses (arborescence à plat : chaque candidat est indépendant) ──
 # Choisies suite à un sweep manuel de modèles Ollama locaux mené dans cette
 # même session (gemma3:latest 6/8, orieg/gemma3-tools:12b 7/8, qwen2.5-coder:14b
@@ -485,6 +505,219 @@ def _notify_captain_tool_requests(reports):
         return False
 
 
+# ── Observation du canal LOVE (code + usage) ────────────────────────────
+# Détection seule — aucune modification de code. Nourrit une future boucle
+# d'évolution/optimisation (worktree isolé + revue capitaine, même discipline
+# que le volet prompt/modèle ci-dessus) une fois l'usage réel suffisant.
+
+def _shellcheck_love_files():
+    """Lance shellcheck sur les scripts bash du canal LOVE. Retourne
+    {fichier: {ok, warning_count, detail}} — 'ok': False si shellcheck est
+    absent (signalé, pas fatal) ou si le fichier est introuvable."""
+    report = {}
+    shellcheck_bin = shutil.which("shellcheck")
+    for rel_path in LOVE_CHANNEL_FILES:
+        if not rel_path.endswith(".sh"):
+            continue
+        abs_path = os.path.join(REPO_ROOT, rel_path)
+        if not os.path.exists(abs_path):
+            report[rel_path] = {"ok": False, "warning_count": None, "detail": "fichier introuvable"}
+            continue
+        if not shellcheck_bin:
+            report[rel_path] = {"ok": False, "warning_count": None, "detail": "shellcheck non installé"}
+            continue
+        proc = subprocess.run([shellcheck_bin, "-f", "gcc", abs_path],
+                               capture_output=True, text=True, timeout=30)
+        lines = [l for l in proc.stdout.splitlines() if l.strip()]
+        report[rel_path] = {"ok": True, "warning_count": len(lines), "detail": lines[:5]}
+    return report
+
+
+def _py_compile_love_files():
+    """Vérifie que les modules Python du canal LOVE compilent sans erreur
+    de syntaxe. Retourne {fichier: {ok, detail}}."""
+    report = {}
+    for rel_path in LOVE_CHANNEL_FILES:
+        if not rel_path.endswith(".py"):
+            continue
+        abs_path = os.path.join(REPO_ROOT, rel_path)
+        if not os.path.exists(abs_path):
+            report[rel_path] = {"ok": False, "detail": "fichier introuvable"}
+            continue
+        proc = subprocess.run([bwc.PYTHON_BIN, "-m", "py_compile", abs_path],
+                               capture_output=True, text=True, timeout=30)
+        report[rel_path] = {"ok": proc.returncode == 0, "detail": proc.stderr.strip()[:300]}
+    return report
+
+
+def _love_usage_stats():
+    """Statistiques d'usage réel du canal LOVE, lues dans le cache local
+    (aucune donnée personnelle transmise — uniquement des comptages)."""
+    stats = {"profiles": 0, "dream_vectors": 0, "match_runs": 0, "match_history_entries": 0}
+    if not os.path.isdir(LOVE_FLASHMEM_BASE):
+        return stats
+    for owner_dir in os.listdir(LOVE_FLASHMEM_BASE):
+        love_dir = os.path.join(LOVE_FLASHMEM_BASE, owner_dir, "love")
+        if not os.path.isdir(love_dir):
+            continue
+        if os.path.exists(os.path.join(love_dir, "profile.json")):
+            stats["profiles"] += 1
+        if os.path.exists(os.path.join(love_dir, "dream_vector.json")):
+            stats["dream_vectors"] += 1
+        matches_path = os.path.join(love_dir, "matches.json")
+        if os.path.exists(matches_path):
+            stats["match_runs"] += 1
+            try:
+                with open(matches_path, encoding="utf-8") as f:
+                    stats["match_history_entries"] += len(json.load(f))
+            except Exception:
+                pass
+    return stats
+
+
+def observe_love_channel():
+    """Rapport d'observation du canal LOVE : santé du code (shellcheck,
+    py_compile) + usage réel agrégé. Ne modifie jamais le code — cf.
+    discipline ARBOR (portée du 2026-07-10)."""
+    return {
+        "shellcheck": _shellcheck_love_files(),
+        "py_compile": _py_compile_love_files(),
+        "usage": _love_usage_stats(),
+    }
+
+
+def _format_love_report(report):
+    lines = ["🌀 ARBOR — Observation du canal LOVE (code + usage, Stage Alpha)\n"]
+
+    sc_issues = [(f, r) for f, r in report["shellcheck"].items() if r["warning_count"]]
+    sc_clean = [f for f, r in report["shellcheck"].items() if r["ok"] and r["warning_count"] == 0]
+    if sc_issues:
+        lines.append("⚠️ shellcheck — avertissements :")
+        for f, r in sc_issues:
+            lines.append(f"  • {f} : {r['warning_count']} avertissement(s)")
+    if sc_clean:
+        lines.append(f"✅ shellcheck propre : {', '.join(sc_clean)}")
+
+    py_fail = [f for f, r in report["py_compile"].items() if not r["ok"]]
+    if py_fail:
+        lines.append("\n❌ py_compile en échec :")
+        for f in py_fail:
+            lines.append(f"  • {f} : {report['py_compile'][f]['detail']}")
+    else:
+        lines.append("\n✅ py_compile OK sur tous les modules LOVE.")
+
+    u = report["usage"]
+    lines.append(
+        f"\n📊 Usage réel : {u['profiles']} profil(s) LOVE · {u['dream_vectors']} dream_vector(s) publié(s) "
+        f"· {u['match_runs']} compte(s) ayant lancé LOVE MATCH ({u['match_history_entries']} exécution(s) au total)."
+    )
+
+    if u["match_history_entries"] < 20:
+        lines.append(
+            "\n💡 Usage encore trop faible pour une boucle d'optimisation par éval "
+            "(dev/held-out) fiable sur les poids de score LOVE MATCH — observation seule pour l'instant."
+        )
+    lines.append("\nAucune modification de code effectuée — rapport d'observation uniquement.")
+    return "\n".join(lines)
+
+
+def _notify_captain_love_observation(report, issue_url=None):
+    captain_email = os.environ.get("CAPTAINEMAIL", "").strip()
+    if not captain_email:
+        print("⚠️ CAPTAINEMAIL absent de l'environnement — notification capitaine sautée.")
+        return False
+    nsec = _node_nsec()
+    captain_hex = bwc._owner_hex(captain_email)
+    if not nsec or not captain_hex:
+        print("⚠️ NODE nsec ou HEX capitaine introuvable — notification capitaine sautée.")
+        return False
+
+    # Ping court pointant vers l'issue Git (durable, triable) plutôt que le
+    # rapport complet en double — le DM reste un simple accusé de réception.
+    message = (f"🌀 ARBOR — anomalie détectée sur le canal LOVE, issue ouverte :\n{issue_url}"
+               if issue_url else _format_love_report(report))
+    script = os.path.join(REPO_ROOT, "tools", "nostr_send_secure_dm.py")
+    try:
+        proc = subprocess.run(
+            [bwc.PYTHON_BIN, script, "--nsec-stdin", captain_hex, message, "wss://relay.copylaradio.com",
+             "--ttl-days", "14"],
+            input=nsec + "\n", capture_output=True, text=True, timeout=15,
+        )
+        return proc.returncode == 0
+    except Exception as e:
+        print(f"⚠️ Échec envoi notification LOVE : {e}")
+        return False
+
+
+# ── Publication d'issue Git (API /api/feedback, config Kind 30800) ─────────
+# Réutilise le même circuit que les autres apps UPlanet (coracle, zelkova…) :
+# UPassport résout GIT_HOST/GIT_TOKEN/GIT_OWNER depuis le DID coopératif
+# (cooperative_config.sh) et bascule sur email puis stockage local si Git
+# est indisponible — ARBOR n'a besoin de connaître aucun secret Git lui-même.
+LOVE_OBSERVATION_STATE = os.path.expanduser("~/.zen/flashmem/love_observation_state.json")
+
+
+def _love_code_health_fingerprint(report):
+    sc = {f: r["warning_count"] for f, r in report["shellcheck"].items()}
+    py = {f: r["ok"] for f, r in report["py_compile"].items()}
+    return hashlib.sha1(json.dumps({"sc": sc, "py": py}, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def _load_love_observation_state():
+    try:
+        with open(LOVE_OBSERVATION_STATE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _save_love_observation_state(state):
+    os.makedirs(os.path.dirname(LOVE_OBSERVATION_STATE), exist_ok=True)
+    with open(LOVE_OBSERVATION_STATE, "w", encoding="utf-8") as f:
+        json.dump(state, f)
+
+
+def _publish_love_issue(report):
+    """N'ouvre une NOUVELLE issue que si l'empreinte de santé du code
+    (shellcheck/py_compile) a changé depuis la dernière observation ET
+    qu'il y a effectivement quelque chose à signaler — une issue par
+    exécution de cron serait du bruit, pas de l'auto-amélioration encadrée.
+    Retourne le dict de réponse de /api/feedback, ou {'skipped': raison}."""
+    fingerprint = _love_code_health_fingerprint(report)
+    state = _load_love_observation_state()
+    has_issues = (any(r["warning_count"] for r in report["shellcheck"].values())
+                  or any(not r["ok"] for r in report["py_compile"].values()))
+
+    if fingerprint == state.get("fingerprint"):
+        return {"skipped": "empreinte de santé du code inchangée depuis la dernière observation"}
+
+    state["fingerprint"] = fingerprint
+    state["last_run"] = datetime.now(timezone.utc).isoformat()
+    _save_love_observation_state(state)
+
+    if not has_issues:
+        return {"skipped": "aucune anomalie détectée — pas d'issue ouverte"}
+
+    uspot = os.environ.get("uSPOT", "http://127.0.0.1:54321")
+    try:
+        import requests
+        resp = requests.post(
+            f"{uspot}/api/feedback",
+            data={
+                "title": "🌀 ARBOR — anomalie détectée sur le canal LOVE",
+                "description": _format_love_report(report),
+                "source": "Astroport.ONE",
+                "category": "bug",
+                "app_version": "arbor-love-observer",
+            },
+            timeout=15,
+        )
+        return resp.json() if resp.ok else {"ok": False, "status": resp.status_code, "text": resp.text[:300]}
+    except Exception as e:
+        print(f"⚠️ Échec publication issue LOVE : {e}")
+        return {"ok": False, "error": str(e)}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true",
@@ -496,7 +729,31 @@ def main():
     parser.add_argument("--mine-requests", action="store_true",
                          help="Analyse le corpus multi-utilisateurs des demandes non satisfaites "
                               "(indépendant de l'auto-amélioration du prompt ci-dessus)")
+    parser.add_argument("--observe-love-channel", action="store_true",
+                         help="Observation du code + de l'usage réel du canal LOVE "
+                              "(love_handler.sh, dream_vector) — rapport uniquement, "
+                              "aucune modification de code")
     args = parser.parse_args()
+
+    if args.observe_love_channel:
+        report = observe_love_channel()
+        print(_format_love_report(report))
+
+        issue_result = _publish_love_issue(report)
+        issue_url = issue_result.get("issue_url")
+        if issue_result.get("skipped"):
+            print(f"\nℹ️ Issue Git : {issue_result['skipped']}")
+        elif issue_url:
+            print(f"\n📌 Issue Git ouverte : {issue_url}")
+        elif issue_result.get("ok") is False:
+            print(f"\n⚠️ Échec ouverture issue Git : {issue_result}")
+
+        if args.notify_captain:
+            if _notify_captain_love_observation(report, issue_url=issue_url):
+                print("📨 Capitaine notifié par DM NODE.")
+            else:
+                print("⚠️ Notification capitaine non envoyée (voir logs ci-dessus).")
+        return
 
     if args.mine_requests:
         reports = mine_tool_requests()

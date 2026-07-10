@@ -449,6 +449,33 @@ print('ok' if expected==sys.argv[1] else 'fail')
     echo "$content"
 }
 
+## ── Score bonus : alignement des dream_vector (0-15 pts + label) ────────────
+## Réutilise phi2x.py::compute_dream_divergence (Jaccard inversé sur les tags
+## CR/DR). Divergence faible = Rêves alignés = bonus. Ne recalcule PAS γ ici :
+## la Bifurcation Relativiste (v, γ) nécessite le tag "v" du Kind 30079 publié,
+## disponible côté client (atomic_dream.html) mais pas garanti dans le cache
+## local love/dream_vector.json (qui ne contient que le brouillon BRO).
+_love_dream_score() {
+    local my_tags_json="$1" other_tags_json="$2"
+    [[ -z "$my_tags_json" || -z "$other_tags_json" ]] && echo "0" && return
+    python3 -c "
+import sys, json
+sys.path.insert(0, '${_LOVE_PATH}/../../tools')
+from phi2x import compute_dream_divergence
+a = json.loads(sys.argv[1]); b = json.loads(sys.argv[2])
+if not a or not b:
+    print('0'); sys.exit(0)
+d = compute_dream_divergence(a, b)
+pts = round((1 - d) * 15)
+if pts <= 0:
+    print('0')
+elif d < 0.34:
+    print(f'{pts} 🌌 Rêves communs alignés')
+else:
+    print(f'{pts} 🌊 Rêves partiellement partagés')
+" "$my_tags_json" "$other_tags_json" 2>/dev/null || echo "0"
+}
+
 ## ── Score de résonance Phi² entre deux phases (0-40 pts + label) ─────────────
 ## Formule ATOM4LOVE : k = 1/(1+|sin(Δφ)|)  →  [0.5, 1.0]
 ## Bonus omega_bio : cohérence ou complémentarité ω  →  +8 pts max (total plafonné à 50)
@@ -1004,7 +1031,7 @@ Le message doit être court (3-5 phrases max), naturel, sincère, et refléter m
 }
 
 ## ── Handler : matching local (Tier 2, +18 requis) ───────────────────────────
-## Score composite (135 pts max) :
+## Score composite (150 pts max) :
 ##   • Intérêts communs   : 0-40 pts  (15 pts/intérêt commun, max 40)
 ##   • Compatibilité KIN  : 0-30 pts  (formule Dreamspell seal/tone/couleur)
 ##   • Résonance Phi²     : 0-30 pts  (k=1/(1+|sin(Δφ)|) + bonus ω, ATOM4LOVE)
@@ -1012,6 +1039,8 @@ Le message doit être court (3-5 phrases max), naturel, sincère, et refléter m
 ##   • Résonance mémoire  : 0-15 pts  (associations poétiques Qdrant love_{hex},
 ##                           cf. memory_manager.py::love_resonance — ex: "aime le
 ##                           café" ↔ "lit Rimbaud au petit matin")
+##   • Rêves communs      : 0-15 pts  (compute_dream_divergence sur dream_vector,
+##                           cf. atomic_dream.html pour la lecture γ/Bifurcation)
 _handle_love_match() {
     local sender="$1"
     local email; email=$(bro_resolve_email "$sender")
@@ -1042,6 +1071,10 @@ _handle_love_match() {
     local my_traces="[]"
     [[ -n "$my_pubkey_hex" ]] && my_traces=$(_love_get_traces "$my_pubkey_hex")
     local my_trace_count; my_trace_count=$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1])))" "$my_traces" 2>/dev/null || echo 0)
+
+    local my_dream_tags="[]"
+    [[ -f "$_LOVE_MEM_BASE/$email/love/dream_vector.json" ]] && \
+        my_dream_tags=$(jq -c '.dream_tags // []' "$_LOVE_MEM_BASE/$email/love/dream_vector.json" 2>/dev/null || echo "[]")
 
     [[ "${LOVE_DEBUG:-0}" == "1" ]] && \
         _log "💕 LOVE match: email=$email kin=${my_kin:-0} phi2x=$my_phi2x_available traces=$my_trace_count"
@@ -1191,6 +1224,18 @@ else:
             fi
         fi
 
+        # ── Score 8 : Rêves communs (dream_vector, 0-15 pts bonus) ──────────
+        local score_dream=0 dream_label=""
+        local other_dream_tags="[]"
+        [[ -f "$other_dir/dream_vector.json" ]] && \
+            other_dream_tags=$(jq -c '.dream_tags // []' "$other_dir/dream_vector.json" 2>/dev/null || echo "[]")
+        if [[ "$my_dream_tags" != "[]" && "$other_dream_tags" != "[]" ]]; then
+            local dream_raw; dream_raw=$(_love_dream_score "$my_dream_tags" "$other_dream_tags")
+            score_dream=$(echo "$dream_raw" | awk '{print $1}')
+            dream_label="${dream_raw#* }"
+            [[ "$dream_label" == "$score_dream" ]] && dream_label=""
+        fi
+
         # ── Score total : interférence non-linéaire (Géométrie de la Confiance) ─
         # k = score_phi2x normalisé sur [0,1] pilote le régime d'interférence.
         # k ≥ 0.95 → Singularité (fusion exponentielle)
@@ -1199,7 +1244,7 @@ else:
         local total_score
         total_score=$(python3 -c "
 import math
-si=$score_interest; sk=$score_kin; sp=$score_phi2x; st=$score_traces; sa=$score_a5l; sm=$score_memory
+si=$score_interest; sk=$score_kin; sp=$score_phi2x; st=$score_traces; sa=$score_a5l; sm=$score_memory; sd=$score_dream
 k = sp / 30.0  # sp est borné à 30 pts → k ∈ [0,1]
 if k >= 0.95:
     total = (si + sk + st) * 1.5 + sp
@@ -1210,11 +1255,11 @@ else:
     h = max(k - abs(social - sp * 3) / 100.0, 0.0)
     total = min(social, sp * 3) - h * h * 0.25 * 100
     total = total / 3.0 + sp
-# Les bonus cymatique (a5l) et mémoriel (sm) s'additionnent toujours,
-# indépendamment du régime d'interférence choisi ci-dessus.
-total += sa + sm
-print(min(135, max(0, int(total))))
-" 2>/dev/null) || total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l + score_memory ))
+# Les bonus cymatique (a5l), mémoriel (sm) et Rêves communs (sd) s'additionnent
+# toujours, indépendamment du régime d'interférence choisi ci-dessus.
+total += sa + sm + sd
+print(min(150, max(0, int(total))))
+" 2>/dev/null) || total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l + score_memory + score_dream ))
         [[ $total_score -lt 10 ]] && continue
 
         local bio
@@ -1235,6 +1280,8 @@ print(min(135, max(0, int(total))))
             affinity_parts+=("$a5l_label")
         [[ $score_memory -gt 0 && -n "$memory_label" ]] && \
             affinity_parts+=("$memory_label")
+        [[ $score_dream -gt 0 && -n "$dream_label" ]] && \
+            affinity_parts+=("$dream_label")
 
         candidate_scores["$other_email"]=$total_score
         local _sep="" _lbl=""
@@ -1297,7 +1344,7 @@ print(json.loads(sys.argv[1]).get('about','')[:150])
         matches_text+="${count}. **${nostr_name:-Profil anonyme}**\n"
         [[ -n "$nostr_about" ]] && matches_text+="   ${nostr_about}\n"
         [[ -n "$bio" && "$bio" != "…" ]] && matches_text+="   _(Love)_ ${bio}\n"
-        matches_text+="   ⭐ ${sc}/135 | ${lbl}\n"
+        matches_text+="   ⭐ ${sc}/150 | ${lbl}\n"
         if [[ -n "$recent_posts" ]]; then
             matches_text+="\n   📝 Posts récents :\n"
             while IFS= read -r post; do
@@ -1330,6 +1377,119 @@ open(f,'w').write(json.dumps(data,ensure_ascii=False))
         "${_RELAYS[0]}"
 }
 
+## ── Handler : proposer un premier jet de dream_vector (Réalité Choisie) ──────
+## Lit bio/intérêts (love/profile.json, synchronisés depuis identity/.Core.md +
+## .Preferences.md), demande à Ollama de proposer des tags taxonomisés
+## (setting:/lifestyle:/values:/career:/relation:/method:) + un résumé CR/DR,
+## écrit le résultat dans love/dream_vector.json puis publie/rafraîchit le
+## kind 30079 (d=dream_vector) via atom4love_dream.sh (clé .secret.love).
+## Ouvert à tous les tiers (même précédent que profile/suggest), soumis au
+## même quota journalier que les autres prompts IA (_love_consume_ask).
+_handle_love_dream() {
+    local sender="$1"
+    local email; email=$(bro_resolve_email "$sender")
+    [[ -z "$email" ]] && \
+        _send_dm "$sender" "💕 Compte non trouvé sur cette station." "${_RELAYS[0]}" && return
+
+    local secret_file="$HOME/.zen/game/nostr/${email}/.secret.love"
+    [[ ! -s "$secret_file" ]] && \
+        _send_dm "$sender" "💕 Active d'abord ATOM4LOVE pour générer ton dream_vector." "${_RELAYS[0]}" && return
+
+    if ! _love_consume_ask "$email"; then
+        local tomorrow; tomorrow=$(date -d "+1 day" +%d/%m 2>/dev/null || date +%d/%m)
+        _send_dm "$sender" \
+            "💕 Tu as utilisé tes ${_LOVE_DAILY_QUOTA} prompts LOVE pour aujourd'hui.\n\nReviens demain (${tomorrow})." \
+            "${_RELAYS[0]}"
+        return
+    fi
+
+    local profile; profile=$(_love_get_profile "$email")
+    local bio interests
+    bio=$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('bio',''))" "$profile" 2>/dev/null)
+    interests=$(python3 -c "import json,sys; print(', '.join(json.loads(sys.argv[1]).get('interests',[])))" "$profile" 2>/dev/null)
+
+    local prompt="Voici le profil d'un utilisateur : bio=\"${bio}\", intérêts=\"${interests}\".
+Propose un premier jet de \"dream_vector\" (pratique reality-shifting) :
+- des tags taxonomisés parmi les préfixes setting:, lifestyle:, values:, career:, relation:, method: (4 à 8 tags, valeurs courtes en français sans espace, ex: setting:foret)
+- cr : résumé court (1-2 phrases) de la Réalité Actuelle (CR)
+- dr : résumé court (1-2 phrases) de la Réalité Désirée (DR)
+Réponds UNIQUEMENT en JSON strict : {\"dream_tags\":[\"...\"], \"cr\":\"...\", \"dr\":\"...\"}"
+
+    local raw; raw=$(_love_query "$email" "$prompt")
+
+    local dream_json
+    dream_json=$(python3 -c "
+import json, sys
+raw = sys.argv[1]
+try:
+    start = raw.index('{')
+    end = raw.rindex('}') + 1
+    data = json.loads(raw[start:end])
+    tags = [str(t).strip() for t in data.get('dream_tags', []) if str(t).strip()]
+    cr = str(data.get('cr', '')).strip()
+    dr = str(data.get('dr', '')).strip()
+    print(json.dumps({'dream_tags': tags, 'cr': cr, 'dr': dr}, ensure_ascii=False))
+except Exception:
+    print('')
+" "$raw" 2>/dev/null)
+
+    if [[ -z "$dream_json" ]]; then
+        _send_dm "$sender" \
+            "💕 Le service IA est temporairement indisponible pour générer ton dream_vector. Réessaie plus tard." \
+            "${_RELAYS[0]}"
+        return
+    fi
+
+    local dir; dir="$(_love_dir "$email")"
+    mkdir -p "$dir"
+    echo "$dream_json" > "$dir/dream_vector.json"
+
+    local dream_tags cr dr
+    dream_tags=$(python3 -c "import json,sys; print(','.join(json.loads(sys.argv[1]).get('dream_tags',[])))" "$dream_json" 2>/dev/null)
+    cr=$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('cr',''))" "$dream_json" 2>/dev/null)
+    dr=$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('dr',''))" "$dream_json" 2>/dev/null)
+
+    # birth_unix : seul .BIRTHDATE (jour, clair) est lisible côté station —
+    # repli sur midi UTC, cf. UPassport routers/identity.py::atom4love_dream
+    local birth_unix=""
+    local birthdate_file="$HOME/.zen/game/nostr/${email}/.BIRTHDATE"
+    if [[ -f "$birthdate_file" ]]; then
+        birth_unix=$(python3 -c "
+import sys
+from datetime import datetime, timezone
+try:
+    d = datetime.strptime(open(sys.argv[1]).read().strip(), '%Y-%m-%d')
+    print(int(d.replace(hour=12, tzinfo=timezone.utc).timestamp()))
+except Exception:
+    print('')
+" "$birthdate_file" 2>/dev/null)
+    fi
+
+    local publish_result
+    publish_result=$("${_LOVE_PATH}/../../tools/atom4love_dream.sh" \
+        "$email" "${birth_unix}" "3.5" "$dream_tags" "" "$cr" "$dr" "" 2>/dev/null | tail -1)
+
+    local published=false
+    echo "$publish_result" | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin).get('published') else 1)" 2>/dev/null \
+        && published=true
+
+    local msg="💕 Voici un premier jet de ton dream_vector (Réalité Choisie) :
+
+🏷️ Tags : ${dream_tags//,/, }
+📍 CR (réalité actuelle) : ${cr}
+🌟 DR (réalité désirée) : ${dr}"
+    if $published; then
+        msg+="
+
+✅ Publié sur NOSTR (kind 30079)."
+    else
+        msg+="
+
+⚠️ Sauvegardé localement, publication NOSTR non confirmée."
+    fi
+    _send_dm "$sender" "$msg" "${_RELAYS[0]}"
+}
+
 ## ── POINT D'ENTRÉE PRINCIPAL ─────────────────────────────────────────────────
 ## Appelé depuis bro_dm_daemon.sh :
 ##   love) _handle_love "$payload" "$sender" ;;
@@ -1341,7 +1501,7 @@ open(f,'w').write(json.dumps(data,ensure_ascii=False))
 ##   {"action":"intro","text":"aime la cuisine et la nature"}
 ##   {"action":"suggest","text":"dîner romantique"}
 ##   {"action":"match"} | {"action":"mem"} | {"action":"reset"}
-##   {"action":"kin"}
+##   {"action":"kin"} | {"action":"dream"}
 _handle_love() {
     local payload="$1" sender="$2"
 
@@ -1362,6 +1522,7 @@ _handle_love() {
         profile) _handle_love_profile "$sender" "$text" ;;
         suggest) _handle_love_suggest "$sender" "$text" ;;
         kin)     _handle_love_kin     "$sender" ;;
+        dream)   _handle_love_dream   "$sender" ;;
         match)   _handle_love_match   "$sender" ;;
         intro)   _handle_love_intro   "$sender" "$text" ;;
         status)  _handle_love_status  "$sender" ;;

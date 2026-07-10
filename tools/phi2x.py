@@ -13,7 +13,7 @@ Usage standalone :
   python3 phi2x.py --kin 1985 4 17
   python3 phi2x.py --k 1.234 0.987
 """
-import math, sys, argparse
+import math, sys, time, argparse
 
 # ── Constantes canoniques ────────────────────────────────────────────────────
 PHI              = 1.6180339887          # Nombre d'Or
@@ -26,6 +26,11 @@ ORBITAL_YEAR_S   = 365.25636 * 86400   # Année sidérale [s] — cohérent avec
 ORBITAL_DAY_S    = 86400               # Jour [s]
 HEX_SIZE_KM      = 1.0
 EARTH_RADIUS_KM  = 6371.0
+# Constante de structure fine — effet Shapiro (compression spatio-temporelle par la masse)
+ALPHA_SHAPIRO    = 1 / 137.035999084    # ≈ 0.00729735
+# ── Bifurcation Relativiste (ATOM4LOVE — Vitesse d'Alignement) ───────────────
+V_ALIGNMENT_MAX       = 0.99   # asymptote — jamais c
+V_ALIGNMENT_TAU_YEARS = 25     # constante de temps caractéristique (accélération existentielle)
 
 # 12 pentagones du polyèdre de Goldberg (époque J2000, coordonnées GPS lat/lon)
 PENTAGONS_GPS = [
@@ -196,6 +201,18 @@ def compute_personal_phase(birth_unix: int, birth_lat: float, birth_lon: float,
 
     return math.fmod((theta_annual + theta_daily + offset_penta) * WAVE_STRETCH, TAU)
 
+# ── Compression gravitationnelle (effet Shapiro) ─────────────────────────────
+def compute_personal_stretch(weight_kg: float = 3.5) -> float:
+    """
+    Facteur d'étirement d'onde personnel (effet Shapiro inversé).
+    Référence : 3.5 kg (nouveau-né moyen) → stretch = WAVE_STRETCH
+    Poids < 3.5 → onde plus rapide (onde lumineuse, Φ-dominant)
+    Poids > 3.5 → onde plus lente (ancrage matière, Octave-dominant)
+    Formule : φ_matière = φ_lumière × e^(−α × (poids/3.5))
+    Identique à phi2x.js::computePersonalStretch.
+    """
+    return WAVE_STRETCH * math.exp(-ALPHA_SHAPIRO * (max(weight_kg, 0.5) / 3.5))
+
 # ── Résonance k ──────────────────────────────────────────────────────────────
 def compute_resonance_k(phi_i: float, phi_j: float) -> float:
     """k = 1 / (1 + |sin(Δφ)|) ∈ [0.5, 1.0]"""
@@ -340,6 +357,60 @@ def group_harmony_score(phases: list) -> float:
     total = sum(compute_resonance_k(phases[i], phases[j])
                 for i in range(n) for j in range(i+1, n))
     return total / (n * (n-1) / 2)
+
+# ── Bifurcation Relativiste (ATOM4LOVE) ──────────────────────────────────────
+def compute_alignment_v(birth_unix: int, weight_kg: float = 3.5, now_unix: float = None) -> float:
+    """
+    Vitesse d'Alignement v ∈ [0, V_ALIGNMENT_MAX[ — fraction de c vers laquelle un Atome
+    converge en fonction de son âge (masse temporelle accumulée depuis la naissance) et de
+    son poids de naissance (facteur de compression Shapiro, cf. compute_personal_stretch).
+    Léger/rapide (stretch < WAVE_STRETCH) → convergence plus rapide vers c.
+    Lourd/ancré  (stretch > WAVE_STRETCH) → convergence plus lente (ancrage matière).
+    Identique à phi2x.js::computeAlignmentV.
+    """
+    now = now_unix if now_unix is not None else time.time()
+    age_years = max(0.0, (now - birth_unix) / ORBITAL_YEAR_S)
+    stretch_ratio = compute_personal_stretch(weight_kg) / WAVE_STRETCH
+    tau_years = V_ALIGNMENT_TAU_YEARS * stretch_ratio
+    return V_ALIGNMENT_MAX * (1 - math.exp(-age_years / tau_years))
+
+def compute_lorentz_gamma(v: float) -> float:
+    """Facteur de Lorentz γ = 1/√(1−v²) — physique standard, c=1 normalisé."""
+    v_c = max(0.0, min(0.999999, abs(v)))
+    return 1.0 / math.sqrt(1 - v_c * v_c)
+
+def compute_dream_divergence(dream_vector_a: list, dream_vector_b: list) -> float:
+    """
+    Divergence des Rêves ∈ [0,1] entre deux dream_vector (ensembles de tags DR).
+    0 = rêves identiques (DR commune), 1 = aucun tag commun (mondes distincts).
+    Similarité de Jaccard inversée : 1 − |A∩B|/|A∪B|.
+    """
+    set_a = set(dream_vector_a or [])
+    set_b = set(dream_vector_b or [])
+    if not set_a and not set_b:
+        return 0.0
+    inter = len(set_a & set_b)
+    union = len(set_a | set_b)
+    return 0.0 if union == 0 else 1 - inter / union
+
+def compute_relative_velocity(v_a: float, v_b: float, dream_divergence: float = 1.0) -> float:
+    """
+    Vitesse relative entre deux Atomes (addition relativiste des vitesses d'Einstein),
+    pondérée par la divergence de leurs Rêves communs (dream_divergence ∈ [0,1]).
+    dream_divergence=0 (rêves alignés)  → les vitesses restent "solidaires" (v_rel faible).
+    dream_divergence=1 (rêves opposés) → v_rel s'approche de la formule brute d'Einstein.
+    """
+    a = max(0.0, min(0.999999, v_a))
+    b = max(0.0, min(0.999999, v_b))
+    return abs((a - b) / (1 - a * b * dream_divergence))
+
+def describe_bifurcation(gamma: float) -> dict:
+    """Statut textuel de Bifurcation en fonction de γ."""
+    if gamma < 1.1:
+        return {"key": "sync", "label": "Lignes temporelles synchronisées. Présent commun stable."}
+    if gamma < 1.5:
+        return {"key": "friction", "label": "Friction Créatrice. Changement de phase et ajustement des trajectoires."}
+    return {"key": "bifurcated", "label": "Bifurcation Relativiste complétée. Séparation des mondes dans la gratitude."}
 
 # ── CLI standalone ───────────────────────────────────────────────────────────
 if __name__ == "__main__":
