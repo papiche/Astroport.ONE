@@ -235,6 +235,14 @@ EOF
     sudo mv /tmp/resolv.conf /etc/resolv.conf
     sudo chattr +i /etc/resolv.conf 2>/dev/null
 fi
+## Inconditionnel (même si le contenu était déjà bon) : apt-get exécute ses
+## méthodes http/https sous l'utilisateur sandboxé _apt, pas l'utilisateur courant.
+## Si /etc/resolv.conf n'est pas lisible par tous (ex: 600 laissé par un tee
+## précédent), _apt ne résout plus rien alors que curl/ping marchent très bien
+## sous l'utilisateur courant — ça ressemble à une panne réseau mais n'en est pas une.
+sudo chattr -i /etc/resolv.conf 2>/dev/null
+sudo chmod 644 /etc/resolv.conf 2>/dev/null
+sudo chattr +i /etc/resolv.conf 2>/dev/null
 
 ########################################################################
 ## IPv6 annoncé mais non routé (fréquent en 4G/CGNAT) : le DNS répond des AAAA
@@ -256,9 +264,18 @@ fi
 ## pas l'adresse IPv4 de repli quand la première (IPv6) échoue — elle abandonne.
 ## ForceIPv4 court-circuite le choix de famille d'adresse : inoffensif même sur
 ## un réseau où IPv6 fonctionne (juste plus lent à défaut d'être plus rapide).
+## Retries/Timeout : sur un lien 4G qui coupe quelques secondes par intermittence,
+## apt abandonne par défaut au premier échec — on le fait retenter avant de rendre
+## la main au repli paquet par paquet (qui lui n'a qu'un seul essai par paquet).
 ## (PKG_MANAGER pas encore détecté à ce stade — on teste juste /etc/apt.)
-[[ -d /etc/apt/apt.conf.d ]] \
-    && echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4 >/dev/null 2>&1
+if [[ -d /etc/apt/apt.conf.d ]]; then
+    sudo tee /etc/apt/apt.conf.d/99astroport-network-resilience >/dev/null 2>&1 <<'EOF'
+Acquire::ForceIPv4 "true";
+Acquire::Retries "5";
+Acquire::http::Timeout "15";
+Acquire::https::Timeout "15";
+EOF
+fi
 
 ########################################################################
 echo "## HARDWARE CHECK (détection avant toute question) ##"

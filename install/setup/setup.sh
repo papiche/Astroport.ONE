@@ -112,6 +112,13 @@ EOF
     sudo mv /tmp/resolv.conf /etc/resolv.conf
     sudo chattr +i /etc/resolv.conf
 fi
+## Inconditionnel : apt-get exécute ses méthodes http/https sous l'utilisateur
+## sandboxé _apt — si resolv.conf n'est pas lisible par tous (600 au lieu de 644),
+## _apt ne résout plus rien alors que curl/ping marchent très bien pour l'utilisateur
+## courant. Ça ressemble à une panne réseau mais n'en est pas une.
+sudo chattr -i /etc/resolv.conf 2>/dev/null
+sudo chmod 644 /etc/resolv.conf 2>/dev/null
+sudo chattr +i /etc/resolv.conf 2>/dev/null
 if [[ ! $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]]; then
     cat /etc/hosts > /tmp/hosts
     echo "127.0.1.1    $(hostname) $(hostname).local astroport.$(hostname).local ipfs.$(hostname).local astroport.local duniter.localhost" >> /tmp/hosts
