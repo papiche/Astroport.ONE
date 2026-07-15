@@ -48,10 +48,101 @@ else
     exit 1
 fi
 
+########################################################################
+## AUTHENTICATE + DURCIR LES IDENTIFIANTS PAR DÉFAUT (admin@example.com/changeme)
+## Indépendant du domaine : une install sans domaine public ne doit pas rester
+## avec les credentials par défaut sur une interface admin exposée en local.
+########################################################################
+## Wait for NPM API to be ready (max 60s)
+echo -n "Waiting for NPM API"
+for i in $(seq 1 30); do
+    if curl -s -o /dev/null -w '%{http_code}' "${NPM_API}/tokens" 2>/dev/null | grep -q '401\|405\|200'; then
+        echo " OK"
+        break
+    fi
+    echo -n "."
+    sleep 2
+done
+
+NPM_TOKEN_FILE="${NPM_DIR}/data/.api_token"
+
+npm_auth() {
+    local email="$1" password="$2"
+    curl -s -X POST "${NPM_API}/tokens" \
+        -H "Content-Type: application/json" \
+        -d "{\"identity\":\"${email}\",\"secret\":\"${password}\"}" \
+        | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null
+}
+
+## Try existing token
+TOKEN=""
+if [[ -s "${NPM_TOKEN_FILE}" ]]; then
+    TOKEN=$(cat "${NPM_TOKEN_FILE}")
+    ## Validate token
+    HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' "${NPM_API}/users" \
+        -H "Authorization: Bearer ${TOKEN}" 2>/dev/null)
+    [[ "$HTTP_CODE" != "200" ]] && TOKEN=""
+fi
+
+## Try default credentials (first install)
+if [[ -z "$TOKEN" ]]; then
+    TOKEN=$(npm_auth "admin@example.com" "changeme")
+    if [[ -n "$TOKEN" ]]; then
+        echo ">>> Authenticated with default credentials"
+        ## Change default admin email and password
+        NPM_PASS=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 16)
+        ADMIN_EMAIL="support@qo-op.com"
+
+        ## Get admin user ID
+        ADMIN_ID=$(curl -s "${NPM_API}/users" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            | python3 -c "import sys,json; users=json.load(sys.stdin); print(users[0]['id'] if users else '')" 2>/dev/null)
+
+        if [[ -n "$ADMIN_ID" ]]; then
+            ## Update admin credentials
+            curl -s -X PUT "${NPM_API}/users/${ADMIN_ID}" \
+                -H "Authorization: Bearer ${TOKEN}" \
+                -H "Content-Type: application/json" \
+                -d "{\"name\":\"Captain\",\"nickname\":\"captain\",\"email\":\"${ADMIN_EMAIL}\"}" > /dev/null
+
+            curl -s -X PUT "${NPM_API}/users/${ADMIN_ID}/auth" \
+                -H "Authorization: Bearer ${TOKEN}" \
+                -H "Content-Type: application/json" \
+                -d "{\"type\":\"password\",\"current\":\"changeme\",\"secret\":\"${NPM_PASS}\"}" > /dev/null
+
+            ## Re-authenticate with new credentials
+            TOKEN=$(npm_auth "${ADMIN_EMAIL}" "${NPM_PASS}")
+            echo ">>> Admin updated: ${ADMIN_EMAIL}"
+            echo ">>> NPM password saved to ${NPM_DIR}/data/.admin_pass"
+            echo "${NPM_PASS}" > "${NPM_DIR}/data/.admin_pass"
+            chmod 600 "${NPM_DIR}/data/.admin_pass"
+        fi
+    fi
+fi
+
+if [[ -z "$TOKEN" ]]; then
+    ## Try with saved password
+    if [[ -s "${NPM_DIR}/data/.admin_pass" ]]; then
+        ADMIN_EMAIL="support@qo-op.com"
+        NPM_PASS=$(cat "${NPM_DIR}/data/.admin_pass")
+        TOKEN=$(npm_auth "${ADMIN_EMAIL}" "${NPM_PASS}")
+    fi
+fi
+
+if [[ -z "$TOKEN" ]]; then
+    echo "ERROR: Cannot authenticate to NPM API"
+    echo ">>> Access ${NPM_URL} and configure manually"
+    exit 1
+fi
+
+## Save token for reuse
+echo "${TOKEN}" > "${NPM_TOKEN_FILE}"
+chmod 600 "${NPM_TOKEN_FILE}"
+
 ## Extract domain from myIPFS (https://ipfs.DOMAIN -> DOMAIN)
 DOMAIN=$(echo "$myIPFS" | sed 's|https://ipfs\.||;s|http://.*||')
 if [[ -z "$DOMAIN" || "$DOMAIN" == "$myIPFS" ]]; then
-    echo "ℹ️  Pas de domaine public exploitable (myIPFS=$myIPFS) — NPM tourne, mais"
+    echo "ℹ️  Pas de domaine public exploitable (myIPFS=$myIPFS) — NPM tourne et sécurisé, mais"
     echo "   aucun proxy automatique ne sera créé. Admin UI : http://127.0.0.1:81"
     exit 0
 fi
@@ -151,95 +242,6 @@ generate_selfsigned_cert() {
         return 1
     fi
 }
-
-## Wait for NPM API to be ready (max 60s)
-echo -n "Waiting for NPM API"
-for i in $(seq 1 30); do
-    if curl -s -o /dev/null -w '%{http_code}' "${NPM_API}/tokens" 2>/dev/null | grep -q '401\|405\|200'; then
-        echo " OK"
-        break
-    fi
-    echo -n "."
-    sleep 2
-done
-
-########################################################################
-## 3. AUTHENTICATE (default credentials on first run)
-########################################################################
-NPM_TOKEN_FILE="${NPM_DIR}/data/.api_token"
-
-npm_auth() {
-    local email="$1" password="$2"
-    curl -s -X POST "${NPM_API}/tokens" \
-        -H "Content-Type: application/json" \
-        -d "{\"identity\":\"${email}\",\"secret\":\"${password}\"}" \
-        | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null
-}
-
-## Try existing token
-TOKEN=""
-if [[ -s "${NPM_TOKEN_FILE}" ]]; then
-    TOKEN=$(cat "${NPM_TOKEN_FILE}")
-    ## Validate token
-    HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' "${NPM_API}/users" \
-        -H "Authorization: Bearer ${TOKEN}" 2>/dev/null)
-    [[ "$HTTP_CODE" != "200" ]] && TOKEN=""
-fi
-
-## Try default credentials (first install)
-if [[ -z "$TOKEN" ]]; then
-    TOKEN=$(npm_auth "admin@example.com" "changeme")
-    if [[ -n "$TOKEN" ]]; then
-        echo ">>> Authenticated with default credentials"
-        ## Change default admin email and password
-        NPM_PASS=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 16)
-        ADMIN_EMAIL="support@qo-op.com"
-
-        ## Get admin user ID
-        ADMIN_ID=$(curl -s "${NPM_API}/users" \
-            -H "Authorization: Bearer ${TOKEN}" \
-            | python3 -c "import sys,json; users=json.load(sys.stdin); print(users[0]['id'] if users else '')" 2>/dev/null)
-
-        if [[ -n "$ADMIN_ID" ]]; then
-            ## Update admin credentials
-            curl -s -X PUT "${NPM_API}/users/${ADMIN_ID}" \
-                -H "Authorization: Bearer ${TOKEN}" \
-                -H "Content-Type: application/json" \
-                -d "{\"name\":\"Captain\",\"nickname\":\"captain\",\"email\":\"${ADMIN_EMAIL}\"}" > /dev/null
-
-            curl -s -X PUT "${NPM_API}/users/${ADMIN_ID}/auth" \
-                -H "Authorization: Bearer ${TOKEN}" \
-                -H "Content-Type: application/json" \
-                -d "{\"type\":\"password\",\"current\":\"changeme\",\"secret\":\"${NPM_PASS}\"}" > /dev/null
-
-            ## Re-authenticate with new credentials
-            TOKEN=$(npm_auth "${ADMIN_EMAIL}" "${NPM_PASS}")
-            echo ">>> Admin updated: ${ADMIN_EMAIL}"
-            echo ">>> NPM password saved to ${NPM_DIR}/data/.admin_pass"
-            echo "${NPM_PASS}" > "${NPM_DIR}/data/.admin_pass"
-            chmod 600 "${NPM_DIR}/data/.admin_pass"
-        fi
-    fi
-fi
-
-if [[ -z "$TOKEN" ]]; then
-    ## Try with saved password
-    if [[ -s "${NPM_DIR}/data/.admin_pass" ]]; then
-        ADMIN_EMAIL="support@qo-op.com"
-        NPM_PASS=$(cat "${NPM_DIR}/data/.admin_pass")
-        TOKEN=$(npm_auth "${ADMIN_EMAIL}" "${NPM_PASS}")
-    fi
-fi
-
-if [[ -z "$TOKEN" ]]; then
-    echo "ERROR: Cannot authenticate to NPM API"
-    echo ">>> Access ${NPM_URL} and configure manually"
-    exit 1
-fi
-
-## Save token for reuse
-echo "${TOKEN}" > "${NPM_TOKEN_FILE}"
-chmod 600 "${NPM_TOKEN_FILE}"
 
 ########################################################################
 ## 4. UPLOAD SELF-SIGNED CERTIFICATE TO NPM (returns cert ID)
