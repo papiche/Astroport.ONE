@@ -54,9 +54,14 @@ fi
 ## avec les credentials par défaut sur une interface admin exposée en local.
 ########################################################################
 ## Wait for NPM API to be ready (max 60s)
+## POST avec des identifiants bidons — /api/tokens n'accepte que POST ; un GET
+## (comme avant) déclenche un bug interne de NPM dans son gestionnaire d'erreur
+## "mauvaise méthode HTTP" (log "error is not defined", 500 au lieu de 405/401).
 echo -n "Waiting for NPM API"
 for i in $(seq 1 30); do
-    if curl -s -o /dev/null -w '%{http_code}' "${NPM_API}/tokens" 2>/dev/null | grep -q '401\|405\|200'; then
+    if curl -s -o /dev/null -w '%{http_code}' -X POST "${NPM_API}/tokens" \
+        -H "Content-Type: application/json" \
+        -d '{"identity":"probe","secret":"probe"}' 2>/dev/null | grep -q '400\|401\|403\|200'; then
         echo " OK"
         break
     fi
