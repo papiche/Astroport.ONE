@@ -252,6 +252,13 @@ if ip -6 addr show scope global 2>/dev/null | grep -q inet6 \
     echo "net.ipv6.conf.all.disable_ipv6 = 1
 net.ipv6.conf.default.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/99-astroport-disable-broken-ipv6.conf >/dev/null 2>&1
 fi
+## apt lui-même : sur beaucoup de configs, la méthode http/https d'apt n'essaie
+## pas l'adresse IPv4 de repli quand la première (IPv6) échoue — elle abandonne.
+## ForceIPv4 court-circuite le choix de famille d'adresse : inoffensif même sur
+## un réseau où IPv6 fonctionne (juste plus lent à défaut d'être plus rapide).
+## (PKG_MANAGER pas encore détecté à ce stade — on teste juste /etc/apt.)
+[[ -d /etc/apt/apt.conf.d ]] \
+    && echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4 >/dev/null 2>&1
 
 ########################################################################
 echo "## HARDWARE CHECK (détection avant toute question) ##"
