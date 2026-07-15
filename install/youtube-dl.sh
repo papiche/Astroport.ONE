@@ -31,6 +31,13 @@ if [[ -x "$HOME/.local/bin/yt-dlp" ]]; then
     echo ">>> yt-dlp déjà présent — mise à jour..."
     sudo yt-dlp -U 2>&1 || yt-dlp -U 2>&1 || echo "⚠️  yt-dlp -U échoué (droits ?)"
 else
+    # Le fichier peut exister dans un état cassé et non réparable par l'utilisateur
+    # courant (immuable via chattr, ou appartenant à root suite à un `sudo yt-dlp -U`
+    # d'une exécution précédente) — curl échoue alors à écrire ("Failure writing
+    # output to destination") avant même le chmod. On repart propre, sans hériter
+    # d'un état verrouillé.
+    sudo chattr -i "$HOME/.local/bin/yt-dlp" 2>/dev/null
+    sudo rm -f "$HOME/.local/bin/yt-dlp"
     curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o "$HOME/.local/bin/yt-dlp"
     chmod +x "$HOME/.local/bin/yt-dlp"
 
