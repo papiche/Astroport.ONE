@@ -1,0 +1,11 @@
+[Unit]
+Description=ZICMAMA — dnsmasq (DHCP + DNS wildcard, ${AP_IFACE})
+PartOf=zicmama-ap.target
+BindsTo=zicmama-ap-iface.service
+After=zicmama-ap-iface.service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/dnsmasq --conf-file=/etc/zicmama-ap/dnsmasq.conf --keep-in-foreground --pid-file=/run/zicmama-ap-dnsmasq.pid
+Restart=on-failure
+RestartSec=5

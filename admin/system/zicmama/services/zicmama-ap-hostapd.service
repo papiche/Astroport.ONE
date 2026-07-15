@@ -1,0 +1,11 @@
+[Unit]
+Description=ZICMAMA — hostapd (AP ouvert, ${AP_IFACE})
+PartOf=zicmama-ap.target
+BindsTo=zicmama-ap-iface.service
+After=zicmama-ap-iface.service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/hostapd /etc/zicmama-ap/hostapd.conf
+Restart=on-failure
+RestartSec=5

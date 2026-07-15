@@ -1,0 +1,14 @@
+[Unit]
+Description=ZICMAMA — Interface AP (${AP_IFACE})
+PartOf=zicmama-ap.target
+BindsTo=sys-subsystem-net-devices-${AP_IFACE}.device
+After=sys-subsystem-net-devices-${AP_IFACE}.device
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/zicmama-ap/zicmama-ap.conf
+ExecStart=/bin/bash -c '/sbin/ip addr flush dev "$AP_IFACE"; /sbin/ip addr add "${GATEWAY_IP}/24" dev "$AP_IFACE"; /sbin/ip link set dev "$AP_IFACE" up'
+ExecStop=/bin/bash -c '/sbin/ip link set dev "$AP_IFACE" down 2>/dev/null || true; /sbin/ip addr flush dev "$AP_IFACE" 2>/dev/null || true'
+Restart=on-failure
+RestartSec=5

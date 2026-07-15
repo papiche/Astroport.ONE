@@ -1,0 +1,7 @@
+[Unit]
+Description=ZICMAMA — Point d'accès WiFi ouvert + portail captif (laptop)
+Wants=zicmama-ap-iface.service zicmama-ap-hostapd.service zicmama-ap-dnsmasq.service zicmama-ap-firewall.service zicmama-ap-portal.service
+After=zicmama-ap-iface.service zicmama-ap-hostapd.service zicmama-ap-dnsmasq.service zicmama-ap-firewall.service zicmama-ap-portal.service
+
+[Install]
+WantedBy=multi-user.target

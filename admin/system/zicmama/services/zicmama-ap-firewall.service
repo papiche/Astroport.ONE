@@ -1,0 +1,11 @@
+[Unit]
+Description=ZICMAMA — Ouverture ufw scopée à l'interface AP
+PartOf=zicmama-ap.target
+BindsTo=zicmama-ap-iface.service
+After=zicmama-ap-iface.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/zicmama-ap/zicmama-ap-firewall.sh start
+ExecStop=/opt/zicmama-ap/zicmama-ap-firewall.sh stop

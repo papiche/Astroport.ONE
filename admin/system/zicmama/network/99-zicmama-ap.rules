@@ -1,0 +1,6 @@
+# ZICMAMA laptop — démarre automatiquement le point d'accès WiFi dès que ce
+# dongle USB est branché (voir zicmama_ap_laptop.sh). Fonctionne aussi au
+# boot si le dongle est déjà présent (coldplug udev). Au débranchement,
+# zicmama-ap-iface.service s'arrête automatiquement via son BindsTo= sur ce
+# même device systemd — pas besoin de règle "remove" symétrique.
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="${AP_IFACE}", TAG+="systemd", ENV{SYSTEMD_WANTS}+="zicmama-ap.target"

@@ -1,0 +1,12 @@
+[Unit]
+Description=ZICMAMA — Portail captif (proxy applicatif vers PORTAL_URL)
+PartOf=zicmama-ap.target
+BindsTo=zicmama-ap-iface.service
+After=zicmama-ap-iface.service zicmama-ap-firewall.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/zicmama-ap/zicmama-ap.conf
+ExecStart=/usr/bin/python3 /opt/zicmama-ap/zicmama_ap_portal.py
+Restart=on-failure
+RestartSec=5
