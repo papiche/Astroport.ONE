@@ -307,9 +307,10 @@ services:
 ####################################################################
 networks:
   dragon-net:
-    name: dragon-net
-    driver: bridge
-    internal: false                  # NPM doit accéder à Internet (Let's Encrypt)
+    external: true                   # réseau partagé entre plusieurs projets compose
+                                      # (core, duniter_v2, ai-company...) + docker run
+                                      # standalone (Qdrant profil standard) — créé une
+                                      # fois par install.sh, jamais par Compose lui-même.
 
 ####################################################################
 ## VOLUMES (données persistantes)

@@ -300,6 +300,13 @@ if [[ ! -d ~/.zen/game/players/.current ]]; then
     espeak "Welcome CAPTAIN" 2>/dev/null
     echo "#####################################################"
     ################ COMPTE CAPTAINE AUTOMATIQUE
+    ## Portefeuilles coopératifs UPLANET (UPLANETG1PUB, SOCIETY, CASH, RnD, ASSETS) :
+    ## requis par make_NOSTRCARD.sh ("REFUSED: ... UPLANETG1PUB not set" sinon).
+    ## --force car non-interactif ; échec non bloquant (ex: portefeuille source à
+    ## 0 Ğ1) — les clés sont quand même créées, à financer plus tard.
+    echo ">>> Initialisation des portefeuilles coopératifs UPLANET <<<"
+    ~/.zen/Astroport.ONE/UPLANET.init.sh --force \
+        || echo ">>> UPLANET.init: portefeuilles créés, financez uplanet.G1.dunikey pour finaliser"
     ## MULTIPASS --->
     echo ">>> Create CAPTAIN MULTIPASS <<<"
     # Bootstrap : exporter CAPTAINEMAIL dès maintenant pour que my.sh trouver l'email

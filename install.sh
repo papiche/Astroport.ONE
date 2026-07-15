@@ -993,6 +993,15 @@ echo "######### INSTALL DOCKER ........ ###########"
 echo "#############################################"
 ~/.zen/Astroport.ONE/install/install.docker.sh
 
+## dragon-net : réseau partagé entre TOUS les projets compose (core, duniter_v2,
+## ai-company) + les conteneurs "docker run" standalone (Qdrant profil standard).
+## Créé une seule fois ici, en dehors de tout compose — docker-compose.yml le
+## déclare en "external: true" pour ne jamais tenter de le recréer avec des
+## labels différents (sinon : "network ... was not created by compose").
+docker network inspect dragon-net >/dev/null 2>&1 \
+    || docker network create dragon-net >/dev/null 2>&1 \
+    || sudo docker network create dragon-net >/dev/null 2>&1
+
 echo "#############################################"
 echo "######### INSTALL TIDDLYWIKI ############"
 echo "#############################################"
@@ -1312,8 +1321,7 @@ case "${INSTALL_PROFILE}" in
         if [[ $_SCORE -gt 10 ]] && command -v docker >/dev/null 2>&1; then
             if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^qdrant$'; then
                 echo "   ⚡ Score ${_SCORE} ≥ 11 — démarrage Qdrant VectorDB (port 6333)..."
-                docker network inspect dragon-net >/dev/null 2>&1 \
-                    || docker network create dragon-net >/dev/null 2>&1
+                ## dragon-net déjà créé juste après l'install Docker (voir plus haut)
                 docker run -d \
                     --name qdrant \
                     --restart unless-stopped \
@@ -1769,7 +1777,7 @@ echo "║     → Souscrivez sur : https://opencollective.com/monnaie-libre     
 echo "║                                                                              ║"
 echo "║  👉 VOTRE MISSION POUR DEVENIR CAPITAINE :                                   ║"
 echo "║                                                                              ║"
-echo "║  1. Ouvrez votre navigateur :  http://127.0.0.1:54321/earth/atomic.html                     ║"
+echo "║  1. Ouvrez votre navigateur :  http://127.0.0.1:54321/g1                     ║"
 echo "║  2. Créez votre MULTIPASS avec votre VÉRITABLE adresse email.                ║"
 echo "║  3. Lisez les ZINEs quotidiens que le système va vous envoyer.               ║"
 echo "║  4. Contactez support@qo-op.com pour valider votre formation DRAGON.         ║"
@@ -1994,7 +2002,7 @@ if command -v docker >/dev/null 2>&1; then
 fi
 
 echo "  ✅ Redémarrage terminé"
-
+echo "Pour les boitiers Argon : curl https://download.argon40.com/argon1.sh | bash"
 ########################################################################
 ## REVERROUILLAGE STEAMOS (si applicable)
 ########################################################################
