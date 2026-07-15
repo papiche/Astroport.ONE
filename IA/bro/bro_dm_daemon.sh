@@ -115,13 +115,32 @@ if [[ "${1:-}" == "--stop" ]]; then
     else
         _log "Aucun daemon en cours"
     fi
+    ## Le PID principal ne couvre pas _sweep_loop/_constellation_subscriber_loop
+    ## (sous-shells forkés) ni le process python receive en cours — les
+    ## rattraper explicitement pour éviter des orphelins après --stop.
+    sleep 1
+    pkill -f "IA/bro/bro_dm_daemon.sh" 2>/dev/null
+    pkill -f "nostr_node_intercom.py receive" 2>/dev/null
     exit 0
 fi
 
 ## ── Vérification singleton ───────────────────────────────────────────
-if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-    _log "Daemon déjà en cours (PID $(cat "$PID_FILE"))"
-    exit 0
+if [[ -f "$PID_FILE" ]]; then
+    if kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+        _log "Daemon déjà en cours (PID $(cat "$PID_FILE"))"
+        exit 0
+    fi
+    ## PID enregistré mort : une génération précédente peut avoir laissé
+    ## des orphelins (sweep/subscriber loops, process receive) tourner —
+    ## les nettoyer avant de démarrer une nouvelle génération, sinon
+    ## accumulation au fil des redémarrages (cf. incident guenoel 2026-07-15).
+    ## $$ exclu explicitement : ce process courant matche aussi le pattern.
+    _log "PID enregistré mort — nettoyage des orphelins avant redémarrage"
+    for _op in $(pgrep -f "IA/bro/bro_dm_daemon.sh" 2>/dev/null); do
+        [[ "$_op" != "$$" ]] && kill -9 "$_op" 2>/dev/null
+    done
+    pkill -f "nostr_node_intercom.py receive" 2>/dev/null
+    sleep 1
 fi
 
 ## ── Charger NODE_NSEC ────────────────────────────────────────────────
@@ -159,7 +178,13 @@ echo $$ > "$PID_FILE"
 _BRO_CLEAN_STOP=false
 _SWEEP_PID=""
 trap '_BRO_CLEAN_STOP=true' INT TERM
-trap 'wait; kill "${_SWEEP_PID:-}" "${_CONSTELLATION_SUB_PID:-}" 2>/dev/null; rm -f "$PID_FILE"; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
+## Note : un `wait` nu avant le kill bloquerait indéfiniment si _sweep_loop ou
+## _constellation_subscriber_loop sont parqués dans un appel bloquant (ex.
+## nostr_node_intercom.py receive sans timeout) — le nettoyage (rm PID_FILE)
+## ne s'exécuterait alors jamais (cf. incident guenoel 2026-07-15, générations
+## de daemon accumulées faute de PID_FILE libéré). On tue explicitement les
+## loops et leurs descendants au lieu d'attendre leur fin coopérative.
+trap 'kill "${_SWEEP_PID:-}" "${_CONSTELLATION_SUB_PID:-}" 2>/dev/null; pkill -f "nostr_node_intercom.py receive" 2>/dev/null; sleep 1; kill -9 "${_SWEEP_PID:-}" "${_CONSTELLATION_SUB_PID:-}" 2>/dev/null; rm -f "$PID_FILE"; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
 
 _log "🚀 Daemon DM NODE démarré (PID $$, sériel) — queue: $QUEUE_DIR"
 
@@ -1659,8 +1684,11 @@ _constellation_subscriber_loop() {
         ## Retourne JSON array d'events déjà déchiffrés :
         ##   [{"channel":..., "sender":..., "payload":..., "enc":...,
         ##     "created_at":..., "event_id":...}]
+        ## timeout de sécurité : le relay répond en ~12s normalement, mais un
+        ## websocket qui ne ferme jamais la connexion laisserait ce process
+        ## tourner indéfiniment — bloquant la boucle et son arrêt propre.
         local _decoded_json
-        _decoded_json=$(printf '%s\n' "$NODE_NSEC" | python3 "$INTERCOM" receive \
+        _decoded_json=$(printf '%s\n' "$NODE_NSEC" | timeout 45s python3 "$INTERCOM" receive \
             --nsec-stdin \
             --relays   "$_relay" \
             --since    "$_since" \

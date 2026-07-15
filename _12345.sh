@@ -920,9 +920,22 @@ NODE12345="{
     ## Watchdog daemon DM NODE — relance si mort entre deux cycles
     if [[ -s ~/.zen/game/secret.nostr ]]; then
         if ! _dm_is_alive; then
+            ## Orpheline(s) éventuelle(s) d'une génération précédente (PID principal
+            ## mort mais sweep/subscriber restés en vie) → nettoyer avant de relancer,
+            ## sinon accumulation d'instances au fil des cycles/redémarrages.
+            pkill -f "IA/bro/bro_dm_daemon.sh" 2>/dev/null
+            rm -f "$_DM_PID_FILE"
             bash "${HOME}/.zen/Astroport.ONE/IA/bro/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
             echo "🔄 Daemon DM NODE relancé (PID $!)"
         fi
+    fi
+
+    ## Watchdog IPFS daemon — ne pas attendre le cron 20h12 (jusqu'à 24h de coupure sinon)
+    LOWMODE_IPFS=$(sudo systemctl status ipfs 2>/dev/null | grep "preset: disabled")
+    [[ ! $isLAN || -n "${zipit:-}" ]] && LOWMODE_IPFS="" ## LOWMODE ONLY FOR LAN STATION
+    if [[ -z "$LOWMODE_IPFS" ]] && ! ss -tln 2>/dev/null | grep -q ':5001 '; then
+        echo "🔄 IPFS daemon absent — redémarrage (watchdog 300s)"
+        sudo systemctl restart ipfs 2>/dev/null
     fi
 
     # Sleep to prevent busy loop (replacing nc -l wait)
