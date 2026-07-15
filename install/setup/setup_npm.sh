@@ -28,9 +28,33 @@ NPM_API="${NPM_URL}/api"
 ## Source .env for domain config
 [[ -s "$HOME/.zen/Astroport.ONE/.env" ]] && source "$HOME/.zen/Astroport.ONE/.env"
 
+########################################################################
+## DEPLOY NPM CONTAINER (bare metal only — in docker-compose, NPM is a sibling)
+## Fait AVANT le check de domaine : le conteneur (et son admin UI) doit tourner
+## même sans domaine public configuré (station derrière NAT sans port-forwarding) —
+## seule la création automatique de proxy nécessite un vrai domaine.
+########################################################################
+if getent hosts npm >/dev/null 2>&1; then
+    echo ">>> NPM available via Docker network (astronet)"
+elif docker ps --format '{{.Image}}' | grep -q 'nginx-proxy-manager'; then
+    echo ">>> NPM already running"
+elif [[ -f "${NPM_COMPOSE_STANDALONE}" ]]; then
+    echo ">>> Starting Nginx Proxy Manager (standalone)..."
+    mkdir -p "${NPM_DIR}/data" "${NPM_DIR}/letsencrypt"
+    docker compose -f "${NPM_COMPOSE_STANDALONE}" up -d
+    [[ $? -ne 0 ]] && echo "ERROR: docker compose failed" && exit 1
+else
+    echo "ERROR: NPM not running and no compose file found"
+    exit 1
+fi
+
 ## Extract domain from myIPFS (https://ipfs.DOMAIN -> DOMAIN)
 DOMAIN=$(echo "$myIPFS" | sed 's|https://ipfs\.||;s|http://.*||')
-[[ -z "$DOMAIN" || "$DOMAIN" == "$myIPFS" ]] && echo "ERROR: Cannot extract domain from myIPFS=$myIPFS" && exit 1
+if [[ -z "$DOMAIN" || "$DOMAIN" == "$myIPFS" ]]; then
+    echo "ℹ️  Pas de domaine public exploitable (myIPFS=$myIPFS) — NPM tourne, mais"
+    echo "   aucun proxy automatique ne sera créé. Admin UI : http://127.0.0.1:81"
+    exit 0
+fi
 
 ## Skip for copylaradio.com root domain (SSL managed centrally by support@qo-op.com)
 ## But allow subdomains like NODE.copylaradio.com for automatic installations
@@ -127,23 +151,6 @@ generate_selfsigned_cert() {
         return 1
     fi
 }
-
-########################################################################
-## 2. DEPLOY NPM CONTAINER (bare metal only — in docker-compose, NPM is a sibling)
-########################################################################
-if getent hosts npm >/dev/null 2>&1; then
-    echo ">>> NPM available via Docker network (astronet)"
-elif docker ps --format '{{.Image}}' | grep -q 'nginx-proxy-manager'; then
-    echo ">>> NPM already running"
-elif [[ -f "${NPM_COMPOSE_STANDALONE}" ]]; then
-    echo ">>> Starting Nginx Proxy Manager (standalone)..."
-    mkdir -p "${NPM_DIR}/data" "${NPM_DIR}/letsencrypt"
-    docker compose -f "${NPM_COMPOSE_STANDALONE}" up -d
-    [[ $? -ne 0 ]] && echo "ERROR: docker compose failed" && exit 1
-else
-    echo "ERROR: NPM not running and no compose file found"
-    exit 1
-fi
 
 ## Wait for NPM API to be ready (max 60s)
 echo -n "Waiting for NPM API"
