@@ -106,7 +106,8 @@ services:
       retries: 3
 
   npm:
-    image: jc21/nginx-proxy-manager:latest
+    image: jc21/nginx-proxy-manager:2.13.6  # :latest casse l'API (500 "Internal Error")
+                                             # depuis 2.13.7 — voir issue #5290
     container_name: ${COMPOSE_PROJECT_NAME:-astroport}-npm
     restart: unless-stopped
     labels:
