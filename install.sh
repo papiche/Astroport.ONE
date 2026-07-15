@@ -1319,9 +1319,24 @@ case "${INSTALL_PROFILE}" in
         ## Qdrant VectorDB — base vectorielle souveraine de la station
         ## Légère (~200Mo RAM), utile dès ⚡ Standard pour les embeddings locaux
         if [[ $_SCORE -gt 10 ]] && command -v docker >/dev/null 2>&1; then
-            if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^qdrant$'; then
+            _QDRANT_STATE=$(docker inspect -f '{{.State.Status}}' qdrant 2>/dev/null)
+            if [[ "$_QDRANT_STATE" == "running" ]]; then
+                echo "   ✅ Qdrant déjà actif."
+            elif [[ "$(getconf PAGESIZE 2>/dev/null)" != "4096" ]]; then
+                ## jemalloc (allocateur mémoire de l'image qdrant/qdrant) exige des
+                ## pages mémoire de 4 Ko — plante en crash-loop immédiat sur les
+                ## noyaux à pages 16 Ko (ex: Raspberry Pi 5 / kernel *-rpi-2712) avec
+                ## "<jemalloc>: Unsupported system page size". Incompatibilité connue
+                ## de l'image officielle, rien à réparer côté Astroport.ONE — on évite
+                ## juste de laisser le conteneur redémarrer indéfiniment pour rien.
+                echo "   ⚠️  Qdrant désactivé : pages mémoire $(getconf PAGESIZE 2>/dev/null) (jemalloc exige 4096)"
+                echo "      → Incompatibilité connue qdrant/qdrant sur ce noyau ($(uname -r))"
+                docker stop qdrant >/dev/null 2>&1
+                docker rm qdrant >/dev/null 2>&1
+            else
                 echo "   ⚡ Score ${_SCORE} ≥ 11 — démarrage Qdrant VectorDB (port 6333)..."
                 ## dragon-net déjà créé juste après l'install Docker (voir plus haut)
+                docker rm -f qdrant >/dev/null 2>&1   # nettoie un éventuel conteneur mort/planté
                 docker run -d \
                     --name qdrant \
                     --restart unless-stopped \
@@ -1331,8 +1346,6 @@ case "${INSTALL_PROFILE}" in
                     qdrant/qdrant:latest \
                     && echo "✅ Qdrant démarré (http://localhost:6333)" \
                     || echo "⚠️  Qdrant — erreur de démarrage"
-            else
-                echo "   ✅ Qdrant déjà actif."
             fi
         elif [[ $_SCORE -le 10 ]]; then
             echo "   🌿 Score ${_SCORE} — Qdrant non installé (nécessite ⚡ Standard, score ≥ 11)"
