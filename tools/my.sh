@@ -712,6 +712,7 @@ export CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/de
 # =========================================================================
 # GESTION DYNAMIQUE DU CHANGEMENT DE SWARM.KEY ET CACHES (HAUTES PERFORMANCES)
 # =========================================================================
+mkdir -p "$HOME/.zen/game" ## requis avant toute écriture ci-dessous (peut être sourcé avant install.sh:1350)
 UPLANET_STATE_FILE="$HOME/.zen/game/.current_uplanet"
 LAST_UPLANET=$(cat "$UPLANET_STATE_FILE" 2>/dev/null)
 

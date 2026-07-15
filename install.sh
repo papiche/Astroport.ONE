@@ -505,8 +505,16 @@ translate_pkg_name() {
     else
         # Debian : normaliser libsodium* (glob invalide pour dpkg-query)
         case "$pkg" in
-            libsodium*) echo "libsodium-dev" ;;
-            *)          echo "$pkg" ;;
+            libsodium*)
+                echo "libsodium-dev" ;;
+            libmagic1t64)
+                # "t64" = transition 64-bit time_t (Ubuntu 24.04+). Absent sur Debian
+                # 12/bookworm et versions antérieures — vérifier avant d'empoisonner
+                # tout le lot apt-get (un seul paquet introuvable annule l'install entière).
+                apt-cache show libmagic1t64 >/dev/null 2>&1 && echo "libmagic1t64" || echo "libmagic1"
+                ;;
+            *)
+                echo "$pkg" ;;
         esac
     fi
 }
@@ -649,11 +657,25 @@ done
 if [[ ${#_STD_MISSING[@]} -gt 0 ]]; then
     echo ">>> ${#_STD_MISSING[@]} paquets manquants : ${_STD_MISSING[*]}"
     if [[ "$PKG_MANAGER" == "pacman" ]]; then
-        sudo pacman -S --noconfirm --needed "${_STD_MISSING[@]}" \
-            || echo "⚠️  pacman batch: certains paquets ont échoué" >> "$_ERROR_LOG"
+        _std_batch_ok=0
+        sudo pacman -S --noconfirm --needed "${_STD_MISSING[@]}" && _std_batch_ok=1
     else
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${_STD_MISSING[@]}" \
-            || echo "⚠️  apt batch: certains paquets ont échoué" >> "$_ERROR_LOG"
+        _std_batch_ok=0
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${_STD_MISSING[@]}" && _std_batch_ok=1
+    fi
+    if [[ $_std_batch_ok -eq 0 ]]; then
+        # Un seul paquet introuvable annule tout le lot (apt-get/pacman) — repli 1 par 1
+        # pour isoler les échecs réels au lieu de perdre silencieusement tout le lot.
+        echo "⚠️  ${PKG_MANAGER} batch: échec — repli paquet par paquet..." | tee -a "$_ERROR_LOG"
+        _STD_FAILED=()
+        for _p in "${_STD_MISSING[@]}"; do
+            install_pkg "$_p" >/dev/null 2>>"$_ERROR_LOG" || _STD_FAILED+=("$_p")
+        done
+        if [[ ${#_STD_FAILED[@]} -gt 0 ]]; then
+            echo "❌ Paquets réellement indisponibles : ${_STD_FAILED[*]} (voir $_ERROR_LOG)" | tee -a "$_ERROR_LOG"
+        else
+            echo "✅ Tous les paquets installés via repli individuel"
+        fi
     fi
 else
     echo ">>> Tous les paquets standards déjà installés ✅"
@@ -662,8 +684,15 @@ fi
 if [[ ${#_AUR_MISSING[@]} -gt 0 && "$PKG_MANAGER" == "pacman" ]]; then
     if command -v yay >/dev/null 2>&1; then
         echo ">>> AUR — ${#_AUR_MISSING[@]} paquets manquants : ${_AUR_MISSING[*]}"
-        yay -S --noconfirm --needed "${_AUR_MISSING[@]}" \
-            || echo "⚠️  yay batch AUR: certains paquets ont échoué" >> "$_ERROR_LOG"
+        if ! yay -S --noconfirm --needed "${_AUR_MISSING[@]}"; then
+            echo "⚠️  yay batch AUR: échec — repli paquet par paquet..." | tee -a "$_ERROR_LOG"
+            _AUR_FAILED=()
+            for _a in "${_AUR_MISSING[@]}"; do
+                install_pkg "$_a" >/dev/null 2>>"$_ERROR_LOG" || _AUR_FAILED+=("$_a")
+            done
+            [[ ${#_AUR_FAILED[@]} -gt 0 ]] \
+                && echo "❌ Paquets AUR réellement indisponibles : ${_AUR_FAILED[*]} (voir $_ERROR_LOG)" | tee -a "$_ERROR_LOG"
+        fi
     else
         echo "⚠️  yay absent — paquets AUR ignorés : ${_AUR_MISSING[*]}" >> "$_ERROR_LOG"
     fi
@@ -813,18 +842,32 @@ export PATH=$HOME/.local/bin:$PATH
 ## add monero & bitcoin compatible keys
 ## duniterpy : installé uniquement dans le venv ~/.astro (pas de double via pipx)
 # Installation en lot — pip résout l'arbre de dépendances en une seule passe
-~/.astro/bin/pip install -U \
-    pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama \
-    requests geohash beautifulsoup4 browser-cookie3 cryptography jwcrypto secp256k1 \
-    gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt \
-    aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 \
-    matplotlib readability-lxml duniterpy cachetools pydantic-settings \
-    robohash substrate-interface websocket-client websockets imap_tools \
-    fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot \
-    qdrant-client \
-    2>> "$_ERROR_LOG" \
-    && echo "✅ Paquets Python installés/mis à jour" \
-    || echo "⚠️  pip batch: certains paquets ont échoué — voir $_ERROR_LOG"
+_PIP_PKGS=(
+    pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama
+    requests geohash beautifulsoup4 browser-cookie3 cryptography jwcrypto secp256k1
+    gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt
+    aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32
+    matplotlib readability-lxml duniterpy cachetools pydantic-settings
+    robohash substrate-interface websocket-client websockets imap_tools
+    fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot
+    qdrant-client
+)
+if ~/.astro/bin/pip install -U "${_PIP_PKGS[@]}" 2>>"$_ERROR_LOG"; then
+    echo "✅ Paquets Python installés/mis à jour"
+else
+    # Un seul paquet dont la compilation échoue (ex: scrypt sans libssl-dev) annule
+    # tout le lot pip — repli 1 par 1 pour ne pas perdre duniterpy et les 40 autres.
+    echo "⚠️  pip batch: échec — repli paquet par paquet..." | tee -a "$_ERROR_LOG"
+    _PIP_FAILED=()
+    for _pp in "${_PIP_PKGS[@]}"; do
+        ~/.astro/bin/pip install -U "$_pp" >/dev/null 2>>"$_ERROR_LOG" || _PIP_FAILED+=("$_pp")
+    done
+    if [[ ${#_PIP_FAILED[@]} -gt 0 ]]; then
+        echo "❌ Paquets Python réellement en échec : ${_PIP_FAILED[*]} (voir $_ERROR_LOG)" | tee -a "$_ERROR_LOG"
+    else
+        echo "✅ Tous les paquets Python installés via repli individuel"
+    fi
+fi
 ## playwright remplace pyppeteer (abandonné 2022) pour tools/page_screenshot.py
 echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
 ~/.astro/bin/pip install -U playwright 2>> "$_ERROR_LOG" \
