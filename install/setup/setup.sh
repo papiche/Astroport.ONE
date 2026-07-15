@@ -90,14 +90,19 @@ ACTUAL=$(cat /etc/resolv.conf | grep -w nameserver | head -n 1)
 
 if [[ $(echo $ACTUAL | grep "1.1.1.1") == "" ]] ; then
     ########################################################################
-    echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS COUNTRY RESTRICTIONS"
+    echo "ADDING nameservers 1.1.1.1 / 9.9.9.9 / 80.67.169.12 TO /etc/resolv.conf TO BYPASS COUNTRY RESTRICTIONS"
     ########################################################################
     sudo chattr -i /etc/resolv.conf
 
+    # 1.1.1.1 (contournement), 9.9.9.9 Quad9 (non lucratif) et 80.67.169.12 FDN
+    # (French Data Network, FAI associatif) — DNS d'origine en 4e ligne (ignoré
+    # par glibc classique, MAXNS=3, mais lu par systemd-resolved).
     sudo cat > /tmp/resolv.conf <<EOF
 domain home
 search home
 nameserver 1.1.1.1
+nameserver 9.9.9.9
+nameserver 80.67.169.12
 $ACTUAL
 # ASTROPORT.ONE
 EOF

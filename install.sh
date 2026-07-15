@@ -207,6 +207,53 @@ exec 2> >(tee -a "$_INSTALL_LOG" >&2)
 echo "=== INSTALL $(date '+%Y-%m-%d %H:%M:%S') ===" >> "$_INSTALL_LOG"
 
 ########################################################################
+## DNS : contourner un résolveur défaillant/restrictif (4G, box FAI, etc.)
+## AVANT tout apt-get/git/curl — sinon tous les téléchargements échouent
+## en "Erreur temporaire de résolution" sans que la cause soit évidente.
+## Idempotent : install/setup/setup.sh refait le même check plus tard sans effet
+## (utile pour un ré-lancement de setup.sh seul, hors install.sh complet).
+########################################################################
+_ACTUAL_DNS=$(grep -w nameserver /etc/resolv.conf 2>/dev/null | head -n 1)
+if [[ "$_ACTUAL_DNS" != *"1.1.1.1"* ]]; then
+    echo "ADDING nameservers 1.1.1.1 / 9.9.9.9 / 80.67.169.12 TO /etc/resolv.conf TO BYPASS COUNTRY RESTRICTIONS"
+    sudo chattr -i /etc/resolv.conf 2>/dev/null
+    # glibc ne lit que les 3 premières lignes "nameserver" (MAXNS) — 1.1.1.1 (efficace
+    # pour contourner les restrictions), Quad9 (9.9.9.9, association suisse à but non
+    # lucratif) et FDN (80.67.169.12, French Data Network — FAI associatif historique).
+    # Le DNS d'origine reste en 4e ligne (ignoré par glibc classique mais lu par
+    # systemd-resolved, sans risque).
+    sudo tee /tmp/resolv.conf > /dev/null <<EOF
+domain home
+search home
+nameserver 1.1.1.1
+nameserver 9.9.9.9
+nameserver 80.67.169.12
+$_ACTUAL_DNS
+# ASTROPORT.ONE
+EOF
+    sudo cp /etc/resolv.conf /etc/resolv.conf.backup 2>/dev/null
+    sudo mv /tmp/resolv.conf /etc/resolv.conf
+    sudo chattr +i /etc/resolv.conf 2>/dev/null
+fi
+
+########################################################################
+## IPv6 annoncé mais non routé (fréquent en 4G/CGNAT) : le DNS répond des AAAA
+## valides, mais aucun paquet ne transite réellement en IPv6. apt/curl/pip/git
+## tentent IPv6 en premier, échouent après un long délai, et ça remonte comme
+## une fausse "erreur de résolution DNS" alors que le DNS a très bien répondu.
+## Test rapide (3s) vers une IPv6 stable connue avant de désactiver au besoin.
+########################################################################
+if ip -6 addr show scope global 2>/dev/null | grep -q inet6 \
+   && command -v curl >/dev/null 2>&1 \
+   && ! curl -6 -sS -o /dev/null --max-time 3 "https://[2606:4700:4700::1111]/" 2>/dev/null; then
+    echo "⚠️  IPv6 annoncé par l'interface mais non routé (test échoué) — désactivation pour cette machine"
+    sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1
+    sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1 >/dev/null 2>&1
+    echo "net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/99-astroport-disable-broken-ipv6.conf >/dev/null 2>&1
+fi
+
+########################################################################
 echo "## HARDWARE CHECK (détection avant toute question) ##"
 _AVAIL_KB=$(df . | awk 'NR==2 {print $4}')
 [[ ${_AVAIL_KB:-0} -lt 2000000 ]] && echo "❌ Espace disque insuffisant (<2Go)" && exit 1
@@ -568,7 +615,8 @@ if [ -d UPlanet ]; then
         git stash push -m "install.sh auto-stash $(date +%Y%m%d-%H%M)" 2>/dev/null \
             && echo "ℹ️  Modifications locales UPlanet stashées (git stash pop pour les récupérer)"
     fi
-    git fetch --all && git reset --hard origin/main \
+    _default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+    git fetch --all && git reset --hard "origin/${_default_branch:-main}" \
         && echo "✅ UPlanet mis à jour (git reset --hard)" \
         || echo "⚠️  UPlanet git reset échoué"
     cd ..
@@ -580,7 +628,8 @@ if [ -d Astroport.ONE ]; then
         git stash push -m "install.sh auto-stash $(date +%Y%m%d-%H%M)" 2>/dev/null \
             && echo "ℹ️  Modifications locales Astroport.ONE stashées (git stash pop pour les récupérer)"
     fi
-    git fetch --all && git reset --hard origin/main \
+    _default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+    git fetch --all && git reset --hard "origin/${_default_branch:-master}" \
         && echo "✅ Astroport.ONE mis à jour (git reset --hard)" \
         || echo "⚠️  Astroport.ONE git reset échoué"
     cd ..
@@ -664,12 +713,34 @@ if [[ ${#_STD_MISSING[@]} -gt 0 ]]; then
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${_STD_MISSING[@]}" && _std_batch_ok=1
     fi
     if [[ $_std_batch_ok -eq 0 ]]; then
-        # Un seul paquet introuvable annule tout le lot (apt-get/pacman) — repli 1 par 1
-        # pour isoler les échecs réels au lieu de perdre silencieusement tout le lot.
-        echo "⚠️  ${PKG_MANAGER} batch: échec — repli paquet par paquet..." | tee -a "$_ERROR_LOG"
+        # Deux causes possibles : (a) un nom de paquet inconnu — annule tout le lot
+        # instantanément — ou (b) un échec réseau de téléchargement (archives
+        # injoignables sur connexion lente/4G) — dans ce cas 54 essais individuels
+        # sans retour visuel semblent "bloqués" pendant de longues minutes.
+        # On retente donc UNE fois le lot entier après refresh avant le repli lent.
+        echo "⚠️  ${PKG_MANAGER} batch: échec — nouvelle tentative après refresh..." | tee -a "$_ERROR_LOG"
+        if [[ "$PKG_MANAGER" == "pacman" ]]; then
+            sudo pacman -Sy --noconfirm --needed "${_STD_MISSING[@]}" && _std_batch_ok=1
+        else
+            sudo apt-get update -y >>"$_ERROR_LOG" 2>&1
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-missing "${_STD_MISSING[@]}" && _std_batch_ok=1
+        fi
+    fi
+    if [[ $_std_batch_ok -eq 1 ]]; then
+        echo "✅ Paquets installés"
+    else
+        echo "⚠️  Échec persistant — repli paquet par paquet (${#_STD_MISSING[@]} paquets, peut être lent sur réseau instable)..." | tee -a "$_ERROR_LOG"
         _STD_FAILED=()
+        _std_i=0
         for _p in "${_STD_MISSING[@]}"; do
-            install_pkg "$_p" >/dev/null 2>>"$_ERROR_LOG" || _STD_FAILED+=("$_p")
+            _std_i=$((_std_i + 1))
+            echo -n "   [${_std_i}/${#_STD_MISSING[@]}] $_p... "
+            if install_pkg "$_p" >>"$_ERROR_LOG" 2>&1; then
+                echo "ok"
+            else
+                echo "ÉCHEC"
+                _STD_FAILED+=("$_p")
+            fi
         done
         if [[ ${#_STD_FAILED[@]} -gt 0 ]]; then
             echo "❌ Paquets réellement indisponibles : ${_STD_FAILED[*]} (voir $_ERROR_LOG)" | tee -a "$_ERROR_LOG"
