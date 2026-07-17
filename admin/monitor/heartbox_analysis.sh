@@ -663,12 +663,26 @@ get_fast_capacities() {
     local storage_ready="false"
     [[ ${zencard_slots} -ge 1 || ${nostr_slots} -ge 10 ]] && storage_ready="true"
 
+    ## ── value_ratio : puissance de calcul rapportée au coût (PAF) et à la
+    ## consommation électrique réelle mesurée (avg_w_recent, cf. power_monitor.sh
+    ## power-stats / ~/.zen/game/power_history.json). Permet de comparer des
+    ## nœuds de même power_score mais de matériel/usage plus ou moins efficient,
+    ## sans dépendre uniquement du score déclaratif à l'installation.
+    local avg_w_recent=0
+    if [[ -x "${MY_PATH}/power_monitor.sh" ]]; then
+        avg_w_recent=$("${MY_PATH}/power_monitor.sh" power-stats 2>/dev/null | jq -r '.avg_w_recent // 0' 2>/dev/null || echo 0)
+    fi
+    local value_ratio
+    value_ratio=$(echo "$power_score" "$avg_w_recent" "${PAF:-14}" | awk '{ d = $2 + $3; printf "%.4f", (d > 0 ? $1/d : $1) }' 2>/dev/null || echo 0)
+
     cat << EOF
     "zencard_slots": ${zencard_slots:-0},
     "nostr_slots": ${nostr_slots:-0},
     "reserved_captain_slots": 2,
     "available_space_gb": ${total_available_gb:-0},
     "power_score": ${power_score:-0},
+    "avg_w_recent": ${avg_w_recent:-0},
+    "value_ratio": ${value_ratio:-0},
     "crypto_score": ${crypto_score:-0},
     "crypto_ms": ${crypto_ms:-0},
     "disk_io": {"write_mbps": ${disk_write_mbps:-0}, "read_mbps": ${disk_read_mbps:-0}},

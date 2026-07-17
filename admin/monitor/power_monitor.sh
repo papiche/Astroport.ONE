@@ -26,8 +26,11 @@
 #   power_monitor.sh report my_process_power.csv report.html "My Process" process.log
 #
 #   # Report from 24/7 PowerJoular CSV (last 24h only)
-#   power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration]
+#   power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration] [ipfsnodeid] [log_full_url]
 #   Uses POWER_24H_CSV (default /var/lib/powerjoular/power_24h.csv) from systemd powerjoular.service
+#
+#   # Reliable daily/monthly/total kWh (persistent history, independent of report generation)
+#   power_monitor.sh power-stats
 ########################################################################
 
 set -euo pipefail
@@ -40,6 +43,9 @@ MY_PATH="$(cd "$MY_PATH" && pwd)"
 DEFAULT_CSV="/tmp/power_monitor_$$.csv"
 # 24/7 PowerJoular systemd service CSV (see tools/systemd/powerjoular.service)
 POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
+# Historique quotidien persistant (kWh/jour) — sous ~/.zen/game/ (durable, pas lié
+# à IPFSNODEID) pour calculer un ratio compute/watt fiable (PAF Armateur)
+POWER_HISTORY_FILE="${POWER_HISTORY_FILE:-$HOME/.zen/game/power_history.json}"
 
 # Helper function to derive PID file from CSV file
 get_pid_file() {
@@ -241,7 +247,8 @@ generate_report() {
     local hostname="${5:-$(hostname -f)}"
     local duration="${6:-}"
     local ipfsnodeid="${7:-}"
-    
+    local log_full_url="${8:-}"
+
     # Ensure CSV path is absolute (handle relative paths - use /tmp to avoid cleanup)
     if [[ "$csv_file" != /* ]]; then
         csv_file="/tmp/$csv_file"
@@ -289,7 +296,8 @@ generate_report() {
             "$hostname" \
             "$duration" \
             "$title" \
-            "$ipfsnodeid" 2>&1 | while IFS= read -r line; do
+            "$ipfsnodeid" \
+            "$log_full_url" 2>&1 | while IFS= read -r line; do
                 log_info "$line"
             done
     else
@@ -362,6 +370,116 @@ with open(out_path, 'w') as out_f:
 PYEXTRACT
 }
 
+# Enregistre le kWh du jour dans l'historique persistant, indépendamment de la
+# génération du rapport HTML/graphique (fiabilité : un échec matplotlib ou jq
+# sur le rapport ne doit jamais empêcher l'enregistrement de la donnée d'énergie).
+# Idempotent : un second appel le même jour écrase l'entrée du jour (pas de double-compte).
+record_daily_history() {
+    local csv_file="$1"
+    local history_file="${2:-$POWER_HISTORY_FILE}"
+
+    if [[ "$csv_file" != /* ]]; then
+        csv_file="/tmp/$csv_file"
+    fi
+    if [[ ! -s "$csv_file" ]]; then
+        log_error "record_daily_history: CSV file not found or empty: $csv_file"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$history_file")"
+    [[ -s "$history_file" ]] || echo '{"since":null,"days":{}}' > "$history_file"
+
+    # Moyenne des watts (colonne 3 = Total Power) + horodatage premier/dernier échantillon
+    local stats
+    stats=$(awk -F',' '
+        NR>1 && $3 != "" {
+            sum += $3; n++
+            if (n == 1) first = $1
+            last = $1
+        }
+        END { if (n > 0) printf "%.4f\t%d\t%s\t%s\n", sum/n, n, first, last }
+    ' "$csv_file" 2>/dev/null || true)
+
+    if [[ -z "$stats" ]]; then
+        log_error "record_daily_history: no usable samples in $csv_file"
+        return 1
+    fi
+
+    local avg_w n_samples first_ts last_ts
+    IFS=$'\t' read -r avg_w n_samples first_ts last_ts <<< "$stats"
+
+    if [[ -z "${n_samples:-}" || "$n_samples" -lt 2 ]]; then
+        log_error "record_daily_history: insufficient samples (${n_samples:-0}) — skip"
+        return 1
+    fi
+
+    # Durée réellement couverte par les échantillons (heures) — plus fiable qu'un 24h fixe
+    # sur un premier jour de monitoring partiel ou après un redémarrage powerjoular.
+    local hours
+    hours=$(python3 -c "
+from datetime import datetime
+try:
+    f = datetime.strptime('$first_ts', '%Y-%m-%d %H:%M:%S')
+    l = datetime.strptime('$last_ts', '%Y-%m-%d %H:%M:%S')
+    h = (l - f).total_seconds() / 3600
+    print(f'{h:.4f}' if h > 0 else '24')
+except Exception:
+    print('24')
+" 2>/dev/null || echo "24")
+    [[ -z "$hours" ]] && hours=24
+
+    local kwh
+    kwh=$(awk -v w="$avg_w" -v h="$hours" 'BEGIN{printf "%.6f", (w*h)/1000}' 2>/dev/null || echo "0")
+
+    local today
+    today=$(date +%Y-%m-%d)
+
+    jq --arg day "$today" \
+       --argjson avg_w "$avg_w" \
+       --argjson kwh "$kwh" \
+       --argjson hours "$hours" \
+       --argjson samples "$n_samples" \
+       '.since = (.since // $day) |
+        .days[$day] = {avg_w: $avg_w, kwh: $kwh, hours: $hours, samples: $samples}' \
+       "$history_file" > "${history_file}.tmp" 2>/dev/null \
+        && mv "${history_file}.tmp" "$history_file" \
+        || { log_error "record_daily_history: jq update failed"; rm -f "${history_file}.tmp"; return 1; }
+
+    log_info "Daily energy recorded: $today = ${kwh} kWh (avg ${avg_w} W over ${hours}h, $n_samples samples)"
+}
+
+# Agrégats fiables pour le classement swarm : kWh du jour / du mois / total depuis
+# le début du monitoring, + puissance moyenne récente (30 derniers jours) pour un
+# ratio compute/watt stable (pas de bruit d'un seul jour atypique).
+power_stats() {
+    local history_file="${1:-$POWER_HISTORY_FILE}"
+    local empty='{"since":null,"today_kwh":0,"month_kwh":0,"total_kwh":0,"avg_w_recent":0,"days_recorded":0}'
+
+    if [[ ! -s "$history_file" ]]; then
+        echo "$empty"
+        return 0
+    fi
+
+    local today month
+    today=$(date +%Y-%m-%d)
+    month=$(date +%Y-%m)
+
+    jq -c --arg today "$today" --arg month "$month" '
+        (.days[$today].kwh // 0) as $today_kwh |
+        ([.days | to_entries[] | select(.key | startswith($month)) | .value.kwh] | add // 0) as $month_kwh |
+        ([.days[]?.kwh] | add // 0) as $total_kwh |
+        (.days | to_entries | sort_by(.key) | reverse | .[0:30] | map(.value.avg_w)) as $recent |
+        {
+            since: .since,
+            today_kwh: $today_kwh,
+            month_kwh: $month_kwh,
+            total_kwh: $total_kwh,
+            avg_w_recent: (if ($recent|length) > 0 then ($recent | add / length) else 0 end),
+            days_recorded: (.days | length)
+        }
+    ' "$history_file" 2>/dev/null || echo "$empty"
+}
+
 # Generate report from 24/7 CSV (last 24h only). Uses POWER_24H_CSV.
 report_from_24h() {
     local output_html="$1"
@@ -370,9 +488,10 @@ report_from_24h() {
     local hostname="${4:-$(hostname -f)}"
     local duration="${5:-24h}"
     local ipfsnodeid="${6:-}"
+    local log_full_url="${7:-}"
     local source_csv="${POWER_24H_CSV}"
     if [[ -z "$output_html" ]]; then
-        log_error "Usage: power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration]"
+        log_error "Usage: power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration] [ipfsnodeid] [log_full_url]"
         return 1
     fi
     if [[ ! -f "$source_csv" ]]; then
@@ -391,7 +510,12 @@ report_from_24h() {
         return 1
     fi
     log_info "Reporting from $line_count samples (last 24h)"
-    generate_report "$last24_csv" "$output_html" "$title" "$log_file" "$hostname" "$duration" "$ipfsnodeid"
+
+    # Enregistrement de l'historique AVANT le rapport HTML/graphique : la donnée
+    # d'énergie doit rester fiable même si la génération du rapport échoue ensuite.
+    record_daily_history "$last24_csv" || log_error "record_daily_history failed (non bloquant)"
+
+    generate_report "$last24_csv" "$output_html" "$title" "$log_file" "$hostname" "$duration" "$ipfsnodeid" "$log_full_url"
 }
 
 # Trim 24/7 PowerJoular CSV to last 24h only (saves disk space). Stops powerjoular.service, overwrites CSV, restarts.
@@ -463,7 +587,7 @@ main() {
             ;;
         report-from-24h)
             if [[ $# -lt 2 ]]; then
-                log_error "Usage: power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration]"
+                log_error "Usage: power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration] [ipfsnodeid] [log_full_url]"
                 return 1
             fi
             shift
@@ -472,6 +596,18 @@ main() {
         trim-24h-csv)
             shift
             trim_24h_csv "$@"
+            ;;
+        record-daily-history)
+            if [[ $# -lt 2 ]]; then
+                log_error "Usage: power_monitor.sh record-daily-history <csv_file> [history_file]"
+                return 1
+            fi
+            shift
+            record_daily_history "$@"
+            ;;
+        power-stats)
+            shift
+            power_stats "$@"
             ;;
         help|--help|-h)
             cat << EOF
@@ -496,13 +632,22 @@ Commands:
   report <csv_file> <output_html> [title] [log_file] [hostname] [duration]
     Generate HTML report with power consumption graph.
     
-  report-from-24h <output_html> [title] [log_file] [hostname] [duration]
+  report-from-24h <output_html> [title] [log_file] [hostname] [duration] [ipfsnodeid] [log_full_url]
     Generate report from 24/7 PowerJoular CSV (last 24h). Uses POWER_24H_CSV
     (default /var/lib/powerjoular/power_24h.csv). Requires powerjoular.service.
     
   trim-24h-csv [csv_path]
     Trim 24/7 CSV to last 24h only (saves disk). Stops powerjoular.service,
     overwrites CSV, restarts. Call after report-from-24h in 20h12. Uses POWER_24H_CSV if omitted.
+
+  record-daily-history <csv_file> [history_file]
+    Compute today's avg watts + kWh from csv_file and upsert into the persistent
+    daily history (default ~/.zen/game/power_history.json). Called automatically
+    by report-from-24h, independently of HTML/graph report generation.
+
+  power-stats [history_file]
+    Print JSON {since, today_kwh, month_kwh, total_kwh, avg_w_recent, days_recorded}
+    aggregated from the persistent daily history.
 
 Examples:
   # Start monitoring with default paths

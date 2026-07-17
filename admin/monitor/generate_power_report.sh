@@ -3,7 +3,7 @@
 # generate_power_report.sh
 # Generate HTML report with power consumption graph (generic version)
 #
-# Usage: generate_power_report.sh <csv_file> <graph_file> <log_file> <output_html> <hostname> <duration> [title] [ipfsnodeid]
+# Usage: generate_power_report.sh <csv_file> <graph_file> <log_file> <output_html> <hostname> <duration> [title] [ipfsnodeid] [log_full_url]
 ########################################################################
 
 set -euo pipefail
@@ -16,6 +16,7 @@ HOSTNAME="${5:-$(hostname -f)}"
 DURATION="${6:-}"
 REPORT_TITLE="${7:-Power Consumption Report}"
 IPFSNODEID="${8:-}"
+LOG_FULL_URL="${9:-}" # Lien IPFS vers le log complet (LOG_FILE n'est ici qu'un extrait tronqué)
 
 # Check if graph exists, if not generate it
 if [[ ! -f "$GRAPH_FILE" ]] && [[ -f "$CSV_FILE" ]] && command -v python3 >/dev/null 2>&1; then
@@ -141,7 +142,7 @@ cat > "$OUTPUT_HTML" << EOF
             <img src='data:image/png;base64,$GRAPH_BASE64' alt='Power Consumption Graph' />
         </div>")
         $([ -f "$LOG_FILE" ] && [[ "$LOG_FILE" != "/dev/null" ]] && echo "<div class='log-section'>
-            <h3>📋 Execution Log (20h12.log - full)</h3>
+            <h3>📋 Execution Log (extrait - dernières lignes)$([ -n "$LOG_FULL_URL" ] && echo " — <a href='${LOG_FULL_URL}' target='_blank' style='font-size:0.7em;font-weight:normal;'>📄 voir le log complet sur IPFS</a>")</h3>
             <pre>$(sed 's/</\&lt;/g; s/>/\&gt;/g' "$LOG_FILE")</pre>
         </div>")
     </div>

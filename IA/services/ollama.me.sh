@@ -371,6 +371,28 @@ force_reconnect() {
     return 0
 }
 
+# Power-score of a swarm node from its cached 12345.json (0 if absent)
+_node_power_score() {
+    local node_id="$1"
+    local j="$HOME/.zen/tmp/swarm/$node_id/12345.json"
+    [[ -f "$j" ]] && jq -r '.capacities.power_score // 0' "$j" 2>/dev/null && return
+    echo 0
+}
+
+# Ordre d'essai des nœuds : tirage aléatoire parmi le top 3 par power_score
+# (répartition de charge entre Brain-Nodes équivalents — cf. astrosystemctl.sh
+# _find_best_node "random"), puis le reste par score décroissant en secours.
+_shuffled_top3_then_rest() {
+    local -a pairs=()
+    for i in "${!node_ids[@]}"; do
+        pairs+=("$(_node_power_score "${node_ids[$i]}")|$i")
+    done
+    local -a sorted=()
+    mapfile -t sorted < <(printf '%s\n' "${pairs[@]}" | sort -t'|' -k1 -rn | cut -d'|' -f2)
+    printf '%s\n' "${sorted[@]:0:3}" | sort -R
+    printf '%s\n' "${sorted[@]:3}"
+}
+
 # Connect via IPFS P2P swarm with node selection
 connect_via_swarm() {
     local target="${1:-}"
@@ -400,11 +422,12 @@ connect_via_swarm() {
     if [[ -n "$target" ]]; then
         case "$target" in
             "auto"|"random"|"AUTO"|"RANDOM")
-                local shuffled=($(printf '%s\n' "${!nodes[@]}" | sort -R))
+                local -a shuffled=()
+                mapfile -t shuffled < <(_shuffled_top3_then_rest)
                 for idx in "${shuffled[@]}"; do
                     selected_script="${nodes[$idx]}"
                     selected_node="${node_ids[$idx]}"
-                    echo "Trying node: $selected_node"
+                    echo "Trying node: $selected_node (score: $(_node_power_score "$selected_node"))"
                     if bash "$selected_script" 2>/dev/null; then
                         sleep 2
                         if test_api "true"; then
@@ -448,12 +471,13 @@ connect_via_swarm() {
                 ;;
         esac
     else
-        # Sélection aléatoire (appelé programmatiquement — pas d'interactivité)
-        local shuffled=($(printf '%s\n' "${!nodes[@]}" | sort -R))
+        # Sélection top-3/power_score + aléatoire (appelé programmatiquement — pas d'interactivité)
+        local -a shuffled=()
+        mapfile -t shuffled < <(_shuffled_top3_then_rest)
         for idx in "${shuffled[@]}"; do
             selected_script="${nodes[$idx]}"
             selected_node="${node_ids[$idx]}"
-            echo "Trying node: $selected_node"
+            echo "Trying node: $selected_node (score: $(_node_power_score "$selected_node"))"
             ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
             if bash "$selected_script" 2>/dev/null; then
                 sleep 2

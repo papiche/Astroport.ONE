@@ -37,14 +37,26 @@ MODE="commit"         # commit | staged | day | week | month | period
 SINCE_COMMIT="HEAD"   # référence git de base pour le diff
 SINCE_LABEL="dernier commit"
 PERIOD_DAYS=""        # pour --period N
-AI_MODEL="qwen2.5-coder:14b"
+AI_MODEL="qwen2.5-coder:7b"
 AI_BACKEND="ollama"    # ollama | claude | gemini
+AI_CTX=32768           # fenêtre de contexte pour l'analyse de diff (résumé/commit)
+AI_CTX_REVIEW=16384    # fenêtre de contexte pour la revue de code / rapport d'activité
 VERBOSE=false
 PR_MODE=false
 AI_ENHANCED=false
 REVIEW_HAD_WARNINGS=false
 
 dbg() { [[ "$VERBOSE" == "true" ]] && echo -e "\033[2m[verbose] $*\033[0m" >&2 || true; }
+
+# Budget de caractères pour un diff, calé sur la fenêtre de contexte (num_ctx) du
+# modèle : réserve de la marge pour le prompt (instructions/stats) et la réponse
+# générée, ~3 caractères/token (estimation conservatrice pour du diff/code).
+_diff_budget() {
+    local ctx="$1" prompt_overhead=1200 response_tokens=800 chars_per_token=3
+    local avail=$(( ctx - prompt_overhead - response_tokens ))
+    (( avail < 500 )) && avail=500
+    echo $(( avail * chars_per_token ))
+}
 
 # ── Aide ──────────────────────────────────────────────────────────────────────
 show_help() {
@@ -279,6 +291,7 @@ ai_code_review() {
     [[ -z "$diff_content" ]] && return
 
     echo -e "${BLUE}🔍 Revue de code IA (--ai)...${NC}"
+    local _rv_budget; _rv_budget=$(_diff_budget "$AI_CTX_REVIEW")
     local _rv_file
     _rv_file=$(mktemp /tmp/review_prompt_XXXXXX.txt)
     cat > "$_rv_file" <<RVPROMPT
@@ -296,7 +309,7 @@ Si problème → "⚠️ \`chemin/fichier.sh:42\` description courte" (chemin du
 
 DIFF :
 \`\`\`
-${diff_content:0:14000}
+${diff_content:0:_rv_budget}
 \`\`\`
 RVPROMPT
 
@@ -306,7 +319,7 @@ RVPROMPT
             local _claude_bin; _claude_bin=$(command -v claude 2>/dev/null || echo "")
             if [[ -z "$_claude_bin" ]]; then
                 echo -e "${YELLOW}⚠️  claude CLI introuvable — fallback Ollama${NC}" >&2
-                _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
+                _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX_REVIEW" \
                     --prompt-file "$_rv_file" --temperature 0.1 2>/dev/null) || true
             else
                 # Hérite du compte sélectionné pour le résumé (CLAUDE_CONFIG_DIR exporté)
@@ -330,7 +343,7 @@ RVPROMPT
             local _api_key="${GEMINI_API_KEY:-}"
             if [[ -z "$_api_key" ]]; then
                 echo -e "${YELLOW}⚠️  GEMINI_API_KEY absent — fallback Ollama${NC}" >&2
-                _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
+                _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX_REVIEW" \
                     --prompt-file "$_rv_file" --temperature 0.1 2>/dev/null) || true
             else
                 local _pj; _pj=$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" < "$_rv_file")
@@ -341,7 +354,7 @@ RVPROMPT
                     | jq -r '.candidates[0].content.parts[0].text // .error.message // empty' 2>/dev/null) || true
             fi ;;
         *)
-            _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
+            _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX_REVIEW" \
                 --prompt-file "$_rv_file" --temperature 0.1 2>/dev/null) || true ;;
     esac
     rm -f "$_rv_file"
@@ -814,22 +827,25 @@ dbg "Fichiers modifiés :"
 dbg "$FILES_CHANGED"
 
 # ── Troncature head+tail (staged/commit) ou simple (day/week/month) ──────────
+DIFF_BUDGET=$(_diff_budget "$AI_CTX")
 if [[ -n "$DIFF_RAW" ]]; then
     DIFF_ORIGINAL_LEN=${#DIFF_RAW}
-    if [[ $DIFF_ORIGINAL_LEN -gt 25000 ]]; then
-        DIFF_CONTENT="${DIFF_RAW:0:15000}"
+    if [[ $DIFF_ORIGINAL_LEN -gt $DIFF_BUDGET ]]; then
+        _head=$(( DIFF_BUDGET * 60 / 100 ))
+        _tail=$(( DIFF_BUDGET - _head ))
+        DIFF_CONTENT="${DIFF_RAW:0:_head}"
         DIFF_CONTENT+=$'\n... [TRONCATURE CENTRALE] ...\n'
-        DIFF_CONTENT+="${DIFF_RAW: -10000}"
-        dbg "Diff tronqué head+tail : $DIFF_ORIGINAL_LEN → ~25000 caractères"
+        DIFF_CONTENT+="${DIFF_RAW: -${_tail}}"
+        dbg "Diff tronqué head+tail : $DIFF_ORIGINAL_LEN → ~${DIFF_BUDGET} caractères (ctx=${AI_CTX})"
     else
         DIFF_CONTENT="$DIFF_RAW"
-        dbg "Diff complet : $DIFF_ORIGINAL_LEN caractères"
+        dbg "Diff complet : $DIFF_ORIGINAL_LEN caractères (budget ${DIFF_BUDGET}, ctx=${AI_CTX})"
     fi
 else
     DIFF_ORIGINAL_LEN=${#DIFF_CONTENT}
-    if [[ $DIFF_ORIGINAL_LEN -gt 24000 ]]; then
-        DIFF_CONTENT="${DIFF_CONTENT:0:24000}"$'\n...[tronqué]'
-        dbg "Diff tronqué : $DIFF_ORIGINAL_LEN → 24000 caractères"
+    if [[ $DIFF_ORIGINAL_LEN -gt $DIFF_BUDGET ]]; then
+        DIFF_CONTENT="${DIFF_CONTENT:0:DIFF_BUDGET}"$'\n...[tronqué]'
+        dbg "Diff tronqué : $DIFF_ORIGINAL_LEN → ${DIFF_BUDGET} caractères (ctx=${AI_CTX})"
     else
         dbg "Diff complet : $DIFF_ORIGINAL_LEN caractères"
     fi
@@ -915,7 +931,7 @@ RPROMPT
             [[ -n "$_rcfg" ]] && result=$(CLAUDE_CONFIG_DIR="$_rcfg" claude --print < "$_rf" 2>/dev/null) || true
         fi
     elif [[ -f "${QUESTION_PY:-}" ]]; then
-        result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
+        result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX_REVIEW" \
             --prompt-file "$_rf" --temperature 0.2 2>/dev/null) || true
     fi
     rm -f "$_rf"
@@ -1018,19 +1034,19 @@ PROMPT
         fi
         if [[ -z "$result" ]] && [[ -f "${QUESTION_PY:-}" ]]; then
             dbg "Claude vide — fallback Ollama"
-            result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 \
+            result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX" \
                 --prompt-file "$prompt_file" --temperature 0.1 2>/dev/null) || true
         fi
     else
         dbg "Appel : python3 $QUESTION_PY --model $AI_MODEL"
         if [[ "$VERBOSE" == "true" ]]; then
-            result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 \
+            result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX" \
                 --prompt-file "$prompt_file" --temperature 0.1 2>&1) || true
             echo -e "\033[2m[VERBOSE] ── Réponse brute ───────────────────────────────────────\033[0m" >&2
             echo -e "\033[2m$result\033[0m" >&2
             echo -e "\033[2m[VERBOSE] ──────────────────────────────────────────────────────────\033[0m" >&2
         else
-            result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 \
+            result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX" \
                 --prompt-file "$prompt_file" --temperature 0.1 2>/dev/null) || true
         fi
     fi

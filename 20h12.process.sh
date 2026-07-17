@@ -714,13 +714,29 @@ fi
 
 if [[ -f "${MY_PATH}/admin/monitor/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || sudo test -f "$POWER_24H_CSV" 2>/dev/null; then
     echo "📊 Generating power consumption report (last 24h from 24/7 CSV)..."
+    ## Le log complet du jour peut peser plusieurs centaines de Ko sur une
+    ## journée bruyante (retries P2P, backfill constellation...). Embarqué tel
+    ## quel dans le rapport HTML à côté du graphique en base64, il fait souvent
+    ## dépasser la limite de sécurité 1 Mo de mailjet.sh, qui bascule alors
+    ## silencieusement sur un email "lien seul" SANS graphique ni mise en forme.
+    ## On n'embarque donc qu'un extrait (dernières ~100 Ko) dans le rapport.
+    _POWER_REPORT_LOG_TAIL="/tmp/20h12_power_report_log_tail.txt"
+    tail -c 100000 "$LOG_FILE" > "$_POWER_REPORT_LOG_TAIL" 2>/dev/null || cp "$LOG_FILE" "$_POWER_REPORT_LOG_TAIL"
+    ## Publication du log complet du jour sur IPFS : le rapport n'embarque
+    ## qu'un extrait (cf. ci-dessus), ce lien permet de consulter le log en
+    ## entier. Note : les toutes dernières lignes (ce bloc + la suite du
+    ## script) ne peuvent pas être incluses, le CID devant être calculé avant.
+    _LOG_FULL_CID=$(timeout 15s ipfs add -q --pin=false "$LOG_FILE" 2>/dev/null)
+    _LOG_FULL_URL=""
+    [[ -n "$_LOG_FULL_CID" ]] && _LOG_FULL_URL="${myLIBRA}/ipfs/${_LOG_FULL_CID}"
     if "${MY_PATH}/admin/monitor/power_monitor.sh" report-from-24h \
             "$POWER_REPORT_HTML" \
             "20H12 - $(hostname -f) - Last 24h /ipns/${IPFSNODEID:-} " \
-            "$LOG_FILE" \
+            "$_POWER_REPORT_LOG_TAIL" \
             "$(hostname -f)" \
             "24h" \
-            "${IPFSNODEID:-}" 2>&1 | tee -a $LOG_FILE; then
+            "${IPFSNODEID:-}" \
+            "${_LOG_FULL_URL}" 2>&1 | tee -a $LOG_FILE; then
         if [[ -f "$POWER_REPORT_HTML" ]]; then
             echo "✅ Power consumption report generated: $POWER_REPORT_HTML" >> $LOG_FILE
         fi
@@ -737,6 +753,7 @@ if [[ -f "${MY_PATH}/admin/monitor/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV
     else
         echo "⚠️ Power report from 24/7 CSV failed or insufficient data" >> $LOG_FILE
     fi
+    rm -f "$_POWER_REPORT_LOG_TAIL"
 else
     echo "⚠️ 24/7 PowerJoular CSV not found ($POWER_24H_CSV); is powerjoular.service running?" >> $LOG_FILE
 fi

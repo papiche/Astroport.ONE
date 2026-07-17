@@ -366,5 +366,5 @@ if __name__ == "__main__":
             print(answer)
     else:
         if not args.json:
-            print("Échec de la réponse Ollama.")
+            print("Échec de la réponse Ollama.", file=sys.stderr)
         sys.exit(1)

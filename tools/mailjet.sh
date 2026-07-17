@@ -505,7 +505,7 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
 
     if [[ -z "$json_payload" ]]; then
         echo "ERROR:mailjet: jq a échoué à construire le payload (HTML trop volumineux ?)" >&2
-        return 1
+        exit 1
     fi
 
     echo "Envoi du mail avec contenu HTML embarqué via Mailjet API v3.1..."

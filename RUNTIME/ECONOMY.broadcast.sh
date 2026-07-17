@@ -419,6 +419,29 @@ fi
 log_output "  Hardware: CPU=${HW_CPU_CORES} RAM=${HW_RAM_GB}Go VRAM=${HW_GPU_VRAM}Go score=${HW_POWER_SCORE} tier=${HW_TIER} rank=${HW_RANK}"
 
 ###############################################################################
+# COLLECT ENERGY DATA (historique quotidien persistant PowerJoular)
+# Alimenté chaque jour par 20h12.process.sh → power_monitor.sh report-from-24h
+# → record_daily_history() dans ~/.zen/game/power_history.json
+###############################################################################
+
+log_output "🔋 Collecting energy history (power_monitor power-stats)..."
+
+POWER_MONITOR_SH="${MY_PATH}/../admin/monitor/power_monitor.sh"
+ENERGY_JSON='{"since":null,"today_kwh":0,"month_kwh":0,"total_kwh":0,"avg_w_recent":0,"days_recorded":0}'
+if [[ -x "$POWER_MONITOR_SH" ]]; then
+    ENERGY_JSON=$("$POWER_MONITOR_SH" power-stats 2>/dev/null || echo "$ENERGY_JSON")
+fi
+
+ENERGY_TODAY_KWH=$(echo "$ENERGY_JSON" | jq -r '.today_kwh // 0 | (. * 10000 | round) / 10000' 2>/dev/null || echo 0)
+ENERGY_MONTH_KWH=$(echo "$ENERGY_JSON" | jq -r '.month_kwh // 0 | (. * 10000 | round) / 10000' 2>/dev/null || echo 0)
+ENERGY_TOTAL_KWH=$(echo "$ENERGY_JSON" | jq -r '.total_kwh // 0 | (. * 10000 | round) / 10000' 2>/dev/null || echo 0)
+ENERGY_AVG_W_RECENT=$(echo "$ENERGY_JSON" | jq -r '.avg_w_recent // 0 | (. * 100 | round) / 100' 2>/dev/null || echo 0)
+ENERGY_DAYS_RECORDED=$(echo "$ENERGY_JSON" | jq -r '.days_recorded // 0' 2>/dev/null || echo 0)
+ENERGY_SINCE=$(echo "$ENERGY_JSON" | jq -r '.since // ""' 2>/dev/null || echo "")
+
+log_output "  Énergie: jour=${ENERGY_TODAY_KWH}kWh mois=${ENERGY_MONTH_KWH}kWh total=${ENERGY_TOTAL_KWH}kWh (${ENERGY_DAYS_RECORDED}j suivi(s), moy récente ${ENERGY_AVG_W_RECENT}W)"
+
+###############################################################################
 # GET DEPRECIATION DATA
 ###############################################################################
 
@@ -477,7 +500,7 @@ if [[ -f "${MY_PATH}/../tools/solar_time.sh" && "$STATION_LAT" != "0" && "$STATI
     if [[ -n "$SOLAR_RESULT" ]]; then
         SOLAR_MINUTE=$(echo "$SOLAR_RESULT" | awk '{print $1}')
         SOLAR_HOUR=$(echo "$SOLAR_RESULT" | awk '{print $2}')
-        SOLAR_OFFSET=$(printf "%02d:%02d" "${SOLAR_HOUR:-0}" "${SOLAR_MINUTE:-0}")
+        SOLAR_OFFSET=$(printf "%02d:%02d" "$((10#${SOLAR_HOUR:-0}))" "$((10#${SOLAR_MINUTE:-0}))")
     fi
 fi
 
@@ -570,7 +593,15 @@ CONTENT_JSON=$(cat <<EOF
     "gpu_detected":   ${HW_GPU_DETECTED:-false},
     "disk_write_mbps":  ${HW_DISK_WRITE_MBPS:-0},
     "disk_read_mbps":   ${HW_DISK_READ_MBPS:-0},
-    "machine_value_zen": ${MACHINE_VALUE:-0}
+    "machine_value_zen": ${MACHINE_VALUE:-0},
+    "energy": {
+      "today_kwh":     ${ENERGY_TODAY_KWH:-0},
+      "month_kwh":     ${ENERGY_MONTH_KWH:-0},
+      "total_kwh":     ${ENERGY_TOTAL_KWH:-0},
+      "avg_w_recent":  ${ENERGY_AVG_W_RECENT:-0},
+      "days_recorded": ${ENERGY_DAYS_RECORDED:-0},
+      "since":         "${ENERGY_SINCE:-}"
+    }
   }
 }
 EOF
@@ -632,6 +663,8 @@ TAGS_JSON=$(cat <<EOF
   ["hw:cpu_cores", "$HW_CPU_CORES"],
   ["hw:ram_gb", "$HW_RAM_GB"],["hw:gpu_vram_gb", "$HW_GPU_VRAM"],
   ["hw:disk_write_mbps", "${HW_DISK_WRITE_MBPS:-0}"],["hw:disk_read_mbps", "${HW_DISK_READ_MBPS:-0}"],
+  ["hw:energy_today_kwh", "${ENERGY_TODAY_KWH:-0}"],["hw:energy_month_kwh", "${ENERGY_MONTH_KWH:-0}"],
+  ["hw:energy_total_kwh", "${ENERGY_TOTAL_KWH:-0}"],["hw:avg_w_recent", "${ENERGY_AVG_W_RECENT:-0}"],
   ["station:url", "$uSPOT"]
 ]
 EOF
@@ -659,6 +692,7 @@ if [[ "$DRYRUN" == "true" ]]; then
         light)          echo "🌿 Nœud Léger      — RPi/faible puissance"              ;;
     esac
     echo "   CPU: ${HW_CPU_CORES} cœurs | RAM: ${HW_RAM_GB} Go | VRAM: ${HW_GPU_VRAM} Go"
+    echo "   ⚡ Énergie: jour=${ENERGY_TODAY_KWH}kWh mois=${ENERGY_MONTH_KWH}kWh total=${ENERGY_TOTAL_KWH}kWh (${ENERGY_DAYS_RECORDED}j suivi(s), moy récente ${ENERGY_AVG_W_RECENT}W)"
     echo ""
     echo "═══ NIVEAU DE RÉSILIENCE : $RESILIENCE_LEVEL ($HEALTH_STATUS) ═══"
     case $RESILIENCE_LEVEL in

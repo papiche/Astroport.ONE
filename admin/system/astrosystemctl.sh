@@ -154,10 +154,10 @@ cmd_list_remote() {
         return 1
     fi
 
-    # Header mis à jour avec la colonne TYPE
-    printf "  ${BOLD}%-10s %-16s %-20s %-12s %-14s %-8s${NC}\n" \
-        "TYPE" "SERVICE" "NODE (fin)" "POWER" "CAPITAINE" "LATENCE"
-    printf "  %s\n" "$(printf '─%.0s' {1..85})"
+    # Header mis à jour avec la colonne TYPE et le ratio valeur/watt/PAF
+    printf "  ${BOLD}%-10s %-16s %-20s %-12s %-8s %-14s %-8s${NC}\n" \
+        "TYPE" "SERVICE" "NODE (fin)" "POWER" "RATIO" "CAPITAINE" "LATENCE"
+    printf "  %s\n" "$(printf '─%.0s' {1..95})"
 
     # Snapshot des pairs IPFS actuellement connectés (peer IDs).
     # On utilise ipfs ping (pas ICMP) : le réseau est IPFS P2P, et ICMP est souvent bloqué.
@@ -174,6 +174,10 @@ cmd_list_remote() {
 
         # Lecture des métadonnées
         power_score=$(jq -r '.capacities.power_score // 0'    "$json" 2>/dev/null || echo 0)
+        # Ratio puissance/coût/watt (cf. heartbox_analysis.sh) : power_score / (avg_w_recent + PAF)
+        # Compare des nœuds à power_score égal mais matériel/tarif plus ou moins efficient.
+        local value_ratio
+        value_ratio=$(jq -r '.capacities.value_ratio // 0'     "$json" 2>/dev/null || echo 0)
         dragon_services=$(jq -r '.dragon_services // ""' "$json" 2>/dev/null)
         if [[ -z "$dragon_services" ]]; then
             # Fallback : si le JSON est muet, on demande au disque (comme tunnel.sh)
@@ -214,11 +218,12 @@ cmd_list_remote() {
             local node_short="${node_id}"
             
             # Affichage de la ligne
-           printf "  %-10s %-16s %-54s %-12s %-14s %-8s\n" \
+           printf "  %-10s %-16s %-54s %-12s %-8s %-14s %-8s\n" \
                 "$category" \
                 "${svc}${specs}" \
                 "${node_short}" \
                 "$(power_label $power_score)" \
+                "$value_ratio" \
                 "${captain:0:13}" \
                 "$latency"
             
