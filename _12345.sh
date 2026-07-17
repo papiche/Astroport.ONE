@@ -187,6 +187,7 @@ rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm # Anti-boucle
 lastrun_file=~/.zen/tmp/12345.lastrun
 
 # Fonction pour vérifier si un peer est Astroport-Compatible
+# Retour : 0 = compatible | 1 = contenu non conforme (vrai intrus) | 2 = injoignable (timeout, non concluant)
 is_astroport_node() {
     local peer_id=$1
     # Timeout adaptatif : plus patient au démarrage ou si le swarm est vide
@@ -196,8 +197,10 @@ is_astroport_node() {
 
     if [[ -n "$check" && "$check" =~ ^[0-9]+$ ]]; then
         return 0 # Compatible
+    elif [[ -z "$check" ]]; then
+        return 2 # Injoignable (timeout/DNS/NAT) — pas de verdict, on retentera au prochain cycle
     else
-        return 1 # Incompatible
+        return 1 # Contenu non conforme reçu — non-Astroport
     fi
 }
 
@@ -571,22 +574,32 @@ while true; do
             fi
 
             for peer in ${SWARM_PEERS}; do
-                # Extraire l'ID du peer (format: /ip4/x.x.x.x/tcp/4001/p2p/Qm...)
+                # Extraire l'ID et l'adresse du peer (format: /ip4/x.x.x.x/tcp/4001/p2p/Qm...
+                # ou /dnsaddr/hostname/tcp/4001/p2p/Qm... — dans ce dernier cas $peer_ip est un nom de domaine, pas une IP)
                 peer_id=$(echo "$peer" | grep -oP 'p2p/\K[^/]+' | head -1)
                 peer_ip=$(echo "$peer" | awk -F'/' '{print $3}')
 
                 [[ -z "$peer_id" ]] && continue
                 [[ "$peer_id" == "${IPFSNODEID}" ]] && continue
-                
+
                 echo "Scanning peer: $peer_id"
-                if ! is_astroport_node "$peer_id"; then
-                    echo "[$(date)] REJECTED: $peer_id (IP: $peer_ip) - Reason: No Astroport Metadata" >> ~/.zen/tmp/swarm_intruders.log
-                    
+                is_astroport_node "$peer_id"
+                node_check=$?
+
+                if [[ $node_check -eq 2 ]]; then
+                    # Injoignable dans le délai (DNS/NAT lent) : non concluant, on retente au prochain cycle
+                    echo "Peer $peer_id ($peer_ip) injoignable, nouvel essai au prochain cycle"
+                    continue
+                elif [[ $node_check -ne 0 ]]; then
+                    echo "[$(date)] REJECTED: $peer_id (IP: $peer_ip) - Reason: Non-conforming Astroport Metadata" >> ~/.zen/tmp/swarm_intruders.log
+
                     # Action immédiate : Déconnexion forcée du swarm IPFS
                     ipfs swarm disconnect "/p2p/$peer_id" 2>/dev/null
-                    
-                    # Ajout à la liste des candidats au bannissement Firewall
-                    echo "$peer_ip" >> ~/.zen/game/firewall_candidates.txt
+
+                    # Ajout à la liste des candidats au bannissement Firewall (IP uniquement — un nom de domaine dnsaddr n'est pas bannissable ainsi)
+                    if [[ "$peer_ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ || "$peer_ip" == *:* ]]; then
+                        echo "$peer_ip" >> ~/.zen/game/firewall_candidates.txt
+                    fi
                     continue
                 fi
 
