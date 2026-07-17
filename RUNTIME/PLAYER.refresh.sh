@@ -103,6 +103,8 @@ for PLAYER in ${PLAYERONE[@]}; do
             -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
             -e "s~_NCARD_~${NCARD}~g" \
             -e "s~_ZCARD_~${ZCARD}~g" \
+            -e "s~_DIFF_DAYS_~${DAYS_LEFT:-0}~g" \
+            -e "s~_UENDDATE_~${USOCIETY_END:-}~g" \
             "$tpl" > "$tmp_email"
         echo "$tmp_email"
     }
@@ -185,15 +187,17 @@ for PLAYER in ${PLAYERONE[@]}; do
         # Check if U.SOCIETY.end exists
         if [[ -s ~/.zen/game/players/${PLAYER}/U.SOCIETY.end ]]; then
             USOCIETY_END=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY.end)
-            CURRENT_DATE=$(date -u +%Y%m%d%H%M%S%4N)
-            
-            # Compare dates and calculate days remaining (U.SOCIETY.end format: YYYYMMDDHHMMSSNNNN)
+
+            # U.SOCIETY.end format is YYYY-MM-DD (écrit par tools/G1society.sh) : comparer
+            # en secondes epoch directement, pas en chaîne (l'ancienne comparaison de
+            # chaînes "$CURRENT_DATE" < "$USOCIETY_END" supposait à tort un format
+            # YYYYMMDDHHMMSSNNNN et était TOUJOURS fausse, ce qui faisait passer tous
+            # les membres U.SOCIETY actifs pour expirés dès le premier cycle).
             CURRENT_SECONDS=$(date -u +%s)
-            END_DATE_FMT="${USOCIETY_END:0:4}-${USOCIETY_END:4:2}-${USOCIETY_END:6:2}"
-            END_SECONDS=$(date -d "$END_DATE_FMT" +%s 2>/dev/null || echo "$CURRENT_SECONDS")
+            END_SECONDS=$(date -d "$USOCIETY_END" +%s 2>/dev/null || echo "$CURRENT_SECONDS")
             DAYS_LEFT=$(( (END_SECONDS - CURRENT_SECONDS) / 86400 ))
 
-            if [[ "$CURRENT_DATE" < "$USOCIETY_END" ]]; then
+            if [[ $END_SECONDS -gt $CURRENT_SECONDS ]]; then
                 _USOCIETY_ACTIVE=true
                 echo "✅ U.SOCIETY membership active until $USOCIETY_END ($DAYS_LEFT days left)"
 
@@ -270,8 +274,11 @@ for PLAYER in ${PLAYERONE[@]}; do
                 # Calculate TVA provision (20% of ZENCard payment)
                 [[ -z $TVA_RATE ]] && TVA_RATE=0
                 TVA_AMOUNT=$(echo "scale=4; $Gpaf * $TVA_RATE / 100" | bc -l)
-                TVA_AMOUNT=$(makecoord $TVA_AMOUNT)                
-                
+                TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
+                # Conversion Ğ1 -> Ẑen (1 Ğ1 = 10 Ẑen) pour affichage email
+                Gpaf_ZEN=$(makecoord $(echo "scale=1; $Gpaf * 10" | bc -l))
+                TVA_ZEN=$(makecoord $(echo "scale=1; $TVA_AMOUNT * 10" | bc -l))
+
                 echo "[7 DAYS CYCLE] ZENCard payment - Direct TVA split: $Gpaf ẐEN to CAPTAIN + $TVA_AMOUNT ẐEN to IMPOTS"
 
                 # Ensure IMPOTS wallet exists before any payment
@@ -311,7 +318,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 # Check if both payments succeeded
                 if [[ $payment_success -eq 0 && ($tva_success -eq 0 || $(echo "$TVA_AMOUNT == 0" | bc -l) -eq 1) ]]; then
                     TOTAL_ZEN=$(echo "scale=1; ($Gpaf + $TVA_AMOUNT) * 10" | bc -l)
-                    echo "✅ Weekly ZENCard payment recorded for ${PLAYER} on $TODATE ($Gpaf_ZEN ẐEN HT + $TVA_AMOUNT ẐEN TVA = $TOTAL_ZEN ẐEN TTC) - Fiscally compliant split"
+                    echo "✅ Weekly ZENCard payment recorded for ${PLAYER} on $TODATE ($Gpaf_ZEN ẐEN HT + $TVA_ZEN ẐEN TVA = $TOTAL_ZEN ẐEN TTC) - Fiscally compliant split"
                 else
                     # Payment failed - send error email
                     if [[ $payment_success -ne 0 ]]; then
@@ -328,7 +335,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                     sed -e "s~_PLAYER_~${PLAYER}~g" \
                         -e "s~_TODATE_~${TODATE}~g" \
                         -e "s~_GPAF_ZEN_~${Gpaf_ZEN:-0}~g" \
-                        -e "s~_TVA_AMOUNT_~${TVA_AMOUNT:-0}~g" \
+                        -e "s~_TVA_AMOUNT_~${TVA_ZEN:-0}~g" \
                         -e "s~_PAYMENT_OK_~${_pay_ok}~g" \
                         -e "s~_TVA_OK_~${_tva_ok}~g" \
                         -e "s~_COINS_~${COINS:-0}~g" \
@@ -485,6 +492,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
                 -e "s~_EARTHCID_~/ipns/copylaradio.com~g" \
                 -e "s~_USPOT_~${uSPOT}~g" \
+                -e "s~_RELAY_~${myRELAY}~g" \
                 -e "s~_SECTOR_~${SECTOR}~g" \
                 -e "s~_SLAT_~${SLAT}~g" \
                 -e "s~_SLON_~${SLON}~g" \

@@ -80,7 +80,7 @@ if [[ -s ~/.zen/GPS ]]; then
     else
         CRON_MIN=$(echo "$SOLAR20H12" | awk '{print $1}')
         CRON_HOUR=$(echo "$SOLAR20H12" | awk '{print $2}')
-        echo "     Solar 20h12 = Legal time $(printf "%02d:%02d" "$CRON_HOUR" "$CRON_MIN")"
+        echo "     Solar 20h12 = Legal time $(printf "%02d:%02d" "$((10#$CRON_HOUR))" "$((10#$CRON_MIN))")"
     fi
 else
     echo ".... No ~/.zen/GPS found, using default legal time 20:12"
@@ -109,6 +109,12 @@ build_cron_header() {
 
 add_20h12_cron() {
     echo "${SOLAR20H12}  *  *  *   $CRON_JOB_CMD >> ${CRON_LOG_FILE} 2>&1" >> /tmp/newcron
+    ## Rattrapage : cron classique ne rejoue pas un créneau manqué si la machine
+    ## était éteinte/suspendue à l'heure solaire calculée (cas fréquent sur poste
+    ## de travail/laptop). On retente une fois après chaque démarrage — sans
+    ## risque de double envoi car 20h12.process.sh ignore un second appel du
+    ## jour si une exécution a déjà réussi (garde "EXECUTION TERMINÉE").
+    echo "@reboot   sleep 180 && $CRON_JOB_CMD >> ${CRON_LOG_FILE} 2>&1" >> /tmp/newcron
 }
 
 manage_service() {
@@ -234,7 +240,9 @@ EOF
             add_20h12_cron
             crontab /tmp/newcron
             echo "🔄 Heure solaire recalibrée : $SOLAR20H12"
-            echo "   ($(printf "%02d:%02d" $(echo $SOLAR20H12 | awk '{print $2}') $(echo $SOLAR20H12 | awk '{print $1}')) heure légale)"
+            _rc_h=$(echo "$SOLAR20H12" | awk '{print $2}')
+            _rc_m=$(echo "$SOLAR20H12" | awk '{print $1}')
+            echo "   ($(printf "%02d:%02d" "$((10#$_rc_h))" "$((10#$_rc_m))") heure légale)"
         else
             echo "⚠️  Aucune cron 20h12 active — recalibration ignorée (utiliser ON ou LOW)"
         fi

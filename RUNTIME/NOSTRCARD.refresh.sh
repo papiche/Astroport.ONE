@@ -456,6 +456,25 @@ for PLAYER in "${NOSTR[@]}"; do
     log "INFO" "${G1PUBNOSTR} AMOUNT (${COINS} G1) = ${ZEN} ZEN"
     log_metric "WALLET_BALANCE" "${COINS}" "${PLAYER}"
 
+    BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
+    [[ ! -s ~/.zen/game/nostr/${PLAYER}/.account_created ]] \
+        && echo $BIRTHDATE > ~/.zen/game/nostr/${PLAYER}/.account_created
+
+    # Précalcul de la prochaine échéance hebdomadaire (nécessaire dès maintenant pour
+    # l'email de solde faible ci-dessous). Recalculé plus loin (section paiement) pour
+    # la décision réelle de prélèvement — même formule, résultat identique.
+    # NE PAS omettre ce précalcul : sans lui, _NEXT_PAYMENT_DATE_ resterait soit vide,
+    # soit — pire — hérité du joueur précédemment traité dans cette boucle.
+    NEXT_PAYMENT_DATE=""
+    if [[ -n "$BIRTHDATE" ]]; then
+        _NPD_TODATE_SECONDS=$(date -d "$TODATE" +%s 2>/dev/null || date +%s)
+        _NPD_BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s 2>/dev/null || echo "$_NPD_TODATE_SECONDS")
+        _NPD_DIFF_DAYS=$(( (_NPD_TODATE_SECONDS - _NPD_BIRTHDATE_SECONDS) / 86400 ))
+        _NPD_NEXT_DAYS=$(( ((_NPD_DIFF_DAYS / 7) + 1) * 7 ))
+        NEXT_PAYMENT_DATE=$(date -d "@$(( _NPD_BIRTHDATE_SECONDS + (_NPD_NEXT_DAYS * 86400) ))" '+%Y-%m-%d' 2>/dev/null)
+        unset _NPD_TODATE_SECONDS _NPD_BIRTHDATE_SECONDS _NPD_DIFF_DAYS _NPD_NEXT_DAYS
+    fi
+
     # Check for balance threshold notifications
     if [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
         # Check if this is a new high balance (first time above 10 G1)
@@ -465,7 +484,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 "${HOME}/.zen/game/nostr/${PLAYER}/.balance_10_notified"
             log "INFO" "Balance celebration email sent to ${PLAYER} for reaching 100 Ẑen"
         fi
-        
+
         # Check for low balance warning (below 2 G1)
         if [[ $(echo "$COINS < 2" | bc -l) -eq 1 && ! -s ~/.zen/game/nostr/${PLAYER}/.balance_low_warned ]]; then
             _send_player_email "multipass_low_balance.html" \
@@ -474,10 +493,6 @@ for PLAYER in "${NOSTR[@]}"; do
             log "INFO" "Low balance warning email sent to ${PLAYER}"
         fi
     fi
-
-    BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
-    [[ ! -s ~/.zen/game/nostr/${PLAYER}/.account_created ]] \
-        && echo $BIRTHDATE > ~/.zen/game/nostr/${PLAYER}/.account_created
 
     # Check for MULTIPASS anniversaries
     if [[ -n "$BIRTHDATE" ]]; then

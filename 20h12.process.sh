@@ -36,12 +36,29 @@ start=`date +%s`
 main() {
 
 ########################################################################
-## LOGS PERMANENTS - Rotation 7 jours dans ~/.zen/log/
+## LOGS PERMANENTS dans ~/.zen/log/ - Rotation : compression >2j, purge >30j
 ########################################################################
 LOG_DIR="$HOME/.zen/log"
 mkdir -p "$LOG_DIR"
-find "$LOG_DIR" -name "20h12_*.log" -mtime +7 -delete 2>/dev/null || true
+find "$LOG_DIR" -name "20h12_*.log" -mtime +2 -exec gzip -f {} \; 2>/dev/null || true
+find "$LOG_DIR" -name "20h12_*.log.gz" -mtime +30 -delete 2>/dev/null || true
+## Rotation défensive du log brut cron (sortie écrite avant que ce script
+## ne source my.sh / ne redirige vers le log daté ci-dessous, ex: erreur de PATH)
+_RAW_CRON_LOG="$LOG_DIR/20h12.log"
+if [[ -f "$_RAW_CRON_LOG" ]] && [[ $(stat -c%s "$_RAW_CRON_LOG" 2>/dev/null || echo 0) -gt 2000000 ]]; then
+    tail -n 200 "$_RAW_CRON_LOG" > "${_RAW_CRON_LOG}.tmp" && mv "${_RAW_CRON_LOG}.tmp" "$_RAW_CRON_LOG"
+fi
 LOG_FILE="$LOG_DIR/20h12_$(date +%Y%m%d).log"
+
+## Anti-doublon : le cron horaire fixe (heure solaire) ET le rattrapage @reboot
+## (cron_VRFY.sh) peuvent tous deux déclencher ce script le même jour, par exemple
+## si la machine était éteinte à l'heure solaire calculée puis redémarrée plus tard.
+## On ne relance pas une exécution déjà terminée avec succès aujourd'hui.
+if [[ "$1" != "--force" ]] && grep -q "EXECUTION TERMINÉE" "$LOG_FILE" 2>/dev/null; then
+    echo "$(date) - 20H12 déjà exécuté avec succès aujourd'hui ($LOG_FILE) - skip (--force pour forcer)"
+    exit 0
+fi
+
 touch "$LOG_FILE"
 # Rediriger TOUT l'output (stdout + stderr) vers le log permanent daté
 exec >> "$LOG_FILE" 2>&1
@@ -78,12 +95,6 @@ ${MY_PATH}/admin/system/cron_VRFY.sh RECALIBRATE
 echo "PATH=$PATH"
 
 ########################################################################
-## IPFS DAEMON STATUS
-LOWMODE=$(sudo systemctl status ipfs | grep "preset: disabled") ## IPFS DISABLED - START ONLY FOR SYNC -
-! ss -tln 2>/dev/null | grep -q ':5001 ' && LOWMODE="NO 5001" ## IPFS IS STOPPED
-[[ ! $isLAN || ${zipit} != "" ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
-
-########################################################################
 ## CHECK IF IPFS NODE IS RESPONDING (ipfs name resolve ?)
 ########################################################################
 ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
@@ -100,6 +111,16 @@ while ! ss -tln 2>/dev/null | grep -q ':5001 '; do
         && ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "support@qo-op.com" "$LOG_FILE" "IPFS RESTART ERROR 20H12" \
         && exit 1
 done
+
+########################################################################
+## IPFS DAEMON STATUS - calculé APRES la boucle d'attente ci-dessus : à ce
+## stade le port 5001 est garanti UP (sinon le script a déjà quitté plus haut).
+## Calculer LOWMODE avant cette boucle créait un faux positif "NO 5001" lors
+## d'un simple redémarrage IPFS en cours, ce qui faisait sortir le script en
+## LOW MODE (cf. plus bas) AVANT l'envoi du mail de rapport quotidien.
+LOWMODE=$(sudo systemctl status ipfs | grep "preset: disabled") ## IPFS DISABLED - START ONLY FOR SYNC -
+! ss -tln 2>/dev/null | grep -q ':5001 ' && LOWMODE="NO 5001" ## IPFS IS STOPPED (ne devrait plus arriver ici)
+[[ ! $isLAN || ${zipit} != "" ]] && LOWMODE="" ## LOWMODE ONLY FOR LAN STATION
 
 
 ########################################################################
@@ -491,7 +512,15 @@ if [[ $LOWMODE != "" ]]; then
     
     echo "💤 Sleeping 1 hour before IPFS shutdown..."
     sleep 3600
-    
+
+    ## Envoi du rapport quotidien AVANT extinction d'IPFS : la section de
+    ## reporting complète (power report, mailjet) se trouve après ce bloc,
+    ## qui se termine par exit 0 avant de jamais l'atteindre. Sans cela les
+    ## stations LOW/LAN ne recevaient jamais le mail 20H12.
+    _STATION="$(hostname -f)"
+    ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "$CAPTAINEMAIL" "$LOG_FILE" \
+        "20H12 ${_STATION} <${CAPTAINEMAIL}> (LOW mode)"
+
     sudo systemctl stop ipfs
     echo "🛑 IPFS stopped (LOW mode)"
     exit 0
