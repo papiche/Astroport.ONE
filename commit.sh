@@ -37,7 +37,7 @@ MODE="commit"         # commit | staged | day | week | month | period
 SINCE_COMMIT="HEAD"   # référence git de base pour le diff
 SINCE_LABEL="dernier commit"
 PERIOD_DAYS=""        # pour --period N
-AI_MODEL="qwen2.5-coder:7b"
+AI_MODEL="qwen2.5-coder:14b"
 AI_BACKEND="ollama"    # ollama | claude | gemini
 AI_CTX=32768           # fenêtre de contexte pour l'analyse de diff (résumé/commit)
 AI_CTX_REVIEW=16384    # fenêtre de contexte pour la revue de code / rapport d'activité
@@ -1035,19 +1035,19 @@ PROMPT
         if [[ -z "$result" ]] && [[ -f "${QUESTION_PY:-}" ]]; then
             dbg "Claude vide — fallback Ollama"
             result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX" \
-                --prompt-file "$prompt_file" --temperature 0.1 2>/dev/null) || true
+                --prompt-file "$prompt_file" --temperature 0.1 --repeat-penalty 1.1 --max-tokens 1024 2>/dev/null) || true
         fi
     else
         dbg "Appel : python3 $QUESTION_PY --model $AI_MODEL"
         if [[ "$VERBOSE" == "true" ]]; then
             result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX" \
-                --prompt-file "$prompt_file" --temperature 0.1 2>&1) || true
+                --prompt-file "$prompt_file" --temperature 0.1 --repeat-penalty 1.1 --max-tokens 1024 2>&1) || true
             echo -e "\033[2m[VERBOSE] ── Réponse brute ───────────────────────────────────────\033[0m" >&2
             echo -e "\033[2m$result\033[0m" >&2
             echo -e "\033[2m[VERBOSE] ──────────────────────────────────────────────────────────\033[0m" >&2
         else
             result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx "$AI_CTX" \
-                --prompt-file "$prompt_file" --temperature 0.1 2>/dev/null) || true
+                --prompt-file "$prompt_file" --temperature 0.1 --repeat-penalty 1.1 --max-tokens 1024 2>/dev/null) || true
         fi
     fi
     rm -f "$prompt_file"
