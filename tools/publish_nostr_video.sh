@@ -703,18 +703,30 @@ print(s, end='')
 ESCAPED_TITLE=$(sanitize_for_json "$TITLE")
 
 # Build tags array (compatible with NIP-71 and create_video_channel.py)
+# NOTE: "dim" et "duration" sont dupliqués en tags top-level (en plus de
+# leur présence dans "imeta") car UPlanet_FILE_CONTRACT.md §4.1.3 les
+# documente comme tags NIP-71 de premier niveau — les filtres NIP-101
+# (21.sh/22.sh) et certains clients les lisent directement sans parser imeta.
 TAGS='[
     ["title", "'"$ESCAPED_TITLE"'"],
     ["url", "'"$IPFS_URL"'"],
     ["m", "'"$MIME_TYPE"'"],
+    ["dim", "'"$DIMENSIONS"'"],
     '"$IMETA_TAG_ARRAY"'
 '
-    
+
 # Add file size tag (NIP-71 standard) - always add even if 0 for consistency
 if [ -n "$FILE_SIZE" ]; then
     TAGS="${TAGS},
     [\"size\", \"$FILE_SIZE\"]"
     log_info "Added file size: ${FILE_SIZE} bytes"
+fi
+
+# Add duration tag (NIP-71 top-level, seconds as integer)
+if [ -n "$DURATION" ] && [ "$DURATION" != "0" ]; then
+    TAGS="${TAGS},
+    [\"duration\", \"$DURATION\"]"
+    log_info "Added duration: ${DURATION}s"
 fi
 
 # Add published_at tag (use original timestamp if re-upload)
