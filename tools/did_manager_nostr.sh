@@ -641,6 +641,34 @@ update_did_document() {
         fi
     fi
 
+    # Lien clé LOVE dédiée (ATOM4LOVE) — ajoutée en verificationMethod du DID,
+    # au même titre que g1-key/bitcoin-key/monero-key. Sans ce lien,
+    # kin_oracle.sh (_scan_did_mapping) ne peut pas retrouver l'email associé
+    # au pubkey qui signe atom4love/love-profile/dream_vector (la clé LOVE
+    # est distincte du pubkey principal du DID, cf. atom4love_publish.py)
+    # — les newsletters "Résonances phi" restaient donc vides pour ces
+    # comptes. Le DID (kind 30800) est déjà répliqué constellation-wide via
+    # backfill_constellation.sh, donc ce lien se propage nativement.
+    local _hex_love
+    _hex_love=$(cat "$HOME/.zen/game/nostr/${email}/HEX_LOVE" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$_hex_love" ]]; then
+        local _already_linked
+        _already_linked=$(jq -r --arg h "$_hex_love" \
+            '.verificationMethod // [] | map(select(.publicKeyMultibase == ("fe70102" + $h))) | length' \
+            "$did_temp" 2>/dev/null)
+        if [[ "${_already_linked:-0}" == "0" ]]; then
+            local _hex_pubkey
+            _hex_pubkey=$(cat "$HOME/.zen/game/nostr/${email}/HEX" 2>/dev/null | tr -d '[:space:]')
+            jq_cmd="$jq_cmd | .verificationMethod = ((.verificationMethod // []) + [{
+                \"id\": \"did:nostr:${_hex_pubkey}#atom4love-key\",
+                \"type\": \"Multikey\",
+                \"controller\": \"did:nostr:${_hex_pubkey}\",
+                \"publicKeyMultibase\": \"fe70102${_hex_love}\"
+            }])"
+            echo -e "${GREEN}✅ Clé LOVE liée au DID (verificationMethod #atom4love-key)${NC}"
+        fi
+    fi
+
     if [[ "$montant_zen" != "0" ]]; then
         jq_cmd="$jq_cmd | .metadata.lastPayment = {
             \"amount_zen\": \"$montant_zen\",

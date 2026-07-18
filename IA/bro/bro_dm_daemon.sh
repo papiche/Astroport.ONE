@@ -36,6 +36,11 @@ QUEUE_DIR="$HOME/.zen/tmp/bro_dm_queue"
 ## déposé par filter/4.sh, séparé de QUEUE_DIR car non déchiffrable avec
 ## NODE_NSEC (seule la clé propre du propriétaire le peut).
 SELF_DM_QUEUE_DIR="$HOME/.zen/tmp/bro_self_dm_queue"
+## LOVE DM (adressé au HEX_LOVE dédié d'un compte local) — déposé par
+## filter/4.sh avec {"love_dm":true,"email":...}, déchiffrable côté daemon
+## avec .secret.love de ce compte (détenue server-side, contrairement au
+## self-DM ci-dessus).
+LOVE_DM_QUEUE_DIR="$HOME/.zen/tmp/bro_love_dm_queue"
 PID_FILE="$HOME/.zen/tmp/bro_dm_daemon.pid"
 LOG_FILE="$HOME/.zen/tmp/bro_dm_daemon.log"
 INTERCOM="${HOME}/.zen/Astroport.ONE/tools/nostr_node_intercom.py"
@@ -46,13 +51,19 @@ BRO_WATCH_CORE="$MY_PATH/../bro_watch_core.py"
 ## Déduplication inter-sources (filter/4.sh + constellation subscriber)
 _DEDUP_DIR="$HOME/.zen/tmp/bro_dm_dedup"
 
-mkdir -p "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" "$_DEDUP_DIR"
+mkdir -p "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" "$LOVE_DM_QUEUE_DIR" "$_DEDUP_DIR"
 mkdir -p "$HOME/.zen/flashmem"
 
 ## Traitement sériel : un seul job à la fois (pas de parallélisme)
 
 IA_LOG="$HOME/.zen/tmp/IA.log"
 _log() { echo "[$(date '+%H:%M:%S')] [bro_dm] $*" | tee -a "$IA_LOG"; }
+
+## Positionnée par _handle_love_dm_event autour de l'appel à _handle_love :
+## si non vide, _send_dm signe la réponse avec .secret.love de CET email
+## (clé LOVE dédiée) au lieu de NODE_NSEC — la conversation LOVE répond alors
+## vraiment "en tant que" la clé LOVE de l'utilisateur, pas la station.
+_LOVE_REPLY_AS=""
 
 ## Wrapper sécurisé : NSEC passé via stdin, jamais en argument (invisible dans ps aux).
 ## Utilise NIP-04 si l'expéditeur a écrit en NIP-04 (_DM_ENC="nip04"), NIP-44 sinon.
@@ -64,9 +75,16 @@ _send_dm() {
     local _flag=""
     [[ "${_DM_ENC:-nip44}" == "nip04" ]] && _flag="--nip04"
     local _recipient="$1" _message="$2"
+    local _nsec="$NODE_NSEC"
+    if [[ -n "$_LOVE_REPLY_AS" ]]; then
+        local _love_secret="$HOME/.zen/game/nostr/${_LOVE_REPLY_AS}/.secret.love"
+        local _love_nsec
+        _love_nsec=$(grep -oP 'NSEC=\K[^;]+' "$_love_secret" 2>/dev/null | tr -d '[:space:]')
+        [[ -n "$_love_nsec" ]] && _nsec="$_love_nsec"
+    fi
     local _sent=false _r
     for _r in "${_RELAYS[@]}"; do
-        printf '%s\n' "$NODE_NSEC" | python3 "$SECURE_DM" --nsec-stdin ${_flag} \
+        printf '%s\n' "$_nsec" | python3 "$SECURE_DM" --nsec-stdin ${_flag} \
             "$_recipient" "$_message" "$_r" 2>/dev/null && _sent=true
     done
     $_sent
@@ -1330,6 +1348,47 @@ _handle_self_dm_event() {
     _log "ℹ️  self-DM $email ni local ni roaming ici — ignoré"
 }
 
+## ── LOVE DM (adressé au HEX_LOVE dédié d'un compte, cf. filter/4.sh) ─────────
+## Format {"love_dm":true,"email":"...","event":{...}} — déchiffrable ici avec
+## .secret.love de CE compte (détenue server-side par atom4love_publish.py),
+## contrairement au self-DM (clé propriétaire non détenue par la station).
+## La réponse est signée par CETTE clé LOVE, pas NODE_NSEC — cf. _send_dm.
+_handle_love_dm_event() {
+    local event_file="$1"
+    local email
+    email=$(jq -r '.email // ""' < "$event_file" 2>/dev/null)
+    [[ -z "$email" ]] && return
+
+    local love_secret="$HOME/.zen/game/nostr/${email}/.secret.love"
+    if [[ ! -s "$love_secret" ]]; then
+        _log "WARN: love_dm pour ${email} mais .secret.love absent — ignoré"
+        return
+    fi
+    local love_nsec
+    love_nsec=$(grep -oP 'NSEC=\K[^;]+' "$love_secret" 2>/dev/null | tr -d '[:space:]')
+    if [[ -z "$love_nsec" ]]; then
+        _log "WARN: love_dm: NSEC illisible dans .secret.love pour ${email}"
+        return
+    fi
+
+    local decoded
+    decoded=$(jq -c '.event' < "$event_file" 2>/dev/null | \
+        NOSTR_NSEC="$love_nsec" python3 "$INTERCOM" decrypt 2>/dev/null)
+    if [[ -z "$decoded" ]]; then
+        _log "WARN: déchiffrement love_dm échoué pour ${email}"
+        return
+    fi
+
+    local sender payload
+    sender=$(jq -r '.sender // ""' <<< "$decoded" 2>/dev/null)
+    payload=$(jq -c '.payload // {}' <<< "$decoded" 2>/dev/null)
+    [[ -z "$sender" ]] && return
+
+    _LOVE_REPLY_AS="$email"
+    _handle_love "$payload" "$sender"
+    _LOVE_REPLY_AS=""
+}
+
 ## ── Traitement d'un event JSON ───────────────────────────────────────
 _process_event() {
     local event_file="$1"
@@ -1361,6 +1420,16 @@ _process_event() {
     ## déchiffrer un self-DM) : juste résolution email + routage local/roaming.
     if jq -e '.self_dm == true' "$event_file" >/dev/null 2>&1; then
         _handle_self_dm_event "$event_file"
+        rm -f "$event_file"
+        return
+    fi
+
+    ## ── LOVE DM (canal dédié, adressé au HEX_LOVE) déposé par filter/4.sh ───────
+    ## Format {"love_dm":true,"email":"...","event":{...}} — quatrième format
+    ## de queue. Déchiffrable ici (contrairement au self-DM) : voir
+    ## _handle_love_dm_event.
+    if jq -e '.love_dm == true' "$event_file" >/dev/null 2>&1; then
+        _handle_love_dm_event "$event_file"
         rm -f "$event_file"
         return
     fi
@@ -1615,7 +1684,7 @@ _dispatch_file() {
 }
 
 ## ── Traiter les fichiers déjà présents dans la queue ─────────────────
-for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json; do
+for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json; do
     [[ -f "$_f" ]] && _dispatch_file "$_f"
 done
 
@@ -1629,7 +1698,7 @@ wait
 _sweep_loop() {
     while [[ "$_BRO_CLEAN_STOP" != true ]]; do
         sleep 30
-        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
     done
 }
 _sweep_loop &
@@ -1744,8 +1813,8 @@ command -v inotifywait &>/dev/null && _inotify_ok=true
 while [[ "$_BRO_CLEAN_STOP" != true ]]; do
     if $_inotify_ok; then
         ## %w%f = chemin complet (répertoire surveillé + nom de fichier) — nécessaire
-        ## puisqu'on surveille maintenant deux répertoires (QUEUE_DIR + SELF_DM_QUEUE_DIR).
-        inotifywait -m -e close_write -e moved_to --format '%w%f' "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" 2>/dev/null | \
+        ## puisqu'on surveille maintenant trois répertoires (QUEUE_DIR + SELF_DM_QUEUE_DIR + LOVE_DM_QUEUE_DIR).
+        inotifywait -m -e close_write -e moved_to --format '%w%f' "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" "$LOVE_DM_QUEUE_DIR" 2>/dev/null | \
         while IFS= read -r _fpath; do
             [[ "$_BRO_CLEAN_STOP" == true ]] && break
             [[ "$_fpath" == *.json ]] || continue
@@ -1755,11 +1824,11 @@ while [[ "$_BRO_CLEAN_STOP" != true ]]; do
         [[ "$_BRO_CLEAN_STOP" == true ]] && break
         _log "⚠️  inotifywait terminé — retry dans 5s"
         # Traiter les fichiers arrivés pendant la coupure
-        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
         sleep 5
     else
         # Fallback polling : move atomique garantit un seul traitement par fichier
-        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
         sleep 10
     fi
 done

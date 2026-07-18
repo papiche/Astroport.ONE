@@ -66,6 +66,7 @@ echo "========================================================================"
 # ─── Collecte des données A4L (kind 30800, 30078, 1, 7) ──────────────────────
 echo "  📡 Scan DID + A4L + Spacememory + Atom4Peace..."
 _scan_did_mapping      2>/dev/null; echo "    → DID mappes : ${#pubkey_email[@]}"
+_scan_local_love_keys  2>/dev/null; echo "    → + clés LOVE locales : ${#pubkey_email[@]} (cumulatif)"
 _scan_a4l_phi          2>/dev/null; echo "    → phi_i charges : ${#email_phi[@]}"
 _scan_spacememory_hexagons 2>/dev/null; echo "    → Spacememory : ${#email_hexagons[@]}"
 _scan_atom4peace_resonances 2>/dev/null; echo "    → Resonances live : ${#email_k_sum[@]}"

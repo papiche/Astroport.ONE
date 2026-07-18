@@ -152,6 +152,9 @@ mkdir -p "$WELCOME_DIR"
 echo "  📡 Scan kind 30800..."
 # Pré-scan DID pour peupler pubkey_email[] (requis par _scan_a4l_phi)
 _scan_did_mapping 2>/dev/null
+# Complète avec les clés LOVE locales pas encore liées au DID (comptes
+# activés avant le lien verificationMethod #atom4love-key)
+_scan_local_love_keys 2>/dev/null
 declare -A kin_emails=()    # kin_number → "email1 email2 …"
 declare -A email_zencard=() # emails avec ẐEN Card activée (.metadata.zencardWallet ou .g1pub local)
 total_profiles=0

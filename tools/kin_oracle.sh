@@ -283,8 +283,42 @@ _scan_did_mapping() {
             .service // [] | map(select(.id | endswith("#ipns-storage"))) | first.serviceEndpoint // ""
         ' 2>/dev/null)
         [[ -n "$_ipns" ]] && email_nostrns["$_email"]="$_ipns"
+
+        # Clé LOVE dédiée liée au DID (verificationMethod #atom4love-key, cf.
+        # did_manager_nostr.sh::update_did_document) — nécessaire pour retrouver
+        # l'email depuis le pubkey qui signe atom4love/love-profile/dream_vector
+        # (distinct du pubkey principal du DID, cf. atom4love_publish.py).
+        local _love_hex
+        _love_hex=$(echo "$content" | jq -r '
+            .verificationMethod // [] | map(select(.id | endswith("#atom4love-key")))
+            | first.publicKeyMultibase // ""
+        ' 2>/dev/null)
+        _love_hex="${_love_hex#fe70102}"
+        [[ -n "$_love_hex" ]] && pubkey_email["$_love_hex"]="$_email"
+
         ((count++))
     done < <(cd "$strfry_dir" && ./strfry scan '{"kinds":[30800]}' 2>/dev/null)
+    echo "$count"
+}
+
+# ─── Scan local des clés LOVE dédiées (HEX_LOVE) ─────────────────────────────
+# Corrige immédiatement les comptes déjà activés, sans attendre que leur DID
+# soit republié avec le lien verificationMethod #atom4love-key (cf.
+# _scan_did_mapping ci-dessus, qui devient la source de vérité constellation-
+# wide une fois republiée). Complète pubkey_email[] sans écraser une entrée
+# déjà posée par le scan DID.
+_scan_local_love_keys() {
+    local count=0
+    local hex_love_file email love_hex
+    for hex_love_file in "${HOME}"/.zen/game/nostr/*/HEX_LOVE; do
+        [[ -f "$hex_love_file" ]] || continue
+        email=$(basename "$(dirname "$hex_love_file")")
+        love_hex=$(cat "$hex_love_file" 2>/dev/null | tr -d '[:space:]')
+        [[ -z "$love_hex" ]] && continue
+        [[ -n "${pubkey_email[$love_hex]:-}" ]] && continue  # déjà résolu via le DID
+        pubkey_email["$love_hex"]="$email"
+        ((count++))
+    done
     echo "$count"
 }
 

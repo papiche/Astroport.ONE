@@ -40,6 +40,11 @@ _LOVE_MODEL="${LOVE_MODEL:-gemma3:latest}"
 _LOVE_DAILY_QUOTA="${LOVE_DAILY_QUOTA:-3}"   # max prompts IA/jour par utilisateur
 _LOVE_STRFRY="$HOME/.zen/strfry/strfry"      # binaire strfry pour lectures NOSTR
 _LOVE_MEMORY_MGR="$_LOVE_PATH/../memory_manager.py"  # collection Qdrant love_{hex16}
+# Garde-fous #love_match constellation (candidats hors station, cf. _handle_love_match) :
+# chaque candidat distant coûte ~5-8 appels subprocess Python, donc plafonné pour
+# borner le temps de réponse quand la constellation grandit.
+_LOVE_MATCH_MAX_REMOTE_SCAN="${LOVE_MATCH_MAX_REMOTE_SCAN:-300}"  # limite du scan strfry
+_LOVE_MATCH_MAX_REMOTE="${LOVE_MATCH_MAX_REMOTE:-50}"             # candidats distants réellement scorés
 
 # Tables Dreamspell embarquées (pas de dépendance kin_oracle.sh au runtime)
 _LOVE_KIN_SEALS=("Dragon" "Wind" "Night" "Seed" "Serpent" "WorldBridger" "Hand" "Star"
@@ -120,22 +125,53 @@ else:
     echo "${content:-{}}"
 }
 
-## ── Publier le profil love sur NOSTR (kind-30078 d=love-profile) ─────────────
-## Signé avec .secret.love (clé LOVE dédiée, cf. atom4love_publish.py) si déjà
-## activée, sinon fallback sur .secret.nostr (clé principale du MULTIPASS).
-_love_publish_nostr_profile() {
-    local email="$1" content="$2"
-    local secret_file="$HOME/.zen/game/nostr/${email}/.secret.love"
-    [[ ! -s "$secret_file" ]] && secret_file="$HOME/.zen/game/nostr/${email}/.secret.nostr"
-    [[ ! -s "$secret_file" ]] && return 1
-    local send_py="$_LOVE_PATH/../../../tools/nostr_send_note.py"
-    [[ ! -f "$send_py" ]] && return 1
-    python3 "$send_py" \
-        --keyfile "$secret_file" \
-        --kind 30078 \
-        --content "$content" \
-        --tags '[["d","love-profile"],["t","love"]]' \
-        2>/dev/null
+## ── Lire le dream_vector publié publiquement (kind-30078 d=dream_vector) ─────
+## Couvre le cas où le dream_vector a été publié depuis atomic_dream.html
+## (web → UPassport /atom4love/dream) sans jamais passer par le brouillon
+## chat local (love/dream_vector.json, cf. _handle_love_dream).
+_love_get_nostr_dream_vector() {
+    local pubkey="$1"
+    [[ -z "$pubkey" || ${#pubkey} -ne 64 ]] && echo "{}" && return
+    [[ ! -x "$_LOVE_STRFRY" ]] && echo "{}" && return
+    local content
+    content=$(cd "$(dirname "$_LOVE_STRFRY")" && ./strfry scan \
+        "{\"kinds\":[30079],\"#d\":[\"dream_vector\"],\"authors\":[\"${pubkey}\"]}" \
+        2>/dev/null | head -1 | python3 -c "
+import sys,json
+line=sys.stdin.read().strip()
+if not line: print('{}')
+else:
+    try: print(json.loads(line).get('content','{}'))
+    except: print('{}')
+" 2>/dev/null)
+    echo "${content:-{}}"
+}
+
+## ── Lister tous les profils de rencontre publics de la constellation ─────────
+## Scan kind-30078 d=love-profile sur le relai local (déjà répliqué via
+## backfill_constellation.sh) — inclut les membres d'autres stations, pas
+## seulement ceux de la station locale. Dédoublonne par pubkey (garde
+## l'event le plus récent). Retourne un array JSON [{pubkey,content},...],
+## plafonné à _LOVE_MATCH_MAX_REMOTE_SCAN (cf. constantes en tête de fichier).
+_love_list_nostr_love_profiles() {
+    [[ ! -x "$_LOVE_STRFRY" ]] && echo "[]" && return
+    cd "$(dirname "$_LOVE_STRFRY")" && ./strfry scan \
+        "{\"kinds\":[30078],\"#d\":[\"love-profile\"],\"limit\":${_LOVE_MATCH_MAX_REMOTE_SCAN}}" \
+        2>/dev/null | python3 -c "
+import sys, json
+events = []
+for line in sys.stdin:
+    try: events.append(json.loads(line))
+    except Exception: pass
+by_pubkey = {}
+for e in events:
+    pk = e.get('pubkey', '')
+    if not pk: continue
+    if pk not in by_pubkey or e.get('created_at', 0) > by_pubkey[pk].get('created_at', 0):
+        by_pubkey[pk] = e
+out = [{'pubkey': pk, 'content': e.get('content', '{}')} for pk, e in by_pubkey.items()]
+print(json.dumps(out))
+" 2>/dev/null || echo "[]"
 }
 
 ## ── Lire les derniers messages publics (kind-1) d'un pubkey ──────────────────
@@ -161,12 +197,52 @@ for p in posts[:${limit}]: print('•', p)
 " 2>/dev/null
 }
 
-## ── Récupérer le pubkey NOSTR depuis l'email ─────────────────────────────────
+## ── Récupérer le pubkey NOSTR MULTIPASS (identité principale) depuis l'email ──
+## Utiliser pour Kind 0 (profil), Kind 10600 (traces), messages publics, URL de
+## rencontre — tout ce qui relève de l'identité "normale" de l'utilisateur.
+## Pour les données ATOM4LOVE (atom4love/love-profile/dream_vector, signées
+## par la clé LOVE dédiée), utiliser _love_hex_for_email ci-dessous à la place.
 _love_pubkey_for_email() {
     local email="$1"
     local mp="$HOME/.zen/game/nostr/${email}/.multipass.json"
     [[ ! -f "$mp" ]] && return
     python3 -c "import json; print(json.load(open('$mp')).get('hex',''))" 2>/dev/null
+}
+
+## ── Récupérer le pubkey de la clé LOVE dédiée depuis l'email ─────────────────
+## HEX_LOVE (copie en clair, cf. atom4love_publish.py::write_secret_love) —
+## différent du pubkey MULTIPASS. C'est la clé qui signe atom4love (30078
+## d=atom4love), love-profile (30078 d=love-profile) et dream_vector (30079).
+## Ne retombe PAS sur HEX (MULTIPASS) : réservé aux comparaisons d'identité
+## (déduplication, exclusion de soi-même) où une absence de correspondance est
+## sans conséquence. Pour aller chercher une DONNÉE ATOM4LOVE, utiliser
+## _love_try_dual_hex ci-dessous, qui ne traite un résultat MULTIPASS comme
+## valide que s'il existe réellement (jamais par simple supposition) — cf.
+## make_NOSTRCARD.sh::_A4L_PRIMARY_IS_BIRTH_DERIVED pour le cas où la clé
+## principale sert déjà de clé LOVE (atomic.html/miz.html/Cabine-33).
+_love_hex_for_email() {
+    local email="$1"
+    cat "$HOME/.zen/game/nostr/${email}/HEX_LOVE" 2>/dev/null | tr -d '[:space:]'
+}
+
+## ── Essayer la clé LOVE puis, à défaut, la clé MULTIPASS — n'accepte le
+## résultat MULTIPASS que s'il contient réellement une donnée publiée (jamais
+## par supposition de mode "clé principale birth-derived"). Réserve de fait
+## le traitement ATOM4LOVE aux comptes ayant effectivement publié une donnée
+## sous une clé ou l'autre — ce qui suppose des données de naissance fournies
+## (atom4love_activate.sh exige birth_lat/birth_lon pour dériver/publier).
+## Usage : _love_try_dual_hex EMAIL FETCH_FN   (FETCH_FN : nom d'une fonction
+## qui prend un pubkey en $1 et retourne du JSON, ex: _love_get_a4l_data_by_pubkey)
+_love_try_dual_hex() {
+    local email="$1" fetch_fn="$2"
+    local love_hex; love_hex=$(_love_hex_for_email "$email")
+    local result="{}"
+    [[ -n "$love_hex" ]] && result=$("$fetch_fn" "$love_hex")
+    if [[ -n "$result" && "$result" != "{}" ]]; then
+        echo "$result"; return
+    fi
+    local mp_hex; mp_hex=$(_love_pubkey_for_email "$email")
+    [[ -n "$mp_hex" && "$mp_hex" != "$love_hex" ]] && "$fetch_fn" "$mp_hex" || echo "{}"
 }
 
 ## ── URL de rencontre déterministe (Jitsi) ────────────────────────────────────
@@ -408,17 +484,13 @@ print(f"{score} {desc}")
 PYEOF
 }
 
-## ── Récupérer les données ATOM4LOVE (Phi²) depuis strfry ────────────────────
-## Retourne le contenu JSON du Kind 30078 d=atom4love validé, ou "{}"
+## ── Récupérer les données ATOM4LOVE (Phi²) depuis strfry, par pubkey ─────────
+## Retourne le contenu JSON du Kind 30078 d=atom4love validé, ou "{}".
 ## Champs utiles : personal_phase (φ), omega_bio (ω), biological_sex, kin_num, kin_conception
-_love_get_a4l_data() {
-    local email="$1"
-    local multipass="$HOME/.zen/game/nostr/${email}/.multipass.json"
-    [[ ! -f "$multipass" ]] && echo "{}" && return
-
-    local pubkey
-    pubkey=$(python3 -c "import json,sys; print(json.load(sys.stdin).get('hex',''))" \
-        < "$multipass" 2>/dev/null)
+## Pubkey-based — fonctionne pour un membre distant de la constellation
+## (aucun email/compte local requis), cf. _love_get_a4l_data (wrapper email).
+_love_get_a4l_data_by_pubkey() {
+    local pubkey="$1"
     [[ -z "$pubkey" || ${#pubkey} -ne 64 ]] && echo "{}" && return
 
     local strfry_bin="$HOME/.zen/strfry/strfry"
@@ -449,6 +521,16 @@ print('ok' if expected==sys.argv[1] else 'fail')
     echo "$content"
 }
 
+## ── Récupérer les données ATOM4LOVE (Phi²) depuis strfry, par email ─────────
+## Essaie la clé LOVE (cas normal, l'event atom4love est signé par
+## .secret.love, cf. atom4love_publish.py:276) puis, seulement si un
+## certificat existe réellement là, la clé MULTIPASS (cas birth-derived) —
+## jamais par supposition, cf. _love_try_dual_hex.
+_love_get_a4l_data() {
+    local email="$1"
+    _love_try_dual_hex "$email" _love_get_a4l_data_by_pubkey
+}
+
 ## ── Score bonus : alignement des dream_vector (0-15 pts + label) ────────────
 ## Réutilise phi2x.py::compute_dream_divergence (Jaccard inversé sur les tags
 ## CR/DR). Divergence faible = Rêves alignés = bonus. Ne recalcule PAS γ ici :
@@ -474,6 +556,35 @@ elif d < 0.34:
 else:
     print(f'{pts} 🌊 Rêves partiellement partagés')
 " "$my_tags_json" "$other_tags_json" 2>/dev/null || echo "0"
+}
+
+## ── Score total : interférence non-linéaire (Géométrie de la Confiance) ──────
+## k = score_phi2x normalisé sur [0,1] pilote le régime d'interférence.
+## k ≥ 0.95 → Singularité (fusion exponentielle)
+## k ≤ 0.55 → Alignement orthogonal (friction créatrice, diviseur)
+## sinon    → Interférence constructive classique (smooth-min)
+## Réutilisée par _handle_love_match pour les candidats locaux ET distants —
+## seule la source des 7 scores partiels change, jamais ce calcul.
+_love_combine_score() {
+    local si="$1" sk="$2" sp="$3" st="$4" sa="$5" sm="$6" sd="$7"
+    python3 -c "
+import math
+si=$si; sk=$sk; sp=$sp; st=$st; sa=$sa; sm=$sm; sd=$sd
+k = sp / 30.0  # sp est borné à 30 pts → k ∈ [0,1]
+if k >= 0.95:
+    total = (si + sk + st) * 1.5 + sp
+elif k <= 0.55:
+    total = (si + sk + st) * 0.5 + sp
+else:
+    social = si + sk + st
+    h = max(k - abs(social - sp * 3) / 100.0, 0.0)
+    total = min(social, sp * 3) - h * h * 0.25 * 100
+    total = total / 3.0 + sp
+# Les bonus cymatique (a5l), mémoriel (sm) et Rêves communs (sd) s'additionnent
+# toujours, indépendamment du régime d'interférence choisi ci-dessus.
+total += sa + sm + sd
+print(min(150, max(0, int(total))))
+" 2>/dev/null
 }
 
 ## ── Score de résonance Phi² entre deux phases (0-40 pts + label) ─────────────
@@ -947,7 +1058,36 @@ _handle_love_profile() {
         if [[ "${kin_num:-0}" -gt 0 ]]; then
             _love_save_profile "$email" "{\"kin\": $kin_num}"
         fi
-        _send_dm "$sender" "💕 Profil LOVE mis à jour !" "${_RELAYS[0]}"
+
+        # Publier sur NOSTR (kind 30078 d=love-profile) si age/bio/interests/public
+        # sont concernés — même chemin que le web (atomic_dream.html →
+        # POST /atom4love/profile → atom4love_profile.sh) : le profil doit rester
+        # cohérent qu'il soit édité par chat ou par web (cf. atom4love_profile_publish.py).
+        local touches_public_fields
+        touches_public_fields=$(python3 -c "
+import json,sys
+d=json.loads(sys.argv[1])
+print('yes' if any(k in d for k in ('age','bio','interests','public')) else 'no')
+" "$new_json" 2>/dev/null)
+
+        local published=false
+        if [[ "$touches_public_fields" == "yes" && -s "$HOME/.zen/game/nostr/${email}/.secret.love" ]]; then
+            local publish_py="$_LOVE_PATH/../../tools/atom4love_profile_publish.py"
+            if [[ -f "$publish_py" ]]; then
+                local pub_result
+                pub_result=$(echo "$new_json" | python3 "$publish_py" "$email" 2>/dev/null)
+                [[ "$(python3 -c "
+import json,sys
+print('yes' if json.loads(sys.argv[1] or '{}').get('published') else 'no')
+" "$pub_result" 2>/dev/null)" == "yes" ]] && published=true
+            fi
+        fi
+
+        if $published; then
+            _send_dm "$sender" "💕 Profil LOVE mis à jour et publié (visible pour le matching) !" "${_RELAYS[0]}"
+        else
+            _send_dm "$sender" "💕 Profil LOVE mis à jour !" "${_RELAYS[0]}"
+        fi
     else
         # Afficher le profil actuel avec le KIN calculé
         local profile; profile=$(_love_get_profile "$email")
@@ -1067,14 +1207,22 @@ _handle_love_match() {
     [[ -n "$my_phi" ]] && my_phi2x_available=true
 
     # Traces ATOM4LOVE (Kind 10600, ext navigateur) — cache avant la boucle
+    # my_pubkey_hex = identité MULTIPASS (traces/kind0/meeting URL).
+    # my_love_hex   = clé LOVE dédiée (love-profile/atom4love/dream_vector).
     local my_pubkey_hex; my_pubkey_hex=$(_love_pubkey_for_email "$email")
+    local my_love_hex;   my_love_hex=$(_love_hex_for_email "$email")
     local my_traces="[]"
     [[ -n "$my_pubkey_hex" ]] && my_traces=$(_love_get_traces "$my_pubkey_hex")
     local my_trace_count; my_trace_count=$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1])))" "$my_traces" 2>/dev/null || echo 0)
 
+    # Brouillon chat local en priorité (_handle_love_dream) ; à défaut, dream_vector
+    # publié depuis atomic_dream.html (web → kind 30079 d=dream_vector sur NOSTR).
     local my_dream_tags="[]"
-    [[ -f "$_LOVE_MEM_BASE/$email/love/dream_vector.json" ]] && \
+    if [[ -f "$_LOVE_MEM_BASE/$email/love/dream_vector.json" ]]; then
         my_dream_tags=$(jq -c '.dream_tags // []' "$_LOVE_MEM_BASE/$email/love/dream_vector.json" 2>/dev/null || echo "[]")
+    else
+        my_dream_tags=$(jq -c '.dream_tags // []' <<< "$(_love_try_dual_hex "$email" _love_get_nostr_dream_vector)" 2>/dev/null || echo "[]")
+    fi
 
     [[ "${LOVE_DEBUG:-0}" == "1" ]] && \
         _log "💕 LOVE match: email=$email kin=${my_kin:-0} phi2x=$my_phi2x_available traces=$my_trace_count"
@@ -1092,10 +1240,11 @@ _handle_love_match() {
 
         other_profile=$(cat "$other_dir/profile.json")
 
-        # Données publiques depuis NOSTR : profil d=love-profile (opt-in) ou kind-0 (fallback)
+        # other_pubkey = identité MULTIPASS (Kind 0, traces, meeting URL).
+        # Le profil love-profile (clé LOVE, ou MULTIPASS si réellement publié
+        # là — cf. _love_try_dual_hex) est cherché séparément ci-dessous.
         local other_pubkey; other_pubkey=$(_love_pubkey_for_email "$other_email")
-        local other_nostr_lp="{}"
-        [[ -n "$other_pubkey" ]] && other_nostr_lp=$(_love_get_nostr_love_profile "$other_pubkey")
+        local other_nostr_lp; other_nostr_lp=$(_love_try_dual_hex "$other_email" _love_get_nostr_love_profile)
 
         # Filtres obligatoires :
         #   - âge ≥ 18 (depuis profil NOSTR love-profile ou profil local)
@@ -1227,8 +1376,11 @@ else:
         # ── Score 8 : Rêves communs (dream_vector, 0-15 pts bonus) ──────────
         local score_dream=0 dream_label=""
         local other_dream_tags="[]"
-        [[ -f "$other_dir/dream_vector.json" ]] && \
+        if [[ -f "$other_dir/dream_vector.json" ]]; then
             other_dream_tags=$(jq -c '.dream_tags // []' "$other_dir/dream_vector.json" 2>/dev/null || echo "[]")
+        else
+            other_dream_tags=$(jq -c '.dream_tags // []' <<< "$(_love_try_dual_hex "$other_email" _love_get_nostr_dream_vector)" 2>/dev/null || echo "[]")
+        fi
         if [[ "$my_dream_tags" != "[]" && "$other_dream_tags" != "[]" ]]; then
             local dream_raw; dream_raw=$(_love_dream_score "$my_dream_tags" "$other_dream_tags")
             score_dream=$(echo "$dream_raw" | awk '{print $1}')
@@ -1236,30 +1388,9 @@ else:
             [[ "$dream_label" == "$score_dream" ]] && dream_label=""
         fi
 
-        # ── Score total : interférence non-linéaire (Géométrie de la Confiance) ─
-        # k = score_phi2x normalisé sur [0,1] pilote le régime d'interférence.
-        # k ≥ 0.95 → Singularité (fusion exponentielle)
-        # k ≤ 0.55 → Alignement orthogonal (friction créatrice, diviseur)
-        # sinon   → Interférence constructive classique (smooth-min)
         local total_score
-        total_score=$(python3 -c "
-import math
-si=$score_interest; sk=$score_kin; sp=$score_phi2x; st=$score_traces; sa=$score_a5l; sm=$score_memory; sd=$score_dream
-k = sp / 30.0  # sp est borné à 30 pts → k ∈ [0,1]
-if k >= 0.95:
-    total = (si + sk + st) * 1.5 + sp
-elif k <= 0.55:
-    total = (si + sk + st) * 0.5 + sp
-else:
-    social = si + sk + st
-    h = max(k - abs(social - sp * 3) / 100.0, 0.0)
-    total = min(social, sp * 3) - h * h * 0.25 * 100
-    total = total / 3.0 + sp
-# Les bonus cymatique (a5l), mémoriel (sm) et Rêves communs (sd) s'additionnent
-# toujours, indépendamment du régime d'interférence choisi ci-dessus.
-total += sa + sm + sd
-print(min(150, max(0, int(total))))
-" 2>/dev/null) || total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l + score_memory + score_dream ))
+        total_score=$(_love_combine_score "$score_interest" "$score_kin" "$score_phi2x" "$score_traces" "$score_a5l" "$score_memory" "$score_dream")
+        [[ -z "$total_score" ]] && total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l + score_memory + score_dream ))
         [[ $total_score -lt 10 ]] && continue
 
         local bio
@@ -1290,6 +1421,169 @@ print(min(150, max(0, int(total))))
         candidate_bios["$other_email"]="$bio"
     done
 
+    # ── Candidats distants : profils publiés sur la constellation (Kind 30078
+    # d=love-profile, déjà répliqués localement via backfill_constellation.sh).
+    # Complète — sans dupliquer — la boucle locale ci-dessus : ignore tout
+    # pubkey qui correspond déjà à un compte de cette station.
+    local remote_profiles; remote_profiles=$(_love_list_nostr_love_profiles)
+    local remote_count
+    remote_count=$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1])))" "$remote_profiles" 2>/dev/null || echo 0)
+    local remote_scored=0
+    local remote_json
+    while IFS= read -r remote_json; do
+        [[ -z "$remote_json" || "$remote_json" == "null" ]] && continue
+        [[ $remote_scored -ge $_LOVE_MATCH_MAX_REMOTE ]] && break
+
+        # other_pubkey ici est déjà le pubkey de la clé LOVE (auteur de l'event
+        # love-profile scanné) — comparer à my_love_hex, pas my_pubkey_hex (MULTIPASS).
+        local other_pubkey
+        other_pubkey=$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('pubkey',''))" "$remote_json" 2>/dev/null)
+        [[ -z "$other_pubkey" || "$other_pubkey" == "$my_love_hex" ]] && continue
+        [[ -n "$(bro_resolve_email "$other_pubkey")" ]] && continue  # déjà couvert par la boucle locale ci-dessus
+
+        local other_profile
+        other_profile=$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('content','{}'))" "$remote_json" 2>/dev/null)
+        [[ -z "$other_profile" ]] && other_profile="{}"
+
+        local other_age other_public
+        other_age=$(python3 -c "import json,sys; print(int(json.loads(sys.argv[1]).get('age',0) or 0))" "$other_profile" 2>/dev/null)
+        other_public=$(python3 -c "import json,sys; print('true' if json.loads(sys.argv[1]).get('public') else 'false')" "$other_profile" 2>/dev/null)
+        [[ "${other_age:-0}" -lt 18 ]] && continue
+        [[ "$other_public" != "true" ]] && continue
+
+        remote_scored=$(( remote_scored + 1 ))
+
+        # ── Score 1 : intérêts communs (0-40 pts) ──────────────────────────
+        local score_interest=0 common_list=""
+        local interest_raw
+        interest_raw=$(python3 -c "
+import json,sys
+my=json.loads(sys.argv[1]); ot=json.loads(sys.argv[2])
+my_i=set(my.get('interests',[])); ot_i=set(ot.get('interests',[]))
+common=sorted(my_i & ot_i)
+print(len(common), ','.join(common[:4]))
+" "$my_profile" "$other_profile" 2>/dev/null)
+        score_interest=$(echo "$interest_raw" | awk '{print $1}')
+        common_list=$(echo "$interest_raw" | cut -d' ' -f2-)
+        score_interest=$(( score_interest * 15 ))
+        [[ $score_interest -gt 40 ]] && score_interest=40
+
+        # ── Score 2 : compatibilité KIN (kin_num du Kind 30078 d=atom4love) ──
+        local other_a4l; other_a4l=$(_love_get_a4l_data_by_pubkey "$other_pubkey")
+        local score_kin=0 kin_pct=0 kin_label=""
+        local other_kin; other_kin=$(jq -r '.kin_num // 0' <<< "$other_a4l" 2>/dev/null)
+        if [[ "${my_kin:-0}" -gt 0 && "${other_kin:-0}" -gt 0 ]]; then
+            local kin_raw; kin_raw=$(_love_kin_compat_score "$my_kin" "$other_kin")
+            kin_pct=$(echo "$kin_raw" | awk '{print $1}')
+            kin_label=$(echo "$kin_raw" | cut -d' ' -f2-)
+            score_kin=$(( kin_pct * 30 / 100 ))
+        fi
+
+        # ── Score 3 : résonance Phi² ATOM4LOVE (0-30 pts) ─────────────────
+        local score_phi2x=0 phi2x_label=""
+        if [[ "$my_phi2x_available" == "true" ]]; then
+            local other_phi other_omega
+            other_phi=$(jq -r '.personal_phase // empty' <<< "$other_a4l" 2>/dev/null)
+            other_omega=$(jq -r '.omega_bio // empty' <<< "$other_a4l" 2>/dev/null)
+            if [[ -n "$other_phi" ]]; then
+                local phi2x_raw; phi2x_raw=$(_love_phi2x_score \
+                    "$my_phi" "$other_phi" "${my_omega:-}" "${other_omega:-}")
+                local phi2x_pts; phi2x_pts=$(echo "$phi2x_raw" | awk '{print $1}')
+                phi2x_label=$(echo "$phi2x_raw" | cut -d' ' -f2-)
+                score_phi2x=$(( phi2x_pts * 30 / 50 ))
+            fi
+        fi
+
+        # ── Score 4 : traces communes ATOM4LOVE (0-20 pts) ───────────────
+        local score_traces=0 trace_label=""
+        if [[ "$my_trace_count" -gt 0 ]]; then
+            local other_traces; other_traces=$(_love_get_traces "$other_pubkey")
+            local trace_raw; trace_raw=$(_love_trace_score "$my_traces" "$other_traces")
+            score_traces=${trace_raw%% *}
+            trace_label="${trace_raw#* }"
+            [[ "$trace_label" == "$score_traces" ]] && trace_label=""
+        fi
+
+        # ── Score 5 : proximité cymatique a5l (0-10 pts bonus) ────────────
+        local score_a5l=0 a5l_label=""
+        if [[ -n "${my_a5l:-}" ]]; then
+            local other_a5l; other_a5l=$(jq -r '.a5l_amplitude // empty' <<< "$other_a4l" 2>/dev/null)
+            if [[ -n "$other_a5l" ]]; then
+                local a5l_delta
+                a5l_delta=$(python3 -c "
+import sys
+diff = abs(float(sys.argv[1]) - float(sys.argv[2]))
+if diff < 0.05:
+    print('10 ✨ Nœud cymatique identique')
+elif diff < 0.10:
+    print('7 🌊 Même ventre d\\'onde')
+elif diff < 0.20:
+    print('3 〰 Onde voisine')
+else:
+    print('0')
+" "$my_a5l" "$other_a5l" 2>/dev/null) || a5l_delta="0"
+                score_a5l=${a5l_delta%% *}
+                a5l_label="${a5l_delta#* }"
+                [[ "$a5l_label" == "$score_a5l" ]] && a5l_label=""
+            fi
+        fi
+
+        # Score 7 (résonance mémorielle Qdrant) non applicable pour un candidat
+        # distant : pas de fédération inter-station des collections privées
+        # (cf. plan — risque de fuite de données, volontairement non implémenté).
+        local score_memory=0 memory_label=""
+
+        # ── Score 8 : Rêves communs (Kind 30079 d=dream_vector) ───────────
+        local score_dream=0 dream_label=""
+        local other_dream_tags
+        other_dream_tags=$(jq -c '.dream_tags // []' <<< "$(_love_get_nostr_dream_vector "$other_pubkey")" 2>/dev/null || echo "[]")
+        if [[ "$my_dream_tags" != "[]" && "$other_dream_tags" != "[]" ]]; then
+            local dream_raw; dream_raw=$(_love_dream_score "$my_dream_tags" "$other_dream_tags")
+            score_dream=$(echo "$dream_raw" | awk '{print $1}')
+            dream_label="${dream_raw#* }"
+            [[ "$dream_label" == "$score_dream" ]] && dream_label=""
+        fi
+
+        local total_score
+        total_score=$(_love_combine_score "$score_interest" "$score_kin" "$score_phi2x" "$score_traces" "$score_a5l" "$score_memory" "$score_dream")
+        [[ -z "$total_score" ]] && total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l + score_dream ))
+        [[ $total_score -lt 10 ]] && continue
+
+        local bio
+        bio=$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('bio','…')[:100])" "$other_profile" 2>/dev/null)
+
+        local affinity_parts=()
+        [[ -n "$common_list" && "$common_list" != " " ]] && \
+            affinity_parts+=("intérêts : ${common_list//,/, }")
+        [[ $score_kin -gt 0 && -n "$kin_label" ]] && \
+            affinity_parts+=("KIN ${kin_label} (${kin_pct}%)")
+        [[ $score_phi2x -gt 0 && -n "$phi2x_label" ]] && \
+            affinity_parts+=("$phi2x_label")
+        [[ $score_traces -gt 0 && -n "$trace_label" ]] && \
+            affinity_parts+=("🌐 ${trace_label}")
+        [[ $score_a5l -gt 0 && -n "$a5l_label" ]] && \
+            affinity_parts+=("$a5l_label")
+        [[ $score_dream -gt 0 && -n "$dream_label" ]] && \
+            affinity_parts+=("$dream_label")
+        affinity_parts+=("🌌 constellation")
+
+        candidate_scores["$other_pubkey"]=$total_score
+        local _sep="" _lbl=""
+        for _part in "${affinity_parts[@]}"; do _lbl+="${_sep}${_part}"; _sep=" | "; done
+        candidate_labels["$other_pubkey"]="$_lbl"
+        candidate_bios["$other_pubkey"]="$bio"
+    done < <(python3 -c "
+import json,sys
+for e in json.loads(sys.argv[1]):
+    print(json.dumps(e))
+" "$remote_profiles" 2>/dev/null)
+
+    if [[ "${LOVE_DEBUG:-0}" == "1" ]]; then
+        _log "💕 LOVE match constellation: profils_distants=${remote_count} scorés=${remote_scored}"
+        [[ $remote_count -gt $_LOVE_MATCH_MAX_REMOTE ]] && \
+            _log "💕 LOVE match: plafond LOVE_MATCH_MAX_REMOTE=${_LOVE_MATCH_MAX_REMOTE} atteint — ${remote_count} profils distants disponibles, seuls ${_LOVE_MATCH_MAX_REMOTE} évalués"
+    fi
+
     if [[ ${#candidate_scores[@]} -eq 0 ]]; then
         local phi2x_hint=""
         [[ "$my_phi2x_available" != "true" ]] && \
@@ -1301,23 +1595,30 @@ print(min(150, max(0, int(total))))
     fi
 
     # Trier par score décroissant, garder les 3 meilleurs
-    local sorted_emails
-    sorted_emails=$(for k in "${!candidate_scores[@]}"; do
+    # Clé candidate = email (compte local) OU pubkey hex 64 car. (candidat distant).
+    local sorted_keys
+    sorted_keys=$(for k in "${!candidate_scores[@]}"; do
         echo "${candidate_scores[$k]} $k"
     done | sort -rn | head -3 | awk '{print $2}')
 
     local matches_text="" count=0
     local my_pubkey; my_pubkey=$(_love_pubkey_for_email "$email")
 
-    while IFS= read -r match_email; do
-        [[ -z "$match_email" ]] && continue
+    while IFS= read -r match_key; do
+        [[ -z "$match_key" ]] && continue
         count=$(( count + 1 ))
-        local sc="${candidate_scores[$match_email]}"
-        local lbl="${candidate_labels[$match_email]}"
-        local bio="${candidate_bios[$match_email]}"
+        local sc="${candidate_scores[$match_key]}"
+        local lbl="${candidate_labels[$match_key]}"
+        local bio="${candidate_bios[$match_key]}"
 
-        # Enrichir avec les données NOSTR publiques du match
-        local match_pubkey; match_pubkey=$(_love_pubkey_for_email "$match_email")
+        # Enrichir avec les données NOSTR publiques du match — la clé est déjà
+        # un pubkey pour un candidat distant, sinon la résoudre depuis l'email.
+        local match_pubkey
+        if [[ "$match_key" =~ ^[0-9a-f]{64}$ ]]; then
+            match_pubkey="$match_key"
+        else
+            match_pubkey=$(_love_pubkey_for_email "$match_key")
+        fi
         local nostr_name="" nostr_about="" recent_posts=""
         if [[ -n "$match_pubkey" ]]; then
             local k0; k0=$(_love_get_kind0 "$match_pubkey")
@@ -1353,7 +1654,7 @@ print(json.loads(sys.argv[1]).get('about','')[:150])
         fi
         [[ -n "$meeting_url" ]] && matches_text+="\n   🎙️ Salle de rencontre : ${meeting_url}\n"
         matches_text+="\n"
-    done <<< "$sorted_emails"
+    done <<< "$sorted_keys"
 
     # Journaliser les matchs vus (rotation 20)
     local dir; dir="$(_love_dir "$email")"
