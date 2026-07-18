@@ -136,9 +136,29 @@ if [[ "${1:-}" == "--stop" ]]; then
     ## Le PID principal ne couvre pas _sweep_loop/_constellation_subscriber_loop
     ## (sous-shells forkés) ni le process python receive en cours — les
     ## rattraper explicitement pour éviter des orphelins après --stop.
+    ##
+    ## inotifywait -m tourne dans le pipeline de la boucle principale
+    ## (`inotifywait -m ... | while read ...`, ligne ~1817) : le SIGTERM
+    ## envoyé au PID principal met bien _BRO_CLEAN_STOP=true via le trap,
+    ## mais la boucle ne le revérifie qu'après la fin du pipeline — or
+    ## `inotifywait -m` ne se termine JAMAIS de lui-même. Sans le tuer ici,
+    ## le process principal reste bloqué indéfiniment (constaté : PID vivant
+    ## plusieurs minutes après --stop, malgré le pkill sur son propre cmdline
+    ## qui ne matche pas celui d'inotifywait).
+    ##
+    ## Ordre important : pkill -f "IA/bro/bro_dm_daemon.sh" matche aussi CE
+    ## process --stop courant (pkill n'exclut que son propre PID, pas celui
+    ## de son invoquant) — le lancer en premier le tuait avant que les lignes
+    ## suivantes ne s'exécutent (constaté via bash -x : le pkill nostr_node_
+    ## intercom et le nouveau pkill inotifywait n'étaient jamais atteints).
+    ## Reporté en dernier, via la boucle pgrep+exclusion $$ déjà utilisée
+    ## plus bas pour le nettoyage d'orphelins.
     sleep 1
-    pkill -f "IA/bro/bro_dm_daemon.sh" 2>/dev/null
     pkill -f "nostr_node_intercom.py receive" 2>/dev/null
+    pkill -f "inotifywait.*${QUEUE_DIR}" 2>/dev/null
+    for _op in $(pgrep -f "IA/bro/bro_dm_daemon.sh" 2>/dev/null); do
+        [[ "$_op" != "$$" ]] && kill -9 "$_op" 2>/dev/null
+    done
     exit 0
 fi
 
@@ -158,6 +178,7 @@ if [[ -f "$PID_FILE" ]]; then
         [[ "$_op" != "$$" ]] && kill -9 "$_op" 2>/dev/null
     done
     pkill -f "nostr_node_intercom.py receive" 2>/dev/null
+    pkill -f "inotifywait.*${QUEUE_DIR}" 2>/dev/null
     sleep 1
 fi
 
