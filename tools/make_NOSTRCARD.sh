@@ -97,13 +97,17 @@ BIRTH_LAT="${12}"
 BIRTH_LON="${13}"
 POLARITY="${14}"
 
-## Le compte principal est-il déjà "birth-derived" ? (atomic.html/miz.html/
-## Cabine-33 : SALT/PEPPER fournis par le client, dérivés eux-mêmes des
-## données de naissance → la clé .secret.nostr EST déjà la clé ATOM4LOVE,
-## inutile d'en dériver une .secret.love distincte). Capturé AVANT le bloc
-## "PREPARE SALT PEPPER" ci-dessous qui peut régénérer SALT/PEPPER aléatoirement.
-_A4L_PRIMARY_IS_BIRTH_DERIVED="no"
-[[ -n "$SALT" && -n "$PEPPER" && -n "$BIRTH_DATETIME" ]] && _A4L_PRIMARY_IS_BIRTH_DERIVED="yes"
+## Contexte "birth-derived" (atomic.html/miz.html/Cabine-33) : le client peut
+## fournir un SALT/PEPPER déjà étiré depuis les données de naissance (cf.
+## zelkova/lib/g1/atomic_keys.dart buildSaltRaw/buildPepperRaw/stretchKey) EN
+## MÊME TEMPS que BIRTH_DATETIME. Ces valeurs ne doivent JAMAIS servir à
+## l'identité MULTIPASS principale (toujours un secret aléatoire, indépendant
+## des données de naissance) — seule la clé LOVE (.secret.love, dérivée par
+## atom4love_activate.sh à partir des données de naissance elles-mêmes) est
+## birth-derived. Capturé AVANT le bloc "PREPARE SALT PEPPER" ci-dessous, qui
+## s'appuie sur ce flag pour ignorer le SALT/PEPPER fourni et forcer l'aléatoire.
+_A4L_BIRTH_CONTEXT="no"
+[[ -n "$SALT" && -n "$PEPPER" && -n "$BIRTH_DATETIME" ]] && _A4L_BIRTH_CONTEXT="yes"
 
 YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${EMAIL})
 echo "🎫 MULTIPASS Creation for $EMAIL"
@@ -204,7 +208,11 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ## DISCO SALT/PEPPER : utiliser les valeurs GAFAM si fournies et ≤ _DISCO_MAX
     ## Sinon générer des valeurs aléatoires (MULTIPASS non récupérable par mot de passe)
-    if [[ -n "$SALT" && -n "$PEPPER" \
+    if [[ "$_A4L_BIRTH_CONTEXT" == "yes" ]]; then
+        echo "🌱 Contexte birth-derived détecté — SALT/PEPPER fournis réservés à la clé LOVE, identité MULTIPASS forcée en aléatoire"
+        SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_DISCO_RAND} | head -n1)
+        PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_DISCO_RAND} | head -n1)
+    elif [[ -n "$SALT" && -n "$PEPPER" \
           && ${#SALT} -le ${_DISCO_MAX} && ${#PEPPER} -le ${_DISCO_MAX} ]]; then
         echo "🔑 DISCO déterministe (SALT=${#SALT} chars, PEPPER=${#PEPPER} chars) — MULTIPASS récupérable"
     else
@@ -273,6 +281,16 @@ NSEC=$NPRIV; NPUB=$NPUBLIC; HEX=$HEX
 EOFNOSTR
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.nostr
 
+    ## PASS Code (PIN court, à usage terminal/ZenCard) : généré dès la création
+    ## du MULTIPASS pour être transmis au client EN MÊME TEMPS que le nsec (zine
+    ## + réponse API), au lieu d'attendre la création différée de la ZEN Card
+    ## (RUNTIME/VISA.new.sh, plus tard via NOSTRCARD.refresh.sh) qui le générait
+    ## seul, sans jamais le communiquer à l'utilisateur. VISA.new.sh réutilise
+    ## désormais ce fichier au lieu d'en régénérer un nouveau.
+    PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
+    echo "$PASS" > ${HOME}/.zen/game/nostr/${EMAIL}/.pass
+    chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.pass
+
     # 2. Identité Économique Locale (Duniter/Ğ1) -> Isolée par UPlanet
     _CRED_DUNITER=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
     # On crée un dérivé du PEPPER spécifique à ce réseau UPlanet
@@ -306,13 +324,15 @@ EOFNOSTR
     ## .secret.love, résonance Phi², publication kind 30078) — délégué à
     ## atom4love_activate.sh, réutilisé aussi pour la complétion via l'email +a4l
     ## d'un compte déjà existant (UPassport/routers/identity.py).
-    ## Sauté si la clé principale est déjà birth-derived (atomic.html/miz.html/
-    ## Cabine-33) : .secret.nostr sert alors déjà de clé LOVE (fallback déjà
-    ## câblé dans bro_resolve_email() et _love_publish_nostr_profile) — créer
-    ## une .secret.love distincte serait une seconde identité incohérente,
-    ## d'autant que les tailles réelles birth_height/current_height collectées
-    ## par ces pages web ne sont pas transmises ici (voir atom4love_publish.py).
-    if [[ -n "${BIRTH_DATETIME}" && "${_A4L_PRIMARY_IS_BIRTH_DERIVED}" != "yes" ]]; then
+    ## Toujours exécuté dès que des données de naissance sont fournies, y
+    ## compris en contexte birth-derived (atomic.html/miz.html/Cabine-33) : dans
+    ## ce cas, le bloc "PREPARE SALT PEPPER" ci-dessus a déjà forcé un SALT/
+    ## PEPPER ALÉATOIRE pour .secret.nostr (identité MULTIPASS indépendante des
+    ## données de naissance) — seule .secret.love est réellement birth-derived
+    ## (dérivation PBKDF2 "uplanet-a4l-v1" depuis les données ci-dessous). Tout
+    ## MULTIPASS dispose ainsi uniformément de .secret.nostr ET .secret.love,
+    ## sans jamais que les deux ne partagent la même paire de clés.
+    if [[ -n "${BIRTH_DATETIME}" ]]; then
         "${MY_PATH}/atom4love_activate.sh" "${EMAIL}" \
             "${BIRTH_DATETIME}" "${BIRTH_PLACE}" "${BIRTH_LAT}" "${BIRTH_LON}" "${BIRTH_WEIGHT}" \
             "${CONCEPTION_DATETIME}" "${CONCEPTION_PLACE}" "${POLARITY}"
@@ -441,6 +461,7 @@ EOFGOALS
   "nsec": "${NPRIV}",
   "npub": "${NPUBLIC}",
   "hex": "${HEX}",
+  "pass": "${PASS}",
   "ssss": "M-${SSSS_HEAD_B58}",
   "nostrns": "${NOSTRNS}",
   "salt": "${SALT}",
@@ -567,6 +588,7 @@ EOFJSON
             -e "s~QmPV9NfaeYfZzYPaQGs9BZvMBY2t3n2SC8jodSH4zsWZak~${PROFILEQR}~g" \
             -e "s~_UPLANETNAME_G1_~${UPLANETNAME_G1}~g" \
             -e "s~_NSECTAIL_~${NPRIV: -33}~g" \
+            -e "s~_PASSCODE_~${PASS}~g" \
             -e "s~_LAT_~${ZLAT}~g" \
             -e "s~_LON_~${ZLON}~g" \
             -e "s~_UMAP_~_${ZLAT}_${ZLON}~g" \

@@ -36,11 +36,23 @@ A4L_TTL    = 3600   # 1h cache atom4love
 LEVEL_TTL  = 300    # 5 min cache niveau global
 
 # Correspondance contract_status → niveau de base
+# Les 4 statuts "contributor" (trésorerie/R&D/actifs/infrastructure) sont des
+# sociétaires à part entière — alignés sur satellite (3), pas de flux IA
+# complet (constellation=4) sauf mention contraire. Absents de cette table
+# avant ce fix, ils tombaient à 0 alors que UPlanet_IA_Responder.sh (même
+# notion de "sociétaire", cf. is_societaire_from_did) les acceptait déjà —
+# divergence corrigée ici, source unique désormais pour les 3 canaux BRO/
+# NODE/LOVE (bro_common_lib.sh::bro_check_slot_access, bro/tools.py::
+# _owner_access_level).
 _CONTRACT_LEVEL = {
-    "astroport_captain":                5,
-    "cooperative_member_constellation": 4,
-    "cooperative_member_satellite":     3,
-    "active_rental":                    1,
+    "astroport_captain":                 5,
+    "cooperative_member_constellation":  4,
+    "cooperative_member_satellite":      3,
+    "infrastructure_contributor":        3,
+    "cooperative_treasury_contributor":  3,
+    "cooperative_rnd_contributor":       3,
+    "cooperative_assets_contributor":    3,
+    "active_rental":                     1,
 }
 
 

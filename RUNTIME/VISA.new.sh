@@ -201,7 +201,15 @@ fi
 PLAYER=${PLAYER,,}
 
 # 4 DIGIT PASS CODE TO PROTECT QRSEC
-PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
+# Réutilise le PASS déjà généré et communiqué à l'utilisateur dès la création
+# du MULTIPASS (make_NOSTRCARD.sh) — jamais un nouveau code que l'utilisateur
+# n'aurait pas reçu. Fallback aléatoire seulement pour les comptes legacy sans
+# ce fichier (créés avant cette évolution) ou le bootstrap captain sans MULTIPASS.
+if [[ -s ~/.zen/game/nostr/${PLAYER}/.pass ]]; then
+    PASS=$(cat ~/.zen/game/nostr/${PLAYER}/.pass)
+else
+    PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
+fi
 
 ############################################################
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.dunikey -i "$_CRED_VISA"

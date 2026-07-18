@@ -217,9 +217,11 @@ _love_pubkey_for_email() {
 ## (déduplication, exclusion de soi-même) où une absence de correspondance est
 ## sans conséquence. Pour aller chercher une DONNÉE ATOM4LOVE, utiliser
 ## _love_try_dual_hex ci-dessous, qui ne traite un résultat MULTIPASS comme
-## valide que s'il existe réellement (jamais par simple supposition) — cf.
-## make_NOSTRCARD.sh::_A4L_PRIMARY_IS_BIRTH_DERIVED pour le cas où la clé
-## principale sert déjà de clé LOVE (atomic.html/miz.html/Cabine-33).
+## valide que s'il existe réellement (jamais par simple supposition) — ce
+## fallback ne sert plus que pour les comptes créés AVANT l'uniformisation de
+## make_NOSTRCARD.sh (tout nouveau MULTIPASS avec données de naissance obtient
+## désormais systématiquement un .secret.love/HEX_LOVE, y compris dans le cas
+## birth-derived atomic.html/miz.html/Cabine-33).
 _love_hex_for_email() {
     local email="$1"
     cat "$HOME/.zen/game/nostr/${email}/HEX_LOVE" 2>/dev/null | tr -d '[:space:]'

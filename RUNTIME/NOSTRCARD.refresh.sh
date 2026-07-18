@@ -448,6 +448,17 @@ for PLAYER in "${NOSTR[@]}"; do
     else
         ZEN="0.00"
     fi
+    # COINS_RESOLVED distingue "solde réellement à 0" de "échec de requête" —
+    # sans ce flag, un G1check.sh en échec (station surchargée, squid down…)
+    # retombe sur COINS=0 par le fallback ci-dessous et devient indiscernable
+    # d'un portefeuille vraiment vide : le rappel OC J7 et la destruction pour
+    # solde insuffisant ne doivent JAMAIS se déclencher sur une simple panne
+    # de lecture (voir section OC VALIDATION / 7 DAYS CYCLE plus bas).
+    if [[ -n "$COINS" && "$COINS" != "null" ]]; then
+        COINS_RESOLVED=true
+    else
+        COINS_RESOLVED=false
+    fi
     # Valeurs par défaut pour éviter un crash bc si COINS/ZEN est vide ou "null"
     COINS=${COINS:-0}
     [[ "$COINS" == "null" ]] && COINS=0
@@ -882,6 +893,14 @@ ERRHTML
                                 log "INFO" "Error email sent to ${CAPTAINEMAIL} for payment failure of ${PLAYER}"
                             fi
                         else
+                            # Ne jamais traiter une panne de lecture de solde (G1check.sh en échec,
+                            # squid/Duniter indisponible) comme un solde insuffisant : ni rappel OC
+                            # J7, ni destruction, tant que $COINS n'a pas été réellement résolu.
+                            if [[ "$COINS_RESOLVED" != "true" ]]; then
+                                log "WARN" "[7 DAYS CYCLE] Solde non résolu pour ${PLAYER} — vérification de paiement reportée au prochain cycle (pas d'action)"
+                                continue
+                            fi
+
                             # Check if MULTIPASS is less than 7 days old (grace period)
                             if [[ $DIFF_DAYS -lt 7 ]]; then
                                 log "INFO" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - Grace period for new MULTIPASS (${DIFF_DAYS} days old)"

@@ -3,31 +3,64 @@
 # UPlanet_IA_Responder.sh
 # Script de réponse IA pour UPlanet
 #
+# ⚠️ DÉPRÉCIÉ (2026-07) : le déclencheur kind-1 (posts publics NOSTR
+# taggés #BRO/#BOT) qui invoquait ce script est coupé. Seuls les 3 canaux
+# DM sont actifs aujourd'hui :
+#   - NODE   : bro_dm_daemon.sh::_handle_bro (DM → NODEHEX)
+#   - BRO    : bro_watch_core.py (self-DM, auteur=destinataire=utilisateur)
+#   - LOVE   : bro/love_handler.sh (DM → HEX_LOVE dédié)
+# Ce fichier reste maintenu à jour (registre bro_tools, seuils d'accès
+# bro_user_level.py) au cas où le canal public serait un jour réactivé,
+# mais aucun code ici ne s'exécute en production tant que le déclencheur
+# kind-1 reste désactivé.
+#
 # Usage: $0 "$pubkey" "$event_id" "$latitude" "$longitude" "$content" "$url"
 #
 # Fonctionnalités:
-# - Analyse des messages et médias reçus via UPlanet
-# - Détection automatique des #tags (#search, #mp3, etc.)
-# - Traitement selon ta tag et médias (conversion, téléchargement, stockage IPFS)
+# - Analyse des messages et médias reçus via des posts NOSTR PUBLICS
+#   (kind 1, géolocalisés UMAP via le tag 'g') taggés #BRO/#BOT
+# - Détection automatique des #tags (voir liste ci-dessous, tableau TAGS[])
+# - Traitement selon les tags et médias (conversion, téléchargement, stockage IPFS)
 # - Génération de réponses IA via Ollama
-# - Publication des réponses sur la clé NOSTR du Capitaine
-# Tags spéciaux:
-# - #BRO #BOT : Active la réponse IA (par défaut)
+# - Publication : kind 1 (réponse conversationnelle, l'immense majorité des
+#   cas) → TOUJOURS en DM NIP-44 signé NODE_NSEC, jamais publique, jamais
+#   signé par la clé du Capitaine. kind 30023 (article, ex. #search) et
+#   autres cas non-DM → clé UMAP (géolocalisée) si coordonnées fournies,
+#   sinon clé de l'utilisateur (KNAME), sinon clé du Capitaine en dernier
+#   recours (voir bloc KEYFILE_PATH plus bas).
+#
+# Distinct de bro_dm_daemon.sh::_handle_bro (chat DM direct à NODEHEX,
+# voir zelkova/lib/ui/screens/node_screen.dart) et de bro_watch_core.py
+# (self-DM personnel, voir zelkova/lib/ui/screens/bro_screen.dart) — les
+# trois canaux partagent les mêmes scripts métier (génération média,
+# mémoire) mais ont chacun leur propre logique de dispatch/tags.
+#
+# Tags spéciaux (voir déclaration exhaustive dans le tableau TAGS[] plus bas) :
+# - #BRO #BOT : Active la réponse IA (obligatoire, porte d'entrée)
 # - #search : Vane Search (ex-Perplexica)
 # - #image : Générer une image avec ComfyUI
 # - #music : Générer une musique avec ComfyUI (#parole pour les paroles)
 # - #youtube : Télécharger une vidéo (YouTube, Rumble, Vimeo, etc.) (720p max) #mp3 pour convertir en audio
-# - #mem : Afficher le contenu de la mémoire de conversation
-# - #rec : Enregistrer le message dans la mémoire IA (utilisateur et UMAP)
+# - #mem [#1..#12|#all] : Afficher la mémoire (slot 0 par défaut ; #all = résumé tous slots)
+# - #rec <texte> [#1..#12] : Enregistrer le message dans la mémoire IA (slot 0 par défaut)
 # - #rec2 : Enregistrer automatiquement la réponse du bot dans la mémoire IA
-# - #reset : Effacer la mémoire de conversation
+# - #reset [#1..#12|#all] : Effacer la mémoire (slot 0 par défaut ; #all = tous les slots)
 # - #pierre : Synthèse vocale avec la voix Pierre (Orpheus TTS)
 # - #amelie : Synthèse vocale avec la voix Aurélie (Orpheus TTS)
 # - #plantnet : Reconnaissance de plantes avec PlantNet (image requise)
-# - #help : Show short help (BRO tags summary)
+# - #inventory (+ alias #plant #insect #animal #person #object #place) :
+#   reconnaissance d'objet/inventaire (image requise)
+# - #cookie : dépôt de cookie de session pour les scrapers uDRIVE (MiroFish/Dify)
+#   — sans rapport avec le "cookie" de veille sociale de bro_watch_core.py,
+#   même mot, sémantique différente selon le canal
+# - #help : Aide courte — section mémoire générée depuis le registre RÉEL
+#   bro_tools (bro_watch_core.py describe-tools), reste écrit ici (voir
+#   build_bro_help_message)
 # - #url : Fetch URL(s) from message, extract main content, then answer with Ollama (link understanding)
 # - #status : Show system status (Ollama, ComfyUI, Vane, Orpheus ports)
 # - #whoami : Show sender identity (PUBKEY / KNAME)
+# - #all : modifie #mem/#reset pour viser tous les slots (0-12) au lieu du
+#   seul slot 0 par défaut
 ###################################################################
 PUBKEY="$1"
 EVENT="$2"
@@ -173,15 +206,25 @@ _json_tags_array() {
 # canal (DM direct au pubkey de NODE, géré par bro_dm_daemon.sh) — les lister ici
 # serait aussi faux que le #rec fantôme corrigé le 2026-07-04 (documenté depuis
 # toujours, jamais implémenté dans CE script jusqu'à ce correctif).
+## Section "Session / memory" générée depuis le registre RÉEL bro_tools
+## (bro_watch_core.py describe-tools) au lieu d'être recopiée à la main ici :
+## c'est cette copie manuscrite qui a divergé du comportement réel le
+## 2026-07-03 (cf. bro_watch_core.py:1727-1732). Le reste (search/media/
+## voice/tools/meta) reste documenté ici car exclusif à ce canal public
+## (absent du registre self-DM).
 build_bro_help_message() {
-  cat << 'HELPEOF'
+  local dynamic_help=""
+  if [[ -x "${MY_PATH}/bro_watch_core.py" ]]; then
+    dynamic_help=$(python3 "${MY_PATH}/bro_watch_core.py" describe-tools "$KNAME" 2>/dev/null)
+  fi
+  [[ -z "$dynamic_help" ]] && dynamic_help="Commandes de mémoire indisponibles (registre bro_tools inaccessible)."
+
+  cat << HELPEOF
 ℹ️ BRO Help
 
-Session / memory
-  #mem [#1..#12]  |  #rec <texte> [#1..#12]  |  #rec2  |  #reset [#1..#12|#all]
-  (#1..#12 réservés aux sociétaires CopyLaRadio, #0 par défaut pour tous)
+${dynamic_help}
 
-Search & media
+Search & media (spécifique à ce canal public)
   #search  |  #image  |  #music  |  #youtube [#mp3|#mp4] [URL|Texte]
 
 Voice (TTS)
@@ -483,91 +526,13 @@ echo "DEBUG: Final memory_slot value: $memory_slot" >&2
 user_id="$KNAME"
 [[ -z "$user_id" ]] && user_id="$PUBKEY"
 
-# Function to check if user has access to memory slots 1-12
-check_memory_slot_access() {
-    local user_id="$1"
-    local slot="$2"
-    
-    echo "DEBUG: Checking memory access for user: $user_id, slot: $slot" >&2
-    
-    # Slot 0 is always accessible
-    if [[ "$slot" == "0" ]]; then
-        echo "DEBUG: Slot 0 is always accessible" >&2
-        return 0
-    fi
-    
-    # For slots 1-12, check if user is in ~/.zen/game/players/ OR is a sociétaire via DID
-    if [[ "$slot" -ge 1 && "$slot" -le 12 ]]; then
-        # Method 1: Local directory check (legacy)
-        [[ -d "$HOME/.zen/game/players/$user_id" ]] && return 0
-        
-        # Method 2: DID-based check (kind 30800)
-        is_societaire_from_did "$user_id" && return 0
-        
-        return 1
-    fi
-    
-    return 0  # Default allow for other cases
-}
-
-# Function to check sociétaire status from DID document (kind 30800)
-# Returns 0 (true) if user is a cooperative member, 1 (false) otherwise
-is_societaire_from_did() {
-    local user_id="$1"
-    
-    # Get user's HEX pubkey from their NOSTR card
-    local user_hex=""
-    
-    # Check if user_id is an email (has .secret.nostr)
-    if [[ -f "$HOME/.zen/game/nostr/${user_id}/.secret.nostr" ]]; then
-        source "$HOME/.zen/game/nostr/${user_id}/.secret.nostr"
-        user_hex="$HEX"
-    elif [[ "$user_id" =~ ^[a-f0-9]{64}$ ]]; then
-        # user_id is already a hex pubkey
-        user_hex="$user_id"
-    fi
-    
-    [[ -z "$user_hex" ]] && return 1
-    
-    # Query DID document (kind 30800) from strfry
-    local did_event=""
-    if [[ -d "$HOME/.zen/strfry" ]]; then
-        did_event=$(cd $HOME/.zen/strfry && ./strfry scan '{"authors":["'"$user_hex"'"],"kinds":[30800],"#d":["did"]}' 2>/dev/null | head -n1 && cd - >/dev/null 2>&1)
-    fi
-    
-    if [[ -z "$did_event" ]]; then
-        echo "DEBUG: No DID document (kind 30800) found for user: $user_id" >&2
-        return 1
-    fi
-    
-    # Extract content and parse as JSON
-    local did_content=$(echo "$did_event" | jq -r '.content // ""' 2>/dev/null)
-    
-    if [[ -z "$did_content" ]]; then
-        echo "DEBUG: DID document has no content" >&2
-        return 1
-    fi
-    
-    # Extract contractStatus from DID metadata
-    local contract_status=$(echo "$did_content" | jq -r '.metadata.contractStatus // ""' 2>/dev/null)
-    
-    echo "DEBUG: DID contractStatus for $user_id: $contract_status" >&2
-    
-    # Check if contractStatus indicates cooperative membership
-    # Cooperative statuses: cooperative_member_satellite, cooperative_member_constellation, 
-    # infrastructure_contributor, cooperative_treasury_contributor, cooperative_rnd_contributor, 
-    # cooperative_assets_contributor, astroport_captain (full access)
-    case "$contract_status" in
-        *"cooperative_member"*|*"infrastructure_contributor"*|*"cooperative_treasury_contributor"*|*"cooperative_rnd_contributor"*|*"cooperative_assets_contributor"*|*"astroport_captain"*)
-            echo "DEBUG: User $user_id is a sociétaire (status: $contract_status)" >&2
-            return 0
-            ;;
-        *)
-            echo "DEBUG: User $user_id is NOT a sociétaire (status: $contract_status)" >&2
-            return 1
-            ;;
-    esac
-}
+# Wrapper → bro_common_lib.sh (factorisation) : même seuil (niveau BRO ≥ 3,
+# sociétaire satellite ou +, via bro_user_level.py) que le canal NODE
+# (bro_dm_daemon.sh::_check_slot_access) et le canal self-DM BRO
+# (bro/tools.py::_owner_access_level) — auparavant une 3e implémentation
+# indépendante ici (is_societaire_from_did, requête strfry directe),
+# supprimée pour ne plus jamais diverger des deux autres.
+check_memory_slot_access() { bro_check_slot_access "$@"; }
 
 # Function to check if user is a CONSTELLATION sociétaire (highest tier)
 # Returns 0 (true) if user is a constellation member, 1 (false) otherwise
@@ -1144,8 +1109,35 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
         # Memory display logic
         mem_slot=0
         [[ $memory_slot -gt 0 ]] && mem_slot=$memory_slot
-        
-        if [[ $mem_slot -gt 0 ]]; then
+
+        if [[ "${TAGS[all]}" == true ]]; then
+            # #mem #all — résumé de tous les slots accessibles (même
+            # convention que bro_dm_daemon.sh::_handle_mem et
+            # bro/tools.py::_slots_from_text). Filtré par accès slot-par-slot
+            # AVANT lecture, jamais après (un slot non autorisé n'apparaît
+            # même pas dans le résumé).
+            user_dir="$HOME/.zen/flashmem/${user_id}"
+            mem_summary="🧠 Mémoires enregistrées :"
+            mem_found=false
+            for s in $(seq 0 12); do
+                slot_file="$user_dir/slot${s}.json"
+                [[ -f "$slot_file" ]] || continue
+                if [[ $s -gt 0 ]] && ! check_memory_slot_access "$user_id" "$s"; then
+                    continue
+                fi
+                last_msg=$(jq -r '.messages[-1].content // ""' "$slot_file" 2>/dev/null | cut -c1-80)
+                msg_count=$(jq -r '.messages | length' "$slot_file" 2>/dev/null)
+                [[ -z "$last_msg" ]] && continue
+                mem_summary="${mem_summary}
+  Slot $s (${msg_count} msg) : ${last_msg}…"
+                mem_found=true
+            done
+            if [[ "$mem_found" == false ]]; then
+                KeyANSWER="Aucune mémoire enregistrée. Utilisez #rec <texte> pour mémoriser."
+            else
+                KeyANSWER="$mem_summary"
+            fi
+        elif [[ $mem_slot -gt 0 ]]; then
             # Check memory slot access for display
             if check_memory_slot_access "$user_id" "$mem_slot"; then
                 slot_file="$HOME/.zen/flashmem/${user_id}/slot${mem_slot}.json"

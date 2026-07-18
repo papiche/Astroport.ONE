@@ -653,10 +653,14 @@ _handle_rec() {
 }
 
 ## ── Canal "plain" avec #mem : afficher les mémoires personnelles ────────
-## Syntaxe DM : "#mem"       → résumé de tous les slots non vides
+## Syntaxe DM : "#mem"       → contenu du slot 0 (5 derniers messages)
 ##              "#mem #2"    → contenu du slot 2 (5 derniers messages)
+##              "#mem #all"  → résumé de tous les slots non vides
+## Sans #all, seul le slot 0 est concerné — jamais tous les slots par défaut.
+## Même convention que UPlanet_IA_Responder.sh (TAGS[all]) et bro/tools.py
+## (_slots_from_text), pour un comportement identique sur les 3 canaux.
 _handle_mem() {
-    local sender="$1" slot="${2:-0}"
+    local sender="$1" slot="${2:-0}" all_slots="${3:-false}"
     local email
     email=$(_sender_email "$sender")
     if [[ -z "$email" ]]; then
@@ -669,13 +673,24 @@ _handle_mem() {
     local user_dir="$HOME/.zen/flashmem/$email"
     local reply
 
-    if [[ "$slot" == "0" ]]; then
-        reply=$(python3 - "$user_dir" <<'PYEOF'
+    if [[ "$all_slots" == "true" ]]; then
+        ## Résumé multi-slots : filtré par accès AVANT d'entrer dans python
+        ## (jamais de shell-out depuis l'intérieur du heredoc — l'email ne
+        ## doit jamais atteindre une commande shell non contrôlée). Corrige
+        ## une lacune réelle : cette branche ne vérifiait auparavant AUCUN
+        ## accès, contrairement à #reset (_handle_reset) qui l'a toujours fait.
+        local -a _allowed=()
+        local s
+        for s in $(seq 0 12); do
+            _check_slot_access "$email" "$s" && _allowed+=("$s")
+        done
+        reply=$(python3 - "$user_dir" "${_allowed[*]}" <<'PYEOF'
 import json, os, sys
 user_dir = sys.argv[1]
+allowed = {int(x) for x in sys.argv[2].split()} if sys.argv[2] else set()
 lines = ["🧠 Mémoires enregistrées :"]
 found = False
-for s in range(13):
+for s in sorted(allowed):
     sf = os.path.join(user_dir, f"slot{s}.json")
     if not os.path.exists(sf): continue
     try:
@@ -693,6 +708,12 @@ print("\n".join(lines))
 PYEOF
         )
     else
+        if ! _check_slot_access "$email" "$slot"; then
+            _send_dm "$sender" \
+                "⚠️ Accès refusé : le slot $slot est réservé aux sociétaires." \
+                "${_RELAYS[0]}" 2>/dev/null
+            return
+        fi
         reply=$(python3 - "$user_dir" "$slot" <<'PYEOF'
 import json, os, sys
 user_dir, slot = sys.argv[1], sys.argv[2]
@@ -714,16 +735,21 @@ PYEOF
         )
     fi
 
-    _log "📖 #mem répondu à ${sender:0:12}... ($email, slot $slot)"
+    _log "📖 #mem répondu à ${sender:0:12}... ($email, slot $slot, all=$all_slots)"
     _send_dm "$sender" "${reply:-Erreur lecture mémoire.}" \
         "${_RELAYS[0]}" 2>/dev/null
 }
 
 ## ── Canal "plain" avec #reset : effacer mémoires personnelles ───────────
-## Syntaxe DM : "#reset"     → efface tous les slots
+## Syntaxe DM : "#reset"     → efface uniquement le slot 0
 ##              "#reset #2"  → efface uniquement le slot 2
+##              "#reset #all" → efface tous les slots (0-12)
+## Sans #all, seul le slot 0 est effacé — jamais tous les slots par défaut
+## (avant ce fix, un simple "#reset" sans argument effaçait TOUT). Même
+## convention que UPlanet_IA_Responder.sh (TAGS[all]) et bro/tools.py
+## (_slots_from_text), pour un comportement identique sur les 3 canaux.
 _handle_reset() {
-    local sender="$1" slot="${2:-0}"
+    local sender="$1" slot="${2:-0}" all_slots="${3:-false}"
     local email
     email=$(_sender_email "$sender")
     if [[ -z "$email" ]]; then
@@ -733,19 +759,30 @@ _handle_reset() {
         return
     fi
 
-    if ! _check_slot_access "$email" "$slot"; then
-        _send_dm "$sender" \
-            "⚠️ Accès refusé : le slot $slot est réservé aux sociétaires." \
-            "${_RELAYS[0]}" 2>/dev/null
-        return
-    fi
-
     local user_dir="$HOME/.zen/flashmem/$email"
     local reply
-    if [[ "$slot" == "0" ]]; then
-        rm -f "$user_dir"/slot*.json 2>/dev/null
-        reply="🗑️ Toutes les mémoires (slots 0-12) ont été effacées."
+
+    if [[ "$all_slots" == "true" ]]; then
+        local -a _cleared=()
+        local s
+        for s in $(seq 0 12); do
+            if _check_slot_access "$email" "$s" && [[ -f "$user_dir/slot${s}.json" ]]; then
+                rm -f "$user_dir/slot${s}.json"
+                _cleared+=("$s")
+            fi
+        done
+        if [[ ${#_cleared[@]} -eq 0 ]]; then
+            reply="Aucune mémoire à effacer."
+        else
+            reply="🗑️ Mémoires effacées (slots ${_cleared[*]// /, })."
+        fi
     else
+        if ! _check_slot_access "$email" "$slot"; then
+            _send_dm "$sender" \
+                "⚠️ Accès refusé : le slot $slot est réservé aux sociétaires." \
+                "${_RELAYS[0]}" 2>/dev/null
+            return
+        fi
         if [[ -f "$user_dir/slot${slot}.json" ]]; then
             rm -f "$user_dir/slot${slot}.json"
             reply="🗑️ Slot $slot effacé."
@@ -754,7 +791,7 @@ _handle_reset() {
         fi
     fi
 
-    _log "🗑️ #reset ($email, slot $slot)"
+    _log "🗑️ #reset ($email, slot $slot, all=$all_slots)"
     _send_dm "$sender" "$reply" \
         "${_RELAYS[0]}"
 }
@@ -1556,6 +1593,12 @@ _process_event() {
             done
             ## slot = premier slot (pour #rec/#mem/#reset) ; slot_str = liste CSV pour BRO
             [[ ${#_slots[@]} -gt 0 ]] && slot="${_slots[0]}"
+            ## #all : #mem/#reset visent tous les slots (0-12) au lieu du seul
+            ## slot 0 par défaut — même convention que UPlanet_IA_Responder.sh
+            ## (TAGS[all]) et bro/tools.py (_slots_from_text) pour que les 3
+            ## canaux se comportent identiquement.
+            local _mem_reset_all=false
+            [[ "$question" =~ \#all([[:space:]]|$) ]] && _mem_reset_all=true
             local slot_str
             slot_str=$(IFS=,; echo "${_slots[*]:-0}")
 
@@ -1568,7 +1611,7 @@ _process_event() {
 
             ## Router selon la commande DM
             if echo "$question" | grep -qi '#reset'; then
-                _handle_reset "$sender" "$slot"
+                _handle_reset "$sender" "$slot" "$_mem_reset_all"
 
             elif echo "$question" | grep -qi '#craft'; then
                 ## #craft <url> — requiert Level ≥ 2 (atom4love)
@@ -1600,7 +1643,7 @@ _process_event() {
                 _handle_mem_skill "$sender" "${BASH_REMATCH[1]}"
 
             elif echo "$question" | grep -qi '#mem'; then
-                _handle_mem "$sender" "$slot"
+                _handle_mem "$sender" "$slot" "$_mem_reset_all"
 
             elif [[ "$question" =~ ^#rec:([a-z0-9_-]+)[[:space:]]+(.*) ]]; then
                 ## #rec:<skill> — requiert Level ≥ 3 (satellite ẐEN). Relevé

@@ -275,9 +275,13 @@ def _try_registered_tools(owner_email, text):
     return None
 
 def _slots_from_text(text):
-    """Détecte les tags #1..#12 dans le texte (cohérent avec bro_dm_daemon.sh
-    et UPlanet_IA_Responder.sh) — retourne la liste des slots visés, ou [0]
-    (personnel) par défaut si aucun n'est mentionné."""
+    """Détecte les tags #1..#12 et #all dans le texte (cohérent avec
+    bro_dm_daemon.sh et UPlanet_IA_Responder.sh) — retourne la liste des
+    slots visés. #all → tous les slots (0-12), priorité sur les #N
+    explicites. Sans #all ni #N, seul le slot 0 (personnel) est visé —
+    jamais tous les slots par défaut."""
+    if re.search(r"#all\b", text, re.IGNORECASE):
+        return list(range(13))
     slots = [i for i in range(1, 13) if re.search(rf"#{i}\b", text)]
     return slots or [0]
 
@@ -353,20 +357,51 @@ def _tool_help(owner_email, text):
     lines.append("Voir aussi : #mem (souvenirs), #reset (les effacer), #rec <texte> (en noter un).")
     return "\n".join(lines)
 
+def _filter_accessible_slots(owner_email, slots):
+    """Sépare les slots demandés en (accessibles, refusés). Slot 0 toujours
+    accessible ; slots 1-12 réservés au niveau BRO réel ≥ ACCESS_LEVEL_SATELLITE
+    (sociétaire), même seuil et même source de vérité (bro_user_level.py) que
+    bro_dm_daemon.sh::_check_slot_access (canal NODE) et
+    UPlanet_IA_Responder.sh::check_memory_slot_access (canal public,
+    aujourd'hui désactivé). Avant ce fix, #mem/#reset n'avaient ICI absolument
+    aucune vérification (contrairement à #craft/#badge/#rec:<skill>, déjà
+    gated via _make_gated_handler) — n'importe quel niveau pouvait lire/effacer
+    n'importe quel slot 1-12 par self-DM."""
+    if not any(s > 0 for s in slots):
+        return slots, []
+    if _owner_access_level(owner_email) >= ACCESS_LEVEL_SATELLITE:
+        return slots, []
+    return [s for s in slots if s == 0], [s for s in slots if s != 0]
+
 def _tool_mem(owner_email, text):
     slots = _slots_from_text(text)
+    accessible, denied = _filter_accessible_slots(owner_email, slots)
     parts = []
-    for slot in slots:
+    for slot in accessible:
         summary = _format_slot_summary(owner_email, slot)
         parts.append(f"Slot {slot} :\n{summary}" if summary else f"Slot {slot} : (vide)")
+    if denied:
+        denied_str = ", ".join(str(s) for s in denied)
+        parts.append(f"🔒 Slot(s) {denied_str} réservé(s) aux sociétaires "
+                      f"({_ACCESS_LEVEL_LABEL[ACCESS_LEVEL_SATELLITE]}).")
+    if not parts:
+        return "⚠️ Aucun slot accessible."
     return "🧠 " + "\n\n".join(parts)
 
 def _tool_reset(owner_email, text):
     slots = _slots_from_text(text)
-    for slot in slots:
+    accessible, denied = _filter_accessible_slots(owner_email, slots)
+    for slot in accessible:
         _clear_slot(owner_email, slot)
-    slots_str = ", ".join(str(s) for s in slots)
-    return f"🗑️ Mémoire effacée (slot{'s' if len(slots) > 1 else ''} {slots_str})."
+    parts = []
+    if accessible:
+        slots_str = ", ".join(str(s) for s in accessible)
+        parts.append(f"🗑️ Mémoire effacée (slot{'s' if len(accessible) > 1 else ''} {slots_str}).")
+    if denied:
+        denied_str = ", ".join(str(s) for s in denied)
+        parts.append(f"🔒 Slot(s) {denied_str} réservé(s) aux sociétaires "
+                      f"({_ACCESS_LEVEL_LABEL[ACCESS_LEVEL_SATELLITE]}).")
+    return "\n".join(parts) if parts else "⚠️ Aucun slot accessible."
 
 def _tool_pref(owner_email, text):
     """#pref history : liste les dernières mises à jour de .Preferences.md.
@@ -602,13 +637,15 @@ def _register_system_tools():
     ))
     bro_tools.register(bro_tools.Tool(
         name="mem", tags=("mem",), handler=_tool_mem,
-        description="« #mem » : affiche les notes mémorisées explicitement (voir #rec) dans un slot personnel.",
+        description="« #mem » : affiche le slot 0 par défaut — « #mem #N » un slot précis (1-12, "
+                     "sociétaires) — « #mem #all » un résumé de tous les slots.",
         examples=("montre-moi mes souvenirs", "qu'est-ce que tu as retenu de moi ?",
                    "rappelle-moi ce qu'on s'est dit", "voir toutes mes mémoires"),
     ))
     bro_tools.register(bro_tools.Tool(
         name="reset", tags=("reset",), handler=_tool_reset,
-        description="« #reset » : efface les notes mémorisées d'un slot personnel.",
+        description="« #reset » : efface le slot 0 par défaut — « #reset #N » un slot précis (1-12, "
+                     "sociétaires) — « #reset #all » tous les slots.",
         examples=("oublie tout ce qu'on s'est dit", "efface toutes mes mémoires"),
     ))
     bro_tools.register(bro_tools.Tool(
