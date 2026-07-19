@@ -631,13 +631,52 @@ else:
 " "$my_tags_json" "$other_tags_json" 2>/dev/null || echo "0"
 }
 
+## ── Alerte Mode de Manifestation : Projection vs Absorption (0-40% malus) ────
+## Compare le champ optionnel "manifestation_mode" ∈ [-1,1] du profil local
+## (-1 = Réception/Absorption pure, habiter organiquement ; +1 = Projection
+## Active pure, structurer/théoriser/coder — cf. UPlanet/earth/melissa.html
+## §3bis, analogie Lense-Thirring/Frame-Dragging Phi2X.computeFrameDragging).
+## Un écart important signale un risque de "forces de marée spatiotemporelles" :
+## même avec des Rêves (dream_vector) et intérêts alignés à 100%, le style de
+## construction de la réalité de l'un (projecteur) peut saturer/entraîner
+## celui de l'autre (récepteur) au lieu de coexister — cf. cas Fred & Melissa.
+## Ne s'applique que si LES DEUX profils déclarent ce champ (opt-in via
+## {"manifestation_mode": <valeur>} envoyé au chat, cf. _love_save_profile qui
+## accepte tout champ JSON) ; silencieux sinon (rétro-compatible, aucun
+## ancien profil n'a ce champ). Retourne "MALUS_PCT LABEL" : le malus est
+## appliqué par l'appelant en RÉDUCTION du total_score — jamais en exclusion,
+## l'alerte doit rester visible même à score par ailleurs élevé.
+_love_manifestation_alert() {
+    local my_profile="$1" other_profile="$2"
+    python3 -c "
+import json, sys
+def mode(p):
+    try:
+        m = json.loads(p).get('manifestation_mode', None)
+        return float(m) if m is not None else None
+    except Exception: return None
+a, b = mode(sys.argv[1]), mode(sys.argv[2])
+if a is None or b is None:
+    print('0'); sys.exit(0)
+gap = abs(a - b)  # ∈[0,2] : 0=même mode, 2=opposition totale (projection pure ↔ absorption pure)
+if gap < 1.2:
+    print('0')
+elif gap < 1.6:
+    print('20 ⚠️ Modes de manifestation contrastés (projection/absorption)')
+else:
+    print('35 ⚠️ Forces de marée spatiotemporelles — modes de manifestation opposés, risque de saturation même à intérêts/Rêves alignés')
+" "$my_profile" "$other_profile" 2>/dev/null || echo "0"
+}
+
 ## ── Score total : interférence non-linéaire (Géométrie de la Confiance) ──────
 ## k = score_phi2x normalisé sur [0,1] pilote le régime d'interférence.
 ## k ≥ 0.95 → Singularité (fusion exponentielle)
 ## k ≤ 0.55 → Alignement orthogonal (friction créatrice, diviseur)
 ## sinon    → Interférence constructive classique (smooth-min)
 ## Réutilisée par _handle_love_match pour les candidats locaux ET distants —
-## seule la source des 7 scores partiels change, jamais ce calcul.
+## seule la source des 7 scores partiels change, jamais ce calcul. Le malus
+## Mode de Manifestation (_love_manifestation_alert) est appliqué séparément
+## par l'appelant, APRÈS ce calcul (cf. _handle_love_match).
 _love_combine_score() {
     local si="$1" sk="$2" sp="$3" st="$4" sa="$5" sm="$6" sd="$7"
     python3 -c "
@@ -997,6 +1036,10 @@ print(len(ms))
     local tier=1
     _love_is_tier3 "$email" && tier=3 || _love_is_tier2 "$email" && tier=2
 
+    local has_style=false
+    python3 -c "import json,sys; p=json.load(sys.stdin); print('yes' if p.get('manifestation_mode') is not None else 'no')" \
+        <<< "$profile" 2>/dev/null | grep -q yes && has_style=true
+
     local status_msg="💕 **Statut LOVE — Agence UPlanet**
 
 🕐 Prompts IA disponibles aujourd'hui : ${remaining}/${_LOVE_DAILY_QUOTA}
@@ -1017,6 +1060,8 @@ $(${is_public}   && echo '✅ Profil visible pour le matching' || echo '🔒 Pro
         next_step="\n⚛️ **Prochaine étape** : Rejoins ATOM4LOVE pour activer la résonance Phi²"
     elif ! $is_public && [[ $tier -ge 2 ]]; then
         next_step="\n🔍 **Prochaine étape** : Rends ton profil visible pour le matching\n{\"public\":true}"
+    elif ! $has_style && [[ $tier -ge 2 ]]; then
+        next_step="\n🌀 **Optionnel** : Décris ton Mode de Manifestation (-1=Réception/Absorption ↔ +1=Projection Active) pour affiner le matching\n{\"manifestation_mode\":0.0}"
     fi
     [[ -n "$next_step" ]] && status_msg+="$next_step"
 
@@ -1464,6 +1509,13 @@ else:
         local total_score
         total_score=$(_love_combine_score "$score_interest" "$score_kin" "$score_phi2x" "$score_traces" "$score_a5l" "$score_memory" "$score_dream")
         [[ -z "$total_score" ]] && total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l + score_memory + score_dream ))
+
+        # ── Alerte Mode de Manifestation (malus, jamais exclusion) ────────
+        local style_raw; style_raw=$(_love_manifestation_alert "$my_profile" "$other_profile")
+        local style_malus="${style_raw%% *}" style_label="${style_raw#* }"
+        [[ "$style_label" == "$style_malus" ]] && style_label=""
+        [[ "${style_malus:-0}" -gt 0 ]] && total_score=$(( total_score * (100 - style_malus) / 100 ))
+
         [[ $total_score -lt 10 ]] && continue
 
         local bio
@@ -1486,6 +1538,8 @@ else:
             affinity_parts+=("$memory_label")
         [[ $score_dream -gt 0 && -n "$dream_label" ]] && \
             affinity_parts+=("$dream_label")
+        [[ -n "$style_label" ]] && \
+            affinity_parts+=("$style_label")
 
         candidate_scores["$other_email"]=$total_score
         local _sep="" _lbl=""
@@ -1653,6 +1707,13 @@ else:
         local total_score
         total_score=$(_love_combine_score "$score_interest" "$score_kin" "$score_phi2x" "$score_traces" "$score_a5l" "$score_memory" "$score_dream")
         [[ -z "$total_score" ]] && total_score=$(( score_interest + score_kin + score_phi2x + score_traces + score_a5l + score_dream ))
+
+        # ── Alerte Mode de Manifestation (malus, jamais exclusion) ────────
+        local style_raw; style_raw=$(_love_manifestation_alert "$my_profile" "$other_profile")
+        local style_malus="${style_raw%% *}" style_label="${style_raw#* }"
+        [[ "$style_label" == "$style_malus" ]] && style_label=""
+        [[ "${style_malus:-0}" -gt 0 ]] && total_score=$(( total_score * (100 - style_malus) / 100 ))
+
         [[ $total_score -lt 10 ]] && continue
 
         local bio
@@ -1671,6 +1732,8 @@ else:
             affinity_parts+=("$a5l_label")
         [[ $score_dream -gt 0 && -n "$dream_label" ]] && \
             affinity_parts+=("$dream_label")
+        [[ -n "$style_label" ]] && \
+            affinity_parts+=("$style_label")
         affinity_parts+=("🌌 constellation")
 
         candidate_scores["$other_pubkey"]=$total_score

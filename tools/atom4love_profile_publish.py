@@ -20,7 +20,7 @@ Usage:
     atom4love_profile_publish.py EMAIL
     Payload JSON sur stdin :
         {"age": 28, "bio": "...", "interests": ["nature", "musique"], "public": true,
-         "photo": "https://ipfs.../QmXXX.jpg"}
+         "photo": "https://ipfs.../QmXXX.jpg", "manifestation_mode": 0.85}
 
 Imprime en DERNIÈRE ligne de stdout un JSON — seule sortie parsée par les
 appelants (atom4love_profile.sh, UPassport routers/identity.py, love_handler.sh).
@@ -104,6 +104,13 @@ def main() -> None:
         new_fields["public"] = bool(payload["public"])
     if "photo" in payload:
         new_fields["photo"] = str(payload["photo"]).strip()[:500]
+    if "manifestation_mode" in payload:
+        try:
+            mode = float(payload["manifestation_mode"])
+        except (TypeError, ValueError):
+            _fail("INVALID_MANIFESTATION_MODE")
+            return
+        new_fields["manifestation_mode"] = max(-1.0, min(1.0, mode))
 
     # Merge non destructif — cohérent avec _love_save_profile (love_handler.sh)
     profile = _load_existing_profile(email)
@@ -113,13 +120,19 @@ def main() -> None:
     # Chiffré avec $UPLANETNAME (AES-256-CBC, même mécanisme que
     # cooperative_config.sh::coop_encrypt) — lisible uniquement par les
     # stations de la constellation, jamais en clair sur les relais NOSTR.
-    content = uplanet_crypto.encrypt(json.dumps({
+    content_fields = {
         "age": profile.get("age", 0),
         "bio": profile.get("bio", ""),
         "interests": profile.get("interests", []),
         "public": bool(profile.get("public", False)),
         "photo": profile.get("photo", ""),
-    }))
+    }
+    # manifestation_mode ∈[-1,1] (Projection Active ↔ Réception/Absorption, cf.
+    # UPlanet/earth/melissa.html §3bis) est optionnel — omis du contenu publié
+    # tant qu'il n'a jamais été déclaré, pour ne pas polluer les anciens profils.
+    if "manifestation_mode" in profile:
+        content_fields["manifestation_mode"] = profile["manifestation_mode"]
+    content = uplanet_crypto.encrypt(json.dumps(content_fields))
     tags = [["d", "love-profile"], ["t", "love"]]
 
     publish_result = send_nostr_event(love_keyfile, content, tags=tags, kind=30078, json_output=True)
