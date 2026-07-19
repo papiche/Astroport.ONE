@@ -268,6 +268,36 @@ count_p2p_nodes() {
     echo $count
 }
 
+# FREE - Unload all currently loaded models to release VRAM
+# Appelé par les générateurs ComfyUI (image/vidéo/musique) quand une erreur
+# OOM GPU survient sur un ComfyUI LOCAL partageant le même GPU qu'Ollama.
+cmd_free() {
+    if ! test_api "true"; then
+        print_status "FAIL" "Aucune API Ollama active — rien à libérer"
+        return 1
+    fi
+    local loaded
+    loaded=$(curl -s "http://localhost:$OLLAMA_PORT/api/ps" 2>/dev/null | jq -r '.models[]?.name' 2>/dev/null)
+    if [[ -z "$loaded" ]]; then
+        print_status "INFO" "Aucun modèle Ollama chargé en VRAM"
+        return 0
+    fi
+    local freed=0
+    while IFS= read -r model; do
+        [[ -z "$model" ]] && continue
+        if curl -s -X POST "http://localhost:$OLLAMA_PORT/api/generate" \
+             -H "Content-Type: application/json" \
+             -d "$(jq -n --arg m "$model" '{model:$m, keep_alive:0}')" >/dev/null 2>&1; then
+            print_status "OK" "Modèle Ollama déchargé : $model"
+            ((freed++))
+        else
+            print_status "WARN" "Échec déchargement : $model"
+        fi
+    done <<< "$loaded"
+    print_status "OK" "$freed modèle(s) déchargé(s)"
+    return 0
+}
+
 # List available models on current connection
 list_models() {
     local silent="${1:-false}"
@@ -708,6 +738,7 @@ cmd_help() {
     echo -e "  ${CYAN}P2P <id>${NC}     Connect to node by ID (partial match)"
     echo -e "  ${CYAN}P2P auto${NC}     Random node selection"
     echo -e "  ${CYAN}MODELS${NC}       List available models"
+    echo -e "  ${CYAN}FREE${NC}         Unload all loaded models (release VRAM)"
     echo -e "  ${CYAN}OFF${NC}          Disconnect all connections"
     echo -e "  ${CYAN}TEST${NC}         Test current API connection"
     echo -e "  ${CYAN}HELP${NC}         Show this help message"
@@ -763,6 +794,11 @@ case "${1^^}" in
             exit 1
         fi
         exit 0
+        ;;
+    "FREE"|"UNLOAD")
+        print_header
+        cmd_free
+        exit $?
         ;;
     "LOCAL")
         print_header

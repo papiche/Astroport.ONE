@@ -50,6 +50,7 @@ fi
 UDRIVE_PATH="$2"
 
 . "${HOME}/.zen/Astroport.ONE/tools/my.sh"
+. "${MY_PATH}/lib/comfyui_recovery.sh"
 
 # Activate the virtual environment to access all Python modules
 VENV_DIR="${HOME}/.astro"
@@ -283,6 +284,11 @@ get_image_result() {
   save_node_outputs=$(echo "$prompt_data" | jq '.outputs."7".images')
   
   if [ -z "$save_node_outputs" ] || [ "$save_node_outputs" = "null" ]; then
+    if comfyui_should_retry_after_oom "$prompt_data"; then
+      echo "Nouvelle tentative de génération après libération de la VRAM..." >&2
+      send_workflow
+      return $?
+    fi
     echo "Error: SaveImage node output not found in generation results" >&2
     return 1
   fi

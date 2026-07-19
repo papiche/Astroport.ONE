@@ -16,6 +16,7 @@ fi
 UDRIVE_PATH="$2"
 
 . "${HOME}/.zen/Astroport.ONE/tools/my.sh"
+. "${MY_PATH}/lib/comfyui_recovery.sh"
 
 # Escape double quotes and backslashes in the prompt
 PROMPT=$(echo "$1" | sed 's/"/\\"/g')
@@ -242,6 +243,11 @@ get_audio_result() {
   save_node_outputs=$(echo "$prompt_data" | jq '.outputs."19".audio')
   
   if [ -z "$save_node_outputs" ] || [ "$save_node_outputs" = "null" ]; then
+    if comfyui_should_retry_after_oom "$prompt_data"; then
+      echo "Nouvelle tentative de génération après libération de la VRAM..." >&2
+      send_workflow
+      return $?
+    fi
     echo "Erreur: Sorties du nœud SaveAudio introuvables" >&2
     echo "Contenu du prompt_data pour debug:" >&2
     echo "$prompt_data" | jq '.outputs."19"' >&2

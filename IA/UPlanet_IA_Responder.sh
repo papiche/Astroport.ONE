@@ -534,51 +534,6 @@ user_id="$KNAME"
 # supprimée pour ne plus jamais diverger des deux autres.
 check_memory_slot_access() { bro_check_slot_access "$@"; }
 
-# Function to check if user is a CONSTELLATION sociétaire (highest tier)
-# Returns 0 (true) if user is a constellation member, 1 (false) otherwise
-is_constellation_from_did() {
-    local user_id="$1"
-    
-    # Get user's HEX pubkey from their NOSTR card
-    local user_hex=""
-    
-    if [[ -f "$HOME/.zen/game/nostr/${user_id}/.secret.nostr" ]]; then
-        source "$HOME/.zen/game/nostr/${user_id}/.secret.nostr"
-        user_hex="$HEX"
-    elif [[ "$user_id" =~ ^[a-f0-9]{64}$ ]]; then
-        user_hex="$user_id"
-    fi
-    
-    [[ -z "$user_hex" ]] && return 1
-    
-    # Query DID document (kind 30800) from strfry
-    local did_event=""
-    if [[ -d "$HOME/.zen/strfry" ]]; then
-        did_event=$(cd $HOME/.zen/strfry && ./strfry scan '{"authors":["'"$user_hex"'"],"kinds":[30800],"#d":["did"]}' 2>/dev/null | head -n1 && cd - >/dev/null 2>&1)
-    fi
-    
-    [[ -z "$did_event" ]] && return 1
-    
-    local did_content=$(echo "$did_event" | jq -r '.content // ""' 2>/dev/null)
-    [[ -z "$did_content" ]] && return 1
-    
-    local contract_status=$(echo "$did_content" | jq -r '.metadata.contractStatus // ""' 2>/dev/null)
-    
-    echo "DEBUG: Checking CONSTELLATION status for $user_id: $contract_status" >&2
-    
-    # Constellation, infrastructure contributors and captains have I2V access
-    case "$contract_status" in
-        *"cooperative_member_constellation"*|*"infrastructure_contributor"*|*"astroport_captain"*)
-            echo "DEBUG: User $user_id is CONSTELLATION tier or CAPTAIN (I2V access)" >&2
-            return 0
-            ;;
-        *)
-            echo "DEBUG: User $user_id is NOT CONSTELLATION tier or CAPTAIN" >&2
-            return 1
-            ;;
-    esac
-}
-
 # Function to send memory access denied message (DM privé, signé NODE)
 send_memory_access_denied() {
     local pubkey="$1"
@@ -1066,12 +1021,27 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
         [[ $memory_slot -gt 0 ]] && reset_slot=$memory_slot
         
         if [[ "${TAGS[all]}" == true ]]; then
-            # Reset all slots (0-12)
+            # Reset all slots (0-12) — filtré par accès (un seul appel à
+            # check_memory_slot_access, le niveau BRO ne dépend pas du numéro
+            # de slot, voir bro_dm_daemon.sh::_handle_reset pour le même
+            # correctif). Avant ce fix, #reset #all effaçait TOUT sans
+            # vérifier l'accès aux slots 1-12.
             user_dir="$HOME/.zen/flashmem/${user_id}"
             if [[ -d "$user_dir" ]]; then
-                rm -f "$user_dir"/slot*.json
-                echo "All memory slots reset for USER: $user_id"
-                KeyANSWER="Toutes les mémoires (slots 0-12) ont été réinitialisées. Utilisez #reset #N pour réinitialiser un slot spécifique, ou #reset pour réinitialiser le slot 0."
+                has_soc_access=false
+                check_memory_slot_access "$user_id" "1" && has_soc_access=true
+                cleared_slots=""
+                rm -f "$user_dir/slot0.json" 2>/dev/null && cleared_slots="0"
+                if [[ "$has_soc_access" == true ]]; then
+                    for s in $(seq 1 12); do
+                        if [[ -f "$user_dir/slot${s}.json" ]]; then
+                            rm -f "$user_dir/slot${s}.json"
+                            cleared_slots="${cleared_slots:+$cleared_slots, }$s"
+                        fi
+                    done
+                fi
+                echo "Memory slots reset for USER: $user_id (cleared: ${cleared_slots:-none})"
+                KeyANSWER="Mémoires effacées (slots ${cleared_slots:-aucun}). Utilisez #reset #N pour réinitialiser un slot spécifique, ou #reset pour réinitialiser le slot 0."
             else
                 echo "No memory directory found for USER: $user_id"
                 KeyANSWER="Aucune mémoire trouvée."
@@ -1113,18 +1083,19 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
         if [[ "${TAGS[all]}" == true ]]; then
             # #mem #all — résumé de tous les slots accessibles (même
             # convention que bro_dm_daemon.sh::_handle_mem et
-            # bro/tools.py::_slots_from_text). Filtré par accès slot-par-slot
-            # AVANT lecture, jamais après (un slot non autorisé n'apparaît
-            # même pas dans le résumé).
+            # bro/tools.py::_slots_from_text). Filtré par accès AVANT lecture,
+            # jamais après (un slot non autorisé n'apparaît même pas dans le
+            # résumé). Un seul appel à check_memory_slot_access (le niveau BRO
+            # ne dépend pas du numéro de slot) plutôt qu'un par slot.
             user_dir="$HOME/.zen/flashmem/${user_id}"
             mem_summary="🧠 Mémoires enregistrées :"
             mem_found=false
+            has_soc_access=false
+            check_memory_slot_access "$user_id" "1" && has_soc_access=true
             for s in $(seq 0 12); do
+                [[ $s -gt 0 && "$has_soc_access" != true ]] && continue
                 slot_file="$user_dir/slot${s}.json"
                 [[ -f "$slot_file" ]] || continue
-                if [[ $s -gt 0 ]] && ! check_memory_slot_access "$user_id" "$s"; then
-                    continue
-                fi
                 last_msg=$(jq -r '.messages[-1].content // ""' "$slot_file" 2>/dev/null | cut -c1-80)
                 msg_count=$(jq -r '.messages | length' "$slot_file" 2>/dev/null)
                 [[ -z "$last_msg" ]] && continue

@@ -679,11 +679,14 @@ _handle_mem() {
         ## doit jamais atteindre une commande shell non contrôlée). Corrige
         ## une lacune réelle : cette branche ne vérifiait auparavant AUCUN
         ## accès, contrairement à #reset (_handle_reset) qui l'a toujours fait.
-        local -a _allowed=()
-        local s
-        for s in $(seq 0 12); do
-            _check_slot_access "$email" "$s" && _allowed+=("$s")
-        done
+        ## Un seul appel à _check_slot_access (slot "1", représentatif de la
+        ## plage 1-12 — le niveau BRO ne dépend pas du numéro de slot) plutôt
+        ## que 12 appels redondants, chacun spawnant bro_user_level.py.
+        local -a _allowed=(0)
+        if _check_slot_access "$email" "1"; then
+            local s
+            for s in $(seq 1 12); do _allowed+=("$s"); done
+        fi
         reply=$(python3 - "$user_dir" "${_allowed[*]}" <<'PYEOF'
 import json, os, sys
 user_dir = sys.argv[1]
@@ -763,10 +766,15 @@ _handle_reset() {
     local reply
 
     if [[ "$all_slots" == "true" ]]; then
+        ## Un seul appel à _check_slot_access (voir _handle_mem) plutôt que
+        ## 12 appels redondants.
+        local _has_soc_access=false
+        _check_slot_access "$email" "1" && _has_soc_access=true
         local -a _cleared=()
         local s
-        for s in $(seq 0 12); do
-            if _check_slot_access "$email" "$s" && [[ -f "$user_dir/slot${s}.json" ]]; then
+        for s in 0 $(seq 1 12); do
+            [[ $s -gt 0 && "$_has_soc_access" != "true" ]] && continue
+            if [[ -f "$user_dir/slot${s}.json" ]]; then
                 rm -f "$user_dir/slot${s}.json"
                 _cleared+=("$s")
             fi

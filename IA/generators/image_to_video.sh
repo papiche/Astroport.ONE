@@ -32,6 +32,7 @@ fi
 UDRIVE_PATH="$3"
 
 . "${HOME}/.zen/Astroport.ONE/tools/my.sh"
+. "${MY_PATH}/lib/comfyui_recovery.sh"
 
 # Escape double quotes and backslashes in the prompt
 PROMPT=$(echo "$1" | sed 's/"/\\"/g')
@@ -347,6 +348,11 @@ get_video_result() {
   fi
   
   if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
+    if comfyui_should_retry_after_oom "$prompt_data"; then
+      echo "Retrying generation after freeing VRAM..." >&2
+      send_workflow
+      return $?
+    fi
     echo "Error: Video output not found in any node" >&2
     echo "Available outputs for debug:" >&2
     echo "$prompt_data" | jq '.outputs | keys' >&2
