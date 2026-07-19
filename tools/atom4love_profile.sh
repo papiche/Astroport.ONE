@@ -60,4 +60,6 @@ if photo:
 print(json.dumps(payload))
 ")
 
-echo "${_PAYLOAD}" | python3 "${MY_PATH}/atom4love_profile_publish.py" "${EMAIL}"
+## UPLANETNAME est une variable locale (jamais exportée par my.sh) — il faut
+## la transmettre explicitement au subprocess python3 pour le chiffrement.
+echo "${_PAYLOAD}" | UPLANETNAME="${UPLANETNAME}" python3 "${MY_PATH}/atom4love_profile_publish.py" "${EMAIL}"

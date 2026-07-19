@@ -109,6 +109,24 @@ def _stable_id(*parts) -> int:
     return int(h, 16)
 
 
+def _season(timestamp: str) -> str:
+    """Saison (hémisphère nord, français) dérivée du mois ISO — permet de
+    filtrer les mémoires par saison (ex: distinguer une habitude hivernale
+    d'une habitude estivale) sans recalcul a posteriori sur le timestamp brut,
+    qui n'était jusqu'ici jamais exploité comme filtre de recherche."""
+    try:
+        month = int(timestamp[5:7])
+    except (ValueError, TypeError, IndexError):
+        return ""
+    if month in (12, 1, 2):
+        return "hiver"
+    if month in (3, 4, 5):
+        return "printemps"
+    if month in (6, 7, 8):
+        return "ete"
+    return "automne"
+
+
 def _auth_headers() -> dict:
     if QDRANT_API_KEY:
         return {"api-key": QDRANT_API_KEY}
@@ -189,7 +207,7 @@ def ensure_all_collections(user_ids: list = None):
 # ──────────────────────────── geo memory ──────────────────────────────────────
 
 def upsert_geo(lat: str, lon: str, content: str, pubkey: str = "",
-               timestamp: str = None, event_id: str = "") -> bool:
+               timestamp: str = None, event_id: str = "", importance: int = 1) -> bool:
     """Upsert un message géolocalisé dans la collection uplanet_geo."""
     if not content.strip():
         return False
@@ -208,23 +226,28 @@ def upsert_geo(lat: str, lon: str, content: str, pubkey: str = "",
                 "coord_key": f"{lat}_{lon}",
                 "pubkey": pubkey, "event_id": event_id,
                 "content": content, "timestamp": ts,
+                "season": _season(ts), "importance": importance,
             }
         }]
     })
     return bool(r)
 
 
-def search_geo(lat: str, lon: str, query: str, limit: int = 5) -> list:
-    """Recherche sémantique dans les mémoires d'une coordonnée."""
+def search_geo(lat: str, lon: str, query: str, limit: int = 5,
+              season: str = None) -> list:
+    """Recherche sémantique dans les mémoires d'une coordonnée, filtrable par
+    saison (ex: season="hiver" pour ignorer les habitudes estivales)."""
     vec = _embed(query)
     if not vec:
         return []
+    filters = [{"key": "coord_key", "match": {"value": f"{lat}_{lon}"}}]
+    if season:
+        filters.append({"key": "season", "match": {"value": season}})
     r = _curl("POST", f"{QDRANT_URL}/collections/uplanet_geo/points/search", {
         "vector": vec,
         "limit": limit,
         "score_threshold": 0.3,
-        "filter": {"must": [{"key": "coord_key",
-                             "match": {"value": f"{lat}_{lon}"}}]},
+        "filter": {"must": filters},
     })
     return r.get("result", [])
 
@@ -232,8 +255,12 @@ def search_geo(lat: str, lon: str, query: str, limit: int = 5) -> list:
 # ──────────────────────────── user slot memory ────────────────────────────────
 
 def upsert_user_slot(user_id: str, slot: int, content: str,
-                     timestamp: str = None, event_id: str = "") -> bool:
-    """Upsert une entrée dans la mémoire personnelle d'un MULTIPASS."""
+                     timestamp: str = None, event_id: str = "",
+                     importance: int = 1) -> bool:
+    """Upsert une entrée dans la mémoire personnelle d'un MULTIPASS.
+    importance : 1 pour un message individuel ; passer le nombre de messages
+    condensés pour un résumé RÊVE (cf. reve_compress_slot), afin qu'un souvenir
+    qui en synthétise beaucoup pèse plus qu'un message isolé."""
     if not content.strip():
         return False
     vec = _embed(content)
@@ -251,6 +278,7 @@ def upsert_user_slot(user_id: str, slot: int, content: str,
                 "user_id": user_id, "slot": slot,
                 "content": content, "timestamp": ts,
                 "event_id": event_id, "source": "nostr_rec",
+                "season": _season(ts), "importance": importance,
             }
         }]
     })
@@ -282,17 +310,25 @@ def delete_user_slot(user_id: str, slot: int) -> bool:
 
 
 def search_user_slot(user_id: str, query: str, slots: list = None,
-                     limit: int = 5, score_threshold: float = 0.3) -> list:
-    """Recherche sémantique dans les slots mémoire d'un utilisateur."""
+                     limit: int = 5, score_threshold: float = 0.3,
+                     season: str = None) -> list:
+    """Recherche sémantique dans les slots mémoire d'un utilisateur, filtrable
+    par saison (season="hiver"/"printemps"/"ete"/"automne") pour des
+    rapprochements conscients du temps (ex: distinguer une habitude hivernale
+    d'une habitude estivale sans mélanger les deux)."""
     vec = _embed(query)
     if not vec:
         return []
     cname = f"memory_{_user_hex(user_id)}"
     body: dict = {"vector": vec, "limit": limit, "score_threshold": score_threshold,
                   "with_payload": True}
+    filters = []
     if slots:
-        body["filter"] = {"must": [{"key": "slot",
-                                    "match": {"any": slots}}]}
+        filters.append({"key": "slot", "match": {"any": slots}})
+    if season:
+        filters.append({"key": "season", "match": {"value": season}})
+    if filters:
+        body["filter"] = {"must": filters}
     r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/search", body)
     return r.get("result", [])
 
@@ -391,6 +427,78 @@ def love_resonance(user_id_a: str, user_id_b: str,
 
     pairs.sort(key=lambda p: -p["score"])
     return pairs[:top_k]
+
+
+# ──────────────────────────── love dream matching (kNN) ────────────────────────
+# Collection PARTAGÉE (contrairement à memory_{hex}) : un point par pubkey LOVE
+# de la constellation. Remplace la boucle Python O(N) (phi2x.compute_dream_divergence
+# appelé par candidat distant, cf. love_handler.sh::_handle_love_match) par une
+# recherche kNN native Qdrant. Vecteur BINAIRE par tag (pas un embedding
+# sémantique nomic-embed-text comme le reste du fichier) : chaque dream_tag
+# active une dimension stable (hash(tag) % taille), donc la similarité cosinus
+# entre deux profils reflète l'overlap EXACT des tags — même famille de
+# résultats que l'ancienne divergence de Jaccard (compute_dream_divergence),
+# pas une proximité sémantique. Aucun appel Ollama ici : construction du
+# vecteur = simple hash, gratuite et déterministe.
+LOVE_DREAM_COLLECTION  = "love_dream_vectors"
+LOVE_DREAM_VECTOR_SIZE = 768  # indépendant de VECTOR_SIZE (pas un embedding)
+
+
+def _tag_vector(tags: list, size: int = LOVE_DREAM_VECTOR_SIZE) -> list:
+    """Vecteur binaire creux : une dimension par tag (hash MD5 stable), 0 ailleurs."""
+    vec = [0.0] * size
+    for tag in (tags or []):
+        idx = int(hashlib.md5(str(tag).encode()).hexdigest(), 16) % size
+        vec[idx] = 1.0
+    return vec
+
+
+def upsert_dream_vectors_bulk(entries: list) -> int:
+    """Upsert en UN SEUL appel HTTP les vecteurs binaires de plusieurs pubkeys.
+    entries: [{"pubkey": hex, "dream_tags": [...], "email": ""}, ...] (email
+    optionnel, utile seulement pour du debug/affichage). Ignore les entrées
+    sans dream_tags. Retourne le nombre de points effectivement upsertés."""
+    points = []
+    for e in entries or []:
+        pubkey = e.get("pubkey", "")
+        tags = e.get("dream_tags") or []
+        if not pubkey or not tags:
+            continue
+        points.append({
+            "id": _stable_id(pubkey),
+            "vector": _tag_vector(tags),
+            "payload": {
+                "pubkey": pubkey, "dream_tags": tags,
+                "email": e.get("email", ""),
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+            },
+        })
+    if not points:
+        return 0
+    ensure_collection(LOVE_DREAM_COLLECTION, size=LOVE_DREAM_VECTOR_SIZE)
+    r = _curl("PUT", f"{QDRANT_URL}/collections/{LOVE_DREAM_COLLECTION}/points",
+              {"points": points})
+    return len(points) if r else 0
+
+
+def search_dream_matches(dream_tags: list, exclude_pubkey: str = "",
+                         limit: int = 20, score_threshold: float = 0.1) -> list:
+    """kNN natif Qdrant sur l'overlap des dream_tags. Retourne
+    [{pubkey, dream_tags, score}, ...] triés par score décroissant — score =
+    similarité cosinus des vecteurs binaires (coefficient d'Ochiai : proche de
+    Jaccard mais pas identique, même famille de résultats)."""
+    if not dream_tags:
+        return []
+    vec = _tag_vector(dream_tags)
+    ensure_collection(LOVE_DREAM_COLLECTION, size=LOVE_DREAM_VECTOR_SIZE)
+    body = {"vector": vec, "limit": limit, "score_threshold": score_threshold,
+            "with_payload": True}
+    if exclude_pubkey:
+        body["filter"] = {"must_not": [{"key": "pubkey", "match": {"value": exclude_pubkey}}]}
+    r = _curl("POST", f"{QDRANT_URL}/collections/{LOVE_DREAM_COLLECTION}/points/search", body)
+    return [{"pubkey": h.get("payload", {}).get("pubkey", ""),
+             "dream_tags": h.get("payload", {}).get("dream_tags", []),
+             "score": h.get("score", 0)} for h in r.get("result", [])]
 
 
 # ──────────────────────────── station skills ──────────────────────────────────
@@ -530,11 +638,19 @@ def reve_compress_slot(user_id: str, slot: int,
         return False
 
     ts_now = datetime.utcnow().isoformat() + "Z"
+    # importance = nombre de messages condensés dans ce résumé — un souvenir
+    # qui en synthétise beaucoup doit peser plus qu'un message isolé (cf.
+    # upsert_user_slot). season dérivée du timestamp du DERNIER message
+    # compressé (pas ts_now, qui est l'instant de la compression elle-même,
+    # pas celui du souvenir).
+    summary_season = _season(to_compress[-1].get("timestamp", ts_now)) if to_compress else _season(ts_now)
     summary_entry: dict = {
         "timestamp": ts_now,
         "event_id":  f"reve:{hashlib.md5(summary.encode()).hexdigest()[:8]}",
         "content":   f"[RÊVE] {summary}",
         "source":    "reve_compression",
+        "season":    summary_season,
+        "importance": len(to_compress),
     }
     if to_compress and "latitude" in to_compress[-1]:
         summary_entry["latitude"]  = to_compress[-1]["latitude"]
@@ -544,7 +660,8 @@ def reve_compress_slot(user_id: str, slot: int,
     with open(slot_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-    upsert_user_slot(user_id, slot, summary_entry["content"], timestamp=ts_now)
+    upsert_user_slot(user_id, slot, summary_entry["content"], timestamp=ts_now,
+                     importance=len(to_compress))
 
     # Purge des vecteurs individuels remplacés par le résumé ci-dessus — sans
     # ça, ils restent orphelins dans Qdrant pour toujours : ni retrouvables
@@ -615,12 +732,14 @@ def reve_compress_geo(lat: str, lon: str, geo_file: str = None) -> bool:
         "event_id":  f"reve:{hashlib.md5(summary.encode()).hexdigest()[:8]}",
         "pubkey":    "reve",
         "content":   f"[RÊVE] {summary}",
+        "season":    _season(to_compress[-1].get("timestamp", ts_now)) if to_compress else _season(ts_now),
+        "importance": len(to_compress),
     }
     data["messages"] = [summary_entry] + recent
     with open(geo_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-    upsert_geo(lat, lon, summary_entry["content"], timestamp=ts_now)
+    upsert_geo(lat, lon, summary_entry["content"], timestamp=ts_now, importance=len(to_compress))
 
     # Purge des vecteurs individuels remplacés — même raisonnement que
     # reve_compress_slot (voir son commentaire).
@@ -724,17 +843,19 @@ if __name__ == "__main__":
     sub.add_parser("ensure-collections")
 
     pg = sub.add_parser("upsert-geo")
-    pg.add_argument("--lat",      required=True)
-    pg.add_argument("--lon",      required=True)
-    pg.add_argument("--content",  required=True)
-    pg.add_argument("--pubkey",   default="")
-    pg.add_argument("--event-id", default="")
+    pg.add_argument("--lat",        required=True)
+    pg.add_argument("--lon",        required=True)
+    pg.add_argument("--content",    required=True)
+    pg.add_argument("--pubkey",     default="")
+    pg.add_argument("--event-id",   default="")
+    pg.add_argument("--importance", type=int, default=1)
 
     ps = sub.add_parser("upsert-slot")
-    ps.add_argument("--user-id",  required=True)
-    ps.add_argument("--slot",     type=int, default=0)
-    ps.add_argument("--content",  required=True)
-    ps.add_argument("--event-id", default="")
+    ps.add_argument("--user-id",    required=True)
+    ps.add_argument("--slot",       type=int, default=0)
+    ps.add_argument("--content",    required=True)
+    ps.add_argument("--event-id",   default="")
+    ps.add_argument("--importance", type=int, default=1)
 
     pk = sub.add_parser("upsert-skill")
     pk.add_argument("--skill",   required=True)
@@ -772,6 +893,16 @@ if __name__ == "__main__":
     prl.add_argument("--user-b", required=True)
     prl.add_argument("--top-k",  type=int, default=3)
 
+    pub = sub.add_parser("upsert-dream-bulk")
+    pub.add_argument("--input", default="-",
+                     help="Fichier JSON (array d'entries {pubkey,dream_tags,email}) ou '-' pour stdin")
+
+    pdm = sub.add_parser("dream-match")
+    pdm.add_argument("--tags",            nargs="+", required=True)
+    pdm.add_argument("--exclude-pubkey",  default="")
+    pdm.add_argument("--limit",           type=int,   default=20)
+    pdm.add_argument("--score-threshold", type=float, default=0.1)
+
     pr = sub.add_parser("reve")
     pr.add_argument("--user-id", required=True)
     pr.add_argument("--slot",    type=int, default=0)
@@ -791,16 +922,18 @@ if __name__ == "__main__":
     prt.add_argument("--collections", nargs="*",     help="Filtrer sur ces collections")
 
     psr = sub.add_parser("search-geo")
-    psr.add_argument("--lat",   required=True)
-    psr.add_argument("--lon",   required=True)
-    psr.add_argument("--query", required=True)
-    psr.add_argument("--limit", type=int, default=5)
+    psr.add_argument("--lat",    required=True)
+    psr.add_argument("--lon",    required=True)
+    psr.add_argument("--query",  required=True)
+    psr.add_argument("--limit",  type=int, default=5)
+    psr.add_argument("--season", choices=["hiver", "printemps", "ete", "automne"], default=None)
 
     psu = sub.add_parser("search-slot")
     psu.add_argument("--user-id", required=True)
     psu.add_argument("--query",   required=True)
     psu.add_argument("--slots",   nargs="*", type=int)
     psu.add_argument("--limit",   type=int, default=5)
+    psu.add_argument("--season",  choices=["hiver", "printemps", "ete", "automne"], default=None)
 
     args = p.parse_args()
 
@@ -810,12 +943,12 @@ if __name__ == "__main__":
 
     elif args.cmd == "upsert-geo":
         ok = upsert_geo(args.lat, args.lon, args.content, args.pubkey,
-                        event_id=args.event_id)
+                        event_id=args.event_id, importance=args.importance)
         sys.exit(0 if ok else 1)
 
     elif args.cmd == "upsert-slot":
         ok = upsert_user_slot(args.user_id, args.slot, args.content,
-                              event_id=args.event_id)
+                              event_id=args.event_id, importance=args.importance)
         sys.exit(0 if ok else 1)
 
     elif args.cmd == "upsert-skill":
@@ -849,6 +982,16 @@ if __name__ == "__main__":
         results = love_resonance(args.user_a, args.user_b, top_k=args.top_k)
         print(json.dumps(results, ensure_ascii=False, indent=2))
 
+    elif args.cmd == "upsert-dream-bulk":
+        raw = sys.stdin.read() if args.input == "-" else open(args.input).read()
+        entries = json.loads(raw) if raw.strip() else []
+        print(upsert_dream_vectors_bulk(entries))
+
+    elif args.cmd == "dream-match":
+        results = search_dream_matches(args.tags, exclude_pubkey=args.exclude_pubkey,
+                                       limit=args.limit, score_threshold=args.score_threshold)
+        print(json.dumps(results, ensure_ascii=False))
+
     elif args.cmd == "reve":
         ok = reve_compress_slot(args.user_id, args.slot)
         print("RÊVE effectué" if ok else "seuil non atteint")
@@ -874,12 +1017,13 @@ if __name__ == "__main__":
         sys.exit(0 if restored > 0 else 1)
 
     elif args.cmd == "search-geo":
-        results = search_geo(args.lat, args.lon, args.query, args.limit)
+        results = search_geo(args.lat, args.lon, args.query, args.limit,
+                             season=args.season)
         print(json.dumps(results, ensure_ascii=False, indent=2))
 
     elif args.cmd == "search-slot":
         results = search_user_slot(args.user_id, args.query,
-                                   args.slots, args.limit)
+                                   args.slots, args.limit, season=args.season)
         print(json.dumps(results, ensure_ascii=False, indent=2))
 
     else:

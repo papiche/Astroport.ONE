@@ -33,6 +33,7 @@ MY_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, MY_PATH)
 
 from nostr_send_note import send_nostr_event  # noqa: E402
+import uplanet_crypto  # noqa: E402
 
 
 def _fail(error: str, extra: dict | None = None) -> None:
@@ -109,13 +110,16 @@ def main() -> None:
     profile.update(new_fields)
     _save_profile(email, profile)
 
-    content = json.dumps({
+    # Chiffré avec $UPLANETNAME (AES-256-CBC, même mécanisme que
+    # cooperative_config.sh::coop_encrypt) — lisible uniquement par les
+    # stations de la constellation, jamais en clair sur les relais NOSTR.
+    content = uplanet_crypto.encrypt(json.dumps({
         "age": profile.get("age", 0),
         "bio": profile.get("bio", ""),
         "interests": profile.get("interests", []),
         "public": bool(profile.get("public", False)),
         "photo": profile.get("photo", ""),
-    })
+    }))
     tags = [["d", "love-profile"], ["t", "love"]]
 
     publish_result = send_nostr_event(love_keyfile, content, tags=tags, kind=30078, json_output=True)

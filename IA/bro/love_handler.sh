@@ -58,6 +58,23 @@ _LOVE_KIN_COLORS=("Rouge" "Blanc" "Bleu" "Jaune" "Vert")
 ## ── Répertoire mémoire love pour un email ────────────────────────────────────
 _love_dir() { echo "$_LOVE_MEM_BASE/${1}/love"; }
 
+## ── Déchiffrement du contenu ATOM4LOVE (love-profile, dream_vector) ──────────
+## Chiffré côté publication (tools/uplanet_crypto.py::encrypt, clé dérivée de
+## $UPLANETNAME — même mécanisme que cooperative_config.sh::coop_encrypt) afin
+## que seules les stations de la constellation (qui partagent $UPLANETNAME)
+## puissent lire bio/interests/cr/dr/notes. Transparent sur les events publiés
+## avant l'activation du chiffrement (contenu déjà en clair, renvoyé tel quel).
+_love_decrypt_content() {
+    local content="$1"
+    [[ -z "$content" ]] && echo "{}" && return
+    UPLANETNAME="$UPLANETNAME" python3 -c "
+import sys
+sys.path.insert(0, '${_LOVE_PATH}/../../tools')
+import uplanet_crypto
+print(uplanet_crypto.decrypt_or_passthrough(sys.argv[1]))
+" "$content" 2>/dev/null
+}
+
 ## ── Quota journalier ─────────────────────────────────────────────────────────
 ## Retourne les asks restants pour aujourd'hui (0 = quota épuisé)
 _love_remaining_asks() {
@@ -102,7 +119,11 @@ else:
     newest=max(evts,key=lambda e:e.get('created_at',0))
     print(newest.get('content','{}'))
 " 2>/dev/null)
-    echo "${content:-{}}"
+    # NB: "${content:-{}}" (non guillemeté) est un piège de parsing bash — quand
+    # $content est non-vide, bash laisse une accolade "}" parasite en sortie
+    # (testé empiriquement), corrompant tout JSON en aval. Guillemeter le mot
+    # par défaut ("{}"" ) lève l'ambiguïté.
+    echo "${content:-"{}"}"
 }
 
 ## ── Lire le profil de rencontre public (kind-30078 d=love-profile) ───────────
@@ -122,29 +143,76 @@ else:
     try: print(json.loads(line).get('content','{}'))
     except: print('{}')
 " 2>/dev/null)
-    echo "${content:-{}}"
+    _love_decrypt_content "${content:-"{}"}"
 }
 
 ## ── Lire le dream_vector publié publiquement (kind-30078 d=dream_vector) ─────
 ## Couvre le cas où le dream_vector a été publié depuis atomic_dream.html
 ## (web → UPassport /atom4love/dream) sans jamais passer par le brouillon
 ## chat local (love/dream_vector.json, cf. _handle_love_dream).
+## dream_tags/ratio/v vivent dans les TAGS de l'event (jamais dans content,
+## même avant chiffrement, cf. atom4love_dream_publish.py) — les fusionner ici
+## avec le content déchiffré (cr/dr/notes) pour que tout appelant faisant
+## jq '.dream_tags' obtienne la vraie valeur au lieu de toujours "[]".
 _love_get_nostr_dream_vector() {
     local pubkey="$1"
     [[ -z "$pubkey" || ${#pubkey} -ne 64 ]] && echo "{}" && return
     [[ ! -x "$_LOVE_STRFRY" ]] && echo "{}" && return
-    local content
-    content=$(cd "$(dirname "$_LOVE_STRFRY")" && ./strfry scan \
+    local evt
+    evt=$(cd "$(dirname "$_LOVE_STRFRY")" && ./strfry scan \
         "{\"kinds\":[30079],\"#d\":[\"dream_vector\"],\"authors\":[\"${pubkey}\"]}" \
-        2>/dev/null | head -1 | python3 -c "
+        2>/dev/null | head -1)
+    [[ -z "$evt" ]] && echo "{}" && return
+    local content
+    content=$(python3 -c "
 import sys,json
-line=sys.stdin.read().strip()
-if not line: print('{}')
-else:
-    try: print(json.loads(line).get('content','{}'))
-    except: print('{}')
-" 2>/dev/null)
-    echo "${content:-{}}"
+try: print(json.loads(sys.argv[1]).get('content','{}'))
+except: print('{}')
+" "$evt" 2>/dev/null)
+    content=$(_love_decrypt_content "${content:-"{}"}")
+    python3 -c "
+import sys, json
+evt = json.loads(sys.argv[1])
+try: content = json.loads(sys.argv[2]) if sys.argv[2].strip() else {}
+except: content = {}
+tags = evt.get('tags', [])
+dream_tags = [t[1] for t in tags if len(t) >= 2 and t[0] == 't']
+ratio = next((t[1] for t in tags if len(t) >= 2 and t[0] == 'ratio'), '')
+v = next((t[1] for t in tags if len(t) >= 2 and t[0] == 'v'), '')
+merged = {**content, 'dream_tags': dream_tags, 'ratio': ratio, 'v': v}
+print(json.dumps(merged))
+" "$evt" "$content" 2>/dev/null
+}
+
+## ── Lister tous les dream_vector publics de la constellation ────────────────
+## Scan kind-30079 d=dream_vector sur le relai local (déjà répliqué via
+## backfill_constellation.sh). dream_tags viennent des tags NOSTR (jamais
+## chiffrés, contrairement au content cr/dr/notes) — pas de déchiffrement
+## nécessaire ici. Retourne [{pubkey,dream_tags},...], dédoublonné par pubkey
+## (garde l'event le plus récent), plafonné à _LOVE_MATCH_MAX_REMOTE_SCAN.
+_love_list_nostr_dream_vectors() {
+    [[ ! -x "$_LOVE_STRFRY" ]] && echo "[]" && return
+    cd "$(dirname "$_LOVE_STRFRY")" && ./strfry scan \
+        "{\"kinds\":[30079],\"#d\":[\"dream_vector\"],\"limit\":${_LOVE_MATCH_MAX_REMOTE_SCAN}}" \
+        2>/dev/null | python3 -c "
+import sys, json
+events = []
+for line in sys.stdin:
+    try: events.append(json.loads(line))
+    except Exception: pass
+by_pubkey = {}
+for e in events:
+    pk = e.get('pubkey', '')
+    if not pk: continue
+    if pk not in by_pubkey or e.get('created_at', 0) > by_pubkey[pk].get('created_at', 0):
+        by_pubkey[pk] = e
+out = []
+for pk, e in by_pubkey.items():
+    tags = [t[1] for t in e.get('tags', []) if len(t) >= 2 and t[0] == 't']
+    if tags:
+        out.append({'pubkey': pk, 'dream_tags': tags})
+print(json.dumps(out))
+" 2>/dev/null || echo "[]"
 }
 
 ## ── Lister tous les profils de rencontre publics de la constellation ─────────
@@ -159,6 +227,8 @@ _love_list_nostr_love_profiles() {
         "{\"kinds\":[30078],\"#d\":[\"love-profile\"],\"limit\":${_LOVE_MATCH_MAX_REMOTE_SCAN}}" \
         2>/dev/null | python3 -c "
 import sys, json
+sys.path.insert(0, '${_LOVE_PATH}/../../tools')
+import uplanet_crypto
 events = []
 for line in sys.stdin:
     try: events.append(json.loads(line))
@@ -169,7 +239,8 @@ for e in events:
     if not pk: continue
     if pk not in by_pubkey or e.get('created_at', 0) > by_pubkey[pk].get('created_at', 0):
         by_pubkey[pk] = e
-out = [{'pubkey': pk, 'content': e.get('content', '{}')} for pk, e in by_pubkey.items()]
+out = [{'pubkey': pk, 'content': uplanet_crypto.decrypt_or_passthrough(e.get('content', '')) or '{}'}
+       for pk, e in by_pubkey.items()]
 print(json.dumps(out))
 " 2>/dev/null || echo "[]"
 }
@@ -1430,6 +1501,27 @@ else:
     local remote_profiles; remote_profiles=$(_love_list_nostr_love_profiles)
     local remote_count
     remote_count=$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1])))" "$remote_profiles" 2>/dev/null || echo 0)
+
+    # ── Rêves communs (kNN Qdrant natif, cf. memory_manager.py::search_dream_matches) :
+    # upsert en masse les dream_vector de tous les candidats distants scannés
+    # (vecteurs binaires par tag, un seul appel HTTP), puis UNE seule recherche
+    # kNN pour "mes" dream_tags — remplace l'ancienne boucle par-candidat
+    # (phi2x.compute_dream_divergence, un subprocess python3 par candidat).
+    local remote_dream_matches="[]"
+    if [[ "$my_dream_tags" != "[]" && -f "$_LOVE_MEMORY_MGR" ]]; then
+        local remote_dreams; remote_dreams=$(_love_list_nostr_dream_vectors)
+        echo "$remote_dreams" | python3 "$_LOVE_MEMORY_MGR" upsert-dream-bulk >/dev/null 2>&1
+        local my_tags_args=()
+        while IFS= read -r _t; do [[ -n "$_t" ]] && my_tags_args+=("$_t"); done \
+            < <(jq -r '.[]' <<< "$my_dream_tags" 2>/dev/null)
+        if [[ ${#my_tags_args[@]} -gt 0 ]]; then
+            remote_dream_matches=$(python3 "$_LOVE_MEMORY_MGR" dream-match \
+                --tags "${my_tags_args[@]}" --exclude-pubkey "$my_love_hex" \
+                --limit "$_LOVE_MATCH_MAX_REMOTE_SCAN" 2>/dev/null)
+            [[ -z "$remote_dream_matches" ]] && remote_dream_matches="[]"
+        fi
+    fi
+
     local remote_scored=0
     local remote_json
     while IFS= read -r remote_json; do
@@ -1535,16 +1627,28 @@ else:
         # (cf. plan — risque de fuite de données, volontairement non implémenté).
         local score_memory=0 memory_label=""
 
-        # ── Score 8 : Rêves communs (Kind 30079 d=dream_vector) ───────────
+        # ── Score 8 : Rêves communs (kNN Qdrant pré-calculé ci-dessus) ────
+        # Simple lookup dans remote_dream_matches (déjà en mémoire, pas de
+        # nouvel appel réseau/subprocess par candidat).
         local score_dream=0 dream_label=""
-        local other_dream_tags
-        other_dream_tags=$(jq -c '.dream_tags // []' <<< "$(_love_get_nostr_dream_vector "$other_pubkey")" 2>/dev/null || echo "[]")
-        if [[ "$my_dream_tags" != "[]" && "$other_dream_tags" != "[]" ]]; then
-            local dream_raw; dream_raw=$(_love_dream_score "$my_dream_tags" "$other_dream_tags")
-            score_dream=$(echo "$dream_raw" | awk '{print $1}')
-            dream_label="${dream_raw#* }"
-            [[ "$dream_label" == "$score_dream" ]] && dream_label=""
-        fi
+        local dream_raw
+        dream_raw=$(python3 -c "
+import json,sys
+matches = json.loads(sys.argv[1]); pubkey = sys.argv[2]
+hit = next((m for m in matches if m.get('pubkey') == pubkey), None)
+if not hit:
+    print('0'); sys.exit(0)
+pts = round(hit.get('score', 0) * 15)
+if pts <= 0:
+    print('0')
+elif hit.get('score', 0) > 0.66:
+    print(f'{pts} 🌌 Rêves communs alignés')
+else:
+    print(f'{pts} 🌊 Rêves partiellement partagés')
+" "$remote_dream_matches" "$other_pubkey" 2>/dev/null)
+        score_dream=$(echo "$dream_raw" | awk '{print $1}')
+        dream_label="${dream_raw#* }"
+        [[ "$dream_label" == "$score_dream" ]] && dream_label=""
 
         local total_score
         total_score=$(_love_combine_score "$score_interest" "$score_kin" "$score_phi2x" "$score_traces" "$score_a5l" "$score_memory" "$score_dream")

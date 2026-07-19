@@ -31,6 +31,7 @@ sys.path.insert(0, MY_PATH)
 
 import phi2x  # noqa: E402
 from nostr_send_note import send_nostr_event  # noqa: E402
+import uplanet_crypto  # noqa: E402
 
 
 def _fail(error: str, extra: dict | None = None) -> None:
@@ -78,7 +79,12 @@ def main() -> None:
 
     v = phi2x.compute_alignment_v(birth_unix, weight_kg)
 
-    content = json.dumps({"cr": cr, "dr": dr, "notes": notes})
+    # Chiffré avec $UPLANETNAME (AES-256-CBC, même mécanisme que
+    # cooperative_config.sh::coop_encrypt) — dream_tags restent en clair
+    # dans les tags NOSTR (nécessaires au matching constellation), mais le
+    # texte libre CR/DR est sensible et n'est lisible que par les stations
+    # de la constellation.
+    content = uplanet_crypto.encrypt(json.dumps({"cr": cr, "dr": dr, "notes": notes}))
     tags = [["d", "dream_vector"]]
     tags += [["t", tag] for tag in dream_tags]
     if ratio:
