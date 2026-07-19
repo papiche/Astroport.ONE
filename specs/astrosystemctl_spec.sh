@@ -8,7 +8,7 @@ Describe 'astrosystemctl'
   AfterAll  '_astro_spec_teardown'
 
   _astro_spec_setup() {
-    MY_PATH="$(cd "$(dirname "$0")/../tools" 2>/dev/null && pwd || cd "./tools" && pwd)"
+    MY_PATH="$(cd "$(dirname "$0")/../admin/system" 2>/dev/null && pwd || cd "./admin/system" && pwd)"
     export MY_PATH
     export ASTROSYSTEMCTL_TEST=1
     export IPFSNODEID="${IPFSNODEID:-QmTestNodeSpec000000000000000}"
