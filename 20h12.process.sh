@@ -36,6 +36,23 @@ start=`date +%s`
 main() {
 
 ########################################################################
+## VERROU ANTI-CONCURRENCE — le grep "EXECUTION TERMINÉE" plus bas ne
+## protège que contre un RE-lancement après une exécution déjà TERMINÉE :
+## ce marqueur est écrit ~250 lignes avant l'envoi du mail final (après
+## l'analyse ♥️BOX + le balayage BRO, qui peuvent prendre plusieurs
+## minutes), donc deux déclenchements concurrents (cron horaire fixe ET
+## rattrapage @reboot via cron_VRFY.sh) démarrant tous deux avant que l'un
+## des deux n'ait écrit ce marqueur passent TOUS LES DEUX le grep, tournent
+## en parallèle, et envoient CHACUN leur mail final (doublon observé).
+## flock -n bloque ici tout chevauchement, dès le tout début de main().
+########################################################################
+exec 200>"$HOME/.zen/20h12.lock"
+if ! flock -n 200; then
+    echo "$(date) - 20H12 déjà en cours d'exécution (verrou ~/.zen/20h12.lock) - skip"
+    exit 0
+fi
+
+########################################################################
 ## LOGS PERMANENTS dans ~/.zen/log/ - Rotation : compression >2j, purge >30j
 ########################################################################
 LOG_DIR="$HOME/.zen/log"
@@ -467,6 +484,35 @@ if [[ -f "$_a4l_cert" ]]; then
 fi
 
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
+
+########################################################################
+## MULTIPASS LEGACY CHECK — détecte les comptes créés avant l'évolution du
+## stockage nostr/email/* (.multipass.json, DID kind 30800, home.station
+## NODE, bio BRO...) et répare automatiquement ce qui ne nécessite pas
+## d'action manuelle : identité déjà connue (Tier1) + DISCO déjà stocké et
+## re-vérifié cryptographiquement avant toute écriture (Tier2). La ZenCard
+## n'est JAMAIS touchée ici (VISA.new.sh peut envoyer un email "ZEN Card
+## activated" au titulaire) — seulement rapportée, réparation manuelle via
+## tools/respawn_NOSTRCARD.sh <email> si besoin.
+########################################################################
+if [[ -x "${MY_PATH}/tools/respawn_NOSTRCARD.sh" ]]; then
+    echo "🔍 [20h12] Vérification format MULTIPASS (respawn_NOSTRCARD.sh --scan-all)"
+    "${MY_PATH}/tools/respawn_NOSTRCARD.sh" --scan-all
+    LEGACY_EMAILS=$(python3 "${MY_PATH}/tools/respawn_nostrcard_helper.py" scan-all 2>/dev/null | jq -r '.legacy_emails[]?')
+    if [[ -n "${LEGACY_EMAILS}" ]]; then
+        echo "🔧 [20h12] Réparation automatique Tier1/Tier2 (MULTIPASS uniquement — ZenCard laissée au capitaine)"
+        while IFS= read -r _legacy_email; do
+            [[ -z "${_legacy_email}" ]] && continue
+            echo "── ${_legacy_email} ──"
+            "${MY_PATH}/tools/respawn_NOSTRCARD.sh" "${_legacy_email}" --yes --skip-zencard \
+                || echo "⚠️  Réparation incomplète pour ${_legacy_email} (non bloquant, voir logs ci-dessus)"
+        done <<< "${LEGACY_EMAILS}"
+    else
+        echo "✅ [20h12] Aucun compte MULTIPASS legacy détecté"
+    fi
+else
+    echo "⚠️  [20h12] tools/respawn_NOSTRCARD.sh introuvable — vérification MULTIPASS legacy ignorée"
+fi
 
 ######################################################### UPLANET ######
 ########################################################################
