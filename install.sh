@@ -945,7 +945,7 @@ _PIP_PKGS=(
     matplotlib readability-lxml duniterpy cachetools pydantic-settings
     robohash substrate-interface websocket-client websockets imap_tools
     fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot
-    qdrant-client
+    qdrant-client vobject phonenumbers
 )
 if ~/.astro/bin/pip install -U "${_PIP_PKGS[@]}" 2>>"$_ERROR_LOG"; then
     echo "✅ Paquets Python installés/mis à jour"

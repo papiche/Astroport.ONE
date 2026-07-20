@@ -127,6 +127,14 @@ Le relay vérifie la liste `AUTHORIZED_APPS` depuis la config coopérative (Kind
 
 ***
 
+## Clé LOVE (`.secret.love`) — canal DM dédié
+
+Au niveau MULTIPASS, ATOM4LOVE dérive une clé NOSTR **dédiée**, distincte de l'identité principale (`.secret.nostr`), pour signer/chiffrer le canal DM "LOVE" et publier le profil de résonance Phi² (Kind 30078). Contrairement au MULTIPASS (SALT/PEPPER toujours aléatoire côté serveur, cf. [IDENTITY_MULTIPASS.md](../reference/IDENTITY_MULTIPASS.md)), cette clé **est** dérivée de façon déterministe (PBKDF2-HMAC-SHA256, domaine `uplanet-a4l-v1`, 600k itérations) depuis naissance/conception/poids/polarité/coordonnées, calculée par `tools/atom4love_publish.py` et écrite dans `~/.zen/game/nostr/<email>/.secret.love` (`tools/atom4love_publish.py:80-94,151-163`).
+
+Côté BRO (`IA/bro/bro_dm_daemon.sh`), les réponses IA sont signées par défaut avec `NODE_NSEC` (clé de la station). Quand `_LOVE_REPLY_AS` est positionnée sur l'email d'un destinataire, `.secret.love` de ce compte est utilisée à la place, afin que l'IA "Astria" du canal LOVE réponde en tant que la clé LOVE de l'utilisateur — jamais en tant que la station (`IA/bro/bro_dm_daemon.sh:66,79-84,1419-1455`).
+
+***
+
 ## Cycle de vie d'une version d'app
 
 ```bash

@@ -39,81 +39,57 @@ Voir aussi : [kin.html](https://github.com/papiche/Astroport.ONE/blob/master/ear
 
 ***
 
-## Dérivation déterministe Salt / Pepper (ATOM4LOVE / Cabine-33)
+## Génération des clés MULTIPASS (SALT / PEPPER)
 
-Le MULTIPASS créé depuis l'application **ATOM4LOVE** utilise une dérivation biométrique déterministe des credentials salt et pepper. Ces données sont **immuables après la création** — elles définissent l'identité cryptographique.
+Le MULTIPASS reçoit son SALT/PEPPER dans `tools/make_NOSTRCARD.sh` — **toujours un secret aléatoire côté serveur**, indépendant de toute donnée de naissance. Même si le client (ATOM4LOVE, Cabine-33) envoie un SALT/PEPPER dérivé des données de naissance en même temps que `BIRTH_DATETIME`, le script détecte ce contexte (`_A4L_BIRTH_CONTEXT`, `tools/make_NOSTRCARD.sh:100-110`) et l'écrase systématiquement :
 
-### Format SALT — identité de naissance
-
-```
-"%04d%02d%02d%02d%02d_%.2f_%.2f_%d_%.1f"
-   AAAA  MM  JJ  HH  MM  lat_naiss  lon_naiss  sexe  poids_naiss
-```
-
-| Champ         | Description                                         | Exemple | Obligatoire            |
-| ------------- | --------------------------------------------------- | ------- | ---------------------- |
-| `AAAA`        | Année de naissance (4 chiffres)                     | `1985`  | ✅                      |
-| `MM`          | Mois (2 chiffres, zero-padded)                      | `04`    | ✅                      |
-| `JJ`          | Jour (2 chiffres)                                   | `17`    | ✅                      |
-| `HH`          | Heure locale de naissance                           | `15`    | ⚠️ défaut `12`         |
-| `MM`          | Minute                                              | `30`    | ⚠️ défaut `00`         |
-| `lat_naiss`   | Latitude lieu de naissance (%.2f = 2 décimales)     | `48.85` | ✅ `0.00` si absent     |
-| `lon_naiss`   | Longitude lieu de naissance                         | `2.35`  | ✅ `0.00` si absent     |
-| `sexe`        | Polarité biologique (0 = Φ/Lumière, 1 = Octave/Son) | `0`     | ⚠️ défaut `0`          |
-| `poids_naiss` | Poids de naissance en kg (%.1f = 1 décimale)        | `3.2`   | ✅ pré-rempli aléatoire |
-
-**Exemple salt complet :**
-
-```
-19850417153048.850002.3503.2
+```bash
+# tools/make_NOSTRCARD.sh:211-214
+if [[ "$_A4L_BIRTH_CONTEXT" == "yes" ]]; then
+    echo "🌱 Contexte birth-derived détecté — SALT/PEPPER fournis réservés à la clé LOVE, identité MULTIPASS forcée en aléatoire"
+    SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_DISCO_RAND} | head -n1)
+    PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_DISCO_RAND} | head -n1)
 ```
 
-### Format PEPPER — identité de conception
+Les identifiants NSEC/NPUB du MULTIPASS ne dépendent donc **jamais** de la date/heure de naissance, du lieu, du poids ou de la polarité — ces champs, quand ils sont fournis, sont réservés à la clé LOVE (`.secret.love`, voir ci-dessous).
 
-```
-"%04d%02d%02d%02d%02d_%.2f_%.2f_%.1f"
-   c_AAAA  c_MM  c_JJ  c_HH  c_MM  lat_naiss  lon_naiss  poids_naiss
-```
+Cas distinct : si le client fournit un SALT/PEPPER personnalisé (mode "GAFAM", ≤ 56 caractères) **sans** contexte de naissance détecté, il est conservé tel quel et devient le SALT/PEPPER déterministe du MULTIPASS (`tools/make_NOSTRCARD.sh:215-217`) — même EMAIL+SALT+PEPPER ⇒ mêmes clés, reproductibles sur n'importe quelle station. C'est ce mécanisme générique (non birth-derived) que documente `tools/MULTIPASS_SYSTEM.md`.
 
-La date de conception est **calculée automatiquement** depuis la date de naissance et le poids :
+## Clé LOVE (`.secret.love`) — dérivation biométrique déterministe
 
-```python
-gestation_jours = 280.0 + (poids_naiss - 3.5) * 4.0
-conception_unix = birth_unix - gestation_jours * 86400
-```
+La dérivation birth-derived immuable ne concerne pas le MULTIPASS mais la clé NOSTR dédiée au canal social **ATOM4LOVE**. Elle est calculée et écrite par `tools/atom4love_publish.py`, **distincte** de l'identité principale (`.secret.nostr`) :
 
-> Exemple : poids 3.2 kg → gestation = 280 + (3.2 − 3.5) × 4 = 278.8 jours
+> « Cette clé est DISTINCTE de la clé NOSTR principale du MULTIPASS (.secret.nostr) — elle sert uniquement à signer/chiffrer le canal DM "LOVE" avec BRO et à publier le profil de résonance Phi² (kind 30078), jamais à des paiements ẐEN. » — `tools/atom4love_publish.py:12-14`
 
-| Champ                    | Description                                      |
-| ------------------------ | ------------------------------------------------ |
-| `c_AAAA`…`c_MM`          | Date et heure de conception calculée             |
-| `lat_naiss`, `lon_naiss` | Même coordonnées que le salt (lieu de naissance) |
-| `poids_naiss`            | Même poids que le salt                           |
+### Comment `.secret.love` est dérivée
 
-**Exemple pepper complet** (pour la naissance ci-dessus) :
+1. **Correction d'heure solaire** : l'heure locale de naissance (et de conception) est convertie en UTC via la longitude + l'équation du temps — `tools/atom4love_publish.py:60-77` (`_equation_of_time`, `local_solar_to_utc`).
+2. **Date de conception** : par défaut `naissance − 280 jours` (gestation fixe) — `tools/atom4love_publish.py:210`. Un `CONCEPTION_DATETIME` fourni en argument n'affecte aujourd'hui que le badge Kin Maya de conception (`kin_c`/`glyph_c`/`tone_c`), pas la clé — `tools/atom4love_publish.py:264-274`. *(Une formule de gestation ajustée au poids, `280.0 + (poids − 3.5) × 4.0`, existe dans `tools/phi2x.py:343-350` mais n'est pas appelée par `atom4love_publish.py`.)*
+3. **Chaînes brutes** :
+   ```python
+   # tools/atom4love_publish.py:80-88
+   salt_raw   = f"{birth_dt_utc}_{lat:.2f}_{lon:.2f}_{polarity}_{poids:.1f}_{H_NAISS}_{H_ACTUELLE}"
+   pepper_raw = f"{conception_dt_utc}_{lat:.2f}_{lon:.2f}_{poids:.1f}_{H_NAISS}"
+   ```
+   `H_NAISS` (50) et `H_ACTUELLE` (170) sont des constantes fixes, non collectées côté serveur — `tools/atom4love_publish.py:54-55`.
+4. **Stretching** : PBKDF2-HMAC-SHA256 (domaine `uplanet-a4l-v1`, 600 000 itérations) — `tools/atom4love_publish.py:52-53,91-94`.
+5. **Dérivation NOSTR** : `keygen -t nostr` à partir des deux chaînes étirées, même mécanisme que `make_NOSTRCARD.sh` — `tools/atom4love_publish.py:99-120`.
+6. **Écriture** : `~/.zen/game/nostr/<email>/.secret.love` (format `NSEC=...; NPUB=...; HEX=...;`) — `tools/atom4love_publish.py:151-163`.
 
-```
-19840715030048.850002.3503.2
-```
+### Propriétés
 
-### Propriétés de sécurité
+* **Déterminisme** : mêmes données de naissance/conception ⇒ même clé LOVE, reproductible sur n'importe quelle station.
+* **Immuabilité** : changer un seul paramètre (poids, heure, lieu, polarité) change entièrement le SALT/PEPPER, donc la clé.
+* **Opacité** : le format n'est pas un standard connu — résistant au brute-force sans connaître naissance + conception + poids + polarité + coordonnées.
 
-* **Déterminisme** : mêmes données → même MULTIPASS sur n'importe quelle station
-* **Entropie biométrique** : 7 variables continues = espace de combinaisons > 10¹⁵
-* **Opacité** : le format est un string ASCII, pas un standard connu — résistant au brute-force sans la formule
-* **Le poids** est pré-rempli aléatoirement \[2.5, 4.5] kg si inconnu — même sans l'exactitude parentale, chaque compte est unique
-* **Non modifiable** après forge : changer le poids d'1 g change le pepper et donc les clés NOSTR/Ğ1
+## `NODE_NSEC` vs `.secret.love` — qui signe quoi
 
-### Données distinctes des données ATOM4LOVE
+| Clé | Définition | Rôle |
+| --- | --- | --- |
+| `NODE_NSEC` | Clé NOSTR de la station (capitaine), chargée depuis `secret.nostr` — `IA/bro/bro_dm_daemon.sh:191` | Signature par défaut de toutes les réponses IA "BRO" |
+| `.secret.love` | Clé LOVE birth-derived du compte destinataire (voir ci-dessus) | Utilisée à la place de `NODE_NSEC` uniquement quand `_LOVE_REPLY_AS` est positionnée à l'email du destinataire — `IA/bro/bro_dm_daemon.sh:66,79-84` |
 
-Les champs ci-dessus **définissent le MULTIPASS**. Les données suivantes sont des **données de profil** utilisées uniquement par l'algorithme ATOM4LOVE (φ\_i, ω\_bio, Portail Goldberg) et peuvent être modifiées à tout moment **sans affecter les clés** :
-
-| Donnée ATOM4LOVE           | Rôle                                  | Indépendante du MULTIPASS |
-| -------------------------- | ------------------------------------- | ------------------------- |
-| `birth_utc_offset_h`       | Correction φ\_i (heure solaire vraie) | ✅                         |
-| `conception_unix` (manuel) | Portail Goldberg précis               | ✅                         |
-| `conception_lat/lon`       | Portail d'Origine Goldberg            | ✅                         |
-| `height_cm`                | ω\_bio (fréquence biologique)         | ✅                         |
+Quand un DM arrive sur le canal LOVE, le daemon signe la réponse avec `.secret.love` du destinataire plutôt qu'avec `NODE_NSEC`, afin que l'IA "Astria" du canal LOVE réponde authentiquement en tant que la clé LOVE de l'utilisateur, et non en tant que la station (`IA/bro/bro_dm_daemon.sh:1419-1455`).
 
 ***
 

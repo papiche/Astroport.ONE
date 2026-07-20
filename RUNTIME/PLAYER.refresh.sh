@@ -492,6 +492,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
                 -e "s~_EARTHCID_~/ipns/copylaradio.com~g" \
                 -e "s~_USPOT_~${uSPOT}~g" \
+                -e "s~_LIBRA_~${myLIBRA}~g" \
                 -e "s~_RELAY_~${myRELAY}~g" \
                 -e "s~_SECTOR_~${SECTOR}~g" \
                 -e "s~_SLAT_~${SLAT}~g" \
