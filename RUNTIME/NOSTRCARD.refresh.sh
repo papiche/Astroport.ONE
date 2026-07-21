@@ -383,7 +383,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 if [[ -f ~/.zen/game/nostr/${PLAYER}/HEX ]]; then
                     HEX_TO_PURGE=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
                     log "INFO" "Purging local relay events for $PLAYER..."
-                    cd ~/.zen/strfry && ./strfry scan '{"authors": ["'$HEX_TO_PURGE'"]}' | ./strfry delete 2>/dev/null
+                    cd ~/.zen/strfry && ./strfry delete --filter='{"authors": ["'$HEX_TO_PURGE'"]}' 2>/dev/null
                     cd - > /dev/null
                 fi
                 log "CRITICAL" "TECHNICAL CORRUPTION: Ghost account detected. Purging: $PLAYER (Even if Captain)"
@@ -570,7 +570,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 # --- PURGE RELAIS STRFRY ---
                 if [[ -n "$HEX" ]]; then
                     cd ~/.zen/strfry
-                    ./strfry scan '{"authors": ["'$HEX'"]}' | ./strfry delete 2>/dev/null
+                    ./strfry delete --filter='{"authors": ["'$HEX'"]}' 2>/dev/null
                     cd - > /dev/null
                 fi
                 # ---------------------------
