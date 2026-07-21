@@ -336,6 +336,16 @@ EOFNOSTR
         "${MY_PATH}/atom4love_activate.sh" "${EMAIL}" \
             "${BIRTH_DATETIME}" "${BIRTH_PLACE}" "${BIRTH_LAT}" "${BIRTH_LON}" "${BIRTH_WEIGHT}" \
             "${CONCEPTION_DATETIME}" "${CONCEPTION_PLACE}" "${POLARITY}"
+        ## atom4love_activate.sh ne persiste .BIRTHDATE/.birth_* que si .secret.love
+        ## a bien été créé (cf. son propre réordonnancement) : si le membre a fourni
+        ## une date de naissance mais qu'aucune clé LOVE n'existe après l'appel,
+        ## l'activation a échoué silencieusement — alerter le Capitaine plutôt que
+        ## de laisser le MULTIPASS se créer sans que personne ne le sache.
+        if [[ ! -s "${HOME}/.zen/game/nostr/${EMAIL}/.secret.love" ]]; then
+            _alert_captain "ATOM4LOVE ACTIVATION FAILED" \
+                "atom4love_activate.sh n'a pas créé .secret.love pour ${EMAIL}\nBIRTH_DATETIME fourni mais activation ATOM4LOVE échouée — MULTIPASS créé sans profil LOVE."
+            echo "⚠️  ATOM4LOVE activation failed for ${EMAIL} — MULTIPASS created without LOVE profile"
+        fi
     fi
 
     ## Biographie narrative de BRO (clone numérique) — fichiers préfixés par un

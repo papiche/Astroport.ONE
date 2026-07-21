@@ -449,6 +449,7 @@ print(json.dumps(old, ensure_ascii=False, indent=None))
 ## Retourne une chaîne "KIN 42: Blanc Vent, Tonalité Résonnant (analogue: KIN 52)"
 _love_get_kin() {
     local email="$1"
+    [[ ! -f "$HOME/.zen/game/nostr/${email}/.secret.love" ]] && return 0   # profil LOVE non activé
     local birth_file="$HOME/.zen/game/nostr/${email}/.BIRTHDATE"
     [[ ! -f "$birth_file" ]] && return 0   # pas de date de naissance connue
 
@@ -821,6 +822,7 @@ except: print('no')
 ## ── KIN numérique depuis le profil love ou la date de naissance ───────────────
 _love_get_kin_number() {
     local email="$1"
+    [[ ! -f "$HOME/.zen/game/nostr/${email}/.secret.love" ]] && echo "0" && return   # profil LOVE non activé
     # 1. Profil love peut stocker le kin directement
     local profile; profile=$(_love_get_profile "$email")
     local kin_from_profile

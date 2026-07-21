@@ -318,11 +318,14 @@ verify_multipass() {
                 fi
             fi
 
-            # 5d. Badge MayaKin
-            local birthdate
+            # 5d. Badge MayaKin (uniquement si profil LOVE activé — .secret.love présent)
+            local birthdate love_active=false
+            [[ -f "${dir}/.secret.love" ]] && love_active=true
             birthdate=$(cat "${dir}/.BIRTHDATE" 2>/dev/null | tr -d '[:space:]')
 
-            if [[ -n "$birthdate" ]]; then
+            if [[ "$love_active" != "true" ]]; then
+                _info "Profil LOVE non activé (.secret.love absent) — Kin Maya ignoré"
+            elif [[ -n "$birthdate" ]]; then
                 _info "BIRTHDATE (naissance) : ${birthdate}"
 
                 # Valider format date

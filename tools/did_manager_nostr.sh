@@ -178,12 +178,12 @@ create_initial_did() {
         fi
     fi
 
-    # Date de naissance réelle (fichier .BIRTHDATE écrit par make_NOSTRCARD.sh depuis le formulaire)
+    # Date de naissance réelle (fichier .BIRTHDATE écrit par atom4love_activate.sh)
     local birthdate=$(cat "${user_dir}/.BIRTHDATE" 2>/dev/null)
 
-    # Calcul du Kin Maya uniquement si la date de naissance est connue
+    # Calcul du Kin Maya uniquement si le profil LOVE est activé (.secret.love présent)
     local badges_json=""
-    if [[ -n "$birthdate" && -f "${MY_PATH}/kin.sh" ]]; then
+    if [[ -f "${user_dir}/.secret.love" && -n "$birthdate" && -f "${MY_PATH}/kin.sh" ]]; then
         source "${MY_PATH}/kin.sh"
         local kin_badge=$(maya_kin_json "$birthdate" 2>/dev/null)
         [[ -n "$kin_badge" ]] && badges_json="$kin_badge"

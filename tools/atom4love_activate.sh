@@ -45,47 +45,52 @@ if [[ ! -s "$_SECRET" || ! -s "$_G1PUB_FILE" ]]; then
 fi
 G1PUBNOSTR=$(cat "$_G1PUB_FILE")
 
-## Données de naissance/conception
-# .BIRTHDATE (YYYY-MM-DD) : clair — utilisé par kin.sh et did_manager_nostr.sh
-# .birth_datetime.enc, .birth_weight.enc, .conception_datetime.enc : chiffrés
-# avec la clé publique G1PUBNOSTR du joueur → seul le joueur peut déchiffrer.
-if [[ -n "${BIRTH_DATETIME}" ]]; then
-    _birth_date="${BIRTH_DATETIME%%T*}"
-    [[ "${_birth_date}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
-        && echo "${_birth_date}" > "${_NOSTR_DIR}/.BIRTHDATE"
-    echo "${BIRTH_DATETIME}" \
-        | ${MY_PATH}/natools.py encrypt -p "$G1PUBNOSTR" \
-            -o "${_NOSTR_DIR}/.birth_datetime.enc" >/dev/null \
-        && rm -f "${_NOSTR_DIR}/.birth_datetime"
-    unset _birth_date
-fi
-[[ -n "${BIRTH_PLACE}" ]] && echo "${BIRTH_PLACE}" > "${_NOSTR_DIR}/.birth_place"
-[[ -n "${BIRTH_LAT}" && -n "${BIRTH_LON}" ]] \
-    && echo "LAT=${BIRTH_LAT}; LON=${BIRTH_LON};" > "${_NOSTR_DIR}/.birth_gps"
-if [[ -n "${BIRTH_WEIGHT}" ]]; then
-    echo "${BIRTH_WEIGHT}" \
-        | ${MY_PATH}/natools.py encrypt -p "$G1PUBNOSTR" \
-            -o "${_NOSTR_DIR}/.birth_weight.enc" >/dev/null \
-        && rm -f "${_NOSTR_DIR}/.birth_weight"
-fi
-if [[ -n "${CONCEPTION_DATETIME}" ]]; then
-    echo "${CONCEPTION_DATETIME}" \
-        | ${MY_PATH}/natools.py encrypt -p "$G1PUBNOSTR" \
-            -o "${_NOSTR_DIR}/.conception_datetime.enc" >/dev/null \
-        && rm -f "${_NOSTR_DIR}/.conception_datetime"
-fi
-[[ -n "${CONCEPTION_PLACE}" ]] && echo "${CONCEPTION_PLACE}" > "${_NOSTR_DIR}/.conception_place"
-
-## Dérivation clé LOVE + résonance Phi² + publication kind 30078 — seule sortie
-## stdout attendue par les appelants (dernière ligne = JSON du résultat).
+## Dérivation clé LOVE + résonance Phi² + publication kind 30078 — exécutée
+## EN PREMIER. Les données de naissance/conception ne sont persistées que si
+## .secret.love a bien été créé (cf. write_secret_love dans atom4love_publish.py) :
+## on évite ainsi tout .BIRTHDATE orphelin sans clé LOVE associée.
 if [[ -n "${BIRTH_DATETIME}" && -n "${BIRTH_LAT}" && -n "${BIRTH_LON}" ]]; then
     _PY_RESULT=$(python3 "${MY_PATH}/atom4love_publish.py" "${EMAIL}" "${BIRTH_DATETIME}" \
         "${BIRTH_LAT}" "${BIRTH_LON}" "${BIRTH_WEIGHT:-3.5}" "${POLARITY:-0}" \
         "${CONCEPTION_DATETIME}")
-    # Inscrire la Singularité ATOM4LOVE dans le Kind 30800 (DID) de l'utilisateur
-    # La mise à jour recalcule aussi le badge MayaKin depuis .BIRTHDATE
-    "${MY_PATH}/did_manager_nostr.sh" update "${EMAIL}" ATOM4LOVE >&2 || \
-        echo "[atom4love_activate] did_manager_nostr.sh update KO (non-bloquant)" >&2
+
+    if [[ -s "${_NOSTR_DIR}/.secret.love" ]]; then
+        ## Clé LOVE créée avec succès — on peut persister les données de naissance/conception.
+        # .BIRTHDATE (YYYY-MM-DD) : clair — utilisé par kin.sh et did_manager_nostr.sh
+        # .birth_datetime.enc, .birth_weight.enc, .conception_datetime.enc : chiffrés
+        # avec la clé publique G1PUBNOSTR du joueur → seul le joueur peut déchiffrer.
+        _birth_date="${BIRTH_DATETIME%%T*}"
+        [[ "${_birth_date}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
+            && echo "${_birth_date}" > "${_NOSTR_DIR}/.BIRTHDATE"
+        echo "${BIRTH_DATETIME}" \
+            | ${MY_PATH}/natools.py encrypt -p "$G1PUBNOSTR" \
+                -o "${_NOSTR_DIR}/.birth_datetime.enc" >/dev/null \
+            && rm -f "${_NOSTR_DIR}/.birth_datetime"
+        unset _birth_date
+
+        [[ -n "${BIRTH_PLACE}" ]] && echo "${BIRTH_PLACE}" > "${_NOSTR_DIR}/.birth_place"
+        echo "LAT=${BIRTH_LAT}; LON=${BIRTH_LON};" > "${_NOSTR_DIR}/.birth_gps"
+        if [[ -n "${BIRTH_WEIGHT}" ]]; then
+            echo "${BIRTH_WEIGHT}" \
+                | ${MY_PATH}/natools.py encrypt -p "$G1PUBNOSTR" \
+                    -o "${_NOSTR_DIR}/.birth_weight.enc" >/dev/null \
+                && rm -f "${_NOSTR_DIR}/.birth_weight"
+        fi
+        if [[ -n "${CONCEPTION_DATETIME}" ]]; then
+            echo "${CONCEPTION_DATETIME}" \
+                | ${MY_PATH}/natools.py encrypt -p "$G1PUBNOSTR" \
+                    -o "${_NOSTR_DIR}/.conception_datetime.enc" >/dev/null \
+                && rm -f "${_NOSTR_DIR}/.conception_datetime"
+        fi
+        [[ -n "${CONCEPTION_PLACE}" ]] && echo "${CONCEPTION_PLACE}" > "${_NOSTR_DIR}/.conception_place"
+
+        # Inscrire la Singularité ATOM4LOVE dans le Kind 30800 (DID) de l'utilisateur
+        # La mise à jour recalcule aussi le badge MayaKin depuis .BIRTHDATE
+        "${MY_PATH}/did_manager_nostr.sh" update "${EMAIL}" ATOM4LOVE >&2 || \
+            echo "[atom4love_activate] did_manager_nostr.sh update KO (non-bloquant)" >&2
+    else
+        echo "❌ atom4love_publish.py n'a pas créé .secret.love — données de naissance non persistées" >&2
+    fi
     echo "${_PY_RESULT}"
 else
     echo "⚠️  Missing birth_lat/birth_lon — skipping ATOM4LOVE key derivation/publish" >&2
