@@ -28,8 +28,13 @@ fi
 # 2. GESTION DU DAEMON
 YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
 if [[ $YOU ]]; then
-    echo "IPFS est déjà lancé par $YOU. Arrêt pour configuration..."
-    sudo systemctl stop ipfs 2>/dev/null || killall ipfs
+    if [[ "${_IPFS_TUNNEL_SSH:-false}" == "true" ]]; then
+        echo "⏭️  IPFS stop — ignoré (tunnel SSH actif). Config appliquée à chaud,"
+        echo "   effective au prochain redémarrage manuel : sudo systemctl restart ipfs"
+    else
+        echo "IPFS est déjà lancé par $YOU. Arrêt pour configuration..."
+        sudo systemctl stop ipfs 2>/dev/null || killall ipfs
+    fi
 fi
 
 # 3. INITIALISATION (si nécessaire)
