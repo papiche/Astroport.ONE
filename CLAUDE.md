@@ -290,7 +290,7 @@ coop_app_remove "ATOM4LOVE_v1"
 - Scripts are written in **bash** and must work on Debian/Ubuntu/Mint Linux
 - Blockchain interaction uses **gcli** (Duniter v2s CLI) for payments and **GraphQL squid** for queries (balance, history, primal). Legacy tools silkaj/jaklis are deprecated
 - The project depends on IPFS (Kubo), TiddlyWiki, gcli, Python 3 (with venv at `~/.astro/`), and numerous system packages
-- Key generation is **deterministic** (based on email + geolocation), not random
+- MULTIPASS key generation (NOSTR/G1) is **random** (SALT + PEPPER secret, not derived from geolocation). Only the ATOM4LOVE "love key" (phi2x resonance) is deterministic, seeded by birth date + birth place
 - The economic system uses two tiers: UPlanet ORIGIN (1 Zen = 0.1 G1) and UPlanet Zen (1 Zen = 1 EUR)
 - Geographic coordinates drive data organization via UMAP (0.01 deg), SECTOR (0.1 deg), REGION (1 deg) grid cells
 - Most documentation is bilingual French/English, with French being primary

@@ -395,6 +395,19 @@ OLON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
 # REPLACE WITH NEW LAT LON UMAP
 sed -i "s~${OLAT}~${LAT}~g" ~/.zen/tmp/${MOATS}/GPS.json
 sed -i "s~${OLON}~${LON}~g" ~/.zen/tmp/${MOATS}/GPS.json
+
+## Source de vérité ~/.zen/game/nostr/{email}/GPS (+ sa sauvegarde ZUMAP) —
+## make_NOSTRCARD.sh ne les écrit qu'une fois à la création ; ce script est le
+## seul endroit où la position d'un joueur change ensuite (login/réparation).
+## Sans cette resynchro, GPS/ZUMAP restaient figés sur la valeur de création
+## pendant que seul le tiddler TW affiché ici était mis à jour, désynchronisant
+## les ~10 lecteurs de GPS (kin_oracle.sh, SWARM.discover.sh, NOSTRCARD.refresh.sh…)
+## de la position réellement affichée au joueur.
+if [[ "${LAT}" != "${OLAT}" || "${LON}" != "${OLON}" ]]; then
+    echo "LAT=${LAT}; LON=${LON};" > ~/.zen/game/nostr/${PLAYER}/GPS
+    echo "_${LAT}_${LON}" > ~/.zen/game/nostr/${PLAYER}/ZUMAP
+    echo "📍 GPS/ZUMAP resynchronisés pour ${PLAYER} : ${OLAT},${OLON} → ${LAT},${LON}"
+fi
 ## Add _SECTORTW_
 cat ~/.zen/tmp/${MOATS}/GPS.json | jq '.[0] + {"sectortw": "_SECTORTW_"}' \
     > ~/.zen/tmp/${MOATS}/GPStw.json \

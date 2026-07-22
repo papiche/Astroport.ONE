@@ -311,13 +311,19 @@ _handle_craft() {
     local tmp_prompt
     tmp_prompt=$(mktemp)
     cat > "$tmp_prompt" <<CRAFTPROMPT
-Tu es un assistant pédagogique Crafting Mine Life sur UPlanet. Analyse ce tutoriel et identifie les compétences requises.
+Tu es un assistant pédagogique Crafting Mine Life sur UPlanet. Analyse ce tutoriel et identifie
+s'il s'agit d'un skill logiciel/numérique OU d'une fabrication physique/chimique (matériaux,
+recette, bricolage, chimie).
 Réponds UNIQUEMENT en JSON valide sur une seule ligne (aucun texte autour, aucun markdown) :
-{"name":"Nom en français","icon":"emoji","description":"1 phrase","ingredients":[{"skill":"nom_skill","level":1}],"resource_type":"lien"}
+{"name":"Nom en français","icon":"emoji","description":"1 phrase","craft_type":"skill|material","ingredients":[{"skill":"nom_skill","level":1}],"materials":[{"name":"...","qty":0,"unit":"..."}],"safety":"...","cure_time":"...","resource_type":"lien"}
 Règles strictes :
 - skills : minuscules, pas d'espaces (underscores), 1-3 mots (ex: arduino, soudure, electronique_base)
 - level : 1=débutant 2=intermédiaire 3=avancé
-- 2 à 6 ingrédients
+- 2 à 6 ingrédients (skills) si craft_type=skill
+- craft_type="material" SI le tutoriel décrit une fabrication physique/chimique (pas un skill logiciel) :
+  dans ce cas remplis aussi materials (liste {name,qty,unit}), safety (avertissements le cas
+  échéant) et cure_time (temps de prise/séchage) ; sinon laisse ces trois champs vides ([] ou "")
+  et craft_type="skill"
 - resource_type : "document", "video" ou "lien"
 
 Tutoriel :
