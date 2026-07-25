@@ -605,6 +605,8 @@ coop_config_list() {
             "OCSLUG" "OCAPIKEY"
             "OC_URL_CLOUD" "OC_URL_MEMBRE"
             "OC_URL_SATELLITE" "OC_URL_CONSTELLATION"
+        "_comment_tiers"
+            "TIER_SLUG_SATELLITE" "TIER_SLUG_CONSTELLATION" "TIER_SLUG_LABO" "TIER_SLUG_CLOUD"
         "_comment_api"
             "PLANTNET_API_KEY" "GIT_HOST" "GIT_TOKEN" "GIT_OWNER"
         "_comment_apps"
@@ -648,6 +650,7 @@ coop_config_list() {
                     shares)  raw_title="COOPERATIVE SHARES" ;;
                     3x13)    raw_title="3x1/3 + 1% RULE" ;;
                     oc)      raw_title="OPENCOLLECTIVE" ;;
+                    tiers)   raw_title="TIER SLUG ROUTING" ;;
                     api)     raw_title="API KEYS" ;;
                     apps)    raw_title="AUTHORIZED MOBILE APPS" ;;
                     mj)      raw_title="MAILJET" ;;
@@ -723,6 +726,8 @@ coop_config_show_decrypted() {
             "OCSLUG" "OCAPIKEY"
             "OC_URL_CLOUD" "OC_URL_MEMBRE"
             "OC_URL_SATELLITE" "OC_URL_CONSTELLATION"
+        "_comment_tiers"
+            "TIER_SLUG_SATELLITE" "TIER_SLUG_CONSTELLATION" "TIER_SLUG_LABO" "TIER_SLUG_CLOUD"
         "_comment_api"
             "PLANTNET_API_KEY" "GIT_HOST" "GIT_TOKEN" "GIT_OWNER"
         "_comment_apps"
@@ -755,6 +760,7 @@ coop_config_show_decrypted() {
                     shares)  raw_title="COOPERATIVE SHARES" ;;
                     3x13)    raw_title="3x1/3 + 1% RULE" ;;
                     oc)      raw_title="OPENCOLLECTIVE" ;;
+                    tiers)   raw_title="TIER SLUG ROUTING" ;;
                     api)     raw_title="API KEYS" ;;
                     apps)    raw_title="AUTHORIZED MOBILE APPS" ;;
                     mj)      raw_title="MAILJET" ;;
@@ -884,6 +890,12 @@ coop_config_init() {
     "OC_URL_MEMBRE": "https://opencollective.com/monnaie-libre/projects/coeurbox/contribute/membre-resident-soutien-mensuel-98389",
     "OC_URL_SATELLITE": "https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386",
     "OC_URL_CONSTELLATION": "https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385",
+
+    "_comment_tiers": "=== TIER SLUG ROUTING (pattern matching used by oc2uplanet.sh, comma-separated globs) ===",
+    "TIER_SLUG_SATELLITE": "*parrainage*128*,*extension-128*,*satellite*,*love-box*claude*",
+    "TIER_SLUG_CONSTELLATION": "*parrainage*gpu*,*module-gpu*,*constellation*,*love-box*deluxe*,*love-box*gpu*",
+    "TIER_SLUG_LABO": "*infrastructure*,*labo*,*genereux-donateur*,*r-d*,*recherche*",
+    "TIER_SLUG_CLOUD": "*membre-resident*,*cloud-usage*,*adhesion*",
 
     "_comment_api": "=== API KEYS (auto-encrypted) ===",
     "PLANTNET_API_KEY": "",
@@ -1043,7 +1055,20 @@ coop_load_env_vars() {
 
     val=$(echo "$config" | jq -r '.OC_URL_CONSTELLATION // empty' 2>/dev/null)
     [[ -n "$val" ]] && export OC_URL_CONSTELLATION="$val"
-    
+
+    # Tier slug routing (comma-separated globs — consumed by oc2uplanet.sh dispatch)
+    val=$(echo "$config" | jq -r '.TIER_SLUG_SATELLITE // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export TIER_SLUG_SATELLITE="$val"
+
+    val=$(echo "$config" | jq -r '.TIER_SLUG_CONSTELLATION // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export TIER_SLUG_CONSTELLATION="$val"
+
+    val=$(echo "$config" | jq -r '.TIER_SLUG_LABO // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export TIER_SLUG_LABO="$val"
+
+    val=$(echo "$config" | jq -r '.TIER_SLUG_CLOUD // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export TIER_SLUG_CLOUD="$val"
+
     val=$(coop_config_get "PLANTNET_API_KEY" 2>/dev/null)
     [[ -n "$val" ]] && export PLANTNET_API_KEY="$val"
 

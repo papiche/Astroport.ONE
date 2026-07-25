@@ -444,7 +444,7 @@ OC2UP_LAST=$(cat "$OC2UP_MARKER" 2>/dev/null)
 if [[ "$OC2UP_LAST" != "$OC2UP_MONTH" ]]; then
     if [[ -x ~/.zen/workspace/OC2UPlanet/oc2uplanet.sh ]]; then
         echo "OC2UPlanet: monthly sync for $OC2UP_MONTH"
-        (cd ~/.zen/workspace/OC2UPlanet && ./oc2uplanet.sh) \
+        (cd ~/.zen/workspace/OC2UPlanet && ./oc2uplanet.sh --run) \
             && echo "$OC2UP_MONTH" > "$OC2UP_MARKER"
     else
         echo "OC2UPlanet: oc2uplanet.sh not executable — skipping"

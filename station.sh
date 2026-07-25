@@ -350,7 +350,7 @@ menu_opencollective() {
         1)  local oc_dir="${MY_PATH}/../OC2UPlanet"
             if [[ -x "${oc_dir}/oc2uplanet.sh" ]]; then
                 echo "Lancement OC2UPlanet..."
-                (cd "$oc_dir" && bash oc2uplanet.sh)
+                (cd "$oc_dir" && bash oc2uplanet.sh --run)
             else
                 echo -e "${R}❌ OC2UPlanet/oc2uplanet.sh introuvable${N}"
                 echo "   Vérifiez que le dépôt OC2UPlanet est présent."
