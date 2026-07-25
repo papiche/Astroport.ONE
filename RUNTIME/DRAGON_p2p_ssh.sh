@@ -483,12 +483,17 @@ generate_ssh_service() {
 }
 
 ##################################################################################
-# WRAPPER publish_service : respecte DRAGON_PRIVATE_SERVICES depuis ~/.zen/Astroport.ONE/.env
+# HELPER + WRAPPER publish_service : respecte DRAGON_PRIVATE_SERVICES depuis ~/.zen/Astroport.ONE/.env
 # (my.sh source déjà .env, donc DRAGON_PRIVATE_SERVICES est disponible ici)
+_is_private_service() {
+    local _slug="$1"
+    [[ -n "${DRAGON_PRIVATE_SERVICES:-}" ]] && \
+        echo " ${DRAGON_PRIVATE_SERVICES} " | grep -qw " ${_slug} "
+}
+
 publish_service() {
     local _slug="$2"
-    if [[ -n "${DRAGON_PRIVATE_SERVICES:-}" ]] && \
-       echo " ${DRAGON_PRIVATE_SERVICES} " | grep -qw " ${_slug} "; then
+    if _is_private_service "${_slug}"; then
         echo "SKIP ${_slug} (privé — DRAGON_PRIVATE_SERVICES)"
         return 0
     fi
@@ -496,10 +501,16 @@ publish_service() {
 }
 
 ##################################################################################
-# SSH (toujours prioritaire) — fonction dédiée avec commande de connexion complète
+# SSH (prioritaire, sauf si explicitement listé dans DRAGON_PRIVATE_SERVICES)
 SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
 [[ -z "$SSHPORT" ]] && SSHPORT=22
-generate_ssh_service "$SSHPORT"
+if _is_private_service "ssh"; then
+    echo "SKIP ssh (privé — DRAGON_PRIVATE_SERVICES)"
+    ipfs p2p close -p "/x/ssh-${IPFSNODEID}" 2>/dev/null
+    rm -f ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh 2>/dev/null
+else
+    generate_ssh_service "$SSHPORT"
+fi
 
 ## ── Synchronisation Constellation (NOSTR Relay P2P) ─────────────────
 ## On utilise 9999 comme port local préféré pour backfill_constellation.sh
