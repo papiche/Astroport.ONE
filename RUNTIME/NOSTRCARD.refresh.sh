@@ -1622,14 +1622,14 @@ ERRHTML
         echo "IPNS update skipped for ${PLAYER} (no refresh needed)"
     fi
     ########################################################################
-    ## N² JOURNAL (BRO Mémoire Réseau)
+    ## N² JOURNAL (BRO Mémoire Réseau) — DÉSACTIVÉ (pollue le fil NOSTR)
     ## Réservé U.SOCIETY / Capitaine — opt-out via /mailjet canal n2_journal
     ## N2.journal.sh décide seul du type (Daily/Weekly/Monthly/Yearly) selon
     ## les jours depuis la création du compte. Garde-fou : un seul run par jour.
     ########################################################################
     _N2_ENABLED=false
-    if [[ -s "${HOME}/.zen/game/players/${PLAYER}/U.SOCIETY" ]] \
-        || [[ "${PLAYER}" == "${CAPTAINEMAIL}" ]]; then
+    if false && { [[ -s "${HOME}/.zen/game/players/${PLAYER}/U.SOCIETY" ]] \
+        || [[ "${PLAYER}" == "${CAPTAINEMAIL}" ]]; }; then
         _N2_ENABLED=true
     fi
     if [[ "$_N2_ENABLED" == "true" ]]; then

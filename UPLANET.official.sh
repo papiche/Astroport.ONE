@@ -35,6 +35,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
+. "${MY_PATH}/tools/capital_ledger.sh"
 
 # Initialisation : Chargement des paramètres coopératifs depuis le DID NOSTR (essaim partagé)
 echo -e "\033[0;36m⚙️  Initialisation UPLANET.official.sh...\033[0m"
@@ -979,105 +980,96 @@ process_locataire() {
 ################################################################################
 # Fonction pour apport capital infrastructure (immobilisations - Compte 21)
 # Le capital va vers UPLANETNAME_CAPITAL (pas NODE) pour séparation comptable :
-# - UPLANETNAME_CAPITAL : Immobilisations corporelles (valeur machine, amortissement)
+# - UPLANETNAME_CAPITAL : Immobilisations corporelles (valeur machine/dôme/terrain)
 # - NODE : Revenus locatifs Armateur (PAF, burn vers €)
 #
-# PROTECTION: Un seul enregistrement initial autorisé. Utilisez --force pour
-# réinitialiser (écrase l'ancien) ou --add pour ajouter (cumule avec l'ancien).
+# N'importe quel email disposant d'une ZenCard peut apporter un actif (pas
+# seulement le Capitaine). Grand livre par contributeur : tools/capital_ledger.sh
+# (~/.zen/game/capital_ledger.json). Seules les machines s'amortissent
+# (156 semaines, Compte 21 → Compte 28) ; dômes/terrains/autres restent à
+# valeur pleine indéfiniment (non-dépréciables).
+#
+# PROTECTION: détection de double-soumission accidentelle (même email/type/
+# label/valeur soumis il y a moins de 5 minutes). Pour compléter/corriger un
+# actif existant, cibler explicitement --asset-id <id> avec --force/--add.
 ################################################################################
 process_infrastructure() {
     local email="$1"
     local montant_euros="${2:-$(calculate_societaire_amount "infrastructure")}"
-    local force_mode="${3:-}"  # "--force" to overwrite, "--add" to accumulate
-    
+    local force_mode="${3:-}"       # "--force" ou "--add" (nécessite asset_id pour cibler une entrée)
+    local asset_type="${4:-machine}"
+    local label="${5:-}"
+    local asset_id="${6:-}"
+
+    if [[ -z "$label" ]]; then
+        case "$asset_type" in
+            dome) label="Dôme" ;;
+            land) label="Terrain" ;;
+            *)    label="Machine" ;;
+        esac
+    fi
+
     # Valider que le montant est un nombre valide
     if [[ -z "$montant_euros" ]] || ! [[ "$montant_euros" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
         echo -e "${RED}❌ Montant invalide: '$montant_euros'${NC}"
         echo -e "${YELLOW}💡 Utilisez un nombre positif (ex: 500)${NC}"
         return 1
     fi
-    
-    # ══════════════════════════════════════════════════════════════════════════
-    # PROTECTION CONTRE DOUBLE ENREGISTREMENT
-    # ══════════════════════════════════════════════════════════════════════════
-    local env_file="$HOME/.zen/game/.env"
-    local existing_machine_value=""
-    local existing_capital_date=""
-    local existing_depreciation_weeks=""
-    
-    if [[ -f "$env_file" ]]; then
-        existing_machine_value=$(grep "^MACHINE_VALUE=" "$env_file" | cut -d'=' -f2)
-        existing_capital_date=$(grep "^CAPITAL_DATE=" "$env_file" | cut -d'=' -f2)
-        existing_depreciation_weeks=$(grep "^DEPRECIATION_WEEKS=" "$env_file" | cut -d'=' -f2)
+
+    # Machine = dépréciable sur 156 semaines (3 ans) ; dôme/terrain/autre = non-dépréciable
+    local depreciable="true"
+    local depreciation_weeks=156
+    if [[ "$asset_type" != "machine" ]]; then
+        depreciable="false"
+        depreciation_weeks=0
     fi
-    
-    if [[ -n "$existing_machine_value" && "$existing_machine_value" != "0" ]]; then
-        echo -e "${YELLOW}⚠️  CAPITAL INFRASTRUCTURE DÉJÀ ENREGISTRÉ !${NC}"
-        echo -e "${CYAN}📊 Enregistrement existant :${NC}"
-        echo -e "   • Valeur machine : ${existing_machine_value} Ẑen"
-        echo -e "   • Date d'activation : ${existing_capital_date}"
-        echo -e "   • Durée amortissement : ${existing_depreciation_weeks} semaines"
-        
-        # Calculate current depreciation status
-        if [[ -n "$existing_capital_date" && -n "$existing_depreciation_weeks" ]]; then
-            local cap_timestamp=$(date -d "$existing_capital_date" +%s 2>/dev/null || echo "0")
-            local now_timestamp=$(date +%s)
-            local weeks_elapsed=$(( (now_timestamp - cap_timestamp) / (7 * 24 * 60 * 60) ))
-            local depreciation_pct=$(echo "scale=1; ($weeks_elapsed * 100) / $existing_depreciation_weeks" | bc -l 2>/dev/null || echo "0")
-            [[ $(echo "$depreciation_pct > 100" | bc -l) -eq 1 ]] && depreciation_pct="100"
-            local residual=$(echo "scale=2; $existing_machine_value * (1 - $weeks_elapsed / $existing_depreciation_weeks)" | bc -l 2>/dev/null || echo "0")
-            [[ $(echo "$residual < 0" | bc -l) -eq 1 ]] && residual="0"
-            echo -e "   • Semaines écoulées : ${weeks_elapsed}/${existing_depreciation_weeks}"
-            echo -e "   • Amortissement : ${depreciation_pct}%"
-            echo -e "   • Valeur résiduelle : ~${residual} Ẑen"
-        fi
-        echo ""
-        
-        if [[ "$force_mode" == "--force" ]]; then
-            echo -e "${RED}🔄 MODE FORCE : L'ancien capital sera ÉCRASÉ et remplacé${NC}"
-            echo -e "${YELLOW}⚠️  L'amortissement reprendra à zéro !${NC}"
-        elif [[ "$force_mode" == "--add" ]]; then
-            echo -e "${GREEN}➕ MODE ADD : Le nouveau capital sera AJOUTÉ à l'ancien${NC}"
-            # Calculate new total
-            local new_total=$(echo "scale=2; $existing_machine_value + $montant_euros" | bc -l)
-            echo -e "${CYAN}   Nouvelle valeur totale : ${new_total} Ẑen${NC}"
-            montant_euros="$new_total"
-            # Keep original depreciation start date
-            echo -e "${YELLOW}⚠️  La date d'amortissement reste inchangée (${existing_capital_date})${NC}"
-        else
-            echo -e "${RED}❌ Double enregistrement refusé pour préserver l'intégrité comptable${NC}"
-            echo ""
-            echo -e "${CYAN}💡 Options disponibles :${NC}"
-            echo -e "   $0 -i --force    # Écrase l'ancien capital (réinitialise amortissement)"
-            echo -e "   $0 -i --add      # Ajoute au capital existant (cumule valeur)"
-            echo ""
-            echo -e "${YELLOW}📋 Pour voir l'état actuel, utilisez : dashboard.sh${NC}"
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # --force/--add nécessitent de cibler explicitement un actif existant
+    # ══════════════════════════════════════════════════════════════════════════
+    if [[ -n "$force_mode" && -z "$asset_id" ]]; then
+        echo -e "${RED}❌ --force/--add nécessite de cibler un actif existant avec --asset-id <id>${NC}"
+        echo -e "${CYAN}💡 Consultez ~/.zen/game/capital_ledger.json pour trouver l'id de l'actif à corriger${NC}"
+        return 1
+    fi
+
+    # PROTECTION CONTRE DOUBLE-SOUMISSION ACCIDENTELLE (avant tout virement réel)
+    # Non applicable quand un asset_id précis est ciblé (correction volontaire)
+    if [[ -z "$asset_id" ]]; then
+        local dup_id
+        dup_id=$(capital_ledger_check_duplicate "$email" "$asset_type" "$label" "$montant_euros")
+        if [[ -n "$dup_id" ]]; then
+            echo -e "${YELLOW}⚠️  Apport identique déjà enregistré il y a moins de 5 minutes (id=${dup_id})${NC}"
+            echo -e "${CYAN}💡 Si intentionnel (2e actif distinct), changez le --label ; sinon patientez.${NC}"
             return 1
         fi
-        echo ""
     fi
-    
+
     local montant_g1=$(zen_to_g1 "$montant_euros")
-    
-    echo -e "${BLUE}⚙️ Traitement APPORT CAPITAL INFRASTRUCTURE pour: ${email}${NC}"
+
+    echo -e "${BLUE}⚙️ Traitement APPORT CAPITAL (${asset_type}: ${label}) pour: ${email}${NC}"
     echo -e "${CYAN}💰 Montant: ${montant_euros} Ẑen = ${montant_g1} Ğ1 → UPLANETNAME_CAPITAL${NC}"
-    echo -e "${YELLOW}📊 Amortissement linéaire sur 3 ans (156 semaines)${NC}"
-    
+    if [[ "$depreciable" == "true" ]]; then
+        echo -e "${YELLOW}📊 Amortissement linéaire sur 3 ans (156 semaines)${NC}"
+    else
+        echo -e "${YELLOW}📊 Bien non-dépréciable : valeur conservée pleine et entière (pas d'amortissement)${NC}"
+    fi
+
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
         echo -e "${RED}❌ Portefeuille UPLANETNAME_G1 non configuré${NC}"
         echo "💡 Utilisez zen.sh → UPLANETNAME_G1 pour configurer"
         return 1
     fi
-    
+
     # Récupérer les clés publiques
     local g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1")
-    
-    # Récupérer la clé ZEN Card du capitaine
+
+    # Récupérer la clé ZEN Card du contributeur
     local zencard_pubkey=""
     local zencard_dunikey="$HOME/.zen/game/players/${email}/secret.dunikey"
     local zencard_g1pub="$HOME/.zen/game/players/${email}/.g1pub"
-    
+
     if [[ -f "$zencard_g1pub" ]]; then
         zencard_pubkey=$(cat "$zencard_g1pub")
         echo -e "${GREEN}✅ ZEN Card trouvée (g1pub): ${zencard_pubkey}...${NC}"
@@ -1086,22 +1078,23 @@ process_infrastructure() {
         echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey}...${NC}"
     else
         echo -e "${RED}❌ ZEN Card non trouvée pour ${email}${NC}"
+        echo -e "${CYAN}💡 Le contributeur doit d'abord obtenir une ZenCard (comme un sociétaire)${NC}"
         echo -e "${CYAN}💡 Vérifiez que le dossier ~/.zen/game/players/${email}/ existe${NC}"
         return 1
     fi
-    
+
     # Récupérer capital_pubkey UPLANETNAME_CAPITAL
     local capital_pubkey=""
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_CAPITAL" ]]; then
         capital_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_CAPITAL")
         echo -e "${GREEN}✅ UPLANETNAME_CAPITAL trouvé: ${capital_pubkey}...${NC}"
     fi
-    
+
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
     echo -e "  UPLANETNAME_G1: ${g1_pubkey}..."
     echo -e "  ZEN Card ${email}: ${zencard_pubkey}..."
     echo -e "  UPLANETNAME_CAPITAL (Immobilisations): ${capital_pubkey}..."
-    
+
     # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
     echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
     if ! check_no_pending_transactions "$g1_pubkey"; then
@@ -1109,73 +1102,50 @@ process_infrastructure() {
         echo -e "${YELLOW}💡 Attendez que les transactions en cours se terminent avant de relancer${NC}"
         return 1
     fi
-    
+
     # Étape 1: UPLANETNAME_G1 -> ZEN Card (traçabilité de l'apporteur)
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_G1 → ZEN Card ${email}${NC}"
     if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$zencard_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}" "$email" "INFRASTRUCTURE" "Étape 1: G1→ZENCARD"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
-    
+
     # Étape 2: ZEN Card -> UPLANETNAME_CAPITAL (Immobilisations corporelles)
     echo -e "${BLUE}📤 Étape 2: Transfert ZEN Card → UPLANETNAME_CAPITAL (Immobilisations)${NC}"
     if ! transfer_and_verify "$zencard_dunikey" "$capital_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}" "$email" "INFRASTRUCTURE" "Étape 2: ZENCARD→CAPITAL"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi
-    
-    # Enregistrer la date de début d'amortissement et la valeur dans .env
-    # Note: env_file already defined at start of function for double-registration check
-    local capital_date=""
-    
-    # In --add mode, keep original date; otherwise use current date
-    if [[ "$force_mode" == "--add" && -n "$existing_capital_date" ]]; then
-        capital_date="$existing_capital_date"
-        echo -e "${CYAN}📅 Conservation de la date d'amortissement originale : ${capital_date}${NC}"
+
+    # Enregistrement dans le grand livre du capital (après succès des virements uniquement)
+    local ledger_id
+    ledger_id=$(capital_ledger_add "$email" "$asset_type" "$label" "$montant_euros" "$depreciable" "$depreciation_weeks" "$asset_id" "$force_mode")
+    if [[ -z "$ledger_id" ]]; then
+        echo -e "${YELLOW}⚠️  Virement effectué mais échec d'écriture dans le ledger — vérifiez ~/.zen/game/capital_ledger.json manuellement${NC}"
     else
-        capital_date=$(date +%Y%m%d%H%M%S)
+        echo -e "${GREEN}📒 Ledger: entrée ${ledger_id} enregistrée${NC}"
     fi
-    
-    if [[ -f "$env_file" ]]; then
-        # Update existing values or add new ones
-        if grep -q "^MACHINE_VALUE=" "$env_file"; then
-            sed -i "s/^MACHINE_VALUE=.*/MACHINE_VALUE=$montant_euros/" "$env_file"
-        else
-            echo "MACHINE_VALUE=$montant_euros" >> "$env_file"
-        fi
-        if grep -q "^CAPITAL_DATE=" "$env_file"; then
-            sed -i "s/^CAPITAL_DATE=.*/CAPITAL_DATE=$capital_date/" "$env_file"
-        else
-            echo "CAPITAL_DATE=$capital_date" >> "$env_file"
-        fi
-        if grep -q "^DEPRECIATION_WEEKS=" "$env_file"; then
-            sed -i "s/^DEPRECIATION_WEEKS=.*/DEPRECIATION_WEEKS=156/" "$env_file"
-        else
-            echo "DEPRECIATION_WEEKS=156" >> "$env_file"
-        fi
-    else
-        # Create .env with capital info
-        echo "## ASTROPORT MACHINE CAPITAL CONFIGURATION" >> "$env_file"
-        echo "MACHINE_VALUE=$montant_euros" >> "$env_file"
-        echo "CAPITAL_DATE=$capital_date" >> "$env_file"
-        echo "DEPRECIATION_WEEKS=156" >> "$env_file"
-    fi
-    
-    # Calculate weekly depreciation for display
-    local weekly_depreciation=$(echo "scale=2; $montant_euros / 156" | bc -l)
-    
-    echo -e "${GREEN}🎉 Apport capital infrastructure terminé avec succès!${NC}"
+
+    echo -e "${GREEN}🎉 Apport capital terminé avec succès!${NC}"
     echo -e "${CYAN}📊 Résumé:${NC}"
     echo -e "  • ${montant_euros} Ẑen (${montant_g1} Ğ1) transférés vers UPLANETNAME_CAPITAL"
-    echo -e "  • Compte 21 - Immobilisations corporelles"
-    echo -e "  • Amortissement linéaire: ~${weekly_depreciation} Ẑen/semaine pendant 3 ans"
-    echo -e "  • Les amortissements hebdo iront vers CASH (réserve de fonctionnement)"
+    echo -e "  • Compte 21 - Immobilisations corporelles (${asset_type}: ${label})"
+    if [[ "$depreciable" == "true" ]]; then
+        local weekly_depreciation=$(echo "scale=2; $montant_euros / 156" | bc -l)
+        echo -e "  • Amortissement linéaire: ~${weekly_depreciation} Ẑen/semaine pendant 3 ans"
+        echo -e "  • Les amortissements hebdo iront vers AMORTISSEMENT (Compte 28)"
+    else
+        echo -e "  • Aucun amortissement (bien non-dépréciable) — valeur conservée entière"
+    fi
     echo -e "  • NODE reste dédié aux revenus locatifs (PAF → BURN → €)"
     echo -e "  • ✅ Séparation comptable Capital/Revenus respectée"
-    
-    # Mettre à jour le document DID avec le statut contributeur infrastructure
-    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "INFRASTRUCTURE" "$montant_euros" "$montant_g1"
-    
+
+    # Mettre à jour le document DID avec le cumul des apports de ce contributeur
+    local total_cumule_zen
+    total_cumule_zen=$(capital_ledger_total_for_email "$email")
+    local total_cumule_g1=$(zen_to_g1 "$total_cumule_zen")
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "INFRASTRUCTURE" "$total_cumule_zen" "$total_cumule_g1"
+
     return 0
 }
 
@@ -1674,34 +1644,39 @@ show_menu() {
             ;;
         4)
             if [[ -n "$CAPTAINEMAIL" ]]; then
-                # Check if capital already exists
-                local env_file="$HOME/.zen/game/.env"
-                local existing_value=""
-                if [[ -f "$env_file" ]]; then
-                    existing_value=$(grep "^MACHINE_VALUE=" "$env_file" | cut -d'=' -f2)
-                fi
-                
-                local infra_mode_menu=""
-                if [[ -n "$existing_value" && "$existing_value" != "0" ]]; then
-                    echo -e "${YELLOW}⚠️  Capital déjà enregistré: ${existing_value} Ẑen${NC}"
+                # Vérifier si un actif "machine" actif existe déjà pour le Capitaine (grand livre)
+                capital_ledger_init
+                local existing_id existing_value
+                existing_id=$(jq -r --arg e "$CAPTAINEMAIL" '
+                    [.assets[] | select(.email==$e and .asset_type=="machine" and .status=="active")] | .[0].id // empty
+                ' "$CAPITAL_LEDGER_FILE")
+                existing_value=$(jq -r --arg e "$CAPTAINEMAIL" '
+                    [.assets[] | select(.email==$e and .asset_type=="machine" and .status=="active")] | .[0].value_zen // empty
+                ' "$CAPITAL_LEDGER_FILE")
+
+                local infra_mode_menu="" infra_asset_id=""
+                if [[ -n "$existing_id" ]]; then
+                    echo -e "${YELLOW}⚠️  Capital machine déjà enregistré (id=${existing_id}): ${existing_value} Ẑen${NC}"
                     echo "1. Annuler"
                     echo "2. Écraser (--force) - Réinitialise l'amortissement"
                     echo "3. Ajouter (--add) - Cumule avec l'ancien"
-                    read -p "Votre choix (1-3): " mode_choice
+                    echo "4. Nouvel actif distinct (2e machine)"
+                    read -p "Votre choix (1-4): " mode_choice
                     case $mode_choice in
-                        2) infra_mode_menu="--force" ;;
-                        3) infra_mode_menu="--add" ;;
+                        2) infra_mode_menu="--force"; infra_asset_id="$existing_id" ;;
+                        3) infra_mode_menu="--add"; infra_asset_id="$existing_id" ;;
+                        4) : ;; # nouvel actif, pas de asset_id
                         *) echo -e "${YELLOW}🚫 Opération annulée${NC}"; return ;;
                     esac
                 fi
-                
+
                 local machine_value="${MACHINE_VALUE_ZEN}"
                 if [[ -z "$machine_value" ]]; then
                     read -p "Valeur de la machine en Ẑen (défaut: 500): " machine_value
                     machine_value="${machine_value:-500}"
                 fi
                 echo -e "${CYAN}💰 Apport capital pour: ${CAPTAINEMAIL} (${machine_value} Ẑen)${NC}"
-                process_infrastructure "$CAPTAINEMAIL" "$machine_value" "$infra_mode_menu"
+                process_infrastructure "$CAPTAINEMAIL" "$machine_value" "$infra_mode_menu" "machine" "" "$infra_asset_id"
             else
                 echo -e "${RED}❌ CAPTAINEMAIL non défini dans l'environnement${NC}"
                 echo -e "${CYAN}💡 Configurez votre email de capitaine dans my.sh${NC}"
@@ -1743,9 +1718,12 @@ main() {
         local lat=""
         local lon=""
         local permit_id=""
-        local infra_mode=""  # --force or --add for infrastructure
+        local infra_mode=""   # --force or --add for infrastructure
+        local asset_type=""   # --asset-type machine|dome|land|other (défaut: machine)
+        local asset_label=""  # --label <texte>
+        local asset_id=""     # --asset-id <id> (cible un actif existant pour --force/--add)
         local referrer=""    # Code parrain (email) : reçoit le 1% prime à la place du Capitaine
-        
+
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 -l|--locataire)
@@ -1767,6 +1745,31 @@ main() {
                 -i|--infrastructure)
                     mode="infrastructure"
                     shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        email="$1"
+                        shift
+                    fi
+                    ;;
+                --asset-type)
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        asset_type="$1"
+                        shift
+                    fi
+                    ;;
+                --label)
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        asset_label="$1"
+                        shift
+                    fi
+                    ;;
+                --asset-id)
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        asset_id="$1"
+                        shift
+                    fi
                     ;;
                 -c|--captain)
                     mode="captain"
@@ -1869,14 +1872,15 @@ main() {
                 fi
                 ;;
             "infrastructure")
-                if [[ -n "$CAPTAINEMAIL" ]]; then
+                local infra_email="${email:-$CAPTAINEMAIL}"
+                if [[ -n "$infra_email" ]]; then
                     local machine_value="${montant:-${MACHINE_VALUE_ZEN:-500}}"
-                    echo -e "${CYAN}💰 Apport capital infrastructure: ${CAPTAINEMAIL} (${machine_value} Ẑen)${NC}"
+                    echo -e "${CYAN}💰 Apport capital infrastructure: ${infra_email} (${machine_value} Ẑen)${NC}"
                     [[ -n "$infra_mode" ]] && echo -e "${YELLOW}📋 Mode: ${infra_mode}${NC}"
-                    process_infrastructure "$CAPTAINEMAIL" "$machine_value" "$infra_mode"
+                    process_infrastructure "$infra_email" "$machine_value" "$infra_mode" "${asset_type:-machine}" "$asset_label" "$asset_id"
                 else
-                    echo -e "${RED}❌ CAPTAINEMAIL non défini dans l'environnement${NC}"
-                    echo -e "${CYAN}💡 Configurez votre email de capitaine dans my.sh${NC}"
+                    echo -e "${RED}❌ Email requis (ex: -i user@email.com) ou CAPTAINEMAIL non défini${NC}"
+                    echo -e "${CYAN}💡 Usage: $0 -i [email] -m <montant> [--asset-type machine|dome|land] [--label <texte>]${NC}"
                     exit 1
                 fi
                 ;;

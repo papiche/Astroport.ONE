@@ -242,11 +242,12 @@ show_flowchart_position() {
 
 # Function to display usage information
 usage() {
-    echo -e "${CYAN}Usage: $ME [--detailed]${NC}"
+    echo -e "${CYAN}Usage: $ME [commande] [arguments]${NC}"
     echo ""
     echo -e "${YELLOW}🎯 GUIDE CAPITAINE - Gestionnaire de Transactions Zen${NC}"
     echo ""
-    echo -e "${GREEN}Ce script se concentre sur l'analyse et le diagnostic économique:${NC}"
+    echo -e "${GREEN}Sans argument, lance le menu interactif (analyse, transactions, reporting).${NC}"
+    echo -e "${GREEN}Avec une commande, exécute une opération ponctuelle non-interactive (scripts/cron).${NC}"
     echo ""
     echo -e "${BLUE}🔍 ANALYSE & DIAGNOSTIC:${NC}"
     echo -e "   • Analyse détaillée des portefeuilles utilisateurs"
@@ -267,15 +268,33 @@ usage() {
     echo -e "   • Pour les virements locataires/sociétaires: ${CYAN}UPLANET.official.sh${NC}"
     echo -e "   • Processus automatisés conformes à la Constitution ẐEN"
     echo ""
-    echo -e "${GREEN}Options:${NC}"
-    echo -e "  ${CYAN}--detailed${NC}  Affichage détaillé de tous les utilisateurs"
+    echo -e "${GREEN}Commandes non-interactives:${NC}"
+    echo -e "  ${CYAN}dashboard [--detailed]${NC}       Tableau de bord économique complet (portefeuilles système + utilisateurs)"
+    echo -e "  ${CYAN}balance <pubkey>${NC}              Solde d'un portefeuille (Ğ1 + Ẑen)"
+    echo -e "  ${CYAN}history <pubkey> [limit]${NC}      Historique des transactions (défaut: 20)"
+    echo -e "  ${CYAN}primal <pubkey>${NC}               Source de la transaction primale"
+    echo -e "  ${CYAN}chain <pubkey> [limit]${NC}        Remonte la chaîne primale (défaut: 20 sauts)"
+    echo -e "  ${CYAN}report <pubkey> <periode>${NC}     Rapport comptable pour une période (YYYY ou YYYY-MM)"
+    echo -e "  ${CYAN}csv <pubkey> [fichier]${NC}        Export CSV de l'historique (stdout si fichier omis)"
+    echo -e "  ${CYAN}health${NC}                        Vérifie les dépendances (curl, bc, jq, scripts G1*.sh)"
+    echo ""
+    echo -e "${GREEN}Exemples:${NC}"
+    echo -e "  ${CYAN}$ME${NC}                                     # menu interactif"
+    echo -e "  ${CYAN}$ME dashboard --detailed${NC}                # tableau de bord détaillé, tous les utilisateurs"
+    echo -e "  ${CYAN}$ME balance 2SM6...pubkey...${NC}            # solde d'un portefeuille"
+    echo -e "  ${CYAN}$ME history 2SM6...pubkey... 50${NC}         # 50 dernières transactions"
+    echo -e "  ${CYAN}$ME chain 2SM6...pubkey... 30${NC}           # remonter la chaîne primale (30 sauts max)"
+    echo -e "  ${CYAN}$ME report 2SM6...pubkey... 2024-03${NC}     # rapport comptable de mars 2024"
+    echo -e "  ${CYAN}$ME csv 2SM6...pubkey... /tmp/export.csv${NC}  # export CSV vers un fichier"
+    echo -e "  ${CYAN}$ME health${NC}                              # diagnostic des dépendances"
     echo ""
     echo -e "${YELLOW}⚠️  SÉCURITÉ:${NC}"
     echo -e "   • Validation automatique des transactions"
     echo -e "   • Vérification des chaînes primales"
-    echo -e "   • Confirmations obligatoires pour les actions critiques"
+    echo -e "   • Confirmations obligatoires pour les actions critiques (menu interactif uniquement)"
+    echo -e "   • Les commandes non-interactives sont en lecture seule (aucun envoi de fonds)"
     echo ""
-    echo -e "${GREEN}Le script vous guidera pas à pas pour éviter toute erreur.${NC}"
+    echo -e "${GREEN}Le menu interactif vous guidera pas à pas pour éviter toute erreur.${NC}"
     exit 1
 }
 
@@ -455,8 +474,8 @@ check_primal_source() {
     local pubkey="$1"
     local primal_source=""
     
-    # Get primal transaction source
-    primal_source=$(silkaj money primal "$pubkey" 2>/dev/null | grep "comes from:" | cut -d ':' -f 2 | xargs)
+    # Get primal transaction source (via squid GraphQL, silkaj is deprecated)
+    primal_source=$(${MY_PATH}/G1primal.sh "$pubkey" 2>/dev/null)
     
     if [[ -n "$primal_source" ]]; then
         # Check if it comes from UPLANETG1PUB
@@ -1073,43 +1092,34 @@ handle_g1_reserve() {
 }
 
 # Function to handle capital machine valuation
+# Valorisation d'un apport en capital (machine, dôme, terrain) au Compte 21.
+# Délègue entièrement à UPLANET.official.sh -i (process_infrastructure), qui
+# gère le grand livre multi-contributeurs (tools/capital_ledger.sh) : seules
+# les machines s'amortissent (156 semaines), dômes/terrains restent à valeur
+# pleine indéfiniment. N'importe quel MULTIPASS disposant déjà d'une ZenCard
+# peut être bénéficiaire (pas seulement le Capitaine).
 handle_capital_valuation() {
-    echo -e "\n${CYAN}⭐ VALORISATION DU CAPITAL MACHINE${NC}"
-    echo -e "${YELLOW}=================================${NC}"
-    echo -e "${GREEN}Valorisez l'apport en capital de votre machine dans la coopérative${NC}"
-    
-    echo -e "\n${BLUE}💻 TYPES DE MACHINES STANDARDS:${NC}"
-    echo -e "  1. 🛰️  Satellite/RPi (500€ → 500 Ẑen)"
-    echo -e "  2. 🎮 PC Gamer (4000€ → 4000 Ẑen)"
-    echo -e "  3. 💼 Serveur Pro (8000€ → 8000 Ẑen)"
-    echo -e "  4. 🔧 Valorisation personnalisée"
-    
-    read -p "Choisissez le type de machine (1-4): " machine_choice
-    
-    local machine_value=""
-    local machine_type=""
-    
-    case "$machine_choice" in
+    echo -e "\n${CYAN}⭐ VALORISATION D'UN APPORT EN CAPITAL${NC}"
+    echo -e "${YELLOW}=====================================${NC}"
+    echo -e "${GREEN}Valorisez un apport en capital (machine, dôme, terrain) dans la coopérative${NC}"
+
+    echo -e "\n${BLUE}👤 CONTRIBUTEUR:${NC}"
+    echo -e "  1. Le Capitaine (${CAPTAINEMAIL})"
+    echo -e "  2. Un autre utilisateur (ZenCard existante)"
+    read -p "Choisissez (1-2): " contributor_choice
+
+    local contributor_email=""
+    case "$contributor_choice" in
         1)
-            machine_value="500"
-            machine_type="Satellite/RPi"
+            contributor_email="$CAPTAINEMAIL"
             ;;
         2)
-            machine_value="4000"
-            machine_type="PC Gamer"
-            ;;
-        3)
-            machine_value="8000"
-            machine_type="Serveur Pro"
-            ;;
-        4)
-            echo -e "\n${YELLOW}Valorisation personnalisée:${NC}"
-            read -p "Entrez la valeur en euros de votre machine: " custom_value
-            if [[ "$custom_value" =~ ^[0-9]+$ ]] && [[ "$custom_value" -gt 0 ]]; then
-                machine_value="$custom_value"
-                machine_type="Machine personnalisée"
-            else
-                echo -e "${RED}Valeur invalide. Opération annulée.${NC}"
+            if list_zencard_wallets; then
+                zencard_wallets=($(ls ~/.zen/game/players/*@*.*/.g1pub 2>/dev/null | rev | cut -d '/' -f 2 | rev))
+                contributor_email=$(select_wallet "ZenCard" "${zencard_wallets[@]}")
+            fi
+            if [[ -z "$contributor_email" ]]; then
+                echo -e "${RED}Aucun contributeur sélectionné. Opération annulée.${NC}"
                 return 1
             fi
             ;;
@@ -1118,42 +1128,95 @@ handle_capital_valuation() {
             return 1
             ;;
     esac
-    
-    # Convert euros to Ẑen (1€ = 1Ẑ) then to Ğ1 (1Ẑ = 0.1Ğ1)
-    local zen_amount="$machine_value"
-    local g1_amount=$(echo "scale=1; $zen_amount / 10" | bc)
-    
+
+    if [[ ! -f ~/.zen/game/players/${contributor_email}/.g1pub ]]; then
+        echo -e "${RED}❌ ${contributor_email} n'a pas de ZenCard.${NC}"
+        echo -e "${CYAN}💡 Une ZenCard est requise avant tout apport en capital (comme un sociétaire).${NC}"
+        return 1
+    fi
+
+    echo -e "\n${BLUE}🏗️  TYPE D'ACTIF:${NC}"
+    echo -e "  1. 💻 Machine (Compte 21, amortie sur 3 ans)"
+    echo -e "  2. 🛸 Dôme / Bâtiment (Compte 21, non-dépréciable)"
+    echo -e "  3. 🌳 Terrain (Compte 21, non-dépréciable)"
+    read -p "Choisissez (1-3): " type_choice
+
+    local asset_type="" value_zen="" label=""
+    case "$type_choice" in
+        1)
+            asset_type="machine"
+            echo -e "\n${BLUE}💻 TYPES DE MACHINES STANDARDS:${NC}"
+            echo -e "  1. 🛰️  Satellite/RPi (500 Ẑen)"
+            echo -e "  2. 🎮 PC Gamer (4000 Ẑen)"
+            echo -e "  3. 💼 Serveur Pro (8000 Ẑen)"
+            echo -e "  4. 🔧 Valorisation personnalisée"
+            read -p "Choisissez le type de machine (1-4): " machine_choice
+            case "$machine_choice" in
+                1) value_zen="500";  label="Satellite/RPi" ;;
+                2) value_zen="4000"; label="PC Gamer" ;;
+                3) value_zen="8000"; label="Serveur Pro" ;;
+                4)
+                    read -p "Valeur en Ẑen: " value_zen
+                    label="Machine personnalisée"
+                    ;;
+                *) echo -e "${RED}Sélection invalide.${NC}"; return 1 ;;
+            esac
+            ;;
+        2)
+            asset_type="dome"
+            read -p "Valeur en Ẑen (suggestion: ~640 pour un Dôme Rocket 4.1): " value_zen
+            read -p "Nom/description du dôme [Dôme]: " label
+            label="${label:-Dôme}"
+            ;;
+        3)
+            asset_type="land"
+            read -p "Valeur en Ẑen: " value_zen
+            read -p "Nom/description du terrain [Terrain]: " label
+            label="${label:-Terrain}"
+            ;;
+        *)
+            echo -e "${RED}Sélection invalide.${NC}"
+            return 1
+            ;;
+    esac
+
+    if ! [[ "$value_zen" =~ ^[0-9]+([.][0-9]+)?$ ]] || (( $(echo "$value_zen <= 0" | bc -l) )); then
+        echo -e "${RED}Valeur invalide. Opération annulée.${NC}"
+        return 1
+    fi
+
+    local g1_amount=$(echo "scale=1; $value_zen / 10" | bc)
+
     echo -e "\n${CYAN}📋 RÉCAPITULATIF DE LA VALORISATION:${NC}"
-    echo -e "${BLUE}Type de machine:${NC} $machine_type"
-    echo -e "${BLUE}Valeur:${NC} ${YELLOW}$machine_value €${NC} = ${CYAN}$zen_amount Ẑen${NC} = ${YELLOW}$g1_amount Ğ1${NC}"
-    echo -e "\n${GREEN}Cette valorisation sera inscrite au capital social de la coopérative.${NC}"
-    echo -e "${GREEN}Flux: UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZenCard Capitaine${NC}"
-    
+    echo -e "${BLUE}Contributeur:${NC} $contributor_email"
+    echo -e "${BLUE}Type d'actif:${NC} $asset_type ($label)"
+    echo -e "${BLUE}Valeur:${NC} ${YELLOW}$value_zen Ẑen${NC} = ${YELLOW}$g1_amount Ğ1${NC}"
+    if [[ "$asset_type" == "machine" ]]; then
+        echo -e "${GREEN}Amortissement linéaire sur 3 ans (156 semaines)${NC}"
+    else
+        echo -e "${GREEN}Bien non-dépréciable : valeur conservée pleine et entière${NC}"
+    fi
+    echo -e "${GREEN}Flux: UPLANETNAME_G1 → ZenCard ${contributor_email} → UPLANETNAME_CAPITAL${NC}"
+
     read -p "Confirmer la valorisation? (y/N): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${YELLOW}Valorisation annulée.${NC}"
         return 0
     fi
-    
-    # Get UPLANETNAME_SOCIETY public key
-    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY")
-    if [[ -z "$society_pubkey" ]]; then
-        echo -e "${RED}UPLANETNAME_SOCIETY wallet not configured${NC}"
+
+    local official_script="${MY_PATH}/../UPLANET.official.sh"
+    if [[ ! -f "$official_script" ]]; then
+        echo -e "${RED}UPLANET.official.sh introuvable: $official_script${NC}"
         return 1
     fi
-    
-    # Execute capital valuation transaction
-    local comment="CAPITAL:MACHINE:$machine_type:$machine_value€"
-    if execute_system_transaction "UPLANETNAME_G1" "$society_pubkey" "$g1_amount" "$comment"; then
-        echo -e "\n${GREEN}✅ Valorisation du capital réussie!${NC}"
-        echo -e "${GREEN}Votre machine ($machine_type) est maintenant inscrite au capital social.${NC}"
-        
-        # Update .env file with machine info
-        update_env_machine_info "$machine_type" "$machine_value"
-        
+
+    if "$official_script" -i "$contributor_email" -m "$value_zen" --asset-type "$asset_type" --label "$label"; then
+        echo -e "\n${GREEN}✅ Valorisation du capital réussie (via UPLANET.official.sh)!${NC}"
         return 0
     else
         echo -e "\n${RED}❌ Échec de la valorisation du capital${NC}"
+        echo -e "${YELLOW}💡 Si un actif identique existe déjà pour ce contributeur, consultez${NC}"
+        echo -e "${YELLOW}   ~/.zen/game/capital_ledger.json puis relancez avec --asset-id <id> --force/--add${NC}"
         return 1
     fi
 }
@@ -1252,28 +1315,6 @@ update_env_economic_params() {
     sed -i "s/^ZCARD=.*/ZCARD=$zcard/" "$env_file"
     
     echo -e "${GREEN}Fichier .env mis à jour: $env_file${NC}"
-}
-
-# Function to update .env file with machine info
-update_env_machine_info() {
-    local machine_type="$1"
-    local machine_value="$2"
-    
-    local env_file="$HOME/.zen/Astroport.ONE/.env"
-    
-    # Add machine info section if not exists
-    if ! grep -q "MACHINE_TYPE" "$env_file" 2>/dev/null; then
-        echo "" >> "$env_file"
-        echo "###################################" >> "$env_file"
-        echo "## ASTROPORT MACHINE CONFIGURATION" >> "$env_file"
-        echo "###################################" >> "$env_file"
-        echo "MACHINE_TYPE=\"$machine_type\"" >> "$env_file"
-        echo "MACHINE_VALUE=$machine_value" >> "$env_file"
-        echo "CAPITAL_DATE=$(date +%Y%m%d%H%M%S)" >> "$env_file"
-    else
-        sed -i "s/^MACHINE_TYPE=.*/MACHINE_TYPE=\"$machine_type\"/" "$env_file"
-        sed -i "s/^MACHINE_VALUE=.*/MACHINE_VALUE=$machine_value/" "$env_file"
-    fi
 }
 
 # Function to initialize system wallets completely
@@ -1504,37 +1545,79 @@ show_analysis_menu() {
     esac
 }
 
+# Function to format G1history.sh JSON output as a human-readable table
+# (silkaj is deprecated; history now comes from the squid GraphQL indexer)
+format_g1_history() {
+    local json="$1"
+    local limit="${2:-20}"
+
+    if ! echo "$json" | jq -e '.history' >/dev/null 2>&1; then
+        echo -e "${RED}Aucun historique disponible${NC}"
+        return 1
+    fi
+
+    echo "$json" | jq -r --argjson limit "$limit" '
+        .history[:$limit][] |
+        "\(.Date // "?")  \(if (.["Amounts Ğ1"] >= 0) then "+" else "" end)\(.["Amounts Ğ1"]) Ğ1  \(.["Issuers/Recipients"][0:20])...  \(.Reference // "")"
+    '
+}
+
+# Function to follow a wallet's primal chain by repeatedly querying G1primal.sh
+# (replaces silkaj money primal --chain, not available with squid GraphQL)
+follow_primal_chain() {
+    local pubkey="$1"
+    local limit="${2:-20}"
+    local depth=0
+    local current="$pubkey"
+    local seen=()
+
+    while [[ $depth -lt $limit ]]; do
+        local primal=$(${MY_PATH}/G1primal.sh "$current" 2>/dev/null)
+        if [[ -z "$primal" ]]; then
+            echo -e "${YELLOW}Fin de chaîne (pas de transaction primale) après $depth saut(s)${NC}"
+            return 0
+        fi
+        for s in "${seen[@]}"; do
+            [[ "$s" == "$primal" ]] && { echo -e "${YELLOW}Boucle détectée, arrêt${NC}"; return 0; }
+        done
+        seen+=("$primal")
+        ((depth++))
+        local tag=""
+        [[ "$primal" == "$UPLANETG1PUB" ]] && tag=" ${GREEN}← UPLANET${NC}"
+        echo -e "  $depth) ${CYAN}$primal${NC}$tag"
+        current="$primal"
+        [[ "$primal" == "$UPLANETG1PUB" ]] && return 0
+    done
+    echo -e "${YELLOW}Limite de $limit saut(s) atteinte${NC}"
+}
+
 # Function to show transaction history
 show_transaction_history() {
     local pubkey="$1"
     local wallet_name="$2"
-    
+
     echo -e "\n${CYAN}📊 TRANSACTION HISTORY - $wallet_name${NC}"
     echo -e "${YELLOW}=====================================${NC}"
-    
+
     # Show recent transactions
     echo -e "${GREEN}Recent transactions:${NC}"
-    silkaj money history "$pubkey" | head -20
-    
+    format_g1_history "$(${MY_PATH}/G1history.sh "$pubkey" 20 2>/dev/null)" 20
+
     echo -e "\n${YELLOW}Options:${NC}"
-    echo -e "  1. View full history"
-    echo -e "  2. View with UIDs"
-    echo -e "  3. View with full public keys"
-    echo -e "  4. Back to analysis menu"
-    
-    read -p "Select option (1-4): " history_choice
-    
+    echo -e "  1. View full history (100 dernières transactions)"
+    echo -e "  2. View raw JSON"
+    echo -e "  3. Back to analysis menu"
+
+    read -p "Select option (1-3): " history_choice
+
     case "$history_choice" in
         1)
-            silkaj money history "$pubkey"
+            format_g1_history "$(${MY_PATH}/G1history.sh "$pubkey" 100 2>/dev/null)" 100
             ;;
         2)
-            silkaj money history --uids "$pubkey"
+            ${MY_PATH}/G1history.sh "$pubkey" 100 2>/dev/null | jq .
             ;;
         3)
-            silkaj money history --full-pubkey "$pubkey"
-            ;;
-        4)
             show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
             ;;
         *)
@@ -1553,21 +1636,26 @@ show_primal_chain() {
     
     # Show primal transaction source
     echo -e "${GREEN}Primal transaction source:${NC}"
-    silkaj money primal "$pubkey"
-    
+    local primal=$(${MY_PATH}/G1primal.sh "$pubkey" 2>/dev/null)
+    if [[ -n "$primal" ]]; then
+        echo -e "  ${CYAN}$primal${NC}"
+    else
+        echo -e "  ${YELLOW}Aucune transaction primale trouvée${NC}"
+    fi
+
     echo -e "\n${YELLOW}Options:${NC}"
-    echo -e "  1. Follow primal chain (recursive)"
+    echo -e "  1. Follow primal chain (jusqu'à 20 sauts)"
     echo -e "  2. Follow primal chain (limited to 10)"
     echo -e "  3. Back to analysis menu"
-    
+
     read -p "Select option (1-3): " primal_choice
-    
+
     case "$primal_choice" in
         1)
-            silkaj money primal --chain "$pubkey"
+            follow_primal_chain "$pubkey" 20
             ;;
         2)
-            silkaj money primal --chain --limit 10 "$pubkey"
+            follow_primal_chain "$pubkey" 10
             ;;
         3)
             show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
@@ -1592,37 +1680,48 @@ generate_accounting_report() {
     echo -e "  3. Current month"
     echo -e "  4. Custom period"
     echo -e "  5. Back to analysis menu"
-    
+
     read -p "Select option (1-5): " report_choice
-    
+
+    local period=""
     case "$report_choice" in
         1)
-            current_year=$(date +%Y)
-            echo -e "${GREEN}Generating report for year $current_year...${NC}"
-            silkaj money history --compta "$current_year" "$pubkey"
+            period=$(date +%Y)
             ;;
         2)
-            prev_year=$(( $(date +%Y) - 1 ))
-            echo -e "${GREEN}Generating report for year $prev_year...${NC}"
-            silkaj money history --compta "$prev_year" "$pubkey"
+            period=$(( $(date +%Y) - 1 ))
             ;;
         3)
-            current_month=$(date +%m-%Y)
-            echo -e "${GREEN}Generating report for month $current_month...${NC}"
-            silkaj money history --compta "$current_month" "$pubkey"
+            period=$(date +%Y-%m)
             ;;
         4)
-            read -p "Enter period (e.g., '2024' for year, '03-2024' for month): " custom_period
-            echo -e "${GREEN}Generating report for period $custom_period...${NC}"
-            silkaj money history --compta "$custom_period" "$pubkey"
+            read -p "Enter period (e.g., '2024' for year, '2024-03' for month): " period
             ;;
         5)
             show_analysis_menu "$wallet_name" "$wallet_type" "$pubkey"
+            return
             ;;
         *)
             echo -e "${RED}Invalid selection.${NC}"
+            return
             ;;
     esac
+
+    echo -e "${GREEN}Generating report for period $period...${NC}"
+    local hist_json=$(${MY_PATH}/G1history.sh "$pubkey" 500 2>/dev/null)
+
+    echo "$hist_json" | jq -r --arg p "$period" '
+        [.history[] | select(.Date != null and (.Date | startswith($p)))] as $filtered |
+        if ($filtered | length) == 0 then
+            "Aucune transaction pour la période \($p)"
+        else
+            ($filtered[] | "\(.Date)  \(.["Amounts Ğ1"]) Ğ1  \(.Reference // "")"),
+            "----------------------------------------",
+            "Total reçu:    +\($filtered | map(select(.["Amounts Ğ1"] > 0) | .["Amounts Ğ1"]) | add // 0) Ğ1",
+            "Total envoyé:  \($filtered | map(select(.["Amounts Ğ1"] < 0) | .["Amounts Ğ1"]) | add // 0) Ğ1",
+            "Solde période: \($filtered | map(.["Amounts Ğ1"]) | add // 0) Ğ1"
+        end
+    '
 }
 
 # Function to search primal chain
@@ -1643,12 +1742,12 @@ search_primal_chain() {
     case "$search_choice" in
         1)
             echo -e "${GREEN}Following primal chain until UPLANET source...${NC}"
-            silkaj money primal --chain --limit 50 "$pubkey" | grep -i "uplanet\|$UPLANETG1PUB" || echo "No UPLANET source found in chain"
+            follow_primal_chain "$pubkey" 50
             ;;
         2)
             read -p "Enter limit (1-100): " limit
             if [[ "$limit" =~ ^[0-9]+$ ]] && [[ "$limit" -ge 1 ]] && [[ "$limit" -le 100 ]]; then
-                silkaj money primal --chain --limit "$limit" "$pubkey"
+                follow_primal_chain "$pubkey" "$limit"
             else
                 echo -e "${RED}Invalid limit. Please enter a number between 1 and 100.${NC}"
             fi
@@ -1679,11 +1778,15 @@ export_history_csv() {
     filename="${export_dir}/${wallet_name}_history_${timestamp}.csv"
     
     echo -e "${GREEN}Exporting transaction history to: ${CYAN}$filename${NC}"
-    
-    # Export to CSV
-    silkaj money history --csv-file "$filename" "$pubkey"
-    
-    if [[ -f "$filename" ]]; then
+
+    # Export to CSV (via G1history.sh, silkaj is deprecated)
+    local hist_json=$(${MY_PATH}/G1history.sh "$pubkey" 500 2>/dev/null)
+    {
+        echo "Date,Amount_G1,Direction,Counterparty,Reference,BlockNumber"
+        echo "$hist_json" | jq -r '.history[] | [.Date, .["Amounts Ğ1"], .direction, .["Issuers/Recipients"], (.Reference // ""), .blockNumber] | @csv'
+    } > "$filename"
+
+    if [[ -s "$filename" ]]; then
         echo -e "${GREEN}✅ Export successful!${NC}"
         echo -e "${GREEN}File: ${CYAN}$filename${NC}"
         echo -e "${GREEN}Size: ${CYAN}$(du -h "$filename" | cut -f1)${NC}"
@@ -2143,40 +2246,26 @@ handle_opencollective_reporting() {
     if [[ -n "$society_pubkey" ]]; then
         echo -e "${GREEN}Portefeuille UPLANETNAME_SOCIETY: ${CYAN}$society_pubkey${NC}"
         
-        # Get recent transactions (last 30 days)
-        echo -e "\n${YELLOW}Transactions récentes (30 derniers jours):${NC}"
-        
-        # Use silkaj to get recent history
-        local temp_history="/tmp/society_history_$(date +%s).txt"
-        silkaj money history "$society_pubkey" 2>/dev/null | head -20 > "$temp_history"
-        
-        if [[ -s "$temp_history" ]]; then
-            local line_count=0
-            while IFS= read -r line; do
-                if [[ "$line" == *"+"* ]] && [[ "$line" != *"Ğ1"* ]]; then
-                    # This is an incoming transaction
-                    local amount=$(echo "$line" | grep -o '+[0-9.]*' | sed 's/+//')
-                    if [[ -n "$amount" ]]; then
-                        local zen_amount=$(echo "scale=1; $amount * 10" | bc)
-                        payments_list+=("$zen_amount Ẑen ($amount Ğ1)")
-                        total_to_report=$((total_to_report + zen_amount))
-                        echo -e "  • ${GREEN}+$zen_amount Ẑen${NC} (${YELLOW}$amount Ğ1${NC})"
-                        ((line_count++))
-                    fi
-                fi
-                
-                if [[ $line_count -ge 10 ]]; then
-                    break
-                fi
-            done < "$temp_history"
-        fi
-        
-        rm -f "$temp_history"
+        # Get recent transactions (via squid GraphQL, silkaj is deprecated)
+        echo -e "\n${YELLOW}Transactions récentes reçues:${NC}"
+
+        local hist_json=$(${MY_PATH}/G1history.sh "$society_pubkey" 30 2>/dev/null)
+
+        while IFS='|' read -r amount ref; do
+            [[ -z "$amount" ]] && continue
+            local zen_amount=$(echo "scale=1; $amount * 10" | bc)
+            payments_list+=("$zen_amount Ẑen ($amount Ğ1) - $ref")
+            total_to_report=$(echo "$total_to_report + $zen_amount" | bc)
+            echo -e "  • ${GREEN}+$zen_amount Ẑen${NC} (${YELLOW}$amount Ğ1${NC})"
+        done < <(echo "$hist_json" | jq -r '
+            [.history[] | select(.direction == "received")][:10][]
+            | "\(.["Amounts Ğ1"])|\(.Reference // "")"
+        ')
     fi
-    
+
     echo -e "\n${CYAN}💰 TOTAL À REPORTER: ${GREEN}$total_to_report Ẑen${NC}"
-    
-    if [[ $total_to_report -gt 0 ]]; then
+
+    if (( $(echo "$total_to_report > 0" | bc -l) )); then
         echo -e "\n${BLUE}ÉTAPES POUR REPORTER SUR OPENCOLLECTIVE:${NC}"
         echo -e "  1. ${YELLOW}Ouvrir: https://opencollective.com/monnaie-librepar${NC}"
         echo -e "  2. ${YELLOW}Se connecter avec le compte administrateur${NC}"
@@ -3196,7 +3285,7 @@ perform_system_health_check() {
     done
     
     # Check required tools
-    local required_tools=("silkaj" "bc" "jq")
+    local required_tools=("curl" "bc" "jq")
     for tool in "${required_tools[@]}"; do
         if command -v "$tool" >/dev/null 2>&1; then
             echo -e "${GREEN}✓ $tool: Available${NC}"
@@ -3206,13 +3295,16 @@ perform_system_health_check() {
         fi
     done
     
-    # Check G1check.sh script
-    if [[ -f "${MY_PATH}/G1check.sh" ]]; then
-        echo -e "${GREEN}✓ G1check.sh: Available${NC}"
-    else
-        echo -e "${RED}✗ G1check.sh: Not found${NC}"
-        ((issues++))
-    fi
+    # Check required helper scripts (squid GraphQL wrappers, replace silkaj)
+    local required_scripts=("G1check.sh" "G1history.sh" "G1primal.sh" "G1balance.sh")
+    for script in "${required_scripts[@]}"; do
+        if [[ -f "${MY_PATH}/${script}" ]]; then
+            echo -e "${GREEN}✓ $script: Available${NC}"
+        else
+            echo -e "${RED}✗ $script: Not found${NC}"
+            ((issues++))
+        fi
+    done
     
     # Summary
     echo -e "\n${CYAN}HEALTH CHECK SUMMARY:${NC}"
@@ -3221,6 +3313,121 @@ perform_system_health_check() {
     else
         echo -e "${YELLOW}⚠ System has $issues issue(s) that should be addressed${NC}"
     fi
+}
+
+# ─────────────────────────────────────────────────────────────
+# CLI non-interactive subcommands (scripts/cron, no read -p)
+# ─────────────────────────────────────────────────────────────
+
+cli_require_env() {
+    if [[ -z "$UPLANETNAME" ]]; then
+        echo "ERROR: UPLANETNAME n'est pas défini" >&2
+        exit 1
+    fi
+}
+
+cli_balance() {
+    local pubkey="$1"
+    if ! is_valid_public_key "$pubkey"; then
+        echo "ERROR: clé publique invalide ou manquante" >&2
+        exit 1
+    fi
+    local status=$(get_wallet_status "$pubkey" "MULTIPASS")
+    local balance=$(echo "$status" | cut -d '|' -f 1)
+    local zen=$(echo "$status" | cut -d '|' -f 3)
+    if [[ -n "$zen" && "$zen" != "0" ]]; then
+        echo "$balance Ğ1 ($zen Ẑen)"
+    else
+        echo "$balance Ğ1"
+    fi
+}
+
+cli_history() {
+    local pubkey="$1"
+    local limit="${2:-20}"
+    if ! is_valid_public_key "$pubkey"; then
+        echo "ERROR: clé publique invalide ou manquante" >&2
+        exit 1
+    fi
+    format_g1_history "$(${MY_PATH}/G1history.sh "$pubkey" "$limit" 2>/dev/null)" "$limit"
+}
+
+cli_primal() {
+    local pubkey="$1"
+    if ! is_valid_public_key "$pubkey"; then
+        echo "ERROR: clé publique invalide ou manquante" >&2
+        exit 1
+    fi
+    ${MY_PATH}/G1primal.sh "$pubkey"
+}
+
+cli_chain() {
+    local pubkey="$1"
+    local limit="${2:-20}"
+    if ! is_valid_public_key "$pubkey"; then
+        echo "ERROR: clé publique invalide ou manquante" >&2
+        exit 1
+    fi
+    follow_primal_chain "$pubkey" "$limit"
+}
+
+cli_report() {
+    local pubkey="$1"
+    local period="$2"
+    if ! is_valid_public_key "$pubkey"; then
+        echo "ERROR: clé publique invalide ou manquante" >&2
+        exit 1
+    fi
+    if [[ -z "$period" ]]; then
+        echo "ERROR: période requise (format YYYY ou YYYY-MM)" >&2
+        exit 1
+    fi
+    local hist_json=$(${MY_PATH}/G1history.sh "$pubkey" 500 2>/dev/null)
+    echo "$hist_json" | jq -r --arg p "$period" '
+        [.history[] | select(.Date != null and (.Date | startswith($p)))] as $filtered |
+        if ($filtered | length) == 0 then
+            "Aucune transaction pour la période \($p)"
+        else
+            ($filtered[] | "\(.Date)  \(.["Amounts Ğ1"]) Ğ1  \(.Reference // "")"),
+            "----------------------------------------",
+            "Total reçu:    +\($filtered | map(select(.["Amounts Ğ1"] > 0) | .["Amounts Ğ1"]) | add // 0) Ğ1",
+            "Total envoyé:  \($filtered | map(select(.["Amounts Ğ1"] < 0) | .["Amounts Ğ1"]) | add // 0) Ğ1",
+            "Solde période: \($filtered | map(.["Amounts Ğ1"]) | add // 0) Ğ1"
+        end
+    '
+}
+
+cli_csv() {
+    local pubkey="$1"
+    local outfile="$2"
+    if ! is_valid_public_key "$pubkey"; then
+        echo "ERROR: clé publique invalide ou manquante" >&2
+        exit 1
+    fi
+    local hist_json=$(${MY_PATH}/G1history.sh "$pubkey" 500 2>/dev/null)
+    local csv
+    csv=$(
+        echo "Date,Amount_G1,Direction,Counterparty,Reference,BlockNumber"
+        echo "$hist_json" | jq -r '.history[] | [.Date, .["Amounts Ğ1"], .direction, .["Issuers/Recipients"], (.Reference // ""), .blockNumber] | @csv'
+    )
+    if [[ -n "$outfile" ]]; then
+        echo "$csv" > "$outfile"
+        echo "Exporté vers $outfile" >&2
+    else
+        echo "$csv"
+    fi
+}
+
+cli_dashboard() {
+    initialize_system
+    cli_require_env
+    initialize_system_wallets
+    display_economic_dashboard "$@"
+}
+
+cli_health() {
+    initialize_system
+    perform_system_health_check
 }
 
 # Main script logic
@@ -3809,10 +4016,43 @@ show_support_contact() {
     read -p "Appuyez sur Entrée pour continuer..." 
 }
 
-# Check if help is requested
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    usage
-fi
-
-# Run main function
-main "$@" 
+# ─────────────────────────────────────────────────────────────
+# CLI dispatch: sous-commande non-interactive, sinon menu interactif
+# ─────────────────────────────────────────────────────────────
+case "$1" in
+    -h|--help)
+        usage
+        ;;
+    dashboard)
+        shift
+        cli_dashboard "$@"
+        ;;
+    balance)
+        cli_balance "$2"
+        ;;
+    history)
+        cli_history "$2" "$3"
+        ;;
+    primal)
+        cli_primal "$2"
+        ;;
+    chain)
+        cli_chain "$2" "$3"
+        ;;
+    report)
+        cli_report "$2" "$3"
+        ;;
+    csv)
+        cli_csv "$2" "$3"
+        ;;
+    health)
+        cli_health
+        ;;
+    "")
+        main "$@"
+        ;;
+    *)
+        echo -e "${RED}Commande inconnue: $1${NC}" >&2
+        usage
+        ;;
+esac 

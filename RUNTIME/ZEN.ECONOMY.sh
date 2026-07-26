@@ -23,6 +23,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/../tools/my.sh"
+. "${MY_PATH}/../tools/capital_ledger.sh"
 # Source cooperative config for DID-based configuration (encrypted in NOSTR)
 . "${MY_PATH}/../tools/cooperative_config.sh" 2>/dev/null || true
 
@@ -652,91 +653,78 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
         
         #######################################################################
         # DEPRECIATION: UPLANETNAME_CAPITAL → UPLANETNAME_AMORTISSEMENT
-        # Linear depreciation over 3 years (156 weeks)
-        # Compte 21 (Immobilisations) → Compte 28 (Amortissements)
-        # 
+        # Grand livre multi-contributeurs (tools/capital_ledger.sh,
+        # ~/.zen/game/capital_ledger.json) : chaque actif "machine" s'amortit
+        # linéairement sur 156 semaines (Compte 21 → Compte 28), à raison
+        # d'UN virement individuel par actif (traçabilité comptable par
+        # contributeur). Les dômes/terrains/autres (depreciable=false) ne
+        # sont jamais amortis — leur valeur reste entière au Compte 21.
+        #
+        # Idempotence : chaque entrée porte un marqueur last_depreciated_week
+        # (WEEK_KEY) mis à jour uniquement après virement réussi — un cron
+        # relancé la même semaine ne rejoue pas les virements déjà faits.
+        #
         # NOTE: Amortissement n'est PAS du cash convertible en €
         # C'est une écriture comptable représentant la valeur "consommée"
         # Valeur Nette Comptable = CAPITAL - AMORTISSEMENT
         #######################################################################
-        
-        if [[ -s "$HOME/.zen/game/.env" ]] && [[ -s "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
-            # Read machine capital configuration
-            MACHINE_VALUE=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
-            CAPITAL_DATE=$(grep "^CAPITAL_DATE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
-            DEPRECIATION_WEEKS=$(grep "^DEPRECIATION_WEEKS=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
-            [[ -z $DEPRECIATION_WEEKS ]] && DEPRECIATION_WEEKS=156  # Default: 3 years
-            
+
+        if [[ -s "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
             # Initialize AMORTISSEMENT wallet if not exists
             if [[ ! -s "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
                 log_output "📦 Creating UPLANETNAME_AMORTISSEMENT wallet (Compte 28)..."
                 ${MY_PATH}/../tools/keygen -t duniter -o "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" "${UPLANETNAME}.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT"
                 chmod 600 "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey"
-                # Initialize with 1Ğ1 for transaction capability
                 AMORT_G1PUB=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep "pub:" | cut -d ' ' -f 2)
                 ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.G1.dunikey" "1" "${AMORT_G1PUB}" "UP:${UPLANETG1PUB:0:8}:INIT:AMORT:1G1:GENESIS" 2>/dev/null
                 log_output "✅ UPLANETNAME_AMORTISSEMENT initialized: ${AMORT_G1PUB:0:8}..."
             fi
-            
-            # Get AMORTISSEMENT wallet public key
             AMORT_G1PUB=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-            
-            if [[ -n "$MACHINE_VALUE" ]] && [[ -n "$CAPITAL_DATE" ]] && [[ "$MACHINE_VALUE" != "0" ]]; then
-                # Calculate weeks since capital date
-                CAPITAL_TIMESTAMP=$(date -d "${CAPITAL_DATE:0:8}" +%s 2>/dev/null || echo "0")
-                CURRENT_TIMESTAMP=$(date +%s)
-                SECONDS_ELAPSED=$((CURRENT_TIMESTAMP - CAPITAL_TIMESTAMP))
-                WEEKS_ELAPSED=$((SECONDS_ELAPSED / 604800))  # 604800 = 7*24*60*60
-                
-                log_output "📊 DEPRECIATION CHECK: Machine value=$MACHINE_VALUE Ẑen, Weeks elapsed=$WEEKS_ELAPSED/$DEPRECIATION_WEEKS"
-                
-                if [[ $WEEKS_ELAPSED -lt $DEPRECIATION_WEEKS ]]; then
-                    # Calculate weekly depreciation amount
-                    WEEKLY_DEPRECIATION=$(echo "scale=2; $MACHINE_VALUE / $DEPRECIATION_WEEKS" | bc -l 2>/dev/null || echo 0)
+
+            PENDING_ASSETS=$(capital_ledger_pending_depreciation "$WEEK_KEY")
+            PENDING_COUNT=$(echo "$PENDING_ASSETS" | jq 'length')
+
+            if [[ "$PENDING_COUNT" -gt 0 ]]; then
+                log_output "📊 DEPRECIATION: $PENDING_COUNT actif(s) à amortir cette semaine ($WEEK_KEY)"
+
+                while IFS= read -r asset; do
+                    ASSET_ID=$(echo "$asset" | jq -r '.id')
+                    ASSET_EMAIL=$(echo "$asset" | jq -r '.email')
+                    ASSET_LABEL=$(echo "$asset" | jq -r '.label')
+                    ASSET_VALUE=$(echo "$asset" | jq -r '.value_zen')
+                    ASSET_WEEKS=$(echo "$asset" | jq -r '.depreciation_weeks')
+                    ASSET_AMORTIZED=$(echo "$asset" | jq -r '.amortized_zen')
+
+                    WEEKLY_DEPRECIATION=$(echo "scale=2; $ASSET_VALUE / $ASSET_WEEKS" | bc -l 2>/dev/null || echo 0)
+                    REMAINING=$(echo "scale=2; $ASSET_VALUE - $ASSET_AMORTIZED" | bc -l 2>/dev/null || echo 0)
+                    # Ne pas amortir plus que la valeur résiduelle (dernière semaine)
+                    if [[ $(echo "$WEEKLY_DEPRECIATION > $REMAINING" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
+                        WEEKLY_DEPRECIATION="$REMAINING"
+                    fi
                     WEEKLY_DEPRECIATION_G1=$(makecoord $(echo "$WEEKLY_DEPRECIATION / 10" | bc -l 2>/dev/null || echo 0))
-                    
-                    # Check CAPITAL + AMORTISSEMENT balances en parallèle
+
                     CAPITAL_G1PUB=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-                    _AMORT_TMP=$(mktemp -d)
-                    ${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB} > "${_AMORT_TMP}/capital.coin" 2>/dev/null &
-                    ${MY_PATH}/../tools/G1check.sh ${AMORT_G1PUB}   > "${_AMORT_TMP}/amort.coin"   2>/dev/null &
-                    wait
-                    _cap=$(tail -n 1 "${_AMORT_TMP}/capital.coin" 2>/dev/null); [[ "$_cap" =~ ^[0-9]+(\.[0-9]+)?$ ]] || _cap=1
-                    _amr=$(tail -n 1 "${_AMORT_TMP}/amort.coin"   2>/dev/null); [[ "$_amr" =~ ^[0-9]+(\.[0-9]+)?$ ]] || _amr=1
-                    rm -rf "${_AMORT_TMP}"
-                    CAPITAL_COIN="$_cap"
-                    CAPITAL_ZEN=$(echo "scale=1; (${CAPITAL_COIN} - 1) * 10" | bc 2>/dev/null || echo "0")
+                    CAPITAL_COIN=$(${MY_PATH}/../tools/G1check.sh "$CAPITAL_G1PUB" 2>/dev/null | tail -n 1)
+                    [[ "$CAPITAL_COIN" =~ ^[0-9]+(\.[0-9]+)?$ ]] || CAPITAL_COIN=1
+                    CAPITAL_ZEN=$(echo "scale=1; ($CAPITAL_COIN - 1) * 10" | bc 2>/dev/null || echo "0")
 
-                    # Calculate values for logging
-                    TOTAL_DEPRECIATED=$(echo "scale=2; $WEEKLY_DEPRECIATION * $WEEKS_ELAPSED" | bc -l 2>/dev/null || echo 0)
-                    RESIDUAL_VALUE=$(echo "scale=2; $MACHINE_VALUE - $TOTAL_DEPRECIATED" | bc -l 2>/dev/null || echo 0)
-
-                    AMORT_COIN="$_amr"
-                    AMORT_ZEN=$(echo "scale=1; ($AMORT_COIN - 1) * 10" | bc)
-                    
                     if [[ $(echo "$CAPITAL_ZEN >= $WEEKLY_DEPRECIATION" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
-                        # Transfer depreciation from CAPITAL → AMORTISSEMENT (Compte 21 → Compte 28)
-                        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CAPITAL.dunikey" "$WEEKLY_DEPRECIATION_G1" "${AMORT_G1PUB}" "UP:${UPLANETG1PUB:0:8}:AMORT:W${CURRENT_WEEK}:${WEEKLY_DEPRECIATION}Z:C21>C28" 2>/dev/null
-                        
+                        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CAPITAL.dunikey" "$WEEKLY_DEPRECIATION_G1" "${AMORT_G1PUB}" "UP:${UPLANETG1PUB:0:8}:AMORT:${ASSET_ID}:W${CURRENT_WEEK}:${WEEKLY_DEPRECIATION}Z:C21>C28" 2>/dev/null
+
                         if [[ $? -eq 0 ]]; then
-                            NEW_AMORT_ZEN=$(echo "scale=2; $AMORT_ZEN + $WEEKLY_DEPRECIATION" | bc -l 2>/dev/null || echo 0)
-                            log_output "✅ DEPRECIATION: $WEEKLY_DEPRECIATION Ẑen → AMORTISSEMENT (Compte 28)"
-                            log_output "   Valeur Brute (Compte 21): $MACHINE_VALUE Ẑen"
-                            log_output "   Amortissements Cumulés (Compte 28): ~$NEW_AMORT_ZEN Ẑen"
-                            log_output "   Valeur Nette Comptable: ~$RESIDUAL_VALUE Ẑen (après $WEEKS_ELAPSED semaines)"
+                            NEW_AMORTIZED=$(echo "scale=2; $ASSET_AMORTIZED + $WEEKLY_DEPRECIATION" | bc -l 2>/dev/null || echo 0)
+                            capital_ledger_mark_depreciated "$ASSET_ID" "$WEEK_KEY" "$NEW_AMORTIZED" "$ASSET_VALUE"
+                            log_output "✅ DEPRECIATION [$ASSET_LABEL / $ASSET_EMAIL]: $WEEKLY_DEPRECIATION Ẑen → AMORTISSEMENT (Compte 28)"
+                            log_output "   Valeur Brute: $ASSET_VALUE Ẑen — Amorti cumulé: ~$NEW_AMORTIZED Ẑen"
                         else
-                            log_output "⚠️  DEPRECIATION transfer failed - will retry next week"
+                            log_output "⚠️  DEPRECIATION transfer failed for asset $ASSET_ID [$ASSET_LABEL] - retry next week"
                         fi
                     else
-                        log_output "⚠️  CAPITAL wallet insufficient for depreciation ($CAPITAL_ZEN < $WEEKLY_DEPRECIATION Ẑen)"
-                        log_output "   Expected residual value: $RESIDUAL_VALUE Ẑen - Capital fully amortized or underfunded"
+                        log_output "⚠️  CAPITAL wallet insufficient for depreciation of $ASSET_ID [$ASSET_LABEL] ($CAPITAL_ZEN < $WEEKLY_DEPRECIATION Ẑen)"
                     fi
-                else
-                    log_output "📊 DEPRECIATION COMPLETE: Machine fully amortized after $DEPRECIATION_WEEKS weeks"
-                    log_output "   Valeur Nette Comptable = 0 (machine peut être vendue à valeur résiduelle)"
-                    # After full depreciation, CAPITAL wallet should be empty
-                    # AMORTISSEMENT wallet contains total depreciated value
-                fi
+                done < <(echo "$PENDING_ASSETS" | jq -c '.[]')
+            else
+                log_output "📊 DEPRECIATION: aucun actif à amortir cette semaine ($WEEK_KEY)"
             fi
         fi
         

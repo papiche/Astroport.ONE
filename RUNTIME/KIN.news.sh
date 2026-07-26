@@ -725,10 +725,6 @@ printf "     💎 Quatuors: %d  🌙 Occultes: %d  🌀 Analogues: %d  🎵 Cons
 printf "     🧭 Guides: %d  ⚡ Antipodes: %d  🌊 Cymatiques: %d\n" "$guide_count" "$antipode_count" "$cymatic_count"
 echo "========================================================================"
 
-# ─── Publication hebdo des tâches G1FabLab sur NOSTR ─────────────────────
-TASKS_SCRIPT="${MY_PATH}/KIN.tasks.sh"
-[[ -x "$TASKS_SCRIPT" ]] && "$TASKS_SCRIPT" --publish 2>/dev/null || true
-
 # ─── DÉTECTION DE SWARM GÉOGRAPHIQUE (Choeur des Nœuds) ─────────────────
 # Grouper les membres par zone UMAP (0.1° ≈ 11km) et détecter les clusters
 echo ""

@@ -16,6 +16,10 @@ TOOLS_PATH="${MY_PATH}/../tools"
 [[ -s "${TOOLS_PATH}/my.sh" ]] \
     && source "${TOOLS_PATH}/my.sh"
 
+# Source capital_ledger.sh (grand livre du capital, multi-contributeurs)
+[[ -s "${TOOLS_PATH}/capital_ledger.sh" ]] \
+    && source "${TOOLS_PATH}/capital_ledger.sh"
+
 # Forcer la locale numérique pour éviter les problèmes de virgule/point
 export LC_NUMERIC=C
 
@@ -255,6 +259,7 @@ show_system_wallets_summary() {
     fi
     
     # UPLANETNAME_CAPITAL (Immobilisations - Compte 21 - Valeur Brute)
+    # Grand livre multi-contributeurs : tools/capital_ledger.sh (~/.zen/game/capital_ledger.json)
     if [[ -f "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
         local capital_pubkey=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
         if [[ -n "$capital_pubkey" ]]; then
@@ -262,29 +267,34 @@ show_system_wallets_summary() {
             local capital_zen=$(calculate_zen_balance "$capital_balance")
             local capital_str=$(safe_printf "%.2f" "$capital_balance")
             local zen_str=$(safe_printf "%.0f" "$capital_zen")
-            
-            # Get AMORTISSEMENT balance for VNC calculation
-            local amort_zen=0
-            if [[ -f "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
-                local amort_pubkey=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
-                if [[ -n "$amort_pubkey" ]]; then
-                    local amort_balance=$(get_wallet_balance "$amort_pubkey")
-                    amort_zen=$(calculate_zen_balance "$amort_balance")
-                fi
+
+            local ledger_gross=0 ledger_amortized=0
+            if [[ -n "$(type -t capital_ledger_init 2>/dev/null)" ]]; then
+                capital_ledger_init
+                ledger_gross=$(jq -r '[.assets[] | .value_zen] | add // 0' "$CAPITAL_LEDGER_FILE")
+                ledger_amortized=$(jq -r '[.assets[] | .amortized_zen] | add // 0' "$CAPITAL_LEDGER_FILE")
             fi
-            
-            # Calculate Valeur Nette Comptable (VNC = CAPITAL - AMORTISSEMENT)
-            local machine_value=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
-            if [[ -n "$machine_value" && "$machine_value" != "0" ]]; then
-                local vnc=$(echo "scale=0; $capital_zen" | bc -l 2>/dev/null || echo "0")
-                local depreciation_pct=$(echo "scale=0; $amort_zen * 100 / $machine_value" | bc -l 2>/dev/null || echo "0")
-                echo -e "  🏭 CAPITAL (Compte 21): ${WHITE}$capital_str Ğ1${NC} (VNC: ${CYAN}$vnc Ẑen${NC}) [Brut: ${machine_value}Ẑ]"
+
+            if [[ -n "$ledger_gross" && "$ledger_gross" != "0" ]]; then
+                local vnc=$(echo "scale=0; $ledger_gross - $ledger_amortized" | bc -l 2>/dev/null || echo "0")
+                echo -e "  🏭 CAPITAL (Compte 21): ${WHITE}$capital_str Ğ1${NC} (VNC: ${CYAN}$vnc Ẑen${NC}) [Brut: ${ledger_gross}Ẑ]"
+
+                # Ventilation par type d'actif
+                local by_type
+                by_type=$(jq -r '[.assets[] | .asset_type] | unique | .[]' "$CAPITAL_LEDGER_FILE" 2>/dev/null)
+                if [[ -n "$by_type" ]]; then
+                    while IFS= read -r t; do
+                        local t_sum
+                        t_sum=$(jq -r --arg t "$t" '[.assets[] | select(.asset_type==$t) | .value_zen] | add // 0' "$CAPITAL_LEDGER_FILE")
+                        echo -e "      • ${t}: ${CYAN}${t_sum} Ẑen${NC}"
+                    done <<< "$by_type"
+                fi
             else
                 echo -e "  🏭 CAPITAL (Compte 21): ${WHITE}$capital_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
             fi
         fi
     fi
-    
+
     # UPLANETNAME_AMORTISSEMENT (Amortissements - Compte 28 - Valeur Consommée)
     if [[ -f "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
         local amort_pubkey=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
@@ -293,11 +303,16 @@ show_system_wallets_summary() {
             local amort_zen=$(calculate_zen_balance "$amort_balance")
             local amort_str=$(safe_printf "%.2f" "$amort_balance")
             local zen_str=$(safe_printf "%.0f" "$amort_zen")
-            
-            local machine_value=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
-            if [[ -n "$machine_value" && "$machine_value" != "0" ]]; then
-                local depreciation_pct=$(echo "scale=0; $amort_zen * 100 / $machine_value" | bc -l 2>/dev/null || echo "0")
-                echo -e "  📉 AMORTISSEMENT (Compte 28): ${WHITE}$amort_str Ğ1${NC} (${RED}$zen_str Ẑen${NC}) [${depreciation_pct}% amorti]"
+
+            local ledger_gross=0
+            if [[ -n "$(type -t capital_ledger_init 2>/dev/null)" ]]; then
+                capital_ledger_init
+                ledger_gross=$(jq -r '[.assets[] | select(.depreciable==true) | .value_zen] | add // 0' "$CAPITAL_LEDGER_FILE")
+            fi
+
+            if [[ -n "$ledger_gross" && "$ledger_gross" != "0" ]]; then
+                local depreciation_pct=$(echo "scale=0; $zen_str * 100 / $ledger_gross" | bc -l 2>/dev/null || echo "0")
+                echo -e "  📉 AMORTISSEMENT (Compte 28): ${WHITE}$amort_str Ğ1${NC} (${RED}$zen_str Ẑen${NC}) [${depreciation_pct}% des machines amorti]"
             else
                 echo -e "  📉 AMORTISSEMENT (Compte 28): ${WHITE}$amort_str Ğ1${NC} (${RED}$zen_str Ẑen${NC})"
             fi
