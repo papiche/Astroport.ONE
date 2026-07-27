@@ -178,9 +178,12 @@ echo "  • .next.hex - Next HEX address for new relay/captain"
 echo "  • secret.june - ZEN Card transaction history (capital shares)"
 echo "  • .g1pub - ZEN Card G1 wallet access"
 echo ""
-echo "🔐 DECRYPTION REQUIRED"
+echo "🔐 DECRYPTION REQUIRED (2 layers)"
 echo "Your backup is securely encrypted with your G1 public key."
-echo "To decrypt it, you need your OLD secret.dunikey."
+echo "  1. Outer layer: decrypt with your OLD secret.dunikey (or ask your"
+echo "     Captain to use their uplanet key)."
+echo "  2. Inner layer: the resulting backup.zip is password-protected with"
+echo "     your MULTIPASS/ZEN Card PASS code (the one given to you at creation)."
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESTORATION METHODS:"
@@ -189,12 +192,13 @@ echo ""
 echo "Method 1: Automated restore (RECOMMENDED)"
 echo "  cd ~/.zen/Astroport.ONE"
 echo "  ./tools/nostr_RESTORE_TW.sh <IPFS_CID_OF_BACKUP>"
-echo "  (Script will automatically decrypt and use .next.disco)"
+echo "  (Script will automatically decrypt and prompt for your PASS code)"
 echo ""
 echo "Method 2: Manual restoration with NEW .disco"
 echo "  1. Decrypt backup: "
 echo "     ~/.zen/Astroport.ONE/tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${player}/.secret.dunikey -o backup.zip"
-echo "  2. Unzip backup.zip"
+echo "  2. Unzip backup.zip (will ask for your MULTIPASS/ZEN Card PASS code):"
+echo "     unzip backup.zip"
 echo "  3. Use .next.disco to create MULTIPASS on new relay:"
 echo "     cat .next.disco"
 echo "  4. Create MULTIPASS with same email + .next.disco:"
@@ -240,9 +244,12 @@ This encrypted backup contains:
   • .g1pub - ZEN Card G1 wallet access
   • RESTORE_INSTRUCTIONS.sh - Quick restore guide
 
-🔐 ASYMMETRIC ENCRYPTION:
+🔐 ENCRYPTION (2 layers):
 This backup has been strongly encrypted using your G1 Public Key (Curve25519).
-To decrypt it, you MUST possess your .secret.dunikey.
+To decrypt it, you MUST possess your .secret.dunikey (or ask your Captain to
+use their uplanet key as fallback). Once decrypted, the resulting backup.zip
+is ALSO password-protected with your MULTIPASS/ZEN Card PASS code (the one
+given to you at account creation) — you need it to unzip.
 
 ═══════════════════════════════════════════════════════════════
 
@@ -271,7 +278,7 @@ Method 1: Using Astroport restore tool (RECOMMENDED)
 Method 2: Manual recreation with NEW .disco
   $ cd ~/.zen/Astroport.ONE
   $ ./tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${player}/.secret.dunikey -o backup.zip
-  $ unzip backup.zip
+  $ unzip backup.zip   # asks for your MULTIPASS/ZEN Card PASS code
   $ cat backup/.next.disco
   $ # Use the SALT and PEPPER from .next.salt and .next.pepper
   $ ./tools/make_NOSTRCARD.sh <EMAIL> <LANG> <LAT> <LON> <NEW_SALT> <NEW_PEPPER>
@@ -394,13 +401,31 @@ echo "${g1pubnostr}" > "${BACKUP_DIR}/.cashback_g1pub"
 echo "✅ Cashback amount recorded: ${CASHBACK_AMOUNT} Ğ1"
 
 # -----------------------------------------------------------------------------
-# CREATE ARCHIVE AND ENCRYPT ASYMMETRICALLY (natools.py)
+# CREATE ARCHIVE (password-protected with the player's own .pass) AND ENCRYPT
+# ASYMMETRICALLY (natools.py)
 # -----------------------------------------------------------------------------
+# .pass est le code communiqué au joueur dès la création du MULTIPASS
+# (make_NOSTRCARD.sh) et réutilisé pour la ZEN Card (VISA.new.sh) : c'est le
+# seul secret que le joueur détient encore une fois son compte détruit (contrairement
+# à .secret.dunikey, jamais remis en main propre). La couche natools.py ci-dessous
+# reste la protection principale tant que le fichier est public sur IPFS (le mot de
+# passe zip seul, 4-5 chiffres, serait cassable) ; -P n'est qu'une couche
+# supplémentaire pour permettre au joueur d'ouvrir lui-même le zip une fois
+# celui-ci déchiffré (par lui via son ancienne clé, ou par le Capitaine via uplanet.dunikey).
+PLAYER_PASS=""
+[[ -s ~/.zen/game/nostr/${player}/.pass ]] && PLAYER_PASS=$(cat ~/.zen/game/nostr/${player}/.pass)
+
 ZIP_FILE="${BACKUP_DIR}.zip"
 echo "Creating archive: ${ZIP_FILE}"
 
 cd "$(dirname "${BACKUP_DIR}")"
-if zip -r "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")" 2>/dev/null; then
+if [[ -n "$PLAYER_PASS" ]]; then
+    ZIP_CREATE=(zip -r -P "$PLAYER_PASS" "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")")
+else
+    echo "⚠️  No .pass found for ${player} — archive will not be password-protected"
+    ZIP_CREATE=(zip -r "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")")
+fi
+if "${ZIP_CREATE[@]}" 2>/dev/null; then
     echo "✅ Backup archive created successfully"
     cd - > /dev/null 2>&1
     
@@ -456,6 +481,7 @@ if zip -r "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")" 2>/dev/null; then
     # Clean up temporary files
     rm -f "${ZIP_FILE}" "${PLAYER_ENC_FILE}"
     rm -rf "${BACKUP_DIR}"
+    unset PLAYER_PASS ZIP_CREATE
 else
     echo "❌ Failed to create backup ZIP archive"
     cd - > /dev/null 2>&1

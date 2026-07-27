@@ -13,6 +13,7 @@
 # Usage:
 #   G1check.sh <G1PUB>              → solde en Ğ1 (ex: 2.48)
 #   G1check.sh <G1PUB>:ZEN          → solde converti en Ẑen (= (Ğ1-1)*10)
+#   G1check.sh <G1PUB> --fresh      → ignore le cache, force une requête blockchain
 #   G1check.sh <PUB1> <PUB2> ...    → mode batch parallèle (une ligne par pub)
 #
 # Parallélisation :
@@ -27,6 +28,25 @@
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 [[ -f "${MY_PATH}/my.sh" ]] && . "${MY_PATH}/my.sh"
+
+# ── Extraction du flag --fresh AVANT le dispatch batch ────────────────────────
+# Sans ça, "G1check.sh <G1PUB> --fresh" a 2 arguments et tombe dans le mode
+# batch ci-dessous : "--fresh" est alors traité comme un second G1PUB (rejeté
+# par la validation de format), et l'ordre de sortie entre les deux jobs n'est
+# garanti que par GNU parallel — le fallback bash jobs ci-dessous ne le garantit
+# PAS (jobs concurrents, écriture au fil de l'eau) : `tail -n 1` côté appelant
+# peut alors récupérer une ligne vide au lieu du solde.
+FORCE_FRESH="false"
+_ARGS=()
+for _a in "$@"; do
+    if [[ "$_a" == "--fresh" ]]; then
+        FORCE_FRESH="true"
+    else
+        _ARGS+=("$_a")
+    fi
+done
+set -- "${_ARGS[@]}"
+unset _a _ARGS
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODE BATCH : plusieurs G1PUBs en arguments → parallèle
@@ -269,17 +289,17 @@ find "$CACHE_DIR" -mtime +"$CACHE_COINS_LIMIT" -name "*.COINS" -delete 2>/dev/nu
 COINSFILE="$CACHE_DIR/${G1PUB}.COINS"
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 1. Cache frais (< 12s) → retour immédiat
+# 1. Cache frais (< 12s) → retour immédiat (sauf --fresh)
 # ══════════════════════════════════════════════════════════════════════════════
 age=$(file_age_sec "$COINSFILE") 2>/dev/null || age=99999
-if [[ $age -lt $CACHE_FRESH_SEC ]]; then
+if [[ "$FORCE_FRESH" != "true" ]] && [[ $age -lt $CACHE_FRESH_SEC ]]; then
     val=$(read_cache "$COINSFILE") && { output "$val"; exit 0; }
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 2. Cache périmé mais valide (< 60s) → retour immédiat + refresh BG
+# 2. Cache périmé mais valide (< 60s) → retour immédiat + refresh BG (sauf --fresh)
 # ══════════════════════════════════════════════════════════════════════════════
-if [[ $age -lt $CACHE_STALE_SEC ]]; then
+if [[ "$FORCE_FRESH" != "true" ]] && [[ $age -lt $CACHE_STALE_SEC ]]; then
     val=$(read_cache "$COINSFILE")
     if [[ -n "$val" ]]; then
         log "Solde en cache (${age}s) — refresh en arrière-plan"

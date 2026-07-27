@@ -431,14 +431,19 @@ for PLAYER in "${NOSTR[@]}"; do
         cp ${HOME}/.zen/game/nostr/${PLAYER}/NOSTRNS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NOSTRNS 2>/dev/null
     fi
 
-    COINS=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
-    if [[ -z $COINS || "$COINS" == "null" ]]; then
-        log "DEBUG" "Cache miss for $G1PUBNOSTR, refreshing with G1check.sh"
-        COINS=$(${MY_PATH}/../tools/G1check.sh ${G1PUBNOSTR} 2>/dev/null | tail -n 1)
-        log_metric "CACHE_MISS" "1" "${PLAYER}"
-    else
+    # NE JAMAIS lire ~/.zen/tmp/coucou/*.COINS directement ici : ce fichier n'a
+    # aucune limite d'âge (contrairement à G1check.sh qui applique sa propre
+    # politique de fraîcheur 12s/60s). Un ancien solde valide mais périmé de
+    # plusieurs heures serait sinon utilisé tel quel pour la décision
+    # d'insolvabilité/destruction plus bas, avec un risque de détruire un
+    # MULTIPASS pourtant correctement approvisionné. G1check.sh gère lui-même
+    # le cache (retour immédiat si frais/périmé, fetch synchrone sinon).
+    if [[ -s ~/.zen/tmp/coucou/${G1PUBNOSTR}.COINS ]]; then
         log_metric "CACHE_HIT" "1" "${PLAYER}"
+    else
+        log_metric "CACHE_MISS" "1" "${PLAYER}"
     fi
+    COINS=$(${MY_PATH}/../tools/G1check.sh ${G1PUBNOSTR} 2>/dev/null | tail -n 1)
 
     # Convert COINS value into ẐEN
     # Use makecoord to ensure proper formatting (e.g., 0.20 not .20)

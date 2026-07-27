@@ -352,8 +352,13 @@ function makecoord() {
     local input="$1"
 
     # Vérifie si l'entrée est une coordonnée valide (nombre avec ou sans décimales)
+    # Accepte aussi le format sans zéro devant le point (ex: ".1000000000000000000",
+    # "-.5") que `bc -l` produit nativement pour toute valeur entre -1 et 1 — sans ce
+    # second cas, cette garde rejetait la valeur AVANT même d'atteindre le code
+    # plus bas (lignes suivantes) censé justement ajouter ce zéro manquant, et
+    # renvoyait "" pour n'importe quel montant < 1 Ğ1 (ex: NCARD/10 avec NCARD=1).
     [[ -z "$input" ]] && echo "" && return
-    if [[ ! "$input" =~ ^-?[0-9]+\.?[0-9]*$ ]]; then
+    if [[ ! "$input" =~ ^-?([0-9]+\.?[0-9]*|\.[0-9]+)$ ]]; then
         echo ""
         return
     fi

@@ -168,14 +168,22 @@ else
         exit 1
     fi
 
-    # Now extract the decrypted ZIP
+    # Now extract the decrypted ZIP (password-protected with the player's .pass)
     echo -e "${CYAN}   Extracting decrypted ZIP...${NC}"
     if unzip -q "${BACKUP_FILE}" 2>/dev/null; then
         echo -e "${GREEN}✅ Backup extracted successfully${NC}"
     else
-        echo -e "${RED}❌ Failed to extract decrypted backup. File may be corrupted.${NC}"
-        rm -rf "${RESTORE_DIR}"
-        exit 1
+        echo -e "${YELLOW}⚠️  Backup appears to be password-protected${NC}"
+        echo -e "${CYAN}Please enter the ZEN Card / MULTIPASS password (from the player's .pass file):${NC}"
+        read -s -p "> " zip_pass
+        echo ""
+        if unzip -q -P "${zip_pass}" "${BACKUP_FILE}" 2>/dev/null; then
+            echo -e "${GREEN}✅ Backup extracted successfully${NC}"
+        else
+            echo -e "${RED}❌ Failed to extract decrypted backup (wrong password or file corrupted).${NC}"
+            rm -rf "${RESTORE_DIR}"
+            exit 1
+        fi
     fi
 fi
 
