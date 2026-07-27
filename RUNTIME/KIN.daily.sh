@@ -107,7 +107,7 @@ else
     mapfile -t RECIPIENTS < <(printf '%s\n' "${!email_kin[@]}" | sort)
 fi
 
-sent_total=0; skipped_total=0
+sent_total=0; skipped_total=0; no_match_total=0
 
 # ─── Helper : bloc power Oracle ───────────────────────────────────────────────
 _oracle_card() {
@@ -172,6 +172,15 @@ for DEST in "${RECIPIENTS[@]}"; do
     for _e in ${kin_emails[$MY_OCCULT]:-}; do [[ "$_e" != "$DEST" ]] && OCCULT_M+="${_e} "; done
 
     IS_BIRTHDAY=false; [[ "$MY_KIN" -eq "$TODAY_KIN" ]] && IS_BIRTHDAY=true
+
+    # Aucune correspondance dans le réseau (les 4 pouvoirs afficheraient tous
+    # "Pas encore dans le reseau") : email sans valeur pour le destinataire,
+    # sauf si c'est son anniversaire Kin (contenu utile indépendamment du réseau).
+    if [[ "$IS_BIRTHDAY" != "true" && -z "$GUIDE_M$ANTI_M$ANALOG_M$OCCULT_M" ]]; then
+        echo "  ⏭ Skip ${DEST} — aucune correspondance Kin dans le reseau." >&2
+        ((no_match_total++))
+        continue
+    fi
 
     # ── Gamification ─────────────────────────────────────────────────────────
     SCORE=0; ACH_HTML=""; CH_HTML=""
@@ -385,8 +394,8 @@ done
 echo "========================================================================"
 printf "  ☀️  Kin %d %s — Vague-sort %d Jour %d/13\n" \
     "$TODAY_KIN" "$TODAY_SEAL" "$TODAY_WS_NUM" "$TODAY_WS_POS"
-printf "  📊 %d envoye(s)  %d opt-out  %d profils\n" \
-    "$sent_total" "$skipped_total" "${#RECIPIENTS[@]}"
+printf "  📊 %d envoye(s)  %d opt-out  %d sans correspondance  %d profils\n" \
+    "$sent_total" "$skipped_total" "$no_match_total" "${#RECIPIENTS[@]}"
 echo "========================================================================"
 
 [[ "$DRY_RUN" != "true" ]] && touch "$MARKER"

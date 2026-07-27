@@ -64,6 +64,57 @@ g1pubnostr=$(cat ~/.zen/game/nostr/${player}/G1PUBNOSTR)
 [[ -z $g1pubnostr ]] && echo "BAD NOSTR MULTIPASS" && exit 1
 hex=$(cat ~/.zen/game/nostr/${player}/HEX)
 
+################### OC SUBSCRIPTION SAFETY CHECK ###########################
+# Un abonné OpenCollective actif ne doit JAMAIS être détruit pour insolvabilité.
+# G1PRIME (posé une seule fois par UPLANET.official.sh lors de la primo-tx) ne
+# reflète pas un abonnement repris APRÈS coup : on revérifie ici en direct sur
+# les caches OC2UPlanet les plus frais (cf. OC2UPlanet/oc2uplanet.sh), en
+# dernier filet avant une action irréversible — indépendamment du contrôle déjà
+# fait en amont dans NOSTRCARD.refresh.sh.
+OC_DATA_DIR="${HOME}/.zen/workspace/OC2UPlanet/data"
+if [[ -d "$OC_DATA_DIR" ]] && command -v jq >/dev/null 2>&1; then
+    _oc_active=0
+    for _oc_f in "${OC_DATA_DIR}/current_month.credit.json" "${OC_DATA_DIR}/last_month.credit.json"; do
+        [[ -s "$_oc_f" ]] || continue
+        _oc_active=$(jq -rs --arg e "$player" \
+            '[.[] | select(.fromAccount.emails[]? == $e)] | length' "$_oc_f" 2>/dev/null)
+        [[ "${_oc_active:-0}" -gt 0 ]] && break
+    done
+    if [[ "${_oc_active:-0}" -gt 0 ]]; then
+        echo "❌ ABORT: ${player} est un contributeur OpenCollective actif (ce mois ou le precedent)."
+        echo "   Destruction annulee — verifier pourquoi l'appelant l'a declenchee malgre tout"
+        echo "   (G1PRIME manquant ? sync OC2UPlanet en retard ? bug amont ?)"
+
+        if [[ -n "${CAPTAINEMAIL:-}" ]] && [[ -x "${MY_PATH}/../tools/mailjet.sh" ]]; then
+            _oc_alert_tmp=$(mktemp)
+            cat > "$_oc_alert_tmp" <<OCALERTEOF
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"></head>
+<body style="font-family:sans-serif;background:#fff3e0;padding:1.5rem">
+<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden">
+<div style="background:linear-gradient(135deg,#e65c00,#f9a825);color:#fff;padding:1.2rem;text-align:center">
+<strong>🚨 Destruction MULTIPASS annulée</strong></div>
+<div style="padding:1.2rem;color:#1a1a2e">
+<p><strong>${player}</strong> a été identifié comme <strong>contributeur OpenCollective actif</strong>
+(ce mois ou le précédent) au moment où sa destruction pour insolvabilité allait s'exécuter.</p>
+<p>La destruction a été <strong>annulée automatiquement</strong> — aucune action n'a été effectuée sur ce compte.</p>
+<p>À vérifier :</p>
+<ul>
+<li>Pourquoi le contrôle en amont (NOSTRCARD.refresh.sh) a-t-il déclenché la destruction malgré tout ?</li>
+<li><code>G1PRIME</code> est-il absent pour ce joueur (~/.zen/game/nostr/${player}/G1PRIME) ?</li>
+<li>La synchro OC2UPlanet est-elle à jour (~/.zen/workspace/OC2UPlanet/data/) ?</li>
+</ul>
+<p style="color:#666;font-size:.85rem">Astroport.ONE — nostr_DESTROY_TW.sh — $(date '+%Y-%m-%d %H:%M:%S')</p>
+</div></div></body></html>
+OCALERTEOF
+            "${MY_PATH}/../tools/mailjet.sh" --template "$0" --expire 7d \
+                "${CAPTAINEMAIL}" "$_oc_alert_tmp" \
+                "🚨 Destruction annulée — ${player} est un contributeur OC actif"
+            rm -f "$_oc_alert_tmp"
+        fi
+        exit 1
+    fi
+fi
+
 ##################### DISCO DECODING ########################
 if [[ -s ~/.zen/game/nostr/${player}/.secret.disco ]]; then
     DISCO=$(cat ~/.zen/game/nostr/${player}/.secret.disco)
@@ -578,6 +629,24 @@ ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/wallet_
     "${CAPTAINEMAIL}" \
     "${EMAIL_TEMPLATE}" \
     "CAPTAIN: ${youser} MULTIPASS Deactivated - Backup: ${NOSTRIFS}"
+
+## SEND SIMPLIFIED EMAIL to the PLAYER too (no Captain-only technical instructions)
+if [[ -s "${MY_PATH}/../templates/NOSTR/wallet_deactivation_player.html" ]]; then
+    PLAYER_EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation_player.html" \
+        | sed -e "s~_myIPFS_~${myIPFS}~g" \
+              -e "s~_NOSTRIFS_~${NOSTRIFS}~g" \
+              -e "s~_DEST_~${player}~g" \
+              -e "s~_uSPOT_~${uSPOT}~g" \
+              -e "s~_DEACTIVATION_DATE_~$(date '+%Y-%m-%d %H:%M:%S')~g" \
+              -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g")
+
+    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/wallet_deactivation_player.html" --expire 3d \
+        "${player}" \
+        "${PLAYER_EMAIL_TEMPLATE}" \
+        "💤 Votre MULTIPASS a été désactivé - Backup: ${NOSTRIFS}"
+else
+    echo "⚠️  wallet_deactivation_player.html not found, player not notified by email"
+fi
 
 # Remove OVH DNS Link
 OVH_TOOL="${MY_PATH}/../admin/system/ovh.me.sh"
