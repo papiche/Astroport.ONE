@@ -70,7 +70,7 @@ IS_PRIVATE_LAN=false
 if [[ "$IS_PRIVATE_LAN" == "false" && -n "$WAN_IP" ]]; then
     FINAL_IP="$WAN_IP"
     NAT_STATUS="${GREEN}DIRECT (LAN=WAN) — nœud directement exposé${NC}"
-    ok "Mode réseau : DIRECT (pas de NAT) → ♥Box renseignable"
+    ok "Mode réseau : DIRECT (pas de NAT) → ♥Box auto-renseigné"
 elif [[ "$IS_PRIVATE_LAN" == "true" && -n "$WAN_IP" ]]; then
     FINAL_IP="$WAN_IP"
     NAT_STATUS="${YELLOW}NAT (LAN≠WAN) — nœud derrière routeur${NC}"
@@ -86,9 +86,9 @@ echo -e "  Mode :  $NAT_STATUS"
 
 HEARTBOX=$(cat "$HOME/.zen/♥Box" 2>/dev/null | head -n1)
 
-# ── Correction automatique de ♥Box si WAN ≠ LAN (NAT) ──────────────────────
+# ── Auto-gestion de ♥Box selon WAN vs LAN (même logique que tools/my.sh) ────
 # Règle : ♥Box doit contenir une IP UNIQUEMENT si le nœud est directement
-# exposé sur internet (LAN IPv4 = WAN IPv4, sans NAT).
+# exposé sur internet (LAN IPv4 = WAN IPv4, sans NAT) — auto-renseigné dans ce cas.
 # Derrière un NAT, même avec une IPv6 publique sur l'interface, ♥Box est vidé :
 # les services sont adressés via le domaine DNS + Nginx Proxy Manager (HTTPS).
 if [[ "$IS_PRIVATE_LAN" == "true" && -n "$HEARTBOX" ]]; then
@@ -97,6 +97,10 @@ if [[ "$IS_PRIVATE_LAN" == "true" && -n "$HEARTBOX" ]]; then
     rm -f "$HOME/.zen/♥Box"
     HEARTBOX=""
     ok "♥Box   : vidé (URLs basculent vers domaine DNS)"
+elif [[ "$IS_PRIVATE_LAN" == "false" && -n "$WAN_IP" && "$HEARTBOX" != "$WAN_IP" ]]; then
+    echo "$WAN_IP" > "$HOME/.zen/♥Box"
+    HEARTBOX="$WAN_IP"
+    ok "♥Box   : $HEARTBOX (renseigné automatiquement — nœud directement sur le WAN)"
 elif [[ -n "$HEARTBOX" ]]; then
     ok "♥Box   : $HEARTBOX (nœud directement sur le WAN)"
 else

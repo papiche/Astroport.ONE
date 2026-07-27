@@ -160,7 +160,7 @@ if [[ ${#ZENSTATIONS[@]} -ge 9 ]]; then ## NEED 9 ASTROPORT FROM THE SAME REGION
         fi
 
         nodeip=$(echo ${bootnode} | cut -d '/' -f 3)
-        isnodeipLAN=$(echo $nodeip | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+        isnodeipLAN=$(echo $nodeip | grep -E "(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])")
         echo " ${iptype} address :: ${nodeip} (= ${isnodeipLAN})"
         [[ ${nodeip} == ${isnodeipLAN} ]] && echo "LAN NODE... no good for bootstrap" && continue
 

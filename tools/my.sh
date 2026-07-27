@@ -463,15 +463,49 @@ fi
 ## SEE https://pad.p2p.legal/s/keygen
 NODEG1PUB=$(awk '/^pub:/{print $2}' "$HOME/.zen/game/secret.NODE.dunikey" 2>/dev/null)
 
-## my_ip_cache — isLAN et myIP calculés une seule fois, puis mis en cache
+## my_ip_cache — isLAN et myIP (WAN si détectée, sinon LAN) calculés une seule fois, puis mis en cache.
+## Logique alignée sur me.♥Box.sh : la station publie sa vraie IP WAN dès qu'elle est connue
+## (même derrière un NAT, un forwarding de ports pouvant la rendre joignable), et ~/.zen/♥Box
+## est géré automatiquement : renseigné si le nœud est directement exposé (LAN=WAN, pas de NAT),
+## vidé s'il est périmé derrière un NAT (l'utilisateur le redéfinit lui-même après avoir vérifié
+## son port forwarding).
 IP_CACHE="$HOME/.zen/tmp/my_ip_cache"
+HEARTBOXFILE="$HOME/.zen/♥Box"
 if [[ -f "$IP_CACHE" ]]; then
     read myIP isLAN < "$IP_CACHE"
 else
-    myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-    isLAN=$(echo "$myIP" | grep -E "(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])")
+    DEFAULT_IFACE=$(ip route show default 2>/dev/null | awk '/default/ {print $5}' | head -n1)
+    LANIP=$(ip -4 addr show dev "$DEFAULT_IFACE" 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -n1)
+    [[ -z "$LANIP" ]] && LANIP=$(hostname -I | awk '{print $1}' | head -n 1)
+    isLAN=$(echo "$LANIP" | grep -E "(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])")
+
+    ## Détection WAN (mêmes méthodes que me.♥Box.sh) : adresses publiques déjà identifiées par
+    ## IPFS, puis résolveurs externes en repli
+    WANIP=$(timeout 5 ipfs id 2>/dev/null | jq -r '.Addresses[]?' 2>/dev/null \
+        | grep -vE "::1|fe80:|fc00:|fd00:|p2p-circuit|127.0.0.1" \
+        | grep -vE "^/ip4/(192\.168|10\.|172\.(1[6-9]|2[0-9]|3[01]))" \
+        | awk -F/ '{print $3}' | grep -v '^$' | sort -u | head -n1)
+    [[ -z "$WANIP" ]] && WANIP=$(curl -s -4 --connect-timeout 3 --max-time 5 https://api.ipify.org 2>/dev/null)
+    [[ -z "$WANIP" || ! "$WANIP" =~ ^[0-9]+(\.[0-9]+){3}$ ]] \
+        && WANIP=$(dig +short txt o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"')
+    [[ -z "$WANIP" || ! "$WANIP" =~ ^[0-9]+(\.[0-9]+){3}$ ]] \
+        && WANIP=$(dig +short myip.opendns.com @resolver2.opendns.com 2>/dev/null | tr -d '"')
+    [[ "$WANIP" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.) ]] && WANIP=""
+
+    ## IP finale publiée dans myIPFS.txt : WAN si connue (joignable via forwarding même sous NAT), sinon repli LAN
+    [[ -n "$WANIP" ]] && myIP="$WANIP" || myIP="${LANIP:-127.0.0.1}"
     mkdir -p "$HOME/.zen/tmp"
     echo "$myIP $isLAN" > "$IP_CACHE"
+
+    ## Auto-gestion ♥Box
+    CURRENTHEARTBOX=$(head -n1 "$HEARTBOXFILE" 2>/dev/null)
+    if [[ -z "$isLAN" && -n "$WANIP" ]]; then
+        ## DIRECT (LAN=WAN, pas de NAT) : renseigner ♥Box avec l'IP WAN
+        [[ "$CURRENTHEARTBOX" != "$WANIP" ]] && echo "$WANIP" > "$HEARTBOXFILE"
+    elif [[ -n "$isLAN" && -n "$CURRENTHEARTBOX" ]]; then
+        ## NAT (LAN≠WAN) : ♥Box périmé, on le vide
+        rm -f "$HEARTBOXFILE"
+    fi
 fi
 
 myDOMAIN="$(myDomainName)"
