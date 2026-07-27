@@ -12,7 +12,7 @@
 # - Stores next HEX in DID document and NOSTR profile
 # - Preserves ZEN Card capital shares (secret.june) - NOT emptied
 # - Maintains minimum 1 G1 in ZEN Card for capital shares management
-# - Exports complete backup encrypted with asymmetric crypto (natools.py)
+# - Exports complete backup as a ZIP protected with the player's own .pass code
 #
 # Usage: ./nostr_DESTROY_TW.sh [email]
 # If no email is provided, the script will prompt the user to select one.
@@ -178,12 +178,9 @@ echo "  • .next.hex - Next HEX address for new relay/captain"
 echo "  • secret.june - ZEN Card transaction history (capital shares)"
 echo "  • .g1pub - ZEN Card G1 wallet access"
 echo ""
-echo "🔐 DECRYPTION REQUIRED (2 layers)"
-echo "Your backup is securely encrypted with your G1 public key."
-echo "  1. Outer layer: decrypt with your OLD secret.dunikey (or ask your"
-echo "     Captain to use their uplanet key)."
-echo "  2. Inner layer: the resulting backup.zip is password-protected with"
-echo "     your MULTIPASS/ZEN Card PASS code (the one given to you at creation)."
+echo "🔐 PASSWORD PROTECTED"
+echo "Your backup.zip is protected with your MULTIPASS/ZEN Card PASS code"
+echo "(the one given to you at account creation)."
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESTORATION METHODS:"
@@ -192,18 +189,16 @@ echo ""
 echo "Method 1: Automated restore (RECOMMENDED)"
 echo "  cd ~/.zen/Astroport.ONE"
 echo "  ./tools/nostr_RESTORE_TW.sh <IPFS_CID_OF_BACKUP>"
-echo "  (Script will automatically decrypt and prompt for your PASS code)"
+echo "  (Script will automatically prompt for your PASS code if needed)"
 echo ""
 echo "Method 2: Manual restoration with NEW .disco"
-echo "  1. Decrypt backup: "
-echo "     ~/.zen/Astroport.ONE/tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${player}/.secret.dunikey -o backup.zip"
-echo "  2. Unzip backup.zip (will ask for your MULTIPASS/ZEN Card PASS code):"
+echo "  1. Unzip backup.zip (will ask for your MULTIPASS/ZEN Card PASS code):"
 echo "     unzip backup.zip"
-echo "  3. Use .next.disco to create MULTIPASS on new relay:"
+echo "  2. Use .next.disco to create MULTIPASS on new relay:"
 echo "     cat .next.disco"
-echo "  4. Create MULTIPASS with same email + .next.disco:"
+echo "  3. Create MULTIPASS with same email + .next.disco:"
 echo "     ./tools/make_NOSTRCARD.sh <EMAIL> <LANG> <LAT> <LON> <NEW_SALT> <NEW_PEPPER>"
-echo "  5. Import events to new account:"
+echo "  4. Import events to new account:"
 echo "     jq -c '.[]' nostr_export.json | ./strfry import --no-verify"
 echo ""
 echo "Method 3: uDRIVE restoration"
@@ -244,11 +239,8 @@ This encrypted backup contains:
   • .g1pub - ZEN Card G1 wallet access
   • RESTORE_INSTRUCTIONS.sh - Quick restore guide
 
-🔐 ENCRYPTION (2 layers):
-This backup has been strongly encrypted using your G1 Public Key (Curve25519).
-To decrypt it, you MUST possess your .secret.dunikey (or ask your Captain to
-use their uplanet key as fallback). Once decrypted, the resulting backup.zip
-is ALSO password-protected with your MULTIPASS/ZEN Card PASS code (the one
+🔐 PASSWORD PROTECTED:
+This backup.zip is protected with your MULTIPASS/ZEN Card PASS code (the one
 given to you at account creation) — you need it to unzip.
 
 ═══════════════════════════════════════════════════════════════
@@ -273,11 +265,10 @@ RESTORE METHODS:
 Method 1: Using Astroport restore tool (RECOMMENDED)
   $ cd ~/.zen/Astroport.ONE
   $ ./tools/nostr_RESTORE_TW.sh <IPFS_CID>
-  (Script will automatically decrypt and use .next.disco)
+  (Script will prompt for your PASS code and use .next.disco)
 
 Method 2: Manual recreation with NEW .disco
   $ cd ~/.zen/Astroport.ONE
-  $ ./tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${player}/.secret.dunikey -o backup.zip
   $ unzip backup.zip   # asks for your MULTIPASS/ZEN Card PASS code
   $ cat backup/.next.disco
   $ # Use the SALT and PEPPER from .next.salt and .next.pepper
@@ -401,17 +392,14 @@ echo "${g1pubnostr}" > "${BACKUP_DIR}/.cashback_g1pub"
 echo "✅ Cashback amount recorded: ${CASHBACK_AMOUNT} Ğ1"
 
 # -----------------------------------------------------------------------------
-# CREATE ARCHIVE (password-protected with the player's own .pass) AND ENCRYPT
-# ASYMMETRICALLY (natools.py)
+# CREATE ARCHIVE, password-protected with the player's own .pass
 # -----------------------------------------------------------------------------
 # .pass est le code communiqué au joueur dès la création du MULTIPASS
 # (make_NOSTRCARD.sh) et réutilisé pour la ZEN Card (VISA.new.sh) : c'est le
-# seul secret que le joueur détient encore une fois son compte détruit (contrairement
-# à .secret.dunikey, jamais remis en main propre). La couche natools.py ci-dessous
-# reste la protection principale tant que le fichier est public sur IPFS (le mot de
-# passe zip seul, 4-5 chiffres, serait cassable) ; -P n'est qu'une couche
-# supplémentaire pour permettre au joueur d'ouvrir lui-même le zip une fois
-# celui-ci déchiffré (par lui via son ancienne clé, ou par le Capitaine via uplanet.dunikey).
+# seul secret que le joueur détient encore une fois son compte détruit
+# (contrairement à .secret.dunikey, jamais remis en main propre). Pas de
+# chiffrement natools.py supplémentaire (ni clé joueur ni clé Capitaine) :
+# le mot de passe du zip est la seule protection, volontairement simple.
 PLAYER_PASS=""
 [[ -s ~/.zen/game/nostr/${player}/.pass ]] && PLAYER_PASS=$(cat ~/.zen/game/nostr/${player}/.pass)
 
@@ -428,58 +416,20 @@ fi
 if "${ZIP_CREATE[@]}" 2>/dev/null; then
     echo "✅ Backup archive created successfully"
     cd - > /dev/null 2>&1
-    
-    # 1. Encrypt for Player (using their current G1PUBNOSTR)
-    echo "🔐 Encrypting backup with Player's public key (${g1pubnostr})..."
-    PLAYER_ENC_FILE="${ZIP_FILE}.player.enc"
-    if ${MY_PATH}/../tools/natools.py encrypt -p "${g1pubnostr}" -i "${ZIP_FILE}" -o "${PLAYER_ENC_FILE}" 2>/dev/null; then
-        echo "✅ Backup encrypted for Player"
-    else
-        echo "❌ Failed to encrypt backup for Player"
-        exit 1
-    fi
 
-    # 2. Encrypt for Uplanet/Captain (Fallback)
-    echo "🔐 Encrypting backup with Uplanet key (captain fallback)..."
-    if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
-        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
-        chmod 600 ~/.zen/game/uplanet.dunikey
-    fi
-    UPLANET_PUBKEY=$(${MY_PATH}/../tools/natools.py pubkey -f pubsec -k ~/.zen/game/uplanet.dunikey -O 58 2>/dev/null)
-    UPLANET_ENC_FILE="${ZIP_FILE}.uplanet.enc"
-    
-    if [[ -n "$UPLANET_PUBKEY" ]] && ${MY_PATH}/../tools/natools.py encrypt \
-            -p "$UPLANET_PUBKEY" -i "${ZIP_FILE}" -o "${UPLANET_ENC_FILE}" 2>/dev/null; then
-        echo "✅ Backup also encrypted with uplanet key"
-    else
-        echo "⚠️  Failed to encrypt with uplanet key"
-        UPLANET_ENC_FILE=""
-    fi
-
-    # Add encrypted ZIPs to IPFS
-    echo "Adding encrypted backups to IPFS..."
-    NOSTRIFS=$(ipfs add -q "${PLAYER_ENC_FILE}" | tail -n 1)
+    # Add the password-protected ZIP directly to IPFS (no natools layer)
+    echo "Adding backup to IPFS..."
+    NOSTRIFS=$(ipfs add -q "${ZIP_FILE}" | tail -n 1)
     if [[ -n "${NOSTRIFS}" ]]; then
         ipfs pin rm ${NOSTRIFS} 2>/dev/null
-        echo "✅ Player-encrypted backup added to IPFS: ${NOSTRIFS}"
-        echo "   🔓 Decrypt: natools.py decrypt -f pubsec -i <file> -k <your_old.secret.dunikey> -o backup.zip"
+        echo "✅ Backup added to IPFS: ${NOSTRIFS}"
+        echo "   🔓 Extract: unzip -P <PASS> backup.zip"
     else
-        echo "❌ Failed to add Player-encrypted backup to IPFS"
-    fi
-
-    NOSTRIFS_UPLANET=""
-    if [[ -n "${UPLANET_ENC_FILE}" ]] && [[ -f "${UPLANET_ENC_FILE}" ]]; then
-        NOSTRIFS_UPLANET=$(ipfs add -q "${UPLANET_ENC_FILE}" | tail -n 1)
-        if [[ -n "${NOSTRIFS_UPLANET}" ]]; then
-            ipfs pin rm ${NOSTRIFS_UPLANET} 2>/dev/null
-            echo "✅ Uplanet-encrypted backup on IPFS: ${NOSTRIFS_UPLANET}"
-            echo "   🔓 Decrypt: natools.py decrypt -f pubsec -i <file> -k uplanet.dunikey -o backup.zip"
-        fi
-        rm -f "${UPLANET_ENC_FILE}"
+        echo "❌ Failed to add backup to IPFS"
     fi
 
     # Clean up temporary files
-    rm -f "${ZIP_FILE}" "${PLAYER_ENC_FILE}"
+    rm -f "${ZIP_FILE}"
     rm -rf "${BACKUP_DIR}"
     unset PLAYER_PASS ZIP_CREATE
 else
@@ -504,8 +454,7 @@ if [[ -f "${MY_PATH}/did_manager_nostr.sh" ]]; then
         if [[ -f "$did_cache_file" ]] && command -v jq >/dev/null 2>&1; then
             # Add next restoration HEX to deactivation metadata
             jq ".metadata.deactivation.nextRestorationHex = \"${NEXT_HEX}\"
-                | .metadata.deactivation.backupCID = \"${NOSTRIFS}\"
-                | .metadata.deactivation.backupUplanetCID = \"${NOSTRIFS_UPLANET}\"" "$did_cache_file" > "${did_cache_file}.tmp" 2>/dev/null
+                | .metadata.deactivation.backupCID = \"${NOSTRIFS}\"" "$did_cache_file" > "${did_cache_file}.tmp" 2>/dev/null
             if [[ -s "${did_cache_file}.tmp" ]]; then
                 mv "${did_cache_file}.tmp" "$did_cache_file"
                 echo "   🔮 Next restoration HEX added to DID metadata: ${NEXT_HEX:0:20}..."
@@ -533,7 +482,6 @@ if [[ -f "${MY_PATH}/nostr_update_profile.py" ]]; then
     # Build about message with backup links and next HEX
     if [[ -n "$NEXT_HEX" ]]; then
         ABOUT_MSG="Account deactivated - Backup: ${myIPFS}/ipfs/${NOSTRIFS} | Next HEX: ${NEXT_HEX:0:16}..."
-        [[ -n "$NOSTRIFS_UPLANET" ]] && ABOUT_MSG="${ABOUT_MSG} | Captain: ${myIPFS}/ipfs/${NOSTRIFS_UPLANET}"
     else
         ABOUT_MSG="Account deactivated - backup available at ${myIPFS}/ipfs/${NOSTRIFS}"
     fi
@@ -614,7 +562,6 @@ fi
 ## (NCARD, ZCARD, OC_URL_SATELLITE, OC_URL_CONSTELLATION définis dans tools/my.sh)
 EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
     | sed -e "s~_myIPFS_~${myIPFS}~g" \
-          -e "s~_NOSTRIFS_UPLANET_~${NOSTRIFS_UPLANET:-N/A}~g" \
           -e "s~_NOSTRIFS_~${NOSTRIFS}~g" \
           -e "s~_SALT_~[PROTECTED]~g" \
           -e "s~_PEPPER_~[PROTECTED]~g" \

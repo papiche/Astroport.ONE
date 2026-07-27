@@ -310,7 +310,7 @@
                         <li>✅ <strong>secret.june</strong> - ZEN Card capital shares history (preserved)</li>
                         <li>✅ <strong>.g1pub</strong> - ZEN Card G1 wallet access</li>
                     </ul>
-                    <small>Download the ZIP file and extract it with your ZEN Card password to access all restoration data</small>
+                    <small>Download the ZIP file and extract it with your MULTIPASS/ZEN Card PASS code to access all restoration data</small>
                 </div>
                 <div class='lang-content' data-lang='fr'>
                     <h3>📦 Sauvegarde Complète de Migration</h3>
@@ -328,7 +328,7 @@
                         <li>✅ <strong>secret.june</strong> - Historique des parts sociales ZEN Card (préservé)</li>
                         <li>✅ <strong>.g1pub</strong> - Accès au portefeuille G1 de la ZEN Card</li>
                     </ul>
-                    <small>Téléchargez le fichier ZIP et extrayez-le avec votre mot de passe ZEN Card pour accéder à toutes les données de restauration</small>
+                    <small>Téléchargez le fichier ZIP et extrayez-le avec votre code PASS MULTIPASS/ZEN Card pour accéder à toutes les données de restauration</small>
                 </div>
             </div>
 
@@ -381,14 +381,9 @@
                 <div class='lang-content' data-lang='en'>
                     <h4>🔑 For New Captains: Account Migration & Restoration</h4>
                     <p><strong>This account is ready for migration to your Astroport.ONE station.</strong></p>
-                    <h4>Method A — User knows their password</h4>
                     <p>Run the restore script with the password-protected backup:</p>
                     <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
-                    <p>The user will be prompted for their ZEN Card password (<code>.pass</code>).</p>
-                    <h4>Method B — User lost their password (same UPlanet only)</h4>
-                    <p>Use the uplanet-encrypted backup (no password needed — your station decrypts it with its own uplanet key):</p>
-                    <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_UPLANET_</code></p>
-                    <p><strong>Note:</strong> This only works if the new captain is on the <strong>same UPlanet</strong>. For migration to a different UPlanet, the user must provide their <code>.pass</code> password.</p>
+                    <p>The user will be prompted for their MULTIPASS/ZEN Card PASS code — <strong>required</strong>, there is no fallback without it.</p>
                     <p><strong>The restore script handles everything automatically:</strong></p>
                     <ul>
                         <li>✅ Creates MULTIPASS with new credentials (<code>.next.disco</code>)</li>
@@ -398,19 +393,14 @@
                         <li>✅ Sends back MULTIPASS cashback from UPLANETNAME_G1 (minus 1 Ğ1 primo)</li>
                     </ul>
                     <p><strong>⚠️ Important:</strong> The old <code>.secret.disco</code> will NOT work on a new relay — only <code>.next.disco</code> works.</p>
-                    <small>Deactivated: _DEACTIVATION_DATE_ | ZIP CID: _NOSTRIFS_ | Captain CID: _NOSTRIFS_UPLANET_</small>
+                    <small>Deactivated: _DEACTIVATION_DATE_ | ZIP CID: _NOSTRIFS_</small>
                 </div>
                 <div class='lang-content' data-lang='fr'>
                     <h4>🔑 Pour les Nouveaux Capitaines : Migration et Restauration du Compte</h4>
                     <p><strong>Ce compte est prêt pour la migration vers votre station Astroport.ONE.</strong></p>
-                    <h4>Méthode A — L'utilisateur connaît son mot de passe</h4>
                     <p>Lancez le script de restauration avec le backup protégé par mot de passe :</p>
                     <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
-                    <p>L'utilisateur sera invité à saisir son mot de passe ZEN Card (<code>.pass</code>).</p>
-                    <h4>Méthode B — L'utilisateur a perdu son mot de passe (même UPlanet uniquement)</h4>
-                    <p>Utilisez le backup chiffré uplanet (aucun mot de passe requis — votre station le déchiffre avec sa propre clé uplanet) :</p>
-                    <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_UPLANET_</code></p>
-                    <p><strong>Note :</strong> Ceci ne fonctionne que si le nouveau capitaine est sur la <strong>même UPlanet</strong>. Pour migrer vers une UPlanet différente, l'utilisateur doit fournir son mot de passe <code>.pass</code>.</p>
+                    <p>L'utilisateur sera invité à saisir son code PASS MULTIPASS/ZEN Card — <strong>obligatoire</strong>, il n'y a pas d'alternative sans lui.</p>
                     <p><strong>Le script de restauration gère tout automatiquement :</strong></p>
                     <ul>
                         <li>✅ Crée le MULTIPASS avec les nouveaux identifiants (<code>.next.disco</code>)</li>
@@ -420,7 +410,7 @@
                         <li>✅ Renvoie le cashback MULTIPASS depuis UPLANETNAME_G1 (moins 1 Ğ1 primo)</li>
                     </ul>
                     <p><strong>⚠️ Important :</strong> L'ancien <code>.secret.disco</code> ne fonctionnera PAS sur un nouveau relais — seul <code>.next.disco</code> fonctionne.</p>
-                    <small>Désactivé : _DEACTIVATION_DATE_ | CID ZIP : _NOSTRIFS_ | CID Capitaine : _NOSTRIFS_UPLANET_</small>
+                    <small>Désactivé : _DEACTIVATION_DATE_ | CID ZIP : _NOSTRIFS_</small>
                 </div>
             </div>
 
@@ -431,9 +421,8 @@
                     <p>Your account is ready for migration! Contact any Astroport.ONE captain and give them:</p>
                     <ul>
                         <li>📦 Your backup CID: <code>_NOSTRIFS_</code></li>
-                        <li>🔑 Your ZEN Card password (if you remember it)</li>
+                        <li>🔑 Your MULTIPASS/ZEN Card PASS code — <strong>required</strong>, there is no way to restore without it</li>
                     </ul>
-                    <p><strong>Lost your password?</strong> If you stay on the same UPlanet, no problem — the captain can use the alternative CID that doesn't require any password. If you're moving to a different UPlanet, you must recover your password.</p>
                     <p>The captain restores your account with one command. Your MULTIPASS, NOSTR events, uDRIVE, ZEN Card history, and Ğ1 balance are all restored automatically.</p>
                     
                     <p><strong>Option 2: Get Ẑen and Reactivate on This Station</strong></p>
@@ -451,9 +440,8 @@
                     <p>Votre compte est prêt pour la migration ! Contactez n'importe quel capitaine Astroport.ONE et donnez-lui :</p>
                     <ul>
                         <li>📦 Votre CID de sauvegarde : <code>_NOSTRIFS_</code></li>
-                        <li>🔑 Votre mot de passe ZEN Card (si vous vous en souvenez)</li>
+                        <li>🔑 Votre code PASS MULTIPASS/ZEN Card — <strong>obligatoire</strong>, aucune restauration n'est possible sans lui</li>
                     </ul>
-                    <p><strong>Mot de passe perdu ?</strong> Si vous restez sur la même UPlanet, pas de problème — le capitaine peut utiliser le CID alternatif qui ne nécessite aucun mot de passe. Si vous changez d'UPlanet, vous devez retrouver votre mot de passe.</p>
                     <p>Le capitaine restaure votre compte en une seule commande. Votre MULTIPASS, événements NOSTR, uDRIVE, historique ZEN Card et solde Ğ1 sont tous restaurés automatiquement.</p>
                     
                     <p><strong>Option 2 : Obtenir des Ẑen et Réactiver sur Cette Station</strong></p>

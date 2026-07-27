@@ -18,9 +18,10 @@
 # Usage: ./nostr_RESTORE_TW.sh <IPFS_CID> [target_relay_url]
 #
 # The IPFS_CID can point to either:
-#   - A legacy password-protected ZIP (requires user's .pass)
-#   - An asymmetrically encrypted backup (.enc) using natools.py
-#     (Requires either the player's old .secret.dunikey or Captain's uplanet key)
+#   - A password-protected ZIP (requires the player's .pass) — current format
+#   - An asymmetrically encrypted backup (.enc) using natools.py — legacy format
+#     from older backups (requires either the player's old .secret.dunikey or
+#     Captain's uplanet key)
 #
 # Numbered secret.june files (secret.june.000.IPFSNODEID, etc.) preserve
 # the cumulative cooperative capital shares history across migrations.
@@ -100,9 +101,9 @@ fi
 echo -e "${YELLOW}Step 2/4:${NC} ${CYAN}Decrypting and Extracting backup archive...${NC}"
 cd "${RESTORE_DIR}"
 
-# Check if this is a standard ZIP file (Legacy) or an Encrypted Binary
+# Check if this is a standard ZIP file (current format) or an Encrypted Binary (legacy)
 if file "${BACKUP_FILE}" 2>/dev/null | grep -q "Zip archive"; then
-    echo -e "${CYAN}   Archive is a standard ZIP (Legacy format)${NC}"
+    echo -e "${CYAN}   Archive is a password-protected ZIP${NC}"
     
     # Try to extract without password first
     if unzip -q "${BACKUP_FILE}" 2>/dev/null; then
