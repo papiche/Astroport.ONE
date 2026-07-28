@@ -349,8 +349,16 @@ menu_opencollective() {
     case "$c" in
         1)  local oc_dir="${MY_PATH}/../OC2UPlanet"
             if [[ -x "${oc_dir}/oc2uplanet.sh" ]]; then
-                echo "Lancement OC2UPlanet..."
-                (cd "$oc_dir" && bash oc2uplanet.sh --run)
+                echo -e "${Y}⚠️  --run ÉMET réellement les Ẑen correspondants (pas une simulation).${N}"
+                (cd "$oc_dir" && bash oc2uplanet.sh --sync)
+                echo ""
+                read -p "Confirmer l'émission ci-dessus ? [y/N] : " _oc_confirm
+                if [[ "${_oc_confirm,,}" == "y" || "${_oc_confirm,,}" == "yes" ]]; then
+                    echo "Lancement OC2UPlanet..."
+                    (cd "$oc_dir" && bash oc2uplanet.sh --run)
+                else
+                    echo "Annulé."
+                fi
             else
                 echo -e "${R}❌ OC2UPlanet/oc2uplanet.sh introuvable${N}"
                 echo "   Vérifiez que le dépôt OC2UPlanet est présent."

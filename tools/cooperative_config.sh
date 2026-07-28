@@ -892,10 +892,10 @@ coop_config_init() {
     "OC_URL_CONSTELLATION": "https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385",
 
     "_comment_tiers": "=== TIER SLUG ROUTING (pattern matching used by oc2uplanet.sh, comma-separated globs) ===",
-    "TIER_SLUG_SATELLITE": "*parrainage*128*,*extension-128*,*satellite*,*love-box*claude*",
-    "TIER_SLUG_CONSTELLATION": "*parrainage*gpu*,*module-gpu*,*constellation*,*love-box*deluxe*,*love-box*gpu*",
-    "TIER_SLUG_LABO": "*infrastructure*,*labo*,*genereux-donateur*,*r-d*,*recherche*",
-    "TIER_SLUG_CLOUD": "*membre-resident*,*cloud-usage*,*adhesion*",
+    "TIER_SLUG_SATELLITE": "*parrainage*128*,extension-128,satellite,*love-box*claude*",
+    "TIER_SLUG_CONSTELLATION": "*parrainage*gpu*,module-gpu,constellation,*love-box*deluxe*,*love-box*gpu*",
+    "TIER_SLUG_LABO": "infrastructure,labo,genereux-donateur,r-d,recherche",
+    "TIER_SLUG_CLOUD": "membre-resident,cloud-usage,adhesion",
 
     "_comment_api": "=== API KEYS (auto-encrypted) ===",
     "PLANTNET_API_KEY": "",
