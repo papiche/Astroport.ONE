@@ -42,6 +42,16 @@ Exemples :
 - `#mem:devops`
 - `#craft https://instructables.com/...`
 
+### Données publiques (data.gouv.fr)
+
+| Commande | Rôle |
+|----------|------|
+| `#opendata <requête>` | Rechercher des jeux de données publics sur data.gouv.fr |
+
+Exemple : `#opendata prix immobilier Paris`
+
+*Nécessite que la station ait installé le venv MCP isolé (`install/install_mcp_venv.sh`, appelé automatiquement par `install.sh`) — sinon la commande n'apparaît pas dans `#help`.*
+
 ### Badges et IA (niveaux avancés)
 
 | Commande | Niveau requis | Rôle |

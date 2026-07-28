@@ -25,8 +25,9 @@ from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, RELAYS, _now_iso, _own
 from bro.media import BADGE_RUN_TIMEOUT_SEC, CRAFT_RUN_TIMEOUT_SEC, _available_scraper_domains, _extract_scraper_domain, _run_scraper_now
 from bro.identity import _dispatch_identity_update_check, list_preferences_history, rollback_preferences
 from bro.nostr import send_dm_to_owner
+import mcp_client
 
-__all__ = ['ACTIVE_TOOLS_FILE', 'TOOLS_GENERATED_DIR', 'list_active_tools', '_extract_tool_docstring', '_call_tool', '_extract_manifest_routing_examples', '_register_arbor_tool', 'activate_tool', 'add_tool_examples', 'deactivate_tool', '_load_arbor_tools_into_registry', 'TOOL_ROUTING_MODEL', '_META_CAPABILITY_PHRASES', 'match_tool', '_try_registered_tools', '_slots_from_text', '_generic_slot_file', '_persist_slot_content', '_format_slot_summary', '_clear_slot', '_tool_help', '_tool_mem', '_tool_reset', '_tool_pref', '_tool_rec', '_tool_scraper', 'ACCESS_LEVEL_ATOME', 'ACCESS_LEVEL_SATELLITE', 'ACCESS_LEVEL_CAPITAINE', '_owner_access_level', '_ACCESS_LEVEL_LABEL', '_make_gated_handler', '_tool_craft', '_tool_badge', '_tool_rec_skill', '_tool_mem_skill', '_tool_mod_skill', '_tool_rm_skill', '_notify_captain_skill_contribution', '_run_skill_notify_background', '_register_system_tools']
+__all__ = ['ACTIVE_TOOLS_FILE', 'TOOLS_GENERATED_DIR', 'list_active_tools', '_extract_tool_docstring', '_call_tool', '_extract_manifest_routing_examples', '_register_arbor_tool', 'activate_tool', 'add_tool_examples', 'deactivate_tool', '_load_arbor_tools_into_registry', 'TOOL_ROUTING_MODEL', '_META_CAPABILITY_PHRASES', 'match_tool', '_try_registered_tools', '_slots_from_text', '_generic_slot_file', '_persist_slot_content', '_format_slot_summary', '_clear_slot', '_tool_help', '_tool_mem', '_tool_reset', '_tool_pref', '_tool_rec', '_tool_scraper', '_tool_opendata', 'ACCESS_LEVEL_ATOME', 'ACCESS_LEVEL_SATELLITE', 'ACCESS_LEVEL_CAPITAINE', '_owner_access_level', '_ACCESS_LEVEL_LABEL', '_make_gated_handler', '_tool_craft', '_tool_badge', '_tool_rec_skill', '_tool_mem_skill', '_tool_mod_skill', '_tool_rm_skill', '_notify_captain_skill_contribution', '_run_skill_notify_background', '_register_system_tools']
 
 
 
@@ -449,6 +450,20 @@ def _tool_scraper(owner_email, text):
         return "🍪 Aucun cookie déposé pour l'instant — déposez-en un sur /cookie pour activer un scraper."
     return "🤔 Quel domaine ? " + ", ".join(available)
 
+def _tool_opendata(owner_email, text):
+    """« #opendata <requête> » : recherche des jeux de données publics sur
+    data.gouv.fr via le serveur MCP officiel (lecture seule, sans clé API,
+    voir mcp_client.py). N'est enregistré comme outil (voir
+    _register_system_tools) que si le venv isolé ~/.astro-mcp est installé —
+    jamais annoncé sinon."""
+    query = re.sub(r"#opendata\b", "", text, flags=re.IGNORECASE).strip()
+    if not query:
+        return "⚠️ Usage : #opendata <requête>  ex: #opendata prix immobilier Paris"
+    result = mcp_client.call_mcp_tool("datagouv", "search_datasets", {"query": query, "page_size": 5})
+    if not result:
+        return "⚠️ data.gouv.fr indisponible pour l'instant, réessayez plus tard."
+    return f"📊 {result}"
+
 ACCESS_LEVEL_ATOME = 2       # profil atom4love (craft, rec:<skill>, mem:<skill>)
 
 ACCESS_LEVEL_SATELLITE = 3   # sociétaire satellite ou + (badge)
@@ -668,6 +683,13 @@ def _register_system_tools():
         examples=("lance le scraper mastodon maintenant", "exécute la surveillance mastodon.social",
                    "relance la synchro de mon cookie", "vérifie mes mentions tout de suite"),
     ))
+    if mcp_client.is_available():
+        bro_tools.register(bro_tools.Tool(
+            name="opendata", tags=("opendata",), handler=_tool_opendata,
+            description="« #opendata <requête> » : recherche des jeux de données publics sur data.gouv.fr.",
+            examples=("quels jeux de données existent sur", "cherche des données ouvertes sur",
+                       "montre-moi les statistiques officielles de", "trouve-moi un jeu de données data.gouv"),
+        ))
     bro_tools.register(bro_tools.Tool(
         name="craft", tags=("craft",), min_access=ACCESS_LEVEL_ATOME,
         handler=_make_gated_handler("craft", ACCESS_LEVEL_ATOME, _tool_craft),

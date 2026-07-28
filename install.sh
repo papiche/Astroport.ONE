@@ -980,6 +980,12 @@ echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
 ~/.astro/bin/pip install -U playwright-stealth 2>> "$_ERROR_LOG" \
     && echo "✅ playwright-stealth installé" \
     || echo "⚠️  playwright-stealth install FAILED — voir ~/.zen/install.errors.log"
+## Client MCP (IA/mcp_client.py, ex: #opendata BRO) : venv ISOLÉ ~/.astro-mcp,
+## jamais dans ~/.astro — mcp tire starlette au-delà de ce que fastapi==0.110.0
+## (UPassport) tolère. Non-fatal : BRO dégrade silencieusement si absent.
+bash "${MY_PATH}/install/install_mcp_venv.sh" 2>> "$_ERROR_LOG" \
+    && echo "✅ venv mcp (~/.astro-mcp) prêt — #opendata disponible dans BRO" \
+    || echo "⚠️  venv mcp install FAILED — #opendata restera indisponible (voir ~/.zen/install.errors.log)"
 
 
 ####################################################################
