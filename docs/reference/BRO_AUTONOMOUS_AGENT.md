@@ -207,11 +207,25 @@ Déterminé par `bro_user_level.py` — lecture `contractStatus` (DID cache) + v
 | `IA/bro_watch_core.py` | 1 187 | Surveillance Web2 multi-tenant + SELF DM + ARBOR (mining, trigger) |
 | `IA/arbor_self_improve.py` | — | Auto-amélioration prompt/modèle + mining + observation canal LOVE (3 volets, discipline Arbor, gouvernance humaine) |
 | `IA/bro/love_handler.sh` | — | Fonctionnalités sociales (profil, matching, kin) — observé (pas modifié) par ARBOR volet 3, cf. `LOVE_CHANNEL_FILES` |
+| `IA/bro/tools.py` | — | Registre déclaratif des outils `#tag` (`bro_tools.py`) — une source de vérité par outil, jamais de commande annoncée qui ne soit pas réellement exécutable |
+| `IA/mcp_client.py` | — | Client MCP (Model Context Protocol) en Streamable HTTP — outil `#opendata` (data.gouv.fr), venv isolé |
 | `tools/nostr_node_intercom.py` | — | Transport DM NIP-44 inter-NODE (encrypt / decrypt) |
 | `IA/short_memory.py` | — | Slots mémoire personnelle (0-12) — `~/.zen/flashmem/EMAIL/` |
 | `IA/question.py` | — | Interface Ollama + Qdrant pour questions RAG |
 
 `bro_user_level` est une fonction bash définie dans `bro_common_lib.sh` (pas un fichier séparé).
+
+---
+
+## Extension MCP (Model Context Protocol)
+
+BRO peut invoquer des outils exposés par des serveurs MCP distants (ex: `search_datasets` sur data.gouv.fr) via `IA/mcp_client.py`, enregistré comme un outil `#tag` ordinaire dans le registre `bro_tools` (`IA/bro/tools.py::_tool_opendata`).
+
+**Isolation de dépendances** — le SDK `mcp` (et sa dépendance `starlette`) vit dans un venv **séparé** (`~/.astro-mcp`, provisionné par `install/install_mcp_venv.sh`), jamais dans le venv principal `~/.astro` partagé avec UPassport (FastAPI). Constaté empiriquement (incident du 2026-07-28) : un `pip install mcp` dans `~/.astro` fait sauter `starlette` au-delà de ce que `fastapi` tolère, cassant UPassport au redémarrage. `mcp_client.call_mcp_tool()` délègue donc l'appel réel à un sous-processus lancé sous l'interpréteur isolé — aucune dépendance `mcp` requise côté venv principal.
+
+**Disponibilité conditionnelle** — l'outil `opendata` n'est enregistré (donc jamais annoncé dans `#help`, jamais routable) que si `mcp_client.is_available()` détecte le venv isolé installé, cohérent avec la discipline « jamais de commande annoncée qui échouerait systématiquement » du registre `bro_tools`.
+
+**Résilience réseau** — User-Agent identifié (`UPlanetBRO/1.0`) + 3 tentatives avec backoff linéaire (1s, 2s), reconnexion complète à chaque tentative — le serveur MCP public de data.gouv.fr a montré des 503 intermittents en usage réel.
 
 ---
 

@@ -33,10 +33,11 @@ PACKAGES=(
     gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt 
     aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 
     matplotlib readability-lxml duniterpy cachetools pydantic-settings 
-    robohash substrate-interface websocket-client websockets imap_tools 
-    fastapi aiofiles jinja2 python-multipart python-magic uvicorn 
-    python-telegram-bot
+    robohash substrate-interface websocket-client websockets imap_tools
+    "fastapi<0.111,>=0.110" "starlette<0.37,>=0.36.3" aiofiles jinja2
+    python-multipart python-magic uvicorn python-telegram-bot
 )
+# fastapi/starlette épinglés (voir install.sh, même incident du 2026-07-28)
 
 echo "📦 Installation des dépendances Python..."
 for i in "${PACKAGES[@]}"; do

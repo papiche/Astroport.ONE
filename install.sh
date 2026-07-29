@@ -944,9 +944,16 @@ _PIP_PKGS=(
     aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32
     matplotlib readability-lxml duniterpy cachetools pydantic-settings
     robohash substrate-interface websocket-client websockets imap_tools
-    fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot
+    "fastapi<0.111,>=0.110" "starlette<0.37,>=0.36.3" aiofiles jinja2
+    python-multipart python-magic uvicorn python-telegram-bot
     qdrant-client vobject phonenumbers
 )
+# fastapi/starlette épinglés depuis l'incident du 2026-07-28 : un `pip install -U`
+# sans borne fait sauter fastapi vers une version qui tire une starlette
+# incompatible (Router.__init__() rejette on_startup/on_shutdown) — UPassport
+# (54321.py) plante au redémarrage tant que le code n'a pas été validé contre
+# une version plus récente. Élargir cette plage seulement après avoir vérifié
+# les 13 routers UPassport contre la nouvelle version.
 if ~/.astro/bin/pip install -U "${_PIP_PKGS[@]}" 2>>"$_ERROR_LOG"; then
     echo "✅ Paquets Python installés/mis à jour"
 else
@@ -986,6 +993,11 @@ echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
 bash "${MY_PATH}/install/install_mcp_venv.sh" 2>> "$_ERROR_LOG" \
     && echo "✅ venv mcp (~/.astro-mcp) prêt — #opendata disponible dans BRO" \
     || echo "⚠️  venv mcp install FAILED — #opendata restera indisponible (voir ~/.zen/install.errors.log)"
+## Garde-fou post-install : détecte un venv ~/.astro cassé (conflit de deps,
+## UPassport qui n'importe plus) AVANT le prochain redémarrage du service,
+## plutôt que de le découvrir en pleine nuit (incident du 2026-07-28).
+bash "${MY_PATH}/admin/system/verify_upassport_health.sh" 2>> "$_ERROR_LOG" \
+    || echo "⚠️  Vérification santé UPassport EN ÉCHEC — voir ci-dessus avant de redémarrer upassport"
 
 
 ####################################################################
