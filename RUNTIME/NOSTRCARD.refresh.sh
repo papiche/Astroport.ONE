@@ -814,38 +814,13 @@ for PLAYER in "${NOSTR[@]}"; do
 
                                 # Send success email notification
                                 temp_email_file=$(mktemp)
-                                cat > "$temp_email_file" <<OKHTML
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#e8f5e9;color:#1a2e1a}
-.c{max-width:600px;margin:0 auto;background:white}
-.h{background:linear-gradient(135deg,#2e7d32,#4caf50);color:white;padding:1.5rem;text-align:center}
-.h .lbl{font-size:.8rem;opacity:.8;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
-.h h1{margin:0;font-size:1.3rem}
-.ct{padding:1.5rem}
-.card{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:1rem;margin:1rem 0;font-size:.9rem}
-.card table{width:100%;border-collapse:collapse}
-.card td{padding:.3rem .5rem;vertical-align:top}
-.card td:first-child{font-weight:bold;color:#555;width:50%}
-.tip{background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:4px;padding:1rem;margin:1rem 0;font-size:.9rem}
-p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
-small{color:#666;font-size:.8rem}
-</style></head>
-<body><div class="c">
-<div class="h"><div class="lbl">✅ MULTIPASS actif</div><h1>Redevance hebdomadaire réglée</h1></div>
-<div class="ct">
-<div class="card"><table>
-<tr><td>Montant prélevé</td><td><strong>${Npaf_ZEN} Ẑen</strong></td></tr>
-<tr><td>Solde restant</td><td>${ZEN} Ẑen</td></tr>
-<tr><td>Prochain paiement</td><td>${NEXT_PAYMENT_DATE}</td></tr>
-</table></div>
-<div class="tip">
-<p>💡 Chaque like reçu sur vos posts Coracle = 1 Ẑen automatique dans votre portefeuille.</p>
-</div>
-<p style="text-align:center;margin-top:1.5rem"><small>UPlanet ORIGIN — support@qo-op.com</small></p>
-</div></div></body></html>
-OKHTML
-                                ${MY_PATH}/../tools/mailjet.sh --channel milestones --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "✅ Redevance MULTIPASS réglée — $TODATE"
+                                sed -e "s~_NPAF_ZEN_~${Npaf_ZEN}~g" \
+                                    -e "s~_ZEN_~${ZEN}~g" \
+                                    -e "s~_NEXT_PAYMENT_DATE_~${NEXT_PAYMENT_DATE}~g" \
+                                    "${MY_PATH}/../templates/NOSTR/multipass_payment_success.html" > "$temp_email_file"
+                                ${MY_PATH}/../tools/mailjet.sh --channel milestones \
+                                    --template "${MY_PATH}/../templates/NOSTR/multipass_payment_success.html" \
+                                    --expire 7d "${PLAYER}" "$temp_email_file" "✅ Redevance MULTIPASS réglée — $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Success email sent to ${PLAYER} for payment success"
                             else
@@ -854,46 +829,21 @@ OKHTML
                                 log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
 
                                 # Send error email via mailjet
+                                PAYMENT_STATUS_TEXT=$([ $payment_success -eq 0 ] && echo '✅ OK' || echo '❌ Échec')
+                                TVA_STATUS_TEXT=$([ $tva_success -eq 0 ] && echo '✅ OK' || echo '❌ Échec')
                                 temp_email_file=$(mktemp)
-                                cat > "$temp_email_file" <<ERRHTML
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#fff3e0;color:#1a1a2e}
-.c{max-width:600px;margin:0 auto;background:white}
-.h{background:linear-gradient(135deg,#e65c00,#f9a825);color:white;padding:1.5rem;text-align:center}
-.h .lbl{font-size:.8rem;opacity:.8;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
-.h h1{margin:0;font-size:1.3rem}
-.ct{padding:1.5rem}
-.card{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:1rem;margin:1rem 0;font-size:.9rem}
-.card table{width:100%;border-collapse:collapse}
-.card td{padding:.3rem .5rem;vertical-align:top}
-.card td:first-child{font-weight:bold;color:#555;width:50%}
-.warn{background:#fff3e0;border-left:4px solid #e65c00;border-radius:4px;padding:1rem;margin:1rem 0;font-size:.9rem}
-p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
-small{color:#666;font-size:.8rem}
-</style></head>
-<body><div class="c">
-<div class="h"><div class="lbl">👑 Notification Capitaine</div><h1>⚠️ Échec paiement MULTIPASS</h1></div>
-<div class="ct">
-<div class="card"><table>
-<tr><td>MULTIPASS</td><td><strong>${PLAYER}</strong></td></tr>
-<tr><td>Date</td><td>${TODATE}</td></tr>
-<tr><td>Ancienneté</td><td>${DIFF_DAYS} jours</td></tr>
-<tr><td>Montant HT</td><td>${Npaf_ZEN} Ẑen</td></tr>
-<tr><td>Montant TVA</td><td>${TVA_ZEN} Ẑen</td></tr>
-<tr><td>Solde disponible</td><td>${ZEN} Ẑen</td></tr>
-<tr><td>Paiement principal</td><td>$([ $payment_success -eq 0 ] && echo '✅ OK' || echo '❌ Échec')</td></tr>
-<tr><td>Paiement TVA</td><td>$([ $tva_success -eq 0 ] && echo '✅ OK' || echo '❌ Échec')</td></tr>
-</table></div>
-<div class="warn">
-<p>Le solde est insuffisant pour couvrir la redevance hebdomadaire (${Npaf_ZEN} + ${TVA_ZEN} Ẑen).</p>
-<p>Si la situation n'est pas régularisée au prochain cycle (J+7), le MULTIPASS sera archivé automatiquement.</p>
-<p><em>Les deux transactions (HT + TVA) doivent réussir pour la conformité fiscale coopérative.</em></p>
-</div>
-<p style="text-align:center;margin-top:1.5rem"><small>Astroport.ONE — support@qo-op.com</small></p>
-</div></div></body></html>
-ERRHTML
-                                ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "⚠️ Paiement MULTIPASS échoué — ${PLAYER} — $TODATE"
+                                sed -e "s~_PLAYER_~${PLAYER}~g" \
+                                    -e "s~_TODATE_~${TODATE}~g" \
+                                    -e "s~_DIFF_DAYS_~${DIFF_DAYS}~g" \
+                                    -e "s~_NPAF_ZEN_~${Npaf_ZEN}~g" \
+                                    -e "s~_TVA_ZEN_~${TVA_ZEN}~g" \
+                                    -e "s~_ZEN_~${ZEN}~g" \
+                                    -e "s~_PAYMENT_STATUS_~${PAYMENT_STATUS_TEXT}~g" \
+                                    -e "s~_TVA_STATUS_~${TVA_STATUS_TEXT}~g" \
+                                    "${MY_PATH}/../templates/NOSTR/multipass_payment_failed.html" > "$temp_email_file"
+                                ${MY_PATH}/../tools/mailjet.sh \
+                                    --template "${MY_PATH}/../templates/NOSTR/multipass_payment_failed.html" \
+                                    --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "⚠️ Paiement MULTIPASS échoué — ${PLAYER} — $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Error email sent to ${CAPTAINEMAIL} for payment failure of ${PLAYER}"
                             fi

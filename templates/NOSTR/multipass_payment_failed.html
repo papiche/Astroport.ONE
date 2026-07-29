@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#fff3e0;color:#1a1a2e}
+.c{max-width:600px;margin:0 auto;background:white}
+.h{background:linear-gradient(135deg,#e65c00,#f9a825);color:white;padding:1.5rem;text-align:center}
+.h .lbl{font-size:.8rem;opacity:.8;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
+.h h1{margin:0;font-size:1.3rem}
+.ct{padding:1.5rem}
+.card{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:1rem;margin:1rem 0;font-size:.9rem}
+.card table{width:100%;border-collapse:collapse}
+.card td{padding:.3rem .5rem;vertical-align:top}
+.card td:first-child{font-weight:bold;color:#555;width:50%}
+.warn{background:#fff3e0;border-left:4px solid #e65c00;border-radius:4px;padding:1rem;margin:1rem 0;font-size:.9rem}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
+small{color:#666;font-size:.8rem}
+</style></head>
+<body><div class="c">
+<div class="h"><div class="lbl">👑 Notification Capitaine</div><h1>⚠️ Échec paiement MULTIPASS</h1></div>
+<div class="ct">
+<div class="card"><table>
+<tr><td>MULTIPASS</td><td><strong>_PLAYER_</strong></td></tr>
+<tr><td>Date</td><td>_TODATE_</td></tr>
+<tr><td>Ancienneté</td><td>_DIFF_DAYS_ jours</td></tr>
+<tr><td>Montant HT</td><td>_NPAF_ZEN_ Ẑen</td></tr>
+<tr><td>Montant TVA</td><td>_TVA_ZEN_ Ẑen</td></tr>
+<tr><td>Solde disponible</td><td>_ZEN_ Ẑen</td></tr>
+<tr><td>Paiement principal</td><td>_PAYMENT_STATUS_</td></tr>
+<tr><td>Paiement TVA</td><td>_TVA_STATUS_</td></tr>
+</table></div>
+<div class="warn">
+<p>⚠️ Le solde disponible (_ZEN_ Ẑen) était <strong>suffisant</strong> pour couvrir la redevance (_NPAF_ZEN_ + _TVA_ZEN_ Ẑen) : ce n'est pas un problème de solde. La transaction blockchain elle-même a échoué (nœud Duniter indisponible, timeout de confirmation, ou incident réseau — voir logs PAYforSURE.sh).</p>
+<p>Le prélèvement sera automatiquement retenté au prochain cycle hebdomadaire. Aucune destruction n'est déclenchée par ce type d'échec.</p>
+</div>
+<p style="text-align:center;margin-top:1.5rem"><small>Astroport.ONE — support@qo-op.com</small></p>
+</div></div></body></html>

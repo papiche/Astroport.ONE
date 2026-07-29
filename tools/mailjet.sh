@@ -20,10 +20,11 @@ USAGE
         Nom du flux de notification. Si défini et que le destinataire a
         désactivé ce flux dans son profil .mailjet (flux.FLUX=false),
         l'envoi est annulé silencieusement. Valeurs recommandées :
-          zine        Zines d'onboarding J1-J6 (période d'essai MULTIPASS)
-          usociety    Rappels coopérative (renouvellement, expiration)
-          alerts      Alertes de solde (ZEN Card insuffisant, erreurs paiement)
-          milestones  Événements MULTIPASS (bienvenue, anniversaire, confirmations)
+          zine           Zines d'onboarding J1-J6 (période d'essai MULTIPASS)
+          usociety       Rappels coopérative (renouvellement, expiration)
+          alerts         Alertes de solde (ZEN Card insuffisant, erreurs paiement)
+          milestones     Événements MULTIPASS (bienvenue, anniversaire, confirmations)
+          skillceremony  Binômes WoTx² partageant un skill (RUNTIME/SKILL.ceremony.sh)
 
 DESCRIPTION
     Envoie un email HTML via l'API Mailjet v3.1 au nom de la station UPlanet.

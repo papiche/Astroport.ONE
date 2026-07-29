@@ -32,6 +32,9 @@ else
     COOP_CONFIG_AVAILABLE=false
 fi
 
+# Registre Armateur — indexé par IPFSNODEID (chaque station a son propre Armateur)
+source "${MY_PATH}/tools/armateur_registry.sh" 2>/dev/null || true
+
 # Configuration des couleurs
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -2350,7 +2353,53 @@ embark_captain() {
     fi
     
     echo ""
-    
+
+    # Étape 4bis: Identité de facturation de l'Armateur (distincte du Capitaine)
+    # NB : un Armateur = une station = une clef IPFSNODEID. Ce nœud (${IPFSNODEID})
+    # est enregistré ici dans le registre partagé (tools/armateur_registry.sh),
+    # indexé par IPFSNODEID — un Capitaine hébergeant plusieurs stations sur son
+    # propre hub y enregistre chacune séparément (voir facture consolidée type :
+    # une ligne hébergement + une ligne par station/nœud hébergé).
+    print_section "IDENTITÉ DE FACTURATION ARMATEUR"
+    echo -e "${CYAN}Utilisée pour générer les factures d'hébergement (oc_admin.html) et identifier${NC}"
+    echo -e "${CYAN}le destinataire du remboursement PAF — peut être la même personne que le Capitaine.${NC}"
+    echo -e "${CYAN}Enregistrée pour ce nœud précis : ${YELLOW}${IPFSNODEID}${NC}"
+    echo ""
+
+    local current_armateur_name=$(grep "^ARMATEUR_NAME=" "${MY_PATH}/.env" 2>/dev/null | cut -d'=' -f2-)
+    local current_armateur_email=$(grep "^ARMATEUR_EMAIL=" "${MY_PATH}/.env" 2>/dev/null | cut -d'=' -f2-)
+    local current_armateur_address=$(grep "^ARMATEUR_ADDRESS=" "${MY_PATH}/.env" 2>/dev/null | cut -d'=' -f2-)
+    local current_armateur_siret=$(grep "^ARMATEUR_SIRET=" "${MY_PATH}/.env" 2>/dev/null | cut -d'=' -f2-)
+
+    if [[ "$AUTO_MODE" == "false" ]]; then
+        read -p "Nom de l'Armateur (défaut: ${current_armateur_name:-$email}): " input_armateur_name
+        read -p "Email de l'Armateur (défaut: ${current_armateur_email:-$email}): " input_armateur_email
+        read -p "Adresse postale de l'Armateur (défaut: ${current_armateur_address:-non renseignée}): " input_armateur_address
+        read -p "SIRET de l'Armateur, si applicable (défaut: ${current_armateur_siret:-non renseigné}): " input_armateur_siret
+
+        local armateur_name="${input_armateur_name:-${current_armateur_name:-$email}}"
+        local armateur_email="${input_armateur_email:-${current_armateur_email:-$email}}"
+        local armateur_address="${input_armateur_address:-$current_armateur_address}"
+        local armateur_siret="${input_armateur_siret:-$current_armateur_siret}"
+
+        for kv in "ARMATEUR_NAME=$armateur_name" "ARMATEUR_EMAIL=$armateur_email" \
+                  "ARMATEUR_ADDRESS=$armateur_address" "ARMATEUR_SIRET=$armateur_siret"; do
+            local key="${kv%%=*}"
+            sed -i "s|^${key}=.*|${kv}|" "${MY_PATH}/.env" 2>/dev/null || echo "$kv" >> "${MY_PATH}/.env"
+        done
+        type armateur_registry_set &>/dev/null && \
+            armateur_registry_set "$IPFSNODEID" "$armateur_name" "$armateur_email" "$armateur_address" "$armateur_siret"
+        print_success "✅ Identité de facturation Armateur enregistrée pour ${IPFSNODEID:0:16}... (${armateur_name})"
+    else
+        # Mode automatique : par défaut, l'Armateur est le Capitaine tant que rien n'est configuré
+        [[ -z "$current_armateur_email" ]] && echo "ARMATEUR_EMAIL=$email" >> "${MY_PATH}/.env"
+        [[ -z "$current_armateur_name" ]] && echo "ARMATEUR_NAME=$email" >> "${MY_PATH}/.env"
+        type armateur_registry_set &>/dev/null && \
+            armateur_registry_set "$IPFSNODEID" "${current_armateur_name:-$email}" "${current_armateur_email:-$email}" \
+                "$current_armateur_address" "$current_armateur_siret"
+    fi
+    echo ""
+
     # Étape 5: Vérifier que les comptes coopératifs peuvent couvrir 3xPAF/semaine
     if ! check_cooperative_balance; then
         print_warning "⚠️  Les comptes coopératifs sont insuffisants"

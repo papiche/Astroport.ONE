@@ -451,6 +451,20 @@ if [[ "$OC2UP_LAST" != "$OC2UP_MONTH" ]]; then
     fi
 fi
 
+## RUN SKILL.ceremony weekly — détecte les binômes WoTx² partageant un même
+## savoir-faire (Kind 30503) et propose une cérémonie de démonstration filmée.
+## Couverture constellation : Kind 30503 (skills) + 30800 (DID/email) sont
+## synchronisés entre stations par NIP-101/backfill_constellation.sh, déclenché
+## ~toutes les heures par _12345.sh (pas ici) — la donnée locale est donc au
+## pire vieille d'1h, jamais dépendante de l'ordre des jobs dans CE script.
+## Idempotence gérée EN INTERNE par le script (marqueur hebdomadaire ISO) —
+## appel quotidien sans condition ici, comme KIN.news.sh depuis NOSTRCARD.refresh.sh.
+if [[ -x "${MY_PATH}/RUNTIME/SKILL.ceremony.sh" ]]; then
+    "${MY_PATH}/RUNTIME/SKILL.ceremony.sh"
+else
+    echo "SKILL.ceremony: script not executable — skipping"
+fi
+
 ## RAMDISK ~/.zen/tmp — réduit l'usure des cartes SD (idempotent)
 ${MY_PATH}/install/.zen_tmp_ramdisk.sh
 
