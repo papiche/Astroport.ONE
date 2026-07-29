@@ -153,7 +153,9 @@ for skill_tag in "${!skill_members[@]}"; do
             if [[ "$em1" < "$em2" ]]; then _a="$em1"; _b="$em2"; else _a="$em2"; _b="$em1"; fi
             pair_key="${_a}|${_b}|${skill_tag}|${pair_level}"
             if grep -qxF "$pair_key" "$NOTIFIED_LOG" 2>/dev/null; then
-                ((skipped_logged++)); unset _email_level; continue 2
+                # Ne sauter QUE cette paire — pas tout le groupe de skill (bug corrigé :
+                # "continue 2" abandonnait aussi les autres paires valides du même skill).
+                ((skipped_logged++)); continue
             fi
 
             # Distance GPS informative (jamais bloquante sauf --gps radius explicite)
