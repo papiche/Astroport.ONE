@@ -112,7 +112,7 @@ _find()  { ${RTK:+rtk} find  "$@"; }
 # Parsing des options
 FILTER_EXT=""
 MAX_DEPTH=0          # 0 = illimité
-MAX_CHARS=$(( 500000 * 4 ))  # défaut : 500 000 tokens (~2 Mo)
+MAX_CHARS=$(( 1000000 * 4 ))  # défaut : 1 000 000 tokens (~4 Mo)
 MAX_FILE_SIZE=0      # 0 = illimité — P3: limite par fichier en octets
 ROUTE_FILTER=""      # pattern de route FastAPI à extraire (main script .py uniquement)
 JSON_MODE=false      # sortie JSON pour LLM tool
