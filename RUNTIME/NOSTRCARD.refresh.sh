@@ -1381,17 +1381,6 @@ for PLAYER in "${NOSTR[@]}"; do
         ipfs_duration=$((ipfs_end - ipfs_start))
         log "DEBUG" "IPFS add completed in ${ipfs_duration}s for ${PLAYER}"
 
-        # Garde-fou : si `ipfs add` échoue/renvoie vide (disque plein, daemon
-        # instable...), NE JAMAIS appeler `ipfs name publish` avec un CID vide.
-        # `ipfs name publish --key K /ipfs/` échoue déjà proprement côté IPFS
-        # ("invalid path", record IPNS inchangé — vérifié empiriquement), donc
-        # l'ancien CID publié reste résolvable ; le vrai risque était que ce
-        # script continue malgré tout et enregistre .last_ipns_update comme si
-        # la publication avait réussi — should_refresh() sauterait alors les
-        # tentatives suivantes jusqu'au prochain cycle programmé, laissant le
-        # profil NOSTR silencieusement obsolète (même esprit que le fix
-        # canonicalize_json_file : conserver l'ancienne valeur plutôt que de
-        # publier/valider un état cassé).
         if [[ -z "$NOSTRIPFS" ]]; then
             log "WARN" "ipfs add a échoué pour ${PLAYER} (CID vide) — publication IPNS annulée, ancien CID conservé, nouvelle tentative au prochain cycle"
             echo "⚠️  IPFS add failed for ${PLAYER} — keeping previous NOSTRNS CID, will retry"
