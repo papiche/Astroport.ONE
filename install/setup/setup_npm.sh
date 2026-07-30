@@ -15,6 +15,12 @@ NPM_DIR="$HOME/.zen/nginx-proxy-manager"
 NPM_COMPOSE_STANDALONE="${MY_PATH}/../../_DOCKER/nginx-proxy-manager/docker-compose.yml"
 SELF_SIGNED_DIR="${NPM_DIR}/self-signed"
 
+# Dans setup_npm.sh
+if curl -s http://127.0.0.1:81 >/dev/null 2>&1; then
+    echo "⚠️  NPM est déjà configuré, arrêt du script pour protéger la conf existante."
+    exit 0
+fi
+
 ## Detect NPM URL: inside docker-compose (container name "npm") or localhost
 if [[ -f /.dockerenv ]]; then
     NPM_URL="http://npm:81"       # Si exécuté à l'intérieur de Docker
