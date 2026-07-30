@@ -29,6 +29,17 @@ MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 [[ -f "${MY_PATH}/my.sh" ]] && . "${MY_PATH}/my.sh"
 
+# ── Dual-stack Ğ1-Duniter / Ğ1-Nostr (N²) — AVANT tout parsing Duniter (y
+# compris le mode batch ci-dessous, qui ré-exécute "$0" par sous-processus :
+# G1_MODE, variable d'environnement, est relu à chaque invocation, donc chaque
+# sous-appel du batch délègue aussi correctement). Script séparé (g1n2_check.sh)
+# plutôt qu'une branche inline : zéro risque de régression sur le chemin
+# Duniter ci-dessous, qui reste intégralement inchangé.
+G1_MODE="${G1_MODE:-DUNITER}"
+if [[ "$G1_MODE" == "NOSTR" ]]; then
+    exec "${MY_PATH}/g1n2_check.sh" "$@"
+fi
+
 # ── Extraction du flag --fresh AVANT le dispatch batch ────────────────────────
 # Sans ça, "G1check.sh <G1PUB> --fresh" a 2 arguments et tombe dans le mode
 # batch ci-dessous : "--fresh" est alors traité comme un second G1PUB (rejeté

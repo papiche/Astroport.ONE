@@ -242,7 +242,10 @@ _submit_oc_expense() {
                               items:$items}}}')
 
     local response curl_err
-    response=$(curl -sS -X POST "$OC_API_URL" \
+    ## --max-time : sans lui un OC API lent/rate-limité bloque le burn indéfiniment,
+    ## alors que le G1 a déjà été brûlé (irréversible) — le Capitaine doit voir l'échec
+    ## rapidement (cf. même correctif sur oc2uplanet.sh/oc_expense_monitor.sh).
+    response=$(curl -sS --max-time 30 -X POST "$OC_API_URL" \
         -H "Personal-Token: $OC_TOKEN" -H "Content-Type: application/json" \
         -d "$payload" 2>/tmp/zen_invoice_curl_err.$$)
     curl_err=$(cat /tmp/zen_invoice_curl_err.$$ 2>/dev/null); rm -f /tmp/zen_invoice_curl_err.$$

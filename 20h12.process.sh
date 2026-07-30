@@ -908,6 +908,25 @@ else
     echo "ℹ️  bro_watch_core.py introuvable — skip balayage proactif BRO"
 fi
 
+## N2 ECONOMICS — DU hyper-relativiste quotidien (Kind 30305 par membre, calcul TRM N²
+## depuis le graphe de réciprocité NOSTR kind 3). Marqueur daté (pas persistant à long
+## terme, contrairement au marqueur mensuel OC2UP_MARKER ci-dessus) — même pattern
+## d'idempotence, évite une double émission en cas de double-déclenchement (cf. le
+## commentaire sur cron_VRFY.sh @reboot en tête de ce fichier).
+N2ECO_MARKER="$HOME/.zen/tmp/.n2_economics_$(date +%Y-%m-%d).done"
+if [[ ! -f "$N2ECO_MARKER" ]]; then
+    if [[ -x "${MY_PATH}/tools/N2_Economics.py" ]]; then
+        echo "N2_Economics: calcul et émission du DU hyper-relativiste quotidien (Ğ1-N²)"
+        python3 "${MY_PATH}/tools/N2_Economics.py" >> "$LOG_FILE" 2>&1 \
+            && touch "$N2ECO_MARKER" \
+            || echo "⚠️  N2_Economics: échec (non-bloquant)"
+    else
+        echo "ℹ️  N2_Economics.py introuvable — skip DU hyper-relativiste"
+    fi
+else
+    echo "ℹ️  N2_Economics déjà exécuté aujourd'hui — skip"
+fi
+
 ## MAIL LOG : support@qo-op.com ##
 # Send email with power consumption report if available (report is written to /tmp/)
 POWER_REPORT_HTML="/tmp/20h12_power_report.html"

@@ -88,6 +88,12 @@ if [[ -n "${BIRTH_DATETIME}" && -n "${BIRTH_LAT}" && -n "${BIRTH_LON}" ]]; then
         # La mise à jour recalcule aussi le badge MayaKin depuis .BIRTHDATE
         "${MY_PATH}/did_manager_nostr.sh" update "${EMAIL}" ATOM4LOVE >&2 || \
             echo "[atom4love_activate] did_manager_nostr.sh update KO (non-bloquant)" >&2
+
+        # Genesis Ğ1-N² (DU hyper-relativiste initial, 100 Ẑen / 11 Ğ1-N²) —
+        # réservé aux humains ayant inscrit naissance/conception ; idempotent
+        # par MULTIPASS et par identité LOVE (anti-Sybil, cf. N2_Genesis.sh).
+        "${MY_PATH}/N2_Genesis.sh" "${EMAIL}" >&2 || \
+            echo "[atom4love_activate] N2_Genesis.sh KO (non-bloquant)" >&2
     else
         echo "❌ atom4love_publish.py n'a pas créé .secret.love — données de naissance non persistées" >&2
     fi

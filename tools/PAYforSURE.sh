@@ -28,6 +28,14 @@ ME="${0##*/}"
 
 [[ -f "${MY_PATH}/my.sh" ]] && . "${MY_PATH}/my.sh"
 
+# ── Dual-stack Ğ1-Duniter / Ğ1-Nostr (N²) — AVANT tout parsing/gcli ci-dessous.
+# Script séparé (g1n2_pay.sh) plutôt qu'une branche inline : zéro risque de
+# régression sur le chemin Duniter, qui reste intégralement inchangé.
+G1_MODE="${G1_MODE:-DUNITER}"
+if [[ "$G1_MODE" == "NOSTR" ]]; then
+    exec "${MY_PATH}/g1n2_pay.sh" "$@"
+fi
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 GCLI_BIN="${GCLI:-gcli}"
 GCLI_TIMEOUT="${GCLI_TIMEOUT:-120}"
