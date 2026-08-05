@@ -5,7 +5,7 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ NOSTRCARD.refresh.sh
-#~ Synchronize NOSTR Card identities, check payment cycles, and refresh IPNS data.
+#~ Synchronize MULTIPASS identities, check payment cycles, and refresh IPNS data.
 ################################################################################
 # Ce script gère l'évolution des cartes NOSTR (MULTIPASS) selon leur état :
 # 1. Vérifie et met à jour les données des cartes NOSTR
@@ -357,7 +357,7 @@ _send_player_email() {
     [[ -n "$_flag" ]] && echo "${TODATE}" > "$_flag"
 }
 
-## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
+## RUNING FOR ALL LOCAL MULTIPASS (MULTIPASS)
 for PLAYER in "${NOSTR[@]}"; do
 
     # ---------------------------------------------------------
@@ -662,7 +662,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ####################################################################
 
     ####################################################################
-    ## EVERY 7 DAYS NOSTR CARD is PAYING CAPTAIN
+    ## EVERY 7 DAYS MULTIPASS is PAYING CAPTAIN
     # Skip payment logic for CAPTAIN (no rental payment needed)
     if [[ "${PLAYER}" == "${CAPTAINEMAIL}" ]] || [[ "${CAPTAING1PUB}" == "${G1PUBNOSTR}" ]]; then
         echo "___ CAPTAIN WALLET ACCOUNT : $COINS G1"
@@ -724,7 +724,7 @@ for PLAYER in "${NOSTR[@]}"; do
                             TVA_ZEN=$(makecoord $(echo "scale=2; $TVA_AMOUNT * 10" | bc -l))
                             TOTAL_ZEN=$(makecoord $(echo "scale=2; $TOTAL_PAYMENT * 10" | bc -l))
 
-                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS Ğ1 >= $MIN_BALANCE Ğ1 min) → $Npaf_ZEN ẐEN ($Npaf Ğ1) to CAPTAIN_DEDICATED — TVA=0"
+                            log "INFO" "[7 DAYS CYCLE] $TODATE is MULTIPASS $NCARD ẐEN MULTIPASS PAYMENT ($COINS Ğ1 >= $MIN_BALANCE Ğ1 min) → $Npaf_ZEN ẐEN ($Npaf Ğ1) to CAPTAIN_DEDICATED — TVA=0"
 
                             # Ensure CAPTAIN_DEDICATED wallet exists (business wallet for rental collection)
                             if [[ ! -s ~/.zen/game/uplanet.captain.dunikey ]]; then
@@ -858,7 +858,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
                             # Check if MULTIPASS is less than 7 days old (grace period)
                             if [[ $DIFF_DAYS -lt 7 ]]; then
-                                log "INFO" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - Grace period for new MULTIPASS (${DIFF_DAYS} days old)"
+                                log "INFO" "[7 DAYS CYCLE] MULTIPASS ($COINS G1) - Grace period for new MULTIPASS (${DIFF_DAYS} days old)"
                                 continue
                             fi
 
@@ -881,7 +881,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 continue
                             fi
 
-                            log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Need at least $MIN_BALANCE Ğ1. Destroying if not captain"
+                            log "WARN" "[7 DAYS CYCLE] MULTIPASS ($COINS G1) - insufficient funds! Need at least $MIN_BALANCE Ğ1. Destroying if not captain"
                             # Capitaine : immunisé contre l'insolvabilité, mais les autres sont supprimés
                             if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
                                 log "INFO" "Triggering destruction for insolvent player: ${PLAYER}"
@@ -1015,7 +1015,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################
     echo ">>> CHECKING MULTIPASS ($COINS G1)"
     ########################################################################
-    ## ACTIVATED NOSTR CARD
+    ## ACTIVATED MULTIPASS
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
     echo "uDRIVE : ${myIPFS}${NOSTRNS}/${PLAYER}/APP/uDRIVE"
 
@@ -1287,7 +1287,7 @@ for PLAYER in "${NOSTR[@]}"; do
             PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 2 )) | xargs)
             NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 2 )) | xargs)
 
-            ## GET LANG FROM NOSTR CARD
+            ## GET LANG FROM MULTIPASS
             LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
             source ${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr 2>/dev/null
             [[ -z $LANG ]] && LANG="fr"
@@ -1300,7 +1300,7 @@ for PLAYER in "${NOSTR[@]}"; do
         else
             ################## FINAL STEP REACHED ###################
             ######## USER STATE = Email
-            ### + NOSTR Card + Message (GPS 0?)
+            ### + MULTIPASS + Message (GPS 0?)
             ### + UPassport (G1/DU?)
             ### + Zen Card (Ẑ/€?)
             ### = PLAYER N1/N2 UPLANET ZEN
@@ -1329,7 +1329,7 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
     echo "## CONTROL TRANSACTIONS PRIMAL CONFORMITY..."
     # Call the generic primal wallet control function (using UPLANETNAME_G1 as unique primal source)
-    echo "CONTROL UPLANET ZEN - NOSTR Card primal control"
+    echo "CONTROL UPLANET ZEN - MULTIPASS primal control"
     ${MY_PATH}/../tools/primal_wallet_control.sh \
         "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
         "${G1PUBNOSTR}" \
@@ -1419,6 +1419,8 @@ for PLAYER in "${NOSTR[@]}"; do
             # Envoyé UNE FOIS PAR JOUR par joueur local uniquement.
             # Élimine les doublons inter-machines de la constellation.
             _KIN_DAILY_FLAG="${HOME}/.zen/game/nostr/${PLAYER}/.kin_daily_${TODATE}"
+            # Ménage : ne garder que le flag du jour, purger les précédents
+            find "${HOME}/.zen/game/nostr/${PLAYER}" -maxdepth 1 -name ".kin_daily_*" ! -name "$(basename "$_KIN_DAILY_FLAG")" -delete 2>/dev/null
             if [[ ! -f "$_KIN_DAILY_FLAG" && -x "${MY_PATH}/KIN.daily.sh" ]]; then
                 log "INFO" "⚛ KIN Oracle quotidien → ${PLAYER}"
                 "${MY_PATH}/KIN.daily.sh" --email "${PLAYER}" --force \
@@ -1432,6 +1434,8 @@ for PLAYER in "${NOSTR[@]}"; do
             # reçoivent la notification de leur propre station.
             _KIN_WEEK="$(date -u +%Y)W$(date -u +%V)"
             _KIN_NEWS_FLAG="${HOME}/.zen/game/nostr/${PLAYER}/.kin_news_${_KIN_WEEK}"
+            # Ménage : ne garder que le flag de la semaine en cours, purger les précédents
+            find "${HOME}/.zen/game/nostr/${PLAYER}" -maxdepth 1 -name ".kin_news_*" ! -name "$(basename "$_KIN_NEWS_FLAG")" -delete 2>/dev/null
             if [[ ! -f "$_KIN_NEWS_FLAG" && -x "${MY_PATH}/KIN.news.sh" ]]; then
                 log "INFO" "🌀 KIN Correspondances hebdo → ${PLAYER}"
                 "${MY_PATH}/KIN.news.sh" --player "${PLAYER}" --force \
