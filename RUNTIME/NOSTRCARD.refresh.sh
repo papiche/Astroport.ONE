@@ -945,7 +945,7 @@ for PLAYER in "${NOSTR[@]}"; do
             if [[ ! -s "${HOME}/.zen/game/nostr/${PLAYER}/.usociety_welcome_sent" ]]; then
                 _welcome_tmp=$(mktemp)
                 sed -e "s~_USPOT_~${uSPOT}~g" \
-                    -e "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" \
+                    -e "s~_CORACLEURL_~${myCORACLE:-https://coracle.copylaradio.com}~g" \
                     "${MY_PATH}/../templates/NOSTR/zine/zine_usociety_welcome.html" > "$_welcome_tmp"
                 ${MY_PATH}/../tools/mailjet.sh \
                     --channel usociety \

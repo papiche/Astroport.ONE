@@ -1219,7 +1219,7 @@ generate_umap_index() {
     
     # Build URLs
     local MAP_URL="${myIPFS}/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
-    local CORACLE_URL="${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}"
+    local CORACLE_URL="${myCORACLE:-https://coracle.copylaradio.com}"
     local SECTOR_URL="${myIPFS}/ipns/copylaradio.com/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/"
     local REGION_URL="${myIPFS}/ipns/copylaradio.com/REGIONS/_${RLAT}_${RLON}/"
     

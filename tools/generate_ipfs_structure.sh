@@ -1751,7 +1751,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
             /* Hide NOSTR Geo and Coracle buttons on mobile */
             #nostr-link,
-            .nav-btn[href="https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com"] {
+            .nav-btn[href="https://coracle.copylaradio.com"] {
                 display: none;
             }
 
