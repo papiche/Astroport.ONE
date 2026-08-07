@@ -98,6 +98,10 @@ CHOICE="$3"
 echo ">>> RUNNING 'ajouter_media.sh' URL=$URL PLAYER=$PLAYER CHOICE=$CHOICE"
 echo ">>> Log file: $LOG_FILE"
 
+# Appel automatisé (ex: vdo.ninja.motion.rec.py) quand PLAYER est déjà fourni : pas de dialogue zenity
+MEDIA_INTERACTIVE="yes"
+[[ -n "$2" ]] && MEDIA_INTERACTIVE="no"
+
 # Fichier local passé comme URL (appel non-interactif depuis vdo.ninja.motion.rec.py, etc.)
 LOCAL_VIDEO_FILE=""
 if [[ -n "$URL" && -f "$URL" && -n "$CHOICE" ]]; then
@@ -458,12 +462,15 @@ ask_tmdb_metadata() {
 
 ########################################################################
 # Encode en H264/AAC en UN seul passage : conversion + resize si > 650 Mo
-# Sélectionne automatiquement la piste audio française si disponible
+# Piste audio française par défaut ; dialogue de choix si plusieurs pistes
+#   et mode interactif (MEDIA_INTERACTIVE != "no")
 # GPU : nvenc → vaapi → CPU libx264
 _encode_video() {
     local src="$1" dst="$2"
     local max_bytes=$(( 650 * 1024 * 1024 ))
     local tgt_bytes=$(( 600 * 1024 * 1024 ))
+    local SUB_FILE=""
+    trap 'rm -f "$SUB_FILE"' RETURN
 
     # Propriétés source
     local src_size src_ext video_codec audio_codec
@@ -477,21 +484,108 @@ _encode_video() {
         "$src" 2>/dev/null | tr -d '[:space:]')
     echo "🔍 Codec source: video=$video_codec audio=$audio_codec | $(( src_size / 1024 / 1024 )) Mo"
 
-    # Piste audio FR en priorité
-    local audio_stream=0
-    local fr_idx
-    fr_idx=$(ffprobe -v error -select_streams a \
-        -show_entries stream=index:stream_tags=language -of csv=p=0 "$src" 2>/dev/null \
-        | awk -F',' '$2 ~ /^(fre|fra|fr)$/ {print NR-1; exit}')
-    if [[ -n "$fr_idx" ]]; then
-        echo "🇫🇷 Piste audio française sélectionnée (index $fr_idx)"
-        audio_stream=$fr_idx
+    # Détection des pistes audio disponibles (langue, codec, canaux, titre)
+    local -a AUDIO_LANGS=() AUDIO_CODECS=() AUDIO_CHANNELS=() AUDIO_TITLES=()
+    local audio_probe
+    audio_probe=$(ffprobe -v error -select_streams a \
+        -show_entries stream=codec_name,channels:stream_tags=language,title \
+        -of json "$src" 2>/dev/null)
+    while IFS=$'\t' read -r lang codec ch title; do
+        AUDIO_LANGS+=("${lang:-und}")
+        AUDIO_CODECS+=("${codec:-?}")
+        AUDIO_CHANNELS+=("${ch:-?}")
+        AUDIO_TITLES+=("$title")
+    done < <(echo "$audio_probe" | jq -r '.streams[]? | [(.tags.language // "und"), (.codec_name // "?"), ((.channels // "?")|tostring), (.tags.title // "")] | @tsv' 2>/dev/null)
+
+    # Piste audio FR en priorité par défaut
+    local audio_stream=0 i
+    for i in "${!AUDIO_LANGS[@]}"; do
+        if [[ "${AUDIO_LANGS[$i]}" =~ ^(fre|fra|fr)$ ]]; then
+            audio_stream=$i
+            echo "🇫🇷 Piste audio française sélectionnée par défaut (piste $audio_stream)"
+            break
+        fi
+    done
+
+    # Sélection manuelle si plusieurs pistes disponibles (mode interactif uniquement)
+    if [[ "${#AUDIO_LANGS[@]}" -gt 1 && "${MEDIA_INTERACTIVE:-yes}" != "no" ]] && command -v zenity &>/dev/null; then
+        local -a ZLIST=()
+        for i in "${!AUDIO_LANGS[@]}"; do
+            local sel="FALSE"
+            [[ $i -eq $audio_stream ]] && sel="TRUE"
+            local label="${AUDIO_LANGS[$i]} — ${AUDIO_CODECS[$i]}, ${AUDIO_CHANNELS[$i]}ch"
+            [[ -n "${AUDIO_TITLES[$i]}" ]] && label="$label — ${AUDIO_TITLES[$i]}"
+            ZLIST+=("$sel" "$i" "$label")
+        done
+        local picked
+        picked=$(zenity --list --width 560 --height 320 --title="🎧 Bande sonore" \
+            --text="Plusieurs pistes audio détectées (français sélectionné par défaut).\nChoisissez la bande sonore :" \
+            --radiolist --column="✓" --column="Piste" --column="Détails" \
+            "${ZLIST[@]}" 2>/dev/null)
+        if [[ -n "$picked" ]]; then
+            audio_stream="$picked"
+            echo "🎧 Piste audio choisie par l'utilisateur : $audio_stream (${AUDIO_LANGS[$audio_stream]})"
+        fi
     fi
 
-    # Copie directe si déjà MP4 h264/aac, piste 0, et taille OK
+    # Pas de piste audio française ? Proposer d'incruster des sous-titres français si disponibles
+    local SUBTITLE_FILTER=""
+    local has_fr_audio="no"
+    for i in "${!AUDIO_LANGS[@]}"; do
+        [[ "${AUDIO_LANGS[$i]}" =~ ^(fre|fra|fr)$ ]] && has_fr_audio="yes" && break
+    done
+    if [[ "$has_fr_audio" == "no" ]]; then
+        local -a SUB_LANGS=() SUB_CODECS=()
+        local sub_probe
+        sub_probe=$(ffprobe -v error -select_streams s \
+            -show_entries stream=codec_name:stream_tags=language \
+            -of json "$src" 2>/dev/null)
+        while IFS=$'\t' read -r lang codec; do
+            SUB_LANGS+=("${lang:-und}")
+            SUB_CODECS+=("${codec:-?}")
+        done < <(echo "$sub_probe" | jq -r '.streams[]? | [(.tags.language // "und"), (.codec_name // "?")] | @tsv' 2>/dev/null)
+
+        local sub_pos=-1 j
+        for j in "${!SUB_LANGS[@]}"; do
+            [[ "${SUB_LANGS[$j]}" =~ ^(fre|fra|fr)$ ]] && sub_pos=$j && break
+        done
+
+        if [[ $sub_pos -ge 0 ]]; then
+            local sub_codec="${SUB_CODECS[$sub_pos]}"
+            case "$sub_codec" in
+                subrip|ass|ssa|mov_text|webvtt|text)
+                    local do_burn="yes"
+                    if [[ "${MEDIA_INTERACTIVE:-yes}" != "no" ]] && command -v zenity &>/dev/null; then
+                        zenity --question --width 500 --title="🇫🇷 Sous-titres français" \
+                            --text="Aucune piste audio française détectée.\nUne piste de sous-titres français est disponible.\n\nIncruster les sous-titres français dans la vidéo ?" \
+                            2>/dev/null || do_burn="no"
+                    fi
+                    if [[ "$do_burn" == "yes" ]]; then
+                        local sub_ext="srt"
+                        case "$sub_codec" in ass|ssa) sub_ext="ass" ;; webvtt) sub_ext="vtt" ;; esac
+                        SUB_FILE="$HOME/.zen/tmp/subtitle_$$_${sub_pos}.${sub_ext}"
+                        if ffmpeg -loglevel error -i "$src" -map "0:s:${sub_pos}" -y "$SUB_FILE" 2>/dev/null \
+                           && [[ -s "$SUB_FILE" ]]; then
+                            SUBTITLE_FILTER="subtitles='${SUB_FILE}'"
+                            echo "📝 Sous-titres français incrustés (piste $sub_pos, $sub_codec)"
+                            notify_user "Incrustation des sous-titres français…" normal
+                        else
+                            echo "⚠️  Échec extraction sous-titres — abandon incrustation"
+                            rm -f "$SUB_FILE"; SUB_FILE=""
+                        fi
+                    fi
+                ;;
+                *)
+                    echo "ℹ️  Sous-titres français détectés (format image '$sub_codec') — incrustation non supportée"
+                ;;
+            esac
+        fi
+    fi
+
+    # Copie directe si déjà MP4 h264/aac, piste 0, taille OK et pas de sous-titres à incruster
     if [[ "$src_ext" == "mp4" && "$video_codec" == "h264" \
        && "$audio_codec" == "aac" && $src_size -le $max_bytes \
-       && $audio_stream -eq 0 ]]; then
+       && $audio_stream -eq 0 && -z "$SUBTITLE_FILTER" ]]; then
         echo "✅ Déjà compatible — copie directe"
         cp "$src" "$dst"
         return 0
@@ -532,6 +626,10 @@ _encode_video() {
     fi
     espeak "Encoding video. Please wait" 2>/dev/null || true
 
+    # Chaîne de filtres vidéo combinée : resize + incrustation sous-titres
+    local VF_CHAIN="$scale_filter"
+    [[ -n "$SUBTITLE_FILTER" ]] && VF_CHAIN="${VF_CHAIN:+$VF_CHAIN,}$SUBTITLE_FILTER"
+
     # Arguments communs
     local -a A_ARGS=(-map "0:v:0" -map "0:a:${audio_stream}"
                      -pix_fmt yuv420p
@@ -545,7 +643,7 @@ _encode_video() {
     # NVIDIA nvenc
     if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null 2>&1; then
         local -a VF_NV=()
-        [[ -n "$scale_filter" ]] && VF_NV=(-vf "$scale_filter")
+        [[ -n "$VF_CHAIN" ]] && VF_NV=(-vf "$VF_CHAIN")
         echo "🎮 GPU NVIDIA (nvenc)"
         if ffmpeg -loglevel error -hwaccel cuda -i "$src" \
                 "${A_ARGS[@]}" -c:v h264_nvenc -preset p4 -profile:v main \
@@ -563,7 +661,7 @@ _encode_video() {
         vdev=$(find /dev/dri -name 'renderD*' 2>/dev/null | sort | head -1)
         if [[ -n "$vdev" ]]; then
             local vf_va="format=nv12,hwupload"
-            [[ -n "$scale_filter" ]] && vf_va="${scale_filter},format=nv12,hwupload"
+            [[ -n "$VF_CHAIN" ]] && vf_va="${VF_CHAIN},format=nv12,hwupload"
             echo "🎮 GPU VA-API ($vdev)"
             if ffmpeg -loglevel error -vaapi_device "$vdev" -i "$src" \
                     "${A_ARGS[@]}" -c:v h264_vaapi \
@@ -579,7 +677,7 @@ _encode_video() {
     # CPU libx264
     if [[ $ok -ne 0 ]]; then
         local -a VF_CPU=()
-        [[ -n "$scale_filter" ]] && VF_CPU=(-vf "$scale_filter")
+        [[ -n "$VF_CHAIN" ]] && VF_CPU=(-vf "$VF_CHAIN")
         echo "🖥️  Encodage CPU (libx264)"
         notify_user "Encodage CPU — patience…" low
         if ffmpeg -loglevel error -i "$src" \

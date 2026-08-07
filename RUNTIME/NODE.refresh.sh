@@ -423,6 +423,10 @@ echo "Updated blacklist.txt: $(cat ${BLACKLIST} | wc -l) entries"
 echo "Updated amisOfAmis.txt: $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l) entries"
 
 ########################################################
+echo "## NOSTR STRANGERS / DISAPPEARED NODEs (informational, no deletion)"
+"${MY_PATH}/../admin/system/purge_nostr_strangers.sh" --list 2>/dev/null
+
+########################################################
 if [[ -z $(cat ~/.zen/MJ_APIKEY) ]]; then
     # Mailjet - UPlanet ORIGIN - edit config to change provider
     ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
