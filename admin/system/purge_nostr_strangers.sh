@@ -1,6 +1,13 @@
 #!/bin/bash
 # purge_nostr_strangers.sh - Gestionnaire de purge du relay Nostr
 # Usage: ./purge_nostr_strangers.sh [--list | --clean | --dry-run | --help]
+#
+# PERFORMANCE : toutes les données (profils, volumes, kinds par auteur, DID) sont
+# récupérées via un nombre FIXE de scans `strfry scan` (un par type de donnée),
+# jamais un scan par auteur — sur un relay à quelques centaines/milliers
+# d'auteurs, un scan par auteur (× plusieurs par auteur) domine le temps
+# d'exécution par le seul coût de fork/exec de `strfry`+`jq`. Le reste du script
+# ne fait que des lookups en mémoire (tableaux associatifs bash).
 
 . "${HOME}/.zen/Astroport.ONE/tools/my.sh"
 
@@ -10,7 +17,10 @@ NOSTR_DATA_DIR="$HOME/.zen/game/nostr"
 SWARM_DIR="$HOME/.zen/tmp/swarm"
 NODE_REGISTRY="$STRFRY_DIR/.known_nodes"
 TEMP_ALLOWED=$(mktemp)
-TEMP_AUTHORS=$(mktemp)
+PROFILE_TSV=$(mktemp)
+DID_TSV=$(mktemp)
+EVENTS_TSV=$(mktemp)
+trap 'rm -f "$TEMP_ALLOWED" "$PROFILE_TSV" "$DID_TSV" "$EVENTS_TSV"' EXIT
 
 # Kinds jamais supprimables par cet outil, quel que soit l'auteur.
 # - 30852 (Ğ1-N²) : source unique NIP-101 (relay.writePolicy.plugin/protected_kinds.sh).
@@ -50,22 +60,6 @@ get_authorized_keys() {
     sort -u "$TEMP_ALLOWED" -o "$TEMP_ALLOWED"
 }
 
-get_all_authors() {
-    cd "$STRFRY_DIR" || exit 1
-    ./strfry scan '{"kinds":[0]}' 2>/dev/null | jq -r '.pubkey' | sort -u > "$TEMP_AUTHORS"
-}
-
-get_profile_name() {
-    local hex="$1"
-    cd "$STRFRY_DIR" && ./strfry scan "{\"kinds\":[0],\"authors\":[\"$hex\"],\"limit\":1}" 2>/dev/null | \
-    jq -r '.content | fromjson | .name // .display_name // "Sans nom"' 2>/dev/null | head -1
-}
-
-get_event_volume() {
-    local hex="$1"
-    cd "$STRFRY_DIR" && ./strfry scan "{\"authors\":[\"$hex\"],\"limit\":1000}" 2>/dev/null | wc -l
-}
-
 # Historise les HEX des NODEs actuellement visibles (soi-même + swarm) afin de
 # pouvoir reconnaître un NODE disparu même après nettoyage de son dossier swarm
 # (NODE.refresh.sh purge ~/.zen/tmp/swarm/<IPFSNODEID>/ après 48h hors-ligne,
@@ -84,21 +78,6 @@ update_node_registry() {
     awk -F'\t' '!seen[$1]++' "$NODE_REGISTRY" > "${NODE_REGISTRY}.tmp" && mv "${NODE_REGISTRY}.tmp" "$NODE_REGISTRY"
 }
 
-get_node_label() {
-    local hex="$1"
-    grep -P "^${hex}\t" "$NODE_REGISTRY" 2>/dev/null | cut -f2 | head -1
-}
-
-# DID (kind 30800, d=did) le plus récent publié par cet auteur, content JSON parsé.
-# Le DID est la source de vérité (cf. DID.manager.sh) : un event backfillé sur ce
-# relay depuis une AUTRE station de la même constellation UPLANET est tout aussi
-# valide qu'un DID local.
-get_did_content() {
-    local hex="$1"
-    cd "$STRFRY_DIR" && ./strfry scan "{\"kinds\":[30800],\"authors\":[\"$hex\"],\"#d\":[\"did\"],\"limit\":1}" 2>/dev/null \
-        | jq -r '.content' 2>/dev/null | jq -c '.' 2>/dev/null
-}
-
 # Protège un compte qui a un DID valide ET un abonnement coopératif actif, DANS
 # LA MÊME CONSTELLATION UPLANET (comparaison metadata.uplanet == $UPLANETG1PUB) :
 # - contractStatus doit être un statut réellement actif (ni vide, ni "new_user"
@@ -110,25 +89,26 @@ get_did_content() {
 #   pas accessible pour un membre d'une AUTRE station de la constellation (donnée
 #   privée, non publiée dans le swarm) : on fait alors confiance au DID Nostr,
 #   conformément au modèle "Nostr = source de vérité".
+# Lit DID_MAP (rempli une seule fois en amont via un scan groupé, cf. plus bas).
 has_valid_did_subscription() {
     local hex="$1"
-    local did_json
-    did_json=$(get_did_content "$hex")
-    [[ -z "$did_json" || "$did_json" == "null" ]] && return 1
+    local b64="${DID_MAP[$hex]:-}"
+    [[ -z "$b64" ]] && return 1
+    local raw
+    raw=$(printf '%s' "$b64" | base64 -d 2>/dev/null)
+    [[ -z "$raw" ]] && return 1
 
-    local did_uplanet
-    did_uplanet=$(echo "$did_json" | jq -r '.metadata.uplanet // empty' 2>/dev/null)
-    [[ -z "$UPLANETG1PUB" || "$did_uplanet" != "$UPLANETG1PUB" ]] && return 1
+    local uplanet status email
+    IFS=$'\t' read -r uplanet status email < <(printf '%s' "$raw" | \
+        jq -r '[(.metadata.uplanet // ""), (.metadata.contractStatus // ""), (.metadata.email // "")] | @tsv' 2>/dev/null)
 
-    local status
-    status=$(echo "$did_json" | jq -r '.metadata.contractStatus // empty' 2>/dev/null)
+    [[ -z "$UPLANETG1PUB" || "$uplanet" != "$UPLANETG1PUB" ]] && return 1
     case "$status" in
         ""|"new_user"|"account_deactivated") return 1 ;;
     esac
 
-    local email uend now_s end_s
-    email=$(echo "$did_json" | jq -r '.metadata.email // empty' 2>/dev/null)
     if [[ -n "$email" && -s "$HOME/.zen/game/nostr/${email}/U.SOCIETY.end" ]]; then
+        local uend now_s end_s
         uend=$(cat "$HOME/.zen/game/nostr/${email}/U.SOCIETY.end" 2>/dev/null)
         if [[ -n "$uend" ]]; then
             now_s=$(date +%s)
@@ -139,19 +119,13 @@ has_valid_did_subscription() {
     return 0
 }
 
-# Kinds réellement publiés par cet auteur (liste triée unique)
-get_author_kinds() {
-    local hex="$1"
-    cd "$STRFRY_DIR" && ./strfry scan "{\"authors\":[\"$hex\"]}" 2>/dev/null | jq -r '.kind' | sort -un
-}
-
-# Kinds de cet auteur MOINS les kinds protégés (Ğ1-N²/harmoniques) — c'est la
-# SEULE liste de kinds jamais transmise à `strfry delete`, jamais "tous les
-# événements de l'auteur" (cf. commentaire ALL_PROTECTED_KINDS en tête de fichier).
+# Kinds de cet auteur (lus depuis AUTHOR_KINDS, rempli en amont) MOINS les kinds
+# protégés (Ğ1-N²/harmoniques) — c'est la SEULE liste de kinds jamais transmise
+# à `strfry delete`, jamais "tous les événements de l'auteur".
 get_purgeable_kinds_csv() {
     local hex="$1"
     local k csv=()
-    for k in $(get_author_kinds "$hex"); do
+    for k in ${AUTHOR_KINDS[$hex]:-}; do
         local protected=false pk
         for pk in "${ALL_PROTECTED_KINDS[@]}"; do
             [[ "$k" == "$pk" ]] && protected=true && break
@@ -163,71 +137,122 @@ get_purgeable_kinds_csv() {
 }
 
 get_protected_event_count() {
-    local hex="$1"
-    local IFS=,
-    local kinds_csv="${ALL_PROTECTED_KINDS[*]}"
-    cd "$STRFRY_DIR" && ./strfry scan "{\"authors\":[\"$hex\"],\"kinds\":[$kinds_csv]}" 2>/dev/null | wc -l
+    local hex="$1" k total=0
+    for k in "${ALL_PROTECTED_KINDS[@]}"; do
+        total=$(( total + ${AUTHOR_KIND_COUNT["$hex"$'\t'"$k"]:-0} ))
+    done
+    echo "$total"
 }
 
 # Suppression sûre : ne supprime QUE les kinds non protégés de cet auteur.
 # Si tous ses événements sont d'un kind protégé (Ğ1-N²/harmoniques), ne fait rien.
 purge_author() {
     local hex="$1" label="$2"
-    local kinds_csv=$(get_purgeable_kinds_csv "$hex")
+    local kinds_csv
+    kinds_csv=$(get_purgeable_kinds_csv "$hex")
     if [[ -z "$kinds_csv" ]]; then
         echo "⏭️  $label ($hex) : uniquement des événements protégés (Ğ1-N²/harmoniques) — ignoré."
         return
     fi
     cd "$STRFRY_DIR" && ./strfry delete --filter="{\"authors\": [\"$hex\"], \"kinds\": [$kinds_csv]}" 2>/dev/null
-    local prot=$(get_protected_event_count "$hex")
+    local prot
+    prot=$(get_protected_event_count "$hex")
     [[ "$prot" -gt 0 ]] && echo "   ℹ️  $prot événement(s) protégé(s) conservé(s) (Ğ1-N²/harmoniques)."
 }
 
-# 1. Collecte des données
+# 1. Collecte des données — un nombre FIXE de scans strfry, jamais un par auteur
 get_authorized_keys
-get_all_authors
 update_node_registry
 
+cd "$STRFRY_DIR" || exit 1
+
+# Profils (kind 0) : source de la liste des auteurs + leur nom affichable
+./strfry scan '{"kinds":[0]}' 2>/dev/null | \
+    jq -r '[.pubkey, (try (.content | fromjson | (.name // .display_name // "Sans nom")) catch "Sans nom")] | @tsv' \
+    > "$PROFILE_TSV" 2>/dev/null
+
+declare -A PROFILE_MAP
+AUTHORS=()
+while IFS=$'\t' read -r pk name; do
+    [[ -z "$pk" ]] && continue
+    [[ -z "${PROFILE_MAP[$pk]:-}" ]] && AUTHORS+=("$pk")
+    PROFILE_MAP["$pk"]="$name"
+done < "$PROFILE_TSV"
+
+# DID (kind 30800, d=did) : contenu complet en base64 (décodé à la demande, pour
+# les seuls auteurs qui en ont besoin — cf. has_valid_did_subscription)
+./strfry scan '{"kinds":[30800],"#d":["did"]}' 2>/dev/null | \
+    jq -r '[.pubkey, (.content | @base64)] | @tsv' > "$DID_TSV" 2>/dev/null
+
+declare -A DID_MAP
+while IFS=$'\t' read -r pk b64; do
+    [[ -z "$pk" ]] && continue
+    DID_MAP["$pk"]="$b64"
+done < "$DID_TSV"
+
+# Volume + kinds publiés, pour les seuls auteurs ci-dessus (kind:0 holders) —
+# un unique scan filtré par la liste d'auteurs, pas un scan par auteur.
+declare -A VOL_MAP AUTHOR_KINDS AUTHOR_KIND_COUNT
+if [[ "${#AUTHORS[@]}" -gt 0 ]]; then
+    AUTHORS_JSON=$(printf '%s\n' "${AUTHORS[@]}" | jq -R -s -c 'split("\n") | map(select(length>0))')
+    ./strfry scan "{\"authors\": ${AUTHORS_JSON}}" 2>/dev/null | jq -r '[.pubkey,.kind]|@tsv' > "$EVENTS_TSV" 2>/dev/null
+
+    while IFS=$'\t' read -r pk kind; do
+        [[ -z "$pk" ]] && continue
+        VOL_MAP["$pk"]=$(( ${VOL_MAP[$pk]:-0} + 1 ))
+        # Première occurrence de ce (auteur,kind) : on l'ajoute à la liste des
+        # kinds de l'auteur (évite un second passage en O(auteurs × kinds)).
+        [[ -z "${AUTHOR_KIND_COUNT[$pk$'\t'$kind]:-}" ]] && AUTHOR_KINDS["$pk"]+="$kind "
+        AUTHOR_KIND_COUNT["$pk"$'\t'"$kind"]=$(( ${AUTHOR_KIND_COUNT["$pk"$'\t'"$kind"]:-0} + 1 ))
+    done < "$EVENTS_TSV"
+fi
+
+declare -A ALLOWED_SET
+while read -r h; do
+    [[ -n "$h" ]] && ALLOWED_SET["$h"]=1
+done < "$TEMP_ALLOWED"
+
+declare -A NODE_MAP
+while IFS=$'\t' read -r h label; do
+    [[ -n "$h" ]] && NODE_MAP["$h"]="$label"
+done < "$NODE_REGISTRY"
+
+# 2. Classification — un seul passage, tout en mémoire
+declare -A AUTHOR_STATUS AUTHOR_DISPLAY_NAME
 PURGE_CANDIDATES=()
-while read -r author; do
-    if ! grep -q "^$author$" "$TEMP_ALLOWED" && [[ "$author" != "$CAPTAIN_HEX" ]] && [[ "$author" != "$SELF_NODE_HEX" ]] \
-        && ! has_valid_did_subscription "$author"; then
-        NODE_LABEL=$(get_node_label "$author")
-        VOL=$(get_event_volume "$author")
-        if [[ -n "$NODE_LABEL" ]]; then
-            PURGE_CANDIDATES+=("$author|$NODE_LABEL|$VOL|NODE")
-        else
-            NAME=$(get_profile_name "$author")
-            PURGE_CANDIDATES+=("$author|$NAME|$VOL|PLAYER")
-        fi
+for author in "${AUTHORS[@]}"; do
+    NODE_LABEL="${NODE_MAP[$author]:-}"
+    VOL="${VOL_MAP[$author]:-0}"
+    NAME="${PROFILE_MAP[$author]:-Sans nom}"
+
+    if [[ "$author" == "$SELF_NODE_HEX" ]]; then
+        AUTHOR_DISPLAY_NAME[$author]="$IPFSNODEID"; AUTHOR_STATUS[$author]="🛰️  NODE (local)"
+    elif [[ -n "${ALLOWED_SET[$author]:-}" && -n "$NODE_LABEL" ]]; then
+        AUTHOR_DISPLAY_NAME[$author]="$NODE_LABEL"; AUTHOR_STATUS[$author]="🌐 NODE ACTIF"
+    elif [[ -n "${ALLOWED_SET[$author]:-}" ]]; then
+        AUTHOR_DISPLAY_NAME[$author]="$NAME"; AUTHOR_STATUS[$author]="✅ AUTORISÉ"
+    elif [[ "$author" == "$CAPTAIN_HEX" ]]; then
+        AUTHOR_DISPLAY_NAME[$author]="$NAME"; AUTHOR_STATUS[$author]="👑 CAPITAINE"
+    elif [[ -n "$NODE_LABEL" ]]; then
+        AUTHOR_DISPLAY_NAME[$author]="$NODE_LABEL"; AUTHOR_STATUS[$author]="🛰️  NODE DISPARU"
+        PURGE_CANDIDATES+=("$author|$NODE_LABEL|$VOL|NODE")
+    elif has_valid_did_subscription "$author"; then
+        AUTHOR_DISPLAY_NAME[$author]="$NAME"; AUTHOR_STATUS[$author]="📜 DID+ABONNEMENT VALIDE"
+    else
+        AUTHOR_DISPLAY_NAME[$author]="$NAME"; AUTHOR_STATUS[$author]="❌ À PURGER"
+        PURGE_CANDIDATES+=("$author|$NAME|$VOL|PLAYER")
     fi
-done < "$TEMP_AUTHORS"
+done
 
 # --- DISPATCHER ---
 case "$1" in
     --list)
         printf "%-12s | %-20s | %-10s | %s\n" "PUBKEY" "NOM" "VOLUME" "STATUT"
         echo "----------------------------------------------------------------------------------"
-        while read -r author; do
-            NODE_LABEL=$(get_node_label "$author")
-            VOL=$(get_event_volume "$author")
-            if [[ "$author" == "$SELF_NODE_HEX" ]]; then
-                NAME="$IPFSNODEID"; STATUS="🛰️  NODE (local)"
-            elif grep -q "^$author$" "$TEMP_ALLOWED" && [[ -n "$NODE_LABEL" ]]; then
-                NAME="$NODE_LABEL"; STATUS="🌐 NODE ACTIF"
-            elif grep -q "^$author$" "$TEMP_ALLOWED"; then
-                NAME=$(get_profile_name "$author"); STATUS="✅ AUTORISÉ"
-            elif [[ "$author" == "$CAPTAIN_HEX" ]]; then
-                NAME=$(get_profile_name "$author"); STATUS="👑 CAPITAINE"
-            elif [[ -n "$NODE_LABEL" ]]; then
-                NAME="$NODE_LABEL"; STATUS="🛰️  NODE DISPARU"
-            elif has_valid_did_subscription "$author"; then
-                NAME=$(get_profile_name "$author"); STATUS="📜 DID+ABONNEMENT VALIDE"
-            else
-                NAME=$(get_profile_name "$author"); STATUS="❌ À PURGER"
-            fi
-            printf "%-12s | %-20.20s | %-10s | %s\n" "${author:0:12}" "$NAME" "$VOL évéts" "$STATUS"
-        done < "$TEMP_AUTHORS"
+        for author in "${AUTHORS[@]}"; do
+            printf "%-12s | %-20.20s | %-10s | %s\n" "${author:0:12}" "${AUTHOR_DISPLAY_NAME[$author]}" \
+                "${VOL_MAP[$author]:-0} évéts" "${AUTHOR_STATUS[$author]}"
+        done
         ;;
 
     --dry-run)
@@ -286,7 +311,7 @@ case "$1" in
         done
 
         echo ""
-        read -p "Entrez le numéro, 'all' pour tout purger, ou 'q' pour quitter : " choice
+        read -r -p "Entrez le numéro, 'all' pour tout purger, ou 'q' pour quitter : " choice
 
         if [[ "$choice" == "all" || "$choice" == "*" ]]; then
             echo "🔥 Suppression de TOUS les candidats..."
@@ -306,6 +331,3 @@ case "$1" in
         fi
         ;;
 esac
-
-# Nettoyage
-rm -f "$TEMP_ALLOWED" "$TEMP_AUTHORS"
