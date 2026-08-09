@@ -22,23 +22,30 @@ DID_TSV=$(mktemp)
 EVENTS_TSV=$(mktemp)
 trap 'rm -f "$TEMP_ALLOWED" "$PROFILE_TSV" "$DID_TSV" "$EVENTS_TSV"' EXIT
 
-# Kinds jamais supprimables par cet outil, quel que soit l'auteur.
+# Kinds jamais supprimables par cet outil, quel que soit l'auteur, quel que
+# soit le tag de l'événement :
 # - 30852 (Ğ1-N²) : source unique NIP-101 (relay.writePolicy.plugin/protected_kinds.sh).
 #   Ce ledger n'est remanié que par un processus dédié de clôture comptable/nettoyage
 #   d'anciens changements d'état de compte — jamais par une purge générique de "stranger".
-# - 30078/20078 : harmoniques ATOM4LOVE/ZICMAMA (atomic.html, atomic_projector.html).
-#   Kind 30078 est déjà gardé en écriture par AUTHORIZED_APPS/a4l_proof
-#   (cooperative_config.sh) ; 20078 est le beacon éphémère live event. Une
-#   mauvaise classification (clé .secret.love, visiteur "nobody" live) ne doit
-#   jamais entraîner leur suppression.
+# - 20078 : beacon éphémère ZICMAMA (atomic_projector.html), kind dédié à cet
+#   unique usage (aucun autre client Nostr connu ne le réutilise).
 NIP101_PROTECTED_KINDS_FILE="$HOME/.zen/workspace/NIP-101/relay.writePolicy.plugin/protected_kinds.sh"
 if [[ -s "$NIP101_PROTECTED_KINDS_FILE" ]]; then
     . "$NIP101_PROTECTED_KINDS_FILE"
 else
     PROTECTED_KINDS=(30852)
 fi
-EXTRA_PROTECTED_KINDS=(30078 20078)
-ALL_PROTECTED_KINDS=("${PROTECTED_KINDS[@]}" "${EXTRA_PROTECTED_KINDS[@]}")
+ALWAYS_PROTECTED_KINDS=("${PROTECTED_KINDS[@]}" 20078)
+
+# 30078 est le kind GÉNÉRIQUE NIP-78 ("application-specific data"), partagé par
+# de nombreux clients/apps Nostr sans rapport avec UPlanet — le protéger par
+# kind entier empêcherait à tort de nettoyer des "événements techniques"
+# d'auteurs inconnus qui n'ont rien à voir avec ATOM4LOVE/ZICMAMA. On ne
+# protège donc que les événements 30078 qui portent la signature ATOM4LOVE/
+# ZICMAMA (tag d ou t = atom4love/zicmama_demo — cf. atomic.html d=atom4love,
+# atomic_projector.html #t=zicmama_demo) ; tout le reste redevient purgeable.
+# Cf. is_protected_event() plus bas — c'est la SEULE fonction qui doit changer
+# si de nouveaux tags harmoniques apparaissent.
 
 # Récupération HEX Capitaine pour protection
 CURRENT_CAPTAIN=$(readlink -f ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
@@ -119,44 +126,60 @@ has_valid_did_subscription() {
     return 0
 }
 
-# Kinds de cet auteur (lus depuis AUTHOR_KINDS, rempli en amont) MOINS les kinds
-# protégés (Ğ1-N²/harmoniques) — c'est la SEULE liste de kinds jamais transmise
-# à `strfry delete`, jamais "tous les événements de l'auteur".
-get_purgeable_kinds_csv() {
-    local hex="$1"
-    local k csv=()
-    for k in ${AUTHOR_KINDS[$hex]:-}; do
-        local protected=false pk
-        for pk in "${ALL_PROTECTED_KINDS[@]}"; do
-            [[ "$k" == "$pk" ]] && protected=true && break
-        done
-        $protected || csv+=("$k")
+# Décide si UN événement (pas un auteur, pas un kind entier) doit être conservé
+# quoi qu'il arrive. Seule fonction à modifier si de nouveaux kinds/tags
+# protégés apparaissent — utilisée à la fois par l'agrégation en masse et par
+# le filet de sécurité de purge_author().
+is_protected_event() {
+    local kind="$1" dtag="$2" harmonic="$3" pk
+    for pk in "${ALWAYS_PROTECTED_KINDS[@]}"; do
+        [[ "$kind" == "$pk" ]] && return 0
     done
-    local IFS=,
-    echo "${csv[*]}"
+    if [[ "$kind" == "30078" ]]; then
+        case "$dtag" in atom4love|zicmama_demo) return 0 ;; esac
+        [[ "$harmonic" == "1" ]] && return 0
+    fi
+    return 1
 }
 
-get_protected_event_count() {
-    local hex="$1" k total=0
-    for k in "${ALL_PROTECTED_KINDS[@]}"; do
-        total=$(( total + ${AUTHOR_KIND_COUNT["$hex"$'\t'"$k"]:-0} ))
-    done
-    echo "$total"
-}
+# jq réutilisé pour extraire (kind, id, tag d, marqueur harmonique t) d'un event.
+JQ_EVENT_TAG_FIELDS='.kind, .id, ((.tags[]? | select(.[0]=="d") | .[1]) // ""), (if ([.tags[]? | select(.[0]=="t" and (.[1]=="zicmama_demo" or .[1]=="atom4love"))] | length) > 0 then "1" else "0" end)'
 
-# Suppression sûre : ne supprime QUE les kinds non protégés de cet auteur.
-# Si tous ses événements sont d'un kind protégé (Ğ1-N²/harmoniques), ne fait rien.
+# Suppression sûre : ne supprime QUE les événements non protégés de cet auteur,
+# par id explicite (jamais par kind entier — un même kind 30078 peut mélanger
+# du harmonique protégé et du technique purgeable pour un même auteur).
 purge_author() {
     local hex="$1" label="$2"
-    local kinds_csv
-    kinds_csv=$(get_purgeable_kinds_csv "$hex")
-    if [[ -z "$kinds_csv" ]]; then
+    local ids="${AUTHOR_PURGEABLE_IDS[$hex]:-}"
+    local prot="${AUTHOR_PROTECTED_COUNT[$hex]:-0}"
+
+    # Filet de sécurité : cet auteur vient forcément de la liste des profils
+    # (kind 0), donc le scan groupé doit avoir trouvé AU MOINS un événement
+    # pour lui. S'il n'a rien trouvé du tout (ni purgeable, ni protégé), on
+    # re-scanne cet auteur seul avant de conclure à "rien à purger" — évite de
+    # protéger par erreur suite à un aléa du scan groupé plutôt qu'à une
+    # authentique absence d'événements purgeables.
+    if [[ -z "$ids" && "$prot" -eq 0 ]]; then
+        local resync kind id dtag harmonic
+        resync=$(cd "$STRFRY_DIR" && ./strfry scan "{\"authors\":[\"$hex\"]}" 2>/dev/null | jq -r "[${JQ_EVENT_TAG_FIELDS}] | @tsv" 2>/dev/null)
+        while IFS=$'\t' read -r kind id dtag harmonic; do
+            [[ -z "$id" ]] && continue
+            if is_protected_event "$kind" "$dtag" "$harmonic"; then
+                prot=$((prot + 1))
+            else
+                ids+="$id "
+            fi
+        done <<< "$resync"
+    fi
+
+    if [[ -z "$ids" ]]; then
         echo "⏭️  $label ($hex) : uniquement des événements protégés (Ğ1-N²/harmoniques) — ignoré."
         return
     fi
-    cd "$STRFRY_DIR" && ./strfry delete --filter="{\"authors\": [\"$hex\"], \"kinds\": [$kinds_csv]}" 2>/dev/null
-    local prot
-    prot=$(get_protected_event_count "$hex")
+
+    local ids_json
+    ids_json=$(printf '%s\n' $ids | jq -R -s -c 'split("\n") | map(select(length>0))')
+    cd "$STRFRY_DIR" && ./strfry delete --filter="{\"ids\": ${ids_json}}" 2>/dev/null
     [[ "$prot" -gt 0 ]] && echo "   ℹ️  $prot événement(s) protégé(s) conservé(s) (Ğ1-N²/harmoniques)."
 }
 
@@ -190,20 +213,23 @@ while IFS=$'\t' read -r pk b64; do
     DID_MAP["$pk"]="$b64"
 done < "$DID_TSV"
 
-# Volume + kinds publiés, pour les seuls auteurs ci-dessus (kind:0 holders) —
-# un unique scan filtré par la liste d'auteurs, pas un scan par auteur.
-declare -A VOL_MAP AUTHOR_KINDS AUTHOR_KIND_COUNT
+# Volume + classification protégé/purgeable par événement, pour les seuls
+# auteurs ci-dessus (kind:0 holders) — un unique scan filtré par la liste
+# d'auteurs, pas un scan par auteur.
+declare -A VOL_MAP AUTHOR_PURGEABLE_IDS AUTHOR_PROTECTED_COUNT
 if [[ "${#AUTHORS[@]}" -gt 0 ]]; then
     AUTHORS_JSON=$(printf '%s\n' "${AUTHORS[@]}" | jq -R -s -c 'split("\n") | map(select(length>0))')
-    ./strfry scan "{\"authors\": ${AUTHORS_JSON}}" 2>/dev/null | jq -r '[.pubkey,.kind]|@tsv' > "$EVENTS_TSV" 2>/dev/null
+    ./strfry scan "{\"authors\": ${AUTHORS_JSON}}" 2>/dev/null | \
+        jq -r "[.pubkey, ${JQ_EVENT_TAG_FIELDS}] | @tsv" > "$EVENTS_TSV" 2>/dev/null
 
-    while IFS=$'\t' read -r pk kind; do
+    while IFS=$'\t' read -r pk kind id dtag harmonic; do
         [[ -z "$pk" ]] && continue
         VOL_MAP["$pk"]=$(( ${VOL_MAP[$pk]:-0} + 1 ))
-        # Première occurrence de ce (auteur,kind) : on l'ajoute à la liste des
-        # kinds de l'auteur (évite un second passage en O(auteurs × kinds)).
-        [[ -z "${AUTHOR_KIND_COUNT[$pk$'\t'$kind]:-}" ]] && AUTHOR_KINDS["$pk"]+="$kind "
-        AUTHOR_KIND_COUNT["$pk"$'\t'"$kind"]=$(( ${AUTHOR_KIND_COUNT["$pk"$'\t'"$kind"]:-0} + 1 ))
+        if is_protected_event "$kind" "$dtag" "$harmonic"; then
+            AUTHOR_PROTECTED_COUNT["$pk"]=$(( ${AUTHOR_PROTECTED_COUNT[$pk]:-0} + 1 ))
+        else
+            AUTHOR_PURGEABLE_IDS["$pk"]+="$id "
+        fi
     done < "$EVENTS_TSV"
 fi
 
@@ -293,10 +319,11 @@ case "$1" in
         echo "                            avec un abonnement coopératif actif (protégé)"
         echo "  ❌ À PURGER         MULTIPASS inconnu"
         echo ""
-        echo "Kinds jamais supprimés, quel que soit l'auteur (${ALL_PROTECTED_KINDS[*]}) :"
-        echo "  30852  Ğ1-N² (ledger LOVE) — remaniement réservé à un processus dédié de bilan comptable"
-        echo "  30078  harmoniques ATOM4LOVE/ZICMAMA (atomic.html)"
-        echo "  20078  beacon éphémère ZICMAMA (atomic_projector.html)"
+        echo "Événements jamais supprimés, quel que soit l'auteur :"
+        echo "  kind ${ALWAYS_PROTECTED_KINDS[*]}  toujours protégés (Ğ1-N² / beacon ZICMAMA)"
+        echo "  kind 30078 avec tag d/t = atom4love ou zicmama_demo  (harmoniques ATOM4LOVE/ZICMAMA)"
+        echo "  → les AUTRES événements kind 30078 (usage générique NIP-78 par d'autres clients"
+        echo "    Nostr) restent purgeables normalement."
         ;;
 
     *)
