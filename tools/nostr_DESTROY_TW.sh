@@ -14,8 +14,13 @@
 # - Maintains minimum 1 G1 in ZEN Card for capital shares management
 # - Exports complete backup as a ZIP protected with the player's own .pass code
 #
-# Usage: ./nostr_DESTROY_TW.sh [email]
+# Usage: ./nostr_DESTROY_TW.sh [email] [reason]
 # If no email is provided, the script will prompt the user to select one.
+# reason: INSOLVENCY (default) | INTRUSION | INCOMPATIBLE_KEY
+#   Selects the explanation shown in the deactivation emails — keep this in
+#   sync with the actual triggering condition (NOSTRCARD.refresh.sh 7-day
+#   insolvency check, primal_wallet_control.sh intrusion redirection failure,
+#   or NOSTRCARD.refresh.sh dunikey/G1PUBNOSTR mismatch).
 # -----------------------------------------------------------------------------
 # Deactivate MULTIPASS - Enable Relay/Captain Migration
 
@@ -63,6 +68,23 @@ select_player_email() {
 g1pubnostr=$(cat ~/.zen/game/nostr/${player}/G1PUBNOSTR)
 [[ -z $g1pubnostr ]] && echo "BAD NOSTR MULTIPASS" && exit 1
 hex=$(cat ~/.zen/game/nostr/${player}/HEX)
+
+################### DEACTIVATION REASON (drives email wording) #################
+REASON="${2:-INSOLVENCY}"
+case "$REASON" in
+    INTRUSION)
+        REASON_TEXT_EN="This deactivation happened because unauthorized (non-primal) Ğ1 funds were detected in this wallet and could not be safely redirected."
+        REASON_TEXT_FR="Cette désactivation est survenue parce que des fonds Ğ1 non autorisés (hors filiation primale) ont été détectés dans ce portefeuille et n'ont pas pu être redirigés en sécurité."
+        ;;
+    INCOMPATIBLE_KEY)
+        REASON_TEXT_EN="This deactivation happened because this account's signing key no longer matched its G1 wallet (a historical account-creation inconsistency) — payments could no longer be signed."
+        REASON_TEXT_FR="Cette désactivation est survenue parce que la clé de signature de ce compte ne correspondait plus à son portefeuille G1 (une incohérence historique de création de compte) — les paiements ne pouvaient plus être signés."
+        ;;
+    *)
+        REASON_TEXT_EN="This deactivation happened because your wallet didn't have enough Ẑen for the weekly fee."
+        REASON_TEXT_FR="Cette désactivation est survenue parce que votre wallet n'avait plus assez de Ẑen pour la redevance hebdomadaire."
+        ;;
+esac
 
 ################### OC SUBSCRIPTION SAFETY CHECK ###########################
 # Un abonné OpenCollective actif ne doit JAMAIS être détruit pour insolvabilité.
@@ -151,20 +173,24 @@ fi
 
 if [[ -n ${salt} && -n ${pepper} ]]; then
     rm "$tmp_mid" "$tmp_tail" 2>/dev/null
-    rm ~/.zen/game/nostr/${PLAYER}/ERROR 2>/dev/null
+    rm ~/.zen/game/nostr/${player}/ERROR 2>/dev/null
 else
-    log "ERROR" "BAD DISCO DECODING for ${PLAYER}"
+    echo "[ERROR] BAD DISCO DECODING for ${player}"
     # Si le compte est vieux de plus de 7 jours et corrompu -> Nettoyage RADICAL
-    BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.account_created 2>/dev/null)
+    BIRTHDATE=$(cat ~/.zen/game/nostr/${player}/.account_created 2>/dev/null)
     if [[ -n "$BIRTHDATE" ]]; then
         DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
         if [ $DIFF -gt 7 ]; then
-            log "WARN" "Broken account older than 7 days. Forcing hard removal: $PLAYER"
-            rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
-            rm -rf "${HOME}/.zen/game/players/${PLAYER}" # Nettoie aussi la ZenCard associée
+            echo "[WARN] Broken account older than 7 days. Forcing hard removal: $player"
+            rm -rf "${HOME}/.zen/game/nostr/${player}"
+            rm -rf "${HOME}/.zen/game/players/${player}" # Nettoie aussi la ZenCard associée
         fi
     fi
-    continue
+    # Pas de boucle dans ce script (traite un seul joueur) : `exit 0` dans les
+    # 2 cas (nettoyé ou grace period) pour éviter que l'appelant (ex:
+    # NOSTRCARD.refresh.sh, qui bascule sur un rm -rf brutal si ce script
+    # échoue) ne déclenche une destruction prématurée pendant la grace period.
+    exit 0
 fi
 
 ##################################################### DISCO DECODED
@@ -566,7 +592,17 @@ python3 $MY_PATH/nostr_send_note.py \
 rm "$TMP_KEYFILE"
 
 ## 2. CASH BACK
-${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/nostr.dunikey "${salt}" "${pepper}"
+# resolve_player_dunikey (tools/my.sh) essaie PEPPER_UPLANET_SALT puis PEPPER
+# seul, et ne garde que la formule qui reproduit g1pubnostr (le wallet
+# réellement crédité) — sans ça, une dérivation avec la mauvaise formule
+# produirait un dunikey pour un wallet vide, et le cashback échouerait
+# silencieusement en laissant le vrai solde bloqué (cf. incident jpmgir@jpmgir.org).
+DUNIKEY_MATCHED=false
+if resolve_player_dunikey "${salt}" "${pepper}" "${g1pubnostr}" "$HOME/.zen/tmp/nostr.dunikey"; then
+    DUNIKEY_MATCHED=true
+else
+    echo "⚠️  Impossible de reconstruire un dunikey correspondant à ${g1pubnostr} — cashback ignoré"
+fi
 
 # Get fresh balance from blockchain (not cache)
 echo "🔄 Checking fresh G1 balance from blockchain..."
@@ -582,12 +618,14 @@ prime=${UPLANETNAME_G1}
 
 # Convert amount to numeric for precise comparison using bc
 AMOUNT_NUM=$(echo "${AMOUNT}" | sed 's/[^0-9.]//g')
-if [[ -n "${AMOUNT_NUM}" ]]; then
+CASHBACK_TRANSFERRED=false
+if [[ "$DUNIKEY_MATCHED" == "true" ]] && [[ -n "${AMOUNT_NUM}" ]]; then
     # Use bc for precise numeric comparison
     if echo "${AMOUNT_NUM} > 0" | bc -l 2>/dev/null | grep -q "1"; then
         echo "💸 Transferring ${AMOUNT} Ğ1 to primal account: ${prime}"
         if ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "${AMOUNT}" "${prime}" "MULTIPASS:${youser}:PRIMAL:CASH-BACK" 2>/dev/null; then
             echo "✅ G1 balance transferred successfully"
+            CASHBACK_TRANSFERRED=true
         else
             echo "⚠️  Failed to transfer G1 balance (will continue with destruction)"
         fi
@@ -598,6 +636,27 @@ else
     echo "ℹ️  No G1 balance to transfer (${AMOUNT} Ğ1)"
 fi
 rm -f ~/.zen/tmp/nostr.dunikey
+
+# ── Texte de statut cashback pour les emails (montant en Ẑen, pas en Ğ1) ─────
+# 1 Ẑen = 0.1 Ğ1 (conversion directe d'un montant transféré, à ne pas
+# confondre avec la formule d'affichage de solde (COINS-1)*10 qui soustrait
+# le 1 Ğ1 de dépôt existentiel — ici AMOUNT est déjà le montant net transféré).
+AMOUNT_ZEN=$(makecoord $(echo "scale=2; ${AMOUNT_NUM:-0} * 10" | bc -l))
+[[ -z "$AMOUNT_ZEN" ]] && AMOUNT_ZEN="0.00"
+
+if [[ "$DUNIKEY_MATCHED" != "true" ]]; then
+    CASHBACK_TEXT_EN="Your remaining balance (<strong>${AMOUNT_ZEN} Ẑen</strong>) could NOT be cashed back automatically (signing key issue) — contact your Captain to recover it manually."
+    CASHBACK_TEXT_FR="Votre solde restant (<strong>${AMOUNT_ZEN} Ẑen</strong>) n'a PAS pu être récupéré automatiquement (problème de clé de signature) — contactez votre Capitaine pour le récupérer manuellement."
+elif [[ "$CASHBACK_TRANSFERRED" == "true" ]]; then
+    CASHBACK_TEXT_EN="Your remaining balance of <strong>${AMOUNT_ZEN} Ẑen</strong> was cashed back to the UPlanet primal wallet. It will be restored automatically when you migrate or reactivate your account."
+    CASHBACK_TEXT_FR="Votre solde restant de <strong>${AMOUNT_ZEN} Ẑen</strong> a été reversé au portefeuille primal UPlanet. Il vous sera restitué automatiquement lors de votre migration ou réactivation de compte."
+elif echo "${AMOUNT_NUM:-0} > 0" | bc -l 2>/dev/null | grep -q "1"; then
+    CASHBACK_TEXT_EN="Your remaining balance of <strong>${AMOUNT_ZEN} Ẑen</strong> could NOT be transferred (technical error) — it should still be on your wallet; contact your Captain."
+    CASHBACK_TEXT_FR="Votre solde restant de <strong>${AMOUNT_ZEN} Ẑen</strong> n'a PAS pu être transféré (erreur technique) — il devrait toujours être sur votre portefeuille ; contactez votre Capitaine."
+else
+    CASHBACK_TEXT_EN="No Ẑen balance remained on this wallet at deactivation time."
+    CASHBACK_TEXT_FR="Aucun solde Ẑen ne restait sur ce portefeuille au moment de la désactivation."
+fi
 
 ## 2. REMOVE ZEN CARD (capital shares preserved in secret.june)
 # Note: ZEN Card capital shares are archived in transaction history (secret.june)
@@ -610,19 +669,18 @@ if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
 fi
 
 ## SEND EMAIL to CAPTAIN with backup information (SECURE - no sensitive data)
-## (NCARD, ZCARD, OC_URL_SATELLITE, OC_URL_CONSTELLATION définis dans tools/my.sh)
+## (OC_URL_SATELLITE défini dans tools/my.sh)
 EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
     | sed -e "s~_myIPFS_~${myIPFS}~g" \
           -e "s~_NOSTRIFS_~${NOSTRIFS}~g" \
-          -e "s~_SALT_~[PROTECTED]~g" \
-          -e "s~_PEPPER_~[PROTECTED]~g" \
           -e "s~_uSPOT_~${uSPOT}~g" \
           -e "s~_CORACLEURL_~${myCORACLE:-https://coracle.copylaradio.com}~g" \
           -e "s~_DEACTIVATION_DATE_~$(date '+%Y-%m-%d %H:%M:%S')~g" \
           -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
-          -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
-          -e "s~_NCARD_~${NCARD}~g" \
-          -e "s~_ZCARD_~${ZCARD}~g")
+          -e "s~_REASON_TEXT_EN_~${REASON_TEXT_EN}~g" \
+          -e "s~_REASON_TEXT_FR_~${REASON_TEXT_FR}~g" \
+          -e "s~_CASHBACK_TEXT_EN_~${CASHBACK_TEXT_EN}~g" \
+          -e "s~_CASHBACK_TEXT_FR_~${CASHBACK_TEXT_FR}~g")
 
 # Send email to CAPTAIN (not to the user)
 ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" --expire 3d \
@@ -638,7 +696,11 @@ if [[ -s "${MY_PATH}/../templates/NOSTR/wallet_deactivation_player.html" ]]; the
               -e "s~_DEST_~${player}~g" \
               -e "s~_uSPOT_~${uSPOT}~g" \
               -e "s~_DEACTIVATION_DATE_~$(date '+%Y-%m-%d %H:%M:%S')~g" \
-              -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g")
+              -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
+              -e "s~_REASON_TEXT_EN_~${REASON_TEXT_EN}~g" \
+              -e "s~_REASON_TEXT_FR_~${REASON_TEXT_FR}~g" \
+              -e "s~_CASHBACK_TEXT_EN_~${CASHBACK_TEXT_EN}~g" \
+              -e "s~_CASHBACK_TEXT_FR_~${CASHBACK_TEXT_FR}~g")
 
     ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/wallet_deactivation_player.html" --expire 3d \
         "${player}" \

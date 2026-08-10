@@ -67,6 +67,39 @@ myDomainName() {
     [ -n "$myDomainName" ] && echo "$myDomainName"
 }
 
+# Reconstruit un fichier dunikey Duniter pour un joueur en essayant les 2
+# formules de dérivation coexistant en prod (cf. commit 87d8caa5 "Découplage
+# de l'Identité Sociale des Identités Économiques", qui a ajouté le suffixe
+# UPLANET_SALT à make_NOSTRCARD.sh sans mettre à jour les autres générateurs) :
+#   - PEPPER_UPLANET_SALT : comptes créés après 87d8caa5 (wallet G1 par réseau)
+#   - PEPPER seul         : comptes créés avant
+# Ne retient que la formule dont le pubkey dérivé reproduit g1pubnostr_ref
+# (G1PUBNOSTR déjà connu/crédité), pour ne jamais signer depuis le mauvais wallet.
+# Usage: resolve_player_dunikey <salt> <pepper> <g1pubnostr_ref> <outfile>
+# Retour : 0 si outfile a été écrit avec la bonne clé, 1 sinon (rien écrit).
+resolve_player_dunikey() {
+    local salt="$1" pepper="$2" g1pubnostr_ref="$3" outfile="$4"
+    [[ -z "$salt" || -z "$pepper" || -z "$g1pubnostr_ref" ]] && return 1
+
+    local astro_path uplanet_salt tmp cred candidate_v1 candidate_ss58
+    astro_path="$(myAstroPath)"
+    uplanet_salt=$(echo -n "${UPLANETNAME}" | sha256sum | cut -c1-16)
+
+    for cred in "${pepper}_${uplanet_salt}" "${pepper}"; do
+        tmp=$(mktemp)
+        "${astro_path}/tools/keygen" -t duniter -o "$tmp" "${salt}" "${cred}" 2>/dev/null
+        candidate_v1=$(grep -E '^pub:' "$tmp" 2>/dev/null | awk '{print $2}')
+        candidate_ss58=$(python3 "${astro_path}/tools/g1pub_to_ss58.py" "$candidate_v1" 2>/dev/null)
+        if [[ "$candidate_ss58" == "$g1pubnostr_ref" ]] || [[ "$candidate_v1" == "$g1pubnostr_ref" ]]; then
+            mv "$tmp" "$outfile"
+            chmod 600 "$outfile"
+            return 0
+        fi
+        rm -f "$tmp"
+    done
+    return 1
+}
+
 myHome() {
     echo "$HOME"
 }

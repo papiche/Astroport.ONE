@@ -557,7 +557,7 @@ control_primal_transactions() {
                 # Désactiver le MULTIPASS (migration relay/capitaine)
                 logw "🔥 Déclenchement nostr_DESTROY_TW.sh pour $player_email"
                 if [[ -x "${MY_PATH}/nostr_DESTROY_TW.sh" ]]; then
-                    "${MY_PATH}/nostr_DESTROY_TW.sh" "$player_email" 2>&1 || \
+                    "${MY_PATH}/nostr_DESTROY_TW.sh" "$player_email" "INTRUSION" 2>&1 || \
                         loge "Échec nostr_DESTROY_TW.sh pour $player_email"
                 else
                     loge "nostr_DESTROY_TW.sh introuvable dans ${MY_PATH}/"

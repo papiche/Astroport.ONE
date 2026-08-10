@@ -41,6 +41,72 @@ log_metric() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$$] [METRIC] [$player] $metric=$value" >> "$LOGFILE"
 }
 
+# Régénère ~/.zen/game/nostr/$player/.secret.dunikey si absent, en le validant
+# contre G1PUBNOSTR (source de vérité déjà créditée), formule PEPPER_UPLANET_SALT
+# (seule formule actuelle, cf. make_NOSTRCARD.sh — wallet G1 dédié par réseau).
+# Si la clé reconstruite ne reproduit pas G1PUBNOSTR, le compte est incompatible
+# (créé avant le commit 87d8caa5 "Découplage de l'Identité Sociale des Identités
+# Économiques", ou credentials corrompus) : Alpha DEV, comptes non figés → on ne
+# maintient pas de rétro-compatibilité, on détruit le compte (même garde-fou de
+# grace period 7j + horloge fiable que "BAD DISCO DECODING" un peu plus haut).
+# Retourne : 0 = ok (créé ou déjà présent), 1 = pas encore assez ancien pour
+# détruire (à réessayer plus tard), 2 = compte détruit (l'appelant doit `continue`).
+ensure_player_dunikey() {
+    local player="$1" salt="$2" pepper="$3"
+    local dunikey="${HOME}/.zen/game/nostr/${player}/.secret.dunikey"
+
+    [[ -s "$dunikey" ]] && return 0
+    [[ -z "$salt" || -z "$pepper" ]] && return 1
+
+    local g1pubnostr_ref
+    g1pubnostr_ref=$(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR" 2>/dev/null)
+
+    local uplanet_salt
+    uplanet_salt=$(echo -n "${UPLANETNAME}" | sha256sum | cut -c1-16)
+
+    local tmp candidate_v1 candidate_ss58
+    tmp=$(mktemp)
+    "${MY_PATH}/../tools/keygen" -t duniter -o "$tmp" "${salt}" "${pepper}_${uplanet_salt}" 2>/dev/null
+    candidate_v1=$(grep -E '^pub:' "$tmp" 2>/dev/null | awk '{print $2}')
+    candidate_ss58=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$candidate_v1" 2>/dev/null)
+
+    if [[ -z "$g1pubnostr_ref" ]] || [[ "$candidate_ss58" == "$g1pubnostr_ref" ]] || [[ "$candidate_v1" == "$g1pubnostr_ref" ]]; then
+        mv "$tmp" "$dunikey"
+        chmod 600 "$dunikey"
+        return 0
+    fi
+    rm -f "$tmp"
+
+    log "ERROR" "ensure_player_dunikey: PEPPER_UPLANET_SALT ne reproduit pas G1PUBNOSTR pour ${player} — compte incompatible"
+    log_metric "DUNIKEY_MISMATCH" "1" "${player}"
+
+    local birthdate diff
+    birthdate=$(cat "${HOME}/.zen/game/nostr/${player}/.account_created" 2>/dev/null)
+    if [[ -n "$birthdate" ]]; then
+        diff=$(( ($(date +%s) - $(date -d "$birthdate" +%s 2>/dev/null || date +%s)) / 86400 ))
+        if [[ $diff -gt 7 ]]; then
+            if [[ $(date +%Y) -lt 2024 ]]; then
+                log "ERROR" "System clock unreliable (year=$(date +%Y)) — skipping destroy for ${player}"
+                return 1
+            fi
+            log "CRITICAL" "INCOMPATIBLE DUNIKEY: triggering nostr_DESTROY_TW.sh for ${player}"
+            if ! "${MY_PATH}/../tools/nostr_DESTROY_TW.sh" "${player}" "INCOMPATIBLE_KEY"; then
+                log "ERROR" "Graceful destruction failed for ${player}. Forcing brutal removal."
+                local hex
+                hex=$(cat "${HOME}/.zen/game/nostr/${player}/HEX" 2>/dev/null)
+                if [[ -n "$hex" ]]; then
+                    (cd ~/.zen/strfry && ./strfry delete --filter='{"authors": ["'"$hex"'"]}' 2>/dev/null)
+                fi
+                rm -rf "${HOME}/.zen/game/nostr/${player}"
+                rm -rf "${HOME}/.zen/game/players/${player}"
+            fi
+            return 2
+        fi
+    fi
+    log "INFO" "Incompatible dunikey for $player detected but period of grace active (< 7 days)."
+    return 1
+}
+
 # Validate NIP-23 compliance for kind 30023 events
 validate_nip23_event() {
     local content="$1"
@@ -600,10 +666,8 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ## CREATE nostr/${PLAYER}/.secret.dunikey
-    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
-        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
-        chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.dunikey
-    fi
+    ensure_player_dunikey "${PLAYER}" "${salt}" "${pepper}"
+    [[ $? -eq 2 ]] && continue
     ########################################################################
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     ########################################################################
@@ -886,7 +950,7 @@ for PLAYER in "${NOSTR[@]}"; do
                             if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
                                 log "INFO" "Triggering destruction for insolvent player: ${PLAYER}"
                                 # Tentative de destruction propre (avec backup et cash back)
-                                if ! ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"; then
+                                if ! ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}" "INSOLVENCY"; then
                                     log "ERROR" "Graceful destruction failed for ${PLAYER}. Forcing brutal removal."
                                     # Fallback : suppression physique si le script de destruction a planté
                                     rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
@@ -1323,9 +1387,8 @@ for PLAYER in "${NOSTR[@]}"; do
         DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
         IFS='=&' read -r s salt p pepper <<< "$DISCO"
         # Create secret.dunikey from DISCO
-        if [[ -n $salt && -n $pepper ]]; then
-            ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
-        fi
+        ensure_player_dunikey "${PLAYER}" "${salt}" "${pepper}"
+        [[ $? -eq 2 ]] && continue
     fi
     echo "## CONTROL TRANSACTIONS PRIMAL CONFORMITY..."
     # Call the generic primal wallet control function (using UPLANETNAME_G1 as unique primal source)
