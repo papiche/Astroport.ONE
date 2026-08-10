@@ -17,13 +17,13 @@ import subprocess
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # IA/
 import observability
 from prompt_safety import wrap_untrusted
-from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, COMMAND_INTERPRETATION_MODEL, PYTHON_BIN, _now_iso, _owner_dir
+from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, COMMAND_INTERPRETATION_MODEL, PYTHON_BIN, _now_iso, _owner_dir, _is_valid_owner_email
 # Import direct (pas de subprocess) : question.py garde son garde `if __name__
 # == "__main__"` autour de la réinvocation venv, l'import seul ne remplace
 # donc jamais ce process — voir question.py et bro_watch_core.py.
 from question import answer_question
 
-__all__ = ['_dispatch_identity_update_check', '_check_and_update_identity', 'MAX_PREFERENCES_LINES', '_synthesize_preferences', '_IDENTITY_TEMPLATES', '_ensure_identity_templates', 'PREFERENCES_HISTORY_MAX_ENTRIES', 'list_preferences_history', 'rollback_preferences']
+__all__ = ['_dispatch_identity_update_check', '_check_and_update_identity', 'MAX_PREFERENCES_LINES', '_synthesize_preferences', '_IDENTITY_TEMPLATES', '_ensure_identity_templates', 'PREFERENCES_HISTORY_MAX_ENTRIES', 'list_preferences_history', 'rollback_preferences', 'IDENTITY_FILENAMES', 'MAX_IDENTITY_FILE_CHARS', 'read_identity_file', 'write_identity_file']
 
 
 
@@ -264,3 +264,98 @@ def _ensure_identity_templates(owner_email):
                     f.write(default_content)
     except Exception as e:
         print(f"[BRO_WATCH] _ensure_identity_templates a échoué pour {owner_email} : {e}")
+
+IDENTITY_FILENAMES = tuple(_IDENTITY_TEMPLATES.keys())
+
+MAX_IDENTITY_FILE_CHARS = 4000  # question.py::load_identity charge ces 5 fichiers EN
+# ENTIER à chaque tour de conversation BRO (injectés dans le system prompt) — une
+# édition manuelle web n'a aujourd'hui aucune limite, contrairement à #rec dont la
+# synthèse LLM est déjà bornée par MAX_PREFERENCES_LINES.
+
+_IDENTITY_INSTRUCTION_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+
+def read_identity_file(owner_email, filename, strip_comments=True):
+    """Lit identity/<filename> — crée les templates par défaut si absents
+    (idempotent, via _ensure_identity_templates). strip_comments=True retire
+    le commentaire d'instructions par défaut (même intention que
+    bro_watch_core._IDENTITY_COMMENT_RE / question.py) : pré-remplir un champ
+    d'édition avec l'instruction affichée comme du contenu réel serait trompeur.
+    Dégradation sûre : "" si filename/owner_email invalide ou fichier illisible."""
+    if filename not in _IDENTITY_TEMPLATES or not _is_valid_owner_email(owner_email):
+        return ""
+    _ensure_identity_templates(owner_email)
+    path = os.path.join(_owner_dir(owner_email), "identity", filename)
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = f.read()
+    except Exception:
+        return ""
+    return _IDENTITY_INSTRUCTION_COMMENT_RE.sub("", raw).strip() if strip_comments else raw
+
+
+def write_identity_file(owner_email, filename, content):
+    """SEUL point d'écriture pour une édition manuelle (self-service /mailjet
+    OU admin capitaine) d'un fichier identity/*.md — write_identity_file est la
+    contrepartie manuelle de _check_and_update_identity (qui reste, elle, le
+    seul chemin de mise à jour AUTOMATIQUE de .Preferences.md via #rec).
+    Retourne (ok: bool, message: str)."""
+    if filename not in _IDENTITY_TEMPLATES:
+        return False, f"Fichier identity invalide (attendu : {', '.join(_IDENTITY_TEMPLATES.keys())})."
+    if not _is_valid_owner_email(owner_email):
+        return False, "Compte inconnu."
+    if len(content) > MAX_IDENTITY_FILE_CHARS:
+        return False, f"Contenu trop long ({len(content)} > {MAX_IDENTITY_FILE_CHARS} caractères)."
+    content = content.replace("\r\n", "\n")
+
+    _ensure_identity_templates(owner_email)
+    path = os.path.join(_owner_dir(owner_email), "identity", filename)
+    try:
+        before = open(path, encoding="utf-8").read() if os.path.isfile(path) else ""
+    except Exception:
+        before = ""
+    if before == content:
+        return True, "Aucun changement."
+
+    if filename == ".Preferences.md":
+        # Journalise l'état précédent AVANT écrasement — même fichier/format que
+        # _append_preferences_history, pour que rollback_preferences() (qui ne
+        # relit jamais que le champ "before") fonctionne identiquement après une
+        # édition manuelle. Best-effort : un échec de journalisation ne doit
+        # jamais empêcher la sauvegarde elle-même.
+        _append_preferences_history_manual(owner_email, before, content)
+
+    try:
+        tmp = f"{path}.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(content)
+        os.replace(tmp, path)
+        return True, "Enregistré."
+    except Exception as e:
+        return False, f"Échec d'écriture : {e}"
+
+
+def _append_preferences_history_manual(owner_email, before_content, after_content,
+                                        label="Édition manuelle"):
+    """Variante de _append_preferences_history pour une édition humaine directe
+    (self-service ou admin) : after_content est écrit TEL QUEL (pas reformaté
+    en liste à puces comme le fait _synthesize_preferences), car un humain qui
+    édite le fichier n'écrit pas nécessairement au format une-préférence-par-
+    ligne. Même fichier .Preferences.history.jsonl, même _trim_preferences_history,
+    même commande #pref rollback — rollback_preferences() ne relit que le champ
+    "before" de chaque entrée, donc reste inchangé quelle que soit l'origine
+    (#rec automatique ou édition manuelle) de l'entrée précédente."""
+    entry = {
+        "timestamp": _now_iso(),
+        "before": before_content,
+        "trigger_line": label,
+        "after": after_content,
+    }
+    path = _preferences_history_path(owner_email)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        _trim_preferences_history(path)
+    except Exception as e:
+        print(f"[BRO_WATCH] Échec journalisation historique manuelle Preferences pour {owner_email} : {e}")

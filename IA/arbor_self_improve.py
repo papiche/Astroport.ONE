@@ -81,6 +81,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # car c'est un outil de production, pas un test) — chemin ajouté explicitement.
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests"))
 import bro_watch_core as bwc
+import arbor_config
 from eval_command_interpretation import run_eval
 from question import answer_question  # import direct — voir question.py (garde __main__)
 
@@ -137,7 +138,7 @@ LOVE_FLASHMEM_BASE = os.path.expanduser("~/.zen/flashmem")
 # Choisies suite à un sweep manuel de modèles Ollama locaux mené dans cette
 # même session (gemma3:latest 6/8, orieg/gemma3-tools:12b 7/8, qwen2.5-coder:14b
 # 8/8, qwen3:14b 7/8 — hermes3/qwen2.5:latest bien plus bas, exclus ici).
-CANDIDATES = [
+_DEFAULT_CANDIDATES = [
     {"id": "model-qwen2.5-coder-14b", "model": "qwen2.5-coder:14b"},
     {"id": "model-orieg-gemma3-tools-12b", "model": "orieg/gemma3-tools:12b"},
     {"id": "model-qwen3-14b", "model": "qwen3:14b"},
@@ -243,7 +244,11 @@ def explore():
 
     print("── Exploration des hypothèses (jeu dev uniquement) ─────────")
     scored = []
-    for cand in CANDIDATES:
+    # ARBOR_CANDIDATE_MODELS (config coopérative) permet au capitaine de tester
+    # d'autres modèles Ollama sans toucher au code — repli sur _DEFAULT_CANDIDATES
+    # (sweep manuel calibré, cf. commentaire ci-dessus) si non défini.
+    candidates = arbor_config.candidate_models(_DEFAULT_CANDIDATES)
+    for cand in candidates:
         print(f"\n· hypothèse {cand['id']} ({cand['model']})")
         score, _ = run_eval(model=cand["model"], split="dev")
         scored.append({**cand, "dev_score": score})
@@ -380,10 +385,16 @@ def _load_tool_requests():
     return entries
 
 
-def _cluster_requests(entries):
+def _cluster_requests(entries, similarity=None, min_size=None):
     """Regroupe les demandes par similarité sémantique (embeddings Ollama +
     cosinus, même approche que bro_watch_core.semantic_match) — clustering
-    glouton par plus-proche-centroïde, suffisant pour un corpus modeste."""
+    glouton par plus-proche-centroïde, suffisant pour un corpus modeste.
+    similarity/min_size : valeurs effectives déjà résolues par l'appelant
+    (arbor_config, avec repli sur les constantes calibrées ci-dessus) —
+    paramètres explicites plutôt que relire arbor_config ici, pour rester
+    testable avec des valeurs fixes sans dépendre de la config coopérative."""
+    threshold = CLUSTER_SIMILARITY_THRESHOLD if similarity is None else similarity
+    min_cluster_size = MIN_CLUSTER_SIZE if min_size is None else min_size
     vecs = []
     for e in entries:
         try:
@@ -397,13 +408,13 @@ def _cluster_requests(entries):
             continue
         placed = False
         for c in clusters:
-            if bwc._cosine(v, c["centroid"]) >= CLUSTER_SIMILARITY_THRESHOLD:
+            if bwc._cosine(v, c["centroid"]) >= threshold:
                 c["members"].append(i)
                 placed = True
                 break
         if not placed:
             clusters.append({"members": [i], "centroid": v})
-    return [c for c in clusters if len(c["members"]) >= MIN_CLUSTER_SIZE]
+    return [c for c in clusters if len(c["members"]) >= min_cluster_size]
 
 
 def _cluster_fingerprint(entries, members):
@@ -445,11 +456,14 @@ def mine_tool_requests():
     détecte les patterns récurrents (≥ MIN_CLUSTER_SIZE demandes similaires)
     jamais encore signalés, et retourne un résumé par cluster frais. Ne
     modifie aucun code — seule la notification capitaine en découle."""
+    min_cluster_size = arbor_config.get_int("ARBOR_MIN_CLUSTER_SIZE", MIN_CLUSTER_SIZE, 2, 50)
+    similarity = arbor_config.get_float("ARBOR_SIMILARITY_THRESHOLD", CLUSTER_SIMILARITY_THRESHOLD, 0.3, 0.95)
+
     entries = _load_tool_requests()
-    if len(entries) < MIN_CLUSTER_SIZE:
+    if len(entries) < min_cluster_size:
         return []
 
-    clusters = _cluster_requests(entries)
+    clusters = _cluster_requests(entries, similarity=similarity, min_size=min_cluster_size)
     already = _load_mined_state()
     fresh_reports = []
     for c in clusters:

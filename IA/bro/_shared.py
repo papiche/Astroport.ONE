@@ -16,7 +16,7 @@ import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # IA/
 
-__all__ = ['BRO_IA_PATH', 'TOOLS_PATH', 'NOSTR_DIR', 'DEFAULT_RELAY', 'DM_TTL_DAYS', '_owner_dir', '_owner_hex', '_owner_nsec', '_owner_g1_pubkey', '_load_relays', 'RELAYS', '_now_iso', 'COMMAND_INTERPRETATION_MODEL', 'BRO_WATCH_CORE_PATH', 'PYTHON_BIN']
+__all__ = ['BRO_IA_PATH', 'TOOLS_PATH', 'NOSTR_DIR', 'DEFAULT_RELAY', 'DM_TTL_DAYS', '_owner_dir', '_owner_hex', '_owner_nsec', '_owner_g1_pubkey', '_load_relays', 'RELAYS', '_now_iso', 'COMMAND_INTERPRETATION_MODEL', 'BRO_WATCH_CORE_PATH', 'PYTHON_BIN', '_is_valid_owner_email']
 
 # Interpréteur venv ~/.astro (si présent) — à utiliser à la place du "python3"
 # système pour invoquer question.py et les autres scripts IA/*.py en sous-
@@ -84,6 +84,19 @@ def _owner_g1_pubkey(owner_email):
                     if line.startswith("pub:"):
                         return line.split(":", 1)[1].strip()
     return None
+
+def _is_valid_owner_email(owner_email):
+    """Anti path-traversal + existence : owner_email doit résoudre à un
+    sous-dossier DIRECT de NOSTR_DIR possédant un .secret.nostr — même critère
+    que UPassport services/memory_status.py::list_multipass_emails(). Choke-
+    point unique pour tout accès à identity/*.md construit depuis un email
+    reçu en HTTP (aucune validation de ce type n'existait avant)."""
+    if not owner_email or "/" in owner_email or "\\" in owner_email or ".." in owner_email:
+        return False
+    d = _owner_dir(owner_email)
+    if os.path.normpath(d) != os.path.normpath(os.path.join(NOSTR_DIR, owner_email)):
+        return False
+    return os.path.isfile(os.path.join(d, ".secret.nostr"))
 
 def _load_relays():
     relays = [DEFAULT_RELAY]

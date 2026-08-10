@@ -559,6 +559,48 @@ coop_config_set() {
     coop_save_config "$new_config"
 }
 
+# Set multiple values in ONE load/encrypt/save/publish cycle — lit des lignes
+# "KEY<TAB>VALUE" sur stdin. Même règle d'auto-chiffrement que coop_config_set
+# (nom de clé contenant TOKEN/SECRET/KEY/PASSWORD/API/PRIVATE). Motivation :
+# coop_config_set fait un read-modify-write + republication NOSTR COMPLÈTE par
+# clé — sauvegarder N champs depuis un panneau web produirait N publications et
+# N fenêtres de course entre écritures concurrentes. Valeurs lues par stdin
+# (jamais argv) : n'apparaissent jamais dans `ps aux`, et route capitaine.sh
+# (menu interactif) devrait migrer vers cette fonction plutôt que d'appeler
+# coop_config_set en boucle pour la même raison.
+# Usage: printf 'KEY1\tval1\nKEY2\tval2\n' | coop_config_set_batch
+coop_config_set_batch() {
+    local lock="$HOME/.zen/tmp/coop_config_write.lock"
+    mkdir -p "$(dirname "$lock")"
+    exec 9>"$lock"
+    if ! flock -w 30 9; then
+        echo "[ERROR] Verrou coop_config_write occupé depuis 30s — réessayez." >&2
+        return 75
+    fi
+
+    local config
+    config=$(coop_load_config)
+    [[ -z "$config" ]] && config="{}"
+
+    local key value final_value
+    while IFS=$'\t' read -r key value; do
+        [[ -z "$key" ]] && continue
+        final_value="$value"
+        if [[ "$key" == *"TOKEN"* ]] || [[ "$key" == *"SECRET"* ]] || \
+           [[ "$key" == *"KEY"* ]] || [[ "$key" == *"PASSWORD"* ]] || \
+           [[ "$key" == *"API"* ]] || [[ "$key" == *"PRIVATE"* ]]; then
+            final_value=$(coop_encrypt "$value") || { echo "[ERROR] Échec chiffrement pour $key" >&2; return 1; }
+        fi
+        config=$(echo "$config" | jq --arg key "$key" --arg val "$final_value" '.[$key] = $val' 2>/dev/null)
+        if [[ -z "$config" ]]; then
+            echo "[ERROR] Échec mise à jour JSON pour $key" >&2
+            return 1
+        fi
+    done
+
+    coop_save_config "$config"
+}
+
 # Delete a config key
 # Usage: coop_config_delete "KEY_NAME"
 coop_config_delete() {
@@ -1211,6 +1253,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]] && [[ -z "$_COOP_CONFIG_CLI_RAN" ]]; then
         set|coop_config_set)
             coop_config_set "$2" "$3" "$4"
             ;;
+        set-batch|coop_config_set_batch)
+            coop_config_set_batch
+            ;;
         delete|coop_config_delete)
             coop_config_delete "$2"
             ;;
@@ -1247,6 +1292,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]] && [[ -z "$_COOP_CONFIG_CLI_RAN" ]]; then
             echo "Usage:"
             echo "  $0 [--verbose] get KEY              Get a config value (decrypted)"
             echo "  $0 [--verbose] set KEY VALUE        Set a config value (auto-encrypts sensitive keys)"
+            echo "  $0 [--verbose] set-batch            Set multiple values from stdin (KEY<TAB>VALUE per line)"
             echo "  $0 [--verbose] delete KEY           Delete a config key"
             echo "  $0 [--verbose] list                 List all config keys"
             echo "  $0 [--verbose] show                 Show all values decrypted (careful!)"

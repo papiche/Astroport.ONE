@@ -60,6 +60,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.expanduser("~/.zen/Astroport.ONE/IA"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bro_watch_core as bwc
+import arbor_config
 from arbor_self_improve import _create_worktree, _slugify, _run_git, _node_nsec, REPO_ROOT
 
 MAX_ITERATIONS = 3
@@ -420,20 +421,20 @@ def _run_pytest_in_worktree(worktree_path, test_file_abs, extra_pythonpath):
         return False, f"Erreur d'exécution pytest (bwrap) : {e}"
 
 
-def _generate_ai_summary(spec, need_description, code, test_code, iterations):
+def _generate_ai_summary(spec, need_description, code, test_code, iterations, max_iterations=MAX_ITERATIONS):
     prompt = (
         "Résume en 3-4 lignes, pour un capitaine non-développeur, ce que fait ce code "
         "Python et comment il a été validé. Sois concret et direct, pas de jargon inutile.\n\n"
         f"Besoin d'origine : {need_description}\n"
         f"Description prévue : {spec.get('description', '?')}\n"
-        f"Nombre de tentatives avant succès : {iterations}/{MAX_ITERATIONS}\n\n"
+        f"Nombre de tentatives avant succès : {iterations}/{max_iterations}\n\n"
         f"Code (extrait) :\n```python\n{code[:1500]}\n```\n\n"
         f"Test (extrait) :\n```python\n{test_code[:600]}\n```"
     )
     return _ask_claude(prompt, timeout=60) or "(résumé indisponible)"
 
 
-def _write_tool_manifest(manifest_path, tool_module, spec, need_description, summary, attempts):
+def _write_tool_manifest(manifest_path, tool_module, spec, need_description, summary, attempts, max_iterations=MAX_ITERATIONS):
     """Manifeste d'audit humain à côté de l'outil — même esprit que SKILL.md
     (LifeOS) : description avec déclencheur explicite ("USE WHEN"), niveau
     d'accès RÉEL (celui appliqué par _register_arbor_tool à l'activation :
@@ -451,7 +452,7 @@ def _write_tool_manifest(manifest_path, tool_module, spec, need_description, sum
         "min_access: 0\n"
         "source: arbor\n"
         f"generated_at: {generated_at}\n"
-        f"attempts: {attempts}/{MAX_ITERATIONS}\n"
+        f"attempts: {attempts}/{max_iterations}\n"
         "---\n"
     )
     routing_examples = [str(e).strip() for e in (spec.get("routing_examples") or []) if str(e).strip()]
@@ -497,6 +498,10 @@ def _notify_captain(message):
 
 
 def forge_tool(need_description, slug=None, notify_captain=False):
+    # ARBOR_MAX_ITERATIONS (config coopérative) — borné [1,6] : un "60" mal
+    # saisi ne doit pas brûler le quota API Claude sur un seul besoin.
+    max_iter = arbor_config.get_int("ARBOR_MAX_ITERATIONS", MAX_ITERATIONS, 1, 6)
+
     if not claude_available():
         print("❌ claude CLI introuvable — la génération de code nécessite Claude "
               "(les modèles Ollama locaux se sont montrés trop limités pour l'auto-correction).\n"
@@ -525,8 +530,8 @@ def forge_tool(need_description, slug=None, notify_captain=False):
     test_code = generate_test_code(spec, tool_module)
 
     passed, last_output, attempt = False, "", 0
-    for attempt in range(1, MAX_ITERATIONS + 1):
-        print(f"\n── Tentative {attempt}/{MAX_ITERATIONS} ──")
+    for attempt in range(1, max_iter + 1):
+        print(f"\n── Tentative {attempt}/{max_iter} ──")
 
         issues = _static_safety_check(code)
         if issues:
@@ -549,13 +554,13 @@ def forge_tool(need_description, slug=None, notify_captain=False):
         code = generate_tool_code(spec, previous_code=code, error_output=last_output)
 
     if not passed:
-        print(f"\n❌ Échec après {MAX_ITERATIONS} tentatives — rien n'est committé.")
+        print(f"\n❌ Échec après {max_iter} tentatives — rien n'est committé.")
         _run_git(["worktree", "remove", "--force", worktree_path], REPO_ROOT)
         if notify_captain:
             msg = (
                 f"🔨 Forge à outils BRO — échec\n\n"
                 f"Besoin : {need_description}\n"
-                f"Tentatives : {MAX_ITERATIONS}/{MAX_ITERATIONS}, toutes en échec.\n\n"
+                f"Tentatives : {max_iter}/{max_iter}, toutes en échec.\n\n"
                 f"Dernière erreur :\n{last_output[-500:]}\n\n"
                 "Rien n'a été committé — aucune branche créée."
             )
@@ -564,16 +569,16 @@ def forge_tool(need_description, slug=None, notify_captain=False):
 
     rel_tool = os.path.relpath(tool_path, worktree_path)
     rel_test = os.path.relpath(test_path, worktree_path)
-    summary = _generate_ai_summary(spec, need_description, code, test_code, attempt)
+    summary = _generate_ai_summary(spec, need_description, code, test_code, attempt, max_iterations=max_iter)
 
     manifest_path = os.path.join(tool_dir, f"{tool_module}.md")
-    _write_tool_manifest(manifest_path, tool_module, spec, need_description, summary, attempt)
+    _write_tool_manifest(manifest_path, tool_module, spec, need_description, summary, attempt, max_iterations=max_iter)
     rel_manifest = os.path.relpath(manifest_path, worktree_path)
 
     _run_git(["add", rel_tool, rel_test, rel_manifest], worktree_path)
     _run_git(["commit", "-m",
               f"arbor: génère {tool_module}\n\nBesoin : {need_description}\n\n{summary}\n\n"
-              f"Validé {attempt}/{MAX_ITERATIONS} tentative(s) — aucun fichier existant modifié."],
+              f"Validé {attempt}/{max_iter} tentative(s) — aucun fichier existant modifié."],
              worktree_path)
 
     print(f"\n✅ Outil généré et testé — branche {branch_name}")
@@ -586,7 +591,7 @@ def forge_tool(need_description, slug=None, notify_captain=False):
             f"{summary}\n\n"
             f"Fichiers (nouveaux uniquement, rien d'existant modifié) :\n"
             f"  - {rel_tool}\n  - {rel_test}\n  - {rel_manifest}\n\n"
-            f"Validé après {attempt}/{MAX_ITERATIONS} tentative(s) de test.\n\n"
+            f"Validé après {attempt}/{max_iter} tentative(s) de test.\n\n"
             f"Branche  : {branch_name}\n"
             f"Worktree : {worktree_path}\n"
             f"Revue    : cd {REPO_ROOT} && git diff master...{branch_name}\n\n"
@@ -609,7 +614,12 @@ def main():
     parser.add_argument("--notify-captain", action="store_true",
                          help="Envoie un DM NODE au capitaine (succès ou échec)")
     args = parser.parse_args()
-    forge_tool(args.need, slug=args.slug, notify_captain=args.notify_captain)
+    result = forge_tool(args.need, slug=args.slug, notify_captain=args.notify_captain)
+    # Code de sortie fiable — forge_tool() ne lève jamais, elle affiche un
+    # message et retourne None sur tout échec (claude absent, spec invalide,
+    # tests jamais passants...). Sans ce sys.exit, un déclenchement distant
+    # (arbor_run.sh → panneau web) verrait rc=0 même en cas d'échec silencieux.
+    sys.exit(0 if result else 1)
 
 
 if __name__ == "__main__":
