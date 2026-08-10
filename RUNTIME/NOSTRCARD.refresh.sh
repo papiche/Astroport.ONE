@@ -123,6 +123,60 @@ ensure_player_dunikey() {
     return 1
 }
 
+# Garantit qu'un wallet coopératif dédié (CAPTAIN_DEDICATED, IMPOTS...) existe,
+# correspond bien à la formule de dérivation ACTUELLE, et possède au moins le
+# dépôt existentiel (1 Ğ1) sur la chaîne.
+#
+# Le nom de fichier de ces wallets est statique (ex: uplanet.captain.dunikey)
+# alors que leur seed dépend de CAPTAINEMAIL — en cas de changement de
+# capitaine (nouveau lien ~/.zen/game/players/.current), l'ancien fichier
+# restait en place avec l'ancienne clé sans que rien ne le détecte. Et un
+# wallet neuf/recréé n'a jamais existé on-chain : tout premier virement < 1 Ğ1
+# (ex: le paiement hebdo NCARD de 0.10 Ğ1) est rejeté par la chaîne (compte
+# sous le dépôt existentiel), gcli rapportant pourtant un succès de soumission
+# — cf. incident CAPTAIN_DEDICATED du 2026-08-10, où seul un UPLANET.init.sh
+# manuel a débloqué la situation.
+# Usage: ensure_dedicated_wallet_funded <dunikey_file> <seed> <label>
+# Écrit sur stdout le pubkey v1 du wallet (vide si échec).
+ensure_dedicated_wallet_funded() {
+    local dunikey_file="$1" seed="$2" label="${3:-$1}"
+
+    local current_pub=""
+    [[ -s "$dunikey_file" ]] && current_pub=$(grep -E '^pub:' "$dunikey_file" 2>/dev/null | awk '{print $2}')
+
+    local expected_pub
+    expected_pub=$("${MY_PATH}/../tools/keygen" -t duniter "${seed}" "${seed}" 2>/dev/null)
+    if [[ -z "$current_pub" || "$current_pub" != "$expected_pub" ]]; then
+        [[ -n "$current_pub" ]] && log "WARN" "ensure_dedicated_wallet_funded: ${label} ne correspond plus au seed attendu (changement de capitaine ?) — régénération"
+        "${MY_PATH}/../tools/keygen" -t duniter -o "$dunikey_file" "${seed}" "${seed}" 2>/dev/null
+        chmod 600 "$dunikey_file"
+        current_pub=$(grep -E '^pub:' "$dunikey_file" 2>/dev/null | awk '{print $2}')
+    fi
+    if [[ -z "$current_pub" ]]; then
+        log "ERROR" "ensure_dedicated_wallet_funded: impossible de créer/lire ${label} (${dunikey_file})"
+        return 1
+    fi
+
+    local balance
+    balance=$("${MY_PATH}/../tools/G1check.sh" "${current_pub}" 2>/dev/null | tail -n 1)
+    if [[ -z "$balance" || "$balance" == "null" ]]; then
+        log "WARN" "ensure_dedicated_wallet_funded: solde de ${label} indisponible (réseau) — financement reporté au prochain cycle"
+    elif [[ $(echo "${balance:-0} < 1" | bc -l 2>/dev/null) -eq 1 ]]; then
+        log "WARN" "ensure_dedicated_wallet_funded: ${label} (${current_pub:0:12}...) sous le dépôt existentiel (${balance} Ğ1) — activation depuis uplanet.G1"
+        local fund_result fund_success
+        fund_result=$("${MY_PATH}/../tools/PAYforSURE.sh" "$HOME/.zen/game/uplanet.G1.dunikey" "1.10" "${current_pub}" "UPLANET:ACTIVATION:${label}" 2>&1)
+        fund_success=$?
+        if [[ $fund_success -eq 0 ]]; then
+            log "INFO" "✅ ${label} activé (1.10 Ğ1 depuis uplanet.G1)"
+        else
+            log "ERROR" "❌ Échec activation ${label} depuis uplanet.G1:
+${fund_result}"
+        fi
+    fi
+
+    echo "$current_pub"
+}
+
 # Validate NIP-23 compliance for kind 30023 events
 validate_nip23_event() {
     local content="$1"
@@ -806,23 +860,19 @@ for PLAYER in "${NOSTR[@]}"; do
 
                             log "INFO" "[7 DAYS CYCLE] $TODATE is MULTIPASS $NCARD ẐEN MULTIPASS PAYMENT ($COINS Ğ1 >= $MIN_BALANCE Ğ1 min) → $Npaf_ZEN ẐEN ($Npaf Ğ1) to CAPTAIN_DEDICATED — TVA=0"
 
-                            # Ensure CAPTAIN_DEDICATED wallet exists (business wallet for rental collection)
-                            if [[ ! -s ~/.zen/game/uplanet.captain.dunikey ]]; then
-                                ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.captain.dunikey "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
-                                chmod 600 ~/.zen/game/uplanet.captain.dunikey
-                            fi
+                            # CAPTAIN_DEDICATED : wallet business dédié (perçoit les loyers pour
+                            # distribution coopérative) — créé/régénéré si le capitaine a changé,
+                            # et activé (dépôt existentiel) si son solde est sous 1 Ğ1.
+                            CAPTAIN_DEDICATED_G1PUB=$(ensure_dedicated_wallet_funded \
+                                "$HOME/.zen/game/uplanet.captain.dunikey" \
+                                "${UPLANETNAME}.${CAPTAINEMAIL}" \
+                                "CAPTAIN_DEDICATED")
 
-                            # Get CAPTAIN_DEDICATED wallet G1PUB (receives rental payments for cooperative distribution)
-                            CAPTAIN_DEDICATED_G1PUB=$(cat ~/.zen/game/uplanet.captain.dunikey | grep "pub:" | cut -d ' ' -f 2)
-
-                            # Ensure IMPOTS wallet exists before any payment
-                            if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
-                                ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
-                                chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
-                            fi
-
-                            # Get IMPOTS wallet G1PUB
-                            IMPOTS_G1PUB=$(cat ~/.zen/game/uplanet.IMPOT.dunikey |  grep "pub:" | cut -d ' ' -f 2)
+                            # IMPOTS : wallet fiscal dédié — même garantie (création + activation).
+                            IMPOTS_G1PUB=$(ensure_dedicated_wallet_funded \
+                                "$HOME/.zen/game/uplanet.IMPOT.dunikey" \
+                                "${UPLANETNAME}.IMPOT" \
+                                "IMPOTS")
 
                             # Main rental payment to CAPTAIN_DEDICATED (business wallet - HT amount only)
                             # This wallet collects rentals and serves as source for cooperative allocation
