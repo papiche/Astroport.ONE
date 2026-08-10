@@ -5,11 +5,14 @@
 # avec health check, latence, et load balancing
 #
 # Usage:
-#   duniter_getnode.sh              → retourne le meilleur nœud RPC WSS
-#   duniter_getnode.sh rpc          → meilleur nœud RPC WSS
-#   duniter_getnode.sh squid        → meilleur indexer squid
-#   duniter_getnode.sh all          → tous les nœuds valides (JSON)
+#   duniter_getnode.sh              → un nœud RPC WSS (load balancing pondéré)
+#   duniter_getnode.sh rpc          → idem, explicite
+#   duniter_getnode.sh squid        → un nœud indexer squid (idem)
+#   duniter_getnode.sh all          → tous les nœuds valides (JSON complet)
+#   duniter_getnode.sh best         → le meilleur nœud de chaque type (sans alea)
+#   duniter_getnode.sh status       → résumé lisible (latences, âge du cache)
 #   duniter_getnode.sh refresh      → force le rafraîchissement du cache
+#   duniter_getnode.sh help         → aide complète (sources, cache, exemples)
 #
 # Cache : ~/.zen/tmp/duniter_nodes.json (TTL: 1h)
 #
@@ -368,9 +371,100 @@ pick_node() {
 }
 
 # ════════════════════════════════════════════════════════════════════════════════
+# AIDE
+# ════════════════════════════════════════════════════════════════════════════════
+show_help() {
+    local help_text
+    help_text=$(cat <<EOF
+${CYAN}duniter_getnode.sh${RESET} — Découverte, health-check et sélection de nœuds
+Duniter v2 (RPC WebSocket + indexeur Squid GraphQL) pour le réseau Ğ1.
+
+Ce script est LA source de vérité des nœuds utilisée par tous les autres
+outils (G1check.sh, PAYforSURE.sh, primal_wallet_control.sh, N2_Bridge.sh...) :
+au lieu de coder en dur une adresse de nœud qui peut mourir ou changer de
+certificat TLS du jour au lendemain, ces scripts appellent ce script pour
+obtenir un nœud VÉRIFIÉ fonctionnel au moment de l'appel, avec repli
+automatique vers le nœud suivant si le premier échoue.
+
+${CYAN}Usage${RESET} : $0 [MODE]
+
+${CYAN}Modes${RESET} :
+  ${GREEN}rpc${RESET}        (défaut) Un seul nœud RPC WebSocket, choisi au hasard parmi les
+             ${MAX_NODES} meilleurs valides (load balancing — évite de saturer
+             toujours le même nœud). Sortie : une URL wss://... sur stdout.
+
+  ${GREEN}squid${RESET}      Un seul nœud indexeur Squid GraphQL, même logique de sélection
+             pondérée. Sortie : une URL https://... sur stdout.
+
+  ${GREEN}all${RESET}        Tout le contenu du cache (JSON complet : url, latence, bloc/
+             hauteur, type — pour chaque nœud RPC et Squid retenus).
+             Utilisé par les autres scripts avec 'jq' pour construire leur
+             propre liste de repli (ex: essayer plusieurs nœuds en parallèle).
+
+  ${GREEN}best${RESET}       Le meilleur nœud de chaque type (le plus rapide, sans
+             randomisation) — pratique pour du debug manuel.
+
+  ${GREEN}status${RESET}     Résumé lisible par un humain : liste des nœuds RPC/Squid
+             valides avec leur latence et leur avancement, + âge du cache.
+
+  ${GREEN}refresh${RESET}    Force une redécouverte complète (ignore le TTL du cache),
+             puis affiche les listes RPC/Squid retenues (URLs seulement).
+
+  ${GREEN}help${RESET}, -h, --help   Affiche cette aide.
+
+${CYAN}Comment un nœud est jugé "valide"${RESET} :
+  • RPC   : répond à 'system_chain' (bonne chaîne) ET 'system_syncState' avec
+            un retard ≤ 10 blocs par rapport au tip (nœud pas à la traîne).
+  • Squid : répond à la requête GraphQL 'squidStatus { height }' avec une
+            hauteur exploitable.
+  Timeout de vérification : ${CHECK_TIMEOUT}s par nœud.
+
+${CYAN}Sources de découverte des candidats${RESET} (agrégées puis dédupliquées avant
+health-check — la découverte échoue silencieusement source par source,
+sans bloquer les suivantes) :
+  1. Cache local valide (si < TTL, aucune redécouverte n'est faite)
+  2. duniter_peerings — découverte P2P interrogée sur le premier nœud de
+     bootstrap qui répond
+  3. Fichier réseau officiel GitLab (${NETWORK_JSON_URL})
+  4. Annonces on-chain via Squid : remarques de transaction au format
+     "duniter endpoint g1 add rpc|squid <url>"
+  5. Liste de bootstrap codée en dur dans ce script (dernier recours,
+     toujours utilisée comme point de départ de la découverte P2P, et comme
+     filet de sécurité si AUCUN nœud ne passe le health-check)
+
+${CYAN}Cache${RESET} : ${CACHE_FILE}
+  TTL : ${CACHE_TTL}s ($(( CACHE_TTL / 60 )) min) — passé ce délai, le mode 'rpc'/'squid'/'all'/
+  'best'/'status' déclenche automatiquement une redécouverte avant de répondre.
+  Recopié vers ~/.zen/tmp/\$IPFSNODEID/duniter_nodes.json pour publication
+  IPNS (consultable par le reste du swarm).
+
+${CYAN}Variables d'environnement${RESET} :
+  SQUID_URL   Squid utilisé pour la découverte des annonces on-chain
+              (défaut: ${SQUID_URL})
+
+${CYAN}Exemples${RESET} :
+  $0                          # un nœud RPC prêt à l'emploi
+  $0 rpc                      # idem, explicite
+  gcli -u "\$($0 rpc)" ...     # utilisation typique dans un autre script
+  $0 all | jq -r '.rpc[].url' # toutes les URLs RPC valides, triées par latence
+  $0 status                   # état lisible du cache actuel
+  $0 refresh                  # forcer une redécouverte immédiate
+EOF
+)
+    echo -e "$help_text"
+}
+
+# ════════════════════════════════════════════════════════════════════════════════
 # POINT D'ENTRÉE
 # ════════════════════════════════════════════════════════════════════════════════
 MODE="${1:-rpc}"
+
+case "$MODE" in
+    help|-h|--help)
+        show_help
+        exit 0
+        ;;
+esac
 
 # Rafraîchir si cache expiré ou demandé
 if [[ "$MODE" == "refresh" ]] || ! load_cache; then
@@ -409,7 +503,9 @@ case "$MODE" in
         echo "Cache : ${_age}s / ${CACHE_TTL}s"
         ;;
     *)
-        echo "Usage: $0 [rpc|squid|all|best|status|refresh]"
+        echo "Mode inconnu : '$MODE'" >&2
+        echo "Usage: $0 [rpc|squid|all|best|status|refresh|help]" >&2
+        echo "Voir '$0 help' pour le détail de chaque mode." >&2
         exit 1
         ;;
 esac

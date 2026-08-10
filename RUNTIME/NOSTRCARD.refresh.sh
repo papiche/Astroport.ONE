@@ -912,6 +912,19 @@ ${tva_result}"
                                 log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
                                 PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
 
+                                # Recalcule le solde RÉEL après paiement pour l'email de succès —
+                                # $ZEN ci-dessus est le solde AVANT paiement (calculé en tout début
+                                # de traitement de ce joueur) : l'utiliser tel quel dans l'email
+                                # affiche un solde périmé (ex: 5.00 Ẑen affiché alors que le
+                                # prélèvement de 1.00 Ẑen vient d'avoir lieu → 4.00 Ẑen réels).
+                                # --fresh est nécessaire : le cache G1check.sh de ce wallet a été
+                                # écrit AVANT le paiement, donc encore "frais" (< 60s) sans lui.
+                                COINS_POST_PAYMENT=$(${MY_PATH}/../tools/G1check.sh ${G1PUBNOSTR} --fresh 2>/dev/null | tail -n 1)
+                                if [[ -n "$COINS_POST_PAYMENT" && "$COINS_POST_PAYMENT" != "null" ]]; then
+                                    ZEN=$(makecoord $(echo "scale=2; ($COINS_POST_PAYMENT - 1) * 10" | bc))
+                                    [[ -z "$ZEN" ]] && ZEN="0.00"
+                                fi
+
                                 ####################################################################
                                 ## PARRAIN 1% — versement si ZEN >= 100 et parrain enregistré
                                 ZEN=${ZEN:-0}
