@@ -458,13 +458,21 @@ logok "=== TRANSACTION ENVOYÉE ==="
 
 log "Vérification confirmation blockchain..."
 CONFIRMED="false"
+# Utilise le nœud qui a effectivement accepté la transaction (variable $ws_node
+# laissée par try_all_nodes/make_payment_gcli) plutôt que G1_WS_NODES[0] : si le
+# premier nœud de la liste est injoignable (cf. g1.p2p.legal down), interroger
+# systématiquement ce nœud-là pour la confirmation produisait un faux négatif
+# — la transaction passait via un AUTRE nœud mais la confirmation ne pouvait
+# jamais être vue (30s d'attente, échec rapporté malgré un paiement réussi).
+CONFIRM_NODE="${ws_node:-${G1_WS_NODES[0]}}"
+log "Nœud utilisé pour la confirmation : ${CONFIRM_NODE}"
 # Récupérer le solde initial de la destination pour vérifier l'augmentation
-INITIAL_DEST_RAW=$($GCLI --no-password -a "$G1PUB" -u "${G1_WS_NODES[0]}" -o json account balance 2>/dev/null | jq -r '.total_balance // 0')
+INITIAL_DEST_RAW=$($GCLI --no-password -a "$G1PUB" -u "${CONFIRM_NODE}" -o json account balance 2>/dev/null | jq -r '.total_balance // 0')
 [[ -z "$INITIAL_DEST_RAW" || "$INITIAL_DEST_RAW" == "null" ]] && INITIAL_DEST_RAW=0
 
 for _try in 1 2 3 4 5; do
     sleep 6
-    _dest_raw=$($GCLI --no-password -a "$G1PUB" -u "${G1_WS_NODES[0]}" -o json account balance 2>/dev/null \
+    _dest_raw=$($GCLI --no-password -a "$G1PUB" -u "${CONFIRM_NODE}" -o json account balance 2>/dev/null \
         | jq -r '.total_balance // empty')
     if [[ -n "$_dest_raw" && "$_dest_raw" != "null" && "$_dest_raw" -gt "$INITIAL_DEST_RAW" ]]; then
         _dest_g1=$(echo "scale=2; ${_dest_raw} / 100" | bc)
