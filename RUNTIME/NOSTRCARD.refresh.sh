@@ -41,25 +41,41 @@ log_metric() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$$] [METRIC] [$player] $metric=$value" >> "$LOGFILE"
 }
 
-# Régénère ~/.zen/game/nostr/$player/.secret.dunikey si absent, en le validant
-# contre G1PUBNOSTR (source de vérité déjà créditée), formule PEPPER_UPLANET_SALT
-# (seule formule actuelle, cf. make_NOSTRCARD.sh — wallet G1 dédié par réseau).
-# Si la clé reconstruite ne reproduit pas G1PUBNOSTR, le compte est incompatible
-# (créé avant le commit 87d8caa5 "Découplage de l'Identité Sociale des Identités
-# Économiques", ou credentials corrompus) : Alpha DEV, comptes non figés → on ne
-# maintient pas de rétro-compatibilité, on détruit le compte (même garde-fou de
-# grace period 7j + horloge fiable que "BAD DISCO DECODING" un peu plus haut).
-# Retourne : 0 = ok (créé ou déjà présent), 1 = pas encore assez ancien pour
+# Régénère ~/.zen/game/nostr/$player/.secret.dunikey si absent OU incompatible,
+# en le validant contre G1PUBNOSTR (source de vérité déjà créditée), formule
+# PEPPER_UPLANET_SALT (seule formule actuelle, cf. make_NOSTRCARD.sh — wallet
+# G1 dédié par réseau). IMPORTANT : un fichier déjà présent est aussi vérifié,
+# pas seulement créé s'il est absent — sinon un .secret.dunikey déjà écrit
+# avec la mauvaise formule (créé par une version antérieure de ce script, ou
+# par un run manuel de PAYforSURE.sh) reste en place indéfiniment et le
+# paiement continue d'échouer à chaque cycle sans que ce garde-fou se déclenche
+# (cf. incident jpmgir@jpmgir.org, rejoué à l'identique après un premier "fix"
+# qui ne vérifiait que l'absence du fichier).
+# Si la clé (existante ou reconstruite) ne reproduit pas G1PUBNOSTR, le compte
+# est incompatible (créé avant le commit 87d8caa5 "Découplage de l'Identité
+# Sociale des Identités Économiques", ou credentials corrompus) : Alpha DEV,
+# comptes non figés → on ne maintient pas de rétro-compatibilité, on détruit le
+# compte (même garde-fou de grace period 7j + horloge fiable que "BAD DISCO
+# DECODING" un peu plus haut).
+# Retourne : 0 = ok (déjà correct ou recréé), 1 = pas encore assez ancien pour
 # détruire (à réessayer plus tard), 2 = compte détruit (l'appelant doit `continue`).
 ensure_player_dunikey() {
     local player="$1" salt="$2" pepper="$3"
     local dunikey="${HOME}/.zen/game/nostr/${player}/.secret.dunikey"
 
-    [[ -s "$dunikey" ]] && return 0
-    [[ -z "$salt" || -z "$pepper" ]] && return 1
-
     local g1pubnostr_ref
     g1pubnostr_ref=$(cat "${HOME}/.zen/game/nostr/${player}/G1PUBNOSTR" 2>/dev/null)
+
+    if [[ -s "$dunikey" ]]; then
+        local existing_v1 existing_ss58
+        existing_v1=$(grep -E '^pub:' "$dunikey" 2>/dev/null | awk '{print $2}')
+        existing_ss58=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$existing_v1" 2>/dev/null)
+        if [[ -z "$g1pubnostr_ref" ]] || [[ "$existing_ss58" == "$g1pubnostr_ref" ]] || [[ "$existing_v1" == "$g1pubnostr_ref" ]]; then
+            return 0
+        fi
+        log "WARN" "ensure_player_dunikey: .secret.dunikey existant NE correspond PAS à G1PUBNOSTR pour ${player} — reconstruction"
+    fi
+    [[ -z "$salt" || -z "$pepper" ]] && return 1
 
     local uplanet_salt
     uplanet_salt=$(echo -n "${UPLANETNAME}" | sha256sum | cut -c1-16)
