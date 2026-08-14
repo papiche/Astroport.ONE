@@ -658,10 +658,14 @@ _encode_video() {
         fi
     fi
 
-    # VA-API — CBR strict : le support qualité constante (ICQ/global_quality)
-    # varie trop selon les drivers Mesa/Intel, CBR garantit le respect du plafond
+    # VA-API — VBR : le CBR matériel bourre le flux (filler bits) pour coller
+    # pile au débit cible même sur une source simple, ce qui gonflait le
+    # fichier final au-delà de la source. VBR laisse le débit varier selon
+    # la complexité réelle, avec maxrate/bufsize comme plafond de crête.
     if [[ $ok -ne 0 ]]; then
-        local vdev
+        local vdev vaapi_maxrate vaapi_bufsize
+        vaapi_maxrate=$(( tgt_vkbps * 3 / 2 ))
+        vaapi_bufsize=$(( vaapi_maxrate * 2 ))
         vdev=$(find /dev/dri -name 'renderD*' 2>/dev/null | sort | head -1)
         if [[ -n "$vdev" ]]; then
             local vf_va="format=nv12,hwupload"
@@ -669,7 +673,7 @@ _encode_video() {
             echo "🎮 GPU VA-API ($vdev)"
             if ffmpeg -loglevel error -vaapi_device "$vdev" -i "$src" \
                     "${A_ARGS[@]}" -c:v h264_vaapi \
-                    -rc_mode CBR -b:v "${tgt_vkbps}k" -maxrate "${maxrate}k" -bufsize "${bufsize}k" \
+                    -rc_mode VBR -b:v "${tgt_vkbps}k" -maxrate "${vaapi_maxrate}k" -bufsize "${vaapi_bufsize}k" \
                     -vf "$vf_va" -y "$dst" 2>/dev/null; then
                 echo "✅ Encodage GPU vaapi terminé"
                 ok=0
