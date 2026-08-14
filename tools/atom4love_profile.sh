@@ -8,9 +8,12 @@
 #   - UPassport/routers/identity.py (POST /atom4love/profile)
 #   - IA/bro/love_handler.sh (_handle_love_profile, édition via chat BRO)
 #
-# Usage: atom4love_profile.sh EMAIL [AGE] [BIO] [INTERESTS] [PUBLIC] [PHOTO]
+# Usage: atom4love_profile.sh EMAIL [AGE] [BIO] [INTERESTS] [PUBLIC] [PHOTO] [PHOTO_CID] [PHOTO_ENC_KEY]
 #   INTERESTS : tags séparés par des virgules (ex: "nature,musique,voyage")
-#   PHOTO : URL IPFS (déjà uploadée via /api/upload/image)
+#   PHOTO : URL IPFS en clair (ancien mécanisme, déjà uploadée via /api/upload/image)
+#   PHOTO_CID/PHOTO_ENC_KEY : photo chiffrée UENC (AES-256-GCM), uploadée via
+#     POST /api/fileupload/encrypted — la clé n'est jamais republiée sur le
+#     relai, voir atom4love_profile_publish.py.
 #   Un paramètre vide n'est pas envoyé dans le payload (pas d'écrasement).
 ################################################################################
 MY_PATH="$(dirname "$0")"
@@ -23,6 +26,8 @@ BIO="$3"
 INTERESTS="$4"
 PUBLIC="$5"
 PHOTO="$6"
+PHOTO_CID="$7"
+PHOTO_ENC_KEY="$8"
 
 if [[ -z "${EMAIL}" ]]; then
     echo "Usage: atom4love_profile.sh EMAIL [AGE] [BIO] [INTERESTS] [PUBLIC] [PHOTO]" >&2
@@ -39,7 +44,8 @@ fi
 
 ## Payload JSON via variables d'environnement — évite les pièges de
 ## quoting shell avec un texte bio libre (guillemets, retours à la ligne).
-_PAYLOAD=$(AGE="$AGE" BIO="$BIO" INTERESTS="$INTERESTS" PUBLIC="$PUBLIC" PHOTO="$PHOTO" python3 -c "
+_PAYLOAD=$(AGE="$AGE" BIO="$BIO" INTERESTS="$INTERESTS" PUBLIC="$PUBLIC" PHOTO="$PHOTO" \
+    PHOTO_CID="$PHOTO_CID" PHOTO_ENC_KEY="$PHOTO_ENC_KEY" python3 -c "
 import json, os
 payload = {}
 age = os.environ.get('AGE', '').strip()
@@ -57,6 +63,12 @@ if public_raw:
 photo = os.environ.get('PHOTO', '').strip()
 if photo:
     payload['photo'] = photo
+photo_cid = os.environ.get('PHOTO_CID', '').strip()
+if photo_cid:
+    payload['photo_cid'] = photo_cid
+photo_enc_key = os.environ.get('PHOTO_ENC_KEY', '').strip()
+if photo_enc_key:
+    payload['photo_enc_key'] = photo_enc_key
 print(json.dumps(payload))
 ")
 

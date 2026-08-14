@@ -111,19 +111,13 @@ k = 1 / (1 + |sin(φ_i - φ_j)|) ∈ [0.5, 1.0]
 
 ### Validation côté relay (`30078.sh`)
 
-1. `a4l_proof` = `SHA256(pubkey + ":" + app_id)` vérifié contre `AUTHORIZED_APPS` (Kind 30800)
+1. `a4l_proof` présent et non vide (aucune vérification de valeur — pas de liste blanche d'apps à maintenir)
 2. `personal_phase ∈ [0, 7)` et `omega_bio ∈ (0.1, 50)`
 3. En cas de succès : `add_to_amis_of_amis(pubkey)` → WoT Level 0
 
 ### Anti-fraude
 
-Le `a4l_proof` est :
-
-* **Déterministe** : dépend uniquement du pubkey + constante de version
-* **Public** : pas de secret côté client
-* **Lié à l'app** : changer de salt = nouvelle version incompatible
-
-Le relay vérifie la liste `AUTHORIZED_APPS` depuis la config coopérative (Kind 30800, propagée constellation-wide via `backfill_constellation.sh`).
+Le `a4l_proof` n'est pas un contrôle d'accès (le salt est public, calculable par n'importe qui à partir du code source) : c'est un marqueur de format qui distingue un certificat ATOM4LOVE bien formé d'un event kind 30078 générique. La protection réelle contre le spam vient des plages biométriques (`personal_phase`, `omega_bio`) ci-dessus.
 
 ***
 
@@ -132,20 +126,6 @@ Le relay vérifie la liste `AUTHORIZED_APPS` depuis la config coopérative (Kind
 Au niveau MULTIPASS, ATOM4LOVE dérive une clé NOSTR **dédiée**, distincte de l'identité principale (`.secret.nostr`), pour signer/chiffrer le canal DM "LOVE" et publier le profil de résonance Phi² (Kind 30078). Contrairement au MULTIPASS (SALT/PEPPER toujours aléatoire côté serveur, cf. [IDENTITY_MULTIPASS.md](../reference/IDENTITY_MULTIPASS.md)), cette clé **est** dérivée de façon déterministe (PBKDF2-HMAC-SHA256, domaine `uplanet-a4l-v1`, 600k itérations) depuis naissance/conception/poids/polarité/coordonnées, calculée par `tools/atom4love_publish.py` et écrite dans `~/.zen/game/nostr/<email>/.secret.love` (`tools/atom4love_publish.py:80-94,151-163`).
 
 Côté BRO (`IA/bro/bro_dm_daemon.sh`), les réponses IA sont signées par défaut avec `NODE_NSEC` (clé de la station). Quand `_LOVE_REPLY_AS` est positionnée sur l'email d'un destinataire, `.secret.love` de ce compte est utilisée à la place, afin que l'IA "Astria" du canal LOVE réponde en tant que la clé LOVE de l'utilisateur — jamais en tant que la station (`IA/bro/bro_dm_daemon.sh:66,79-84,1419-1455`).
-
-***
-
-## Cycle de vie d'une version d'app
-
-```bash
-# Déployer une nouvelle version
-coop_app_add "ATOM4LOVE_v2"          # Ajouter le nouveau salt
-# ... attendre migration des clients ...
-coop_app_remove "ATOM4LOVE_v1"       # Retirer l'ancien
-
-# Même mécanique pour une nouvelle app tierce
-coop_app_add "ZELKOVA_v1"
-```
 
 ***
 

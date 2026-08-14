@@ -37,6 +37,7 @@ MY_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, MY_PATH)
 
 import phi2x  # noqa: E402
+import uplanet_crypto  # noqa: E402
 from nostr_send_note import send_nostr_event  # noqa: E402
 
 try:
@@ -227,6 +228,24 @@ def main() -> None:
         _fail("KEYGEN_FAILED")
         return
 
+    # ── Anti-écrasement ──────────────────────────────────────────────────────
+    # La clé LOVE est déterministe (naissance/conception) : soumettre les MÊMES
+    # données redonne toujours le MÊME love_hex (republication idempotente, ex.
+    # après une coupure relay). Si une clé LOVE existe déjà avec un hex DIFFÉRENT,
+    # on refuse plutôt que d'écraser — sinon l'ancienne identité (WoT, N², historique
+    # de résonance/dream_vector) serait orpheline sans avertissement.
+    existing_hex_file = os.path.expanduser(f"~/.zen/game/nostr/{email}/HEX_LOVE")
+    if os.path.exists(existing_hex_file):
+        existing_hex = open(existing_hex_file).read().strip()
+        if existing_hex and existing_hex != love_hex:
+            _fail("LOVE_KEY_EXISTS_MISMATCH", {
+                "message": "Une clé LOVE différente existe déjà pour ce compte — "
+                            "les données de naissance/conception soumises ne correspondent "
+                            "pas à celles utilisées lors de la première activation.",
+                "existing_love_hex": existing_hex,
+            })
+            return
+
     love_keyfile = write_secret_love(email, love_nsec, love_npub, love_hex)
 
     # ── Résonance Phi² ─────────────────────────────────────────────────────
@@ -243,6 +262,13 @@ def main() -> None:
     a5l_amplitude = phi2x.compute_resonance_field(birth_lat, birth_lon, birth_unix)
     a5l_tag = phi2x.encode_a5l_tag(a5l_amplitude)
 
+    # Email chiffré $UPLANETNAME (AES-256-CBC, cf. uplanet_crypto.py) avant
+    # publication publique sur le relay — lisible uniquement par les stations
+    # de la constellation (qui partagent ce secret), jamais par un observateur
+    # extérieur. Même principe que l'obfuscation SSID BLE/WiFi de cabine-33
+    # (Loca_Scanner.gd::build_broadcast_ssid) : ne jamais diffuser en clair une
+    # donnée qui identifie directement la personne.
+    email_enc = uplanet_crypto.encrypt(email)
     content = {
         "personal_phase": round(personal_phase, 6),
         "omega_bio": round(omega_bio, 4),
@@ -250,10 +276,10 @@ def main() -> None:
         "biological_sex": polarity,
         "kin_num": kin.get("kin", 0),
         "version": 1,
-        "email": email,
+        "email_enc": email_enc,
     }
     tags = [
-        ["d", "atom4love"], ["a4l_proof", a4l_proof], ["email", email],
+        ["d", "atom4love"], ["a4l_proof", a4l_proof], ["email_enc", email_enc],
         ["g", geo_tag["penta"]], ["g", geo_tag["hex"]], ["a5l", a5l_tag],
     ]
     if kin:

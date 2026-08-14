@@ -27,7 +27,6 @@ import sys
 import os
 import json
 import time
-import hashlib
 
 HOME = os.path.expanduser("~")
 NOSTR_DIR  = os.path.join(HOME, ".zen", "game", "nostr")
@@ -133,15 +132,15 @@ def _a4l_write_cache(sender_hex: str, found: bool):
 
 
 def _verify_a4l_proof(sender_hex: str, event: dict) -> bool:
-    """Vérifie que l'event Kind 30078 contient un a4l_proof valide."""
+    """Vérifie que l'event Kind 30078 contient un tag a4l_proof non vide.
+
+    Aligné sur NIP-101/relay.writePolicy.plugin/filter/30078.sh : le relay
+    n'impose plus de sel spécifique (pas de liste blanche d'apps), donc on
+    se contente de vérifier la présence du marqueur.
+    """
     tags = event.get("tags", [])
-    # Chercher le tag a4l_proof
     proof = next((t[1] for t in tags if len(t) >= 2 and t[0] == "a4l_proof"), None)
-    if not proof:
-        return False
-    # sha256(pubkey + ':' + 'ATOM4LOVE_ALPHA') — sel standard (AUTHORIZED_APPS)
-    expected = hashlib.sha256(f"{sender_hex}:ATOM4LOVE_ALPHA".encode()).hexdigest()
-    return proof == expected
+    return bool(proof)
 
 
 def check_atom4love(sender_hex: str, relay_url: str) -> bool:

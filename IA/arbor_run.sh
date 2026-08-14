@@ -17,8 +17,9 @@
 #      GET /api/nostr/admin/arbor_status (UPassport).
 #
 # Usage: arbor_run.sh --mode MODE [--model M] [--need TEXTE] [--slug SLUG]
+#                      [--owner-email EMAIL] [--domain DOMAIN] [--url URL]
 #                      [--origin http|cron|cli] [--captain-hex HEX]
-#   MODE ∈ mine-requests | observe-love | explore | apply | forge
+#   MODE ∈ mine-requests | observe-love | explore | apply | forge | forge-scraper
 #
 #   forge invoque arbor_tool_forge.py (génération de code par Claude CLI) au
 #   lieu de arbor_self_improve.py — nécessite --need, et que le capitaine ait
@@ -26,6 +27,10 @@
 #     bash claude.vscodium.setup.sh setup   (ou migrate si config existante)
 #   Sans quoi arbor_tool_forge.py::claude_available() échoue proprement
 #   (message clair dans le log, rc=1 depuis le sys.exit ajouté à main()).
+#
+#   forge-scraper invoque arbor_scraper_forge.py (génère un scraper pour un
+#   cookie déjà déposé sans scraper correspondant) — nécessite --owner-email
+#   et --domain, --url optionnel. Même dépendance à Claude CLI que forge.
 ################################################################################
 
 set -uo pipefail
@@ -43,6 +48,9 @@ MODE=""
 MODEL=""
 NEED=""
 SLUG=""
+OWNER_EMAIL=""
+DOMAIN=""
+URL=""
 ORIGIN="cli"
 CAPTAIN_HEX=""
 while [[ $# -gt 0 ]]; do
@@ -51,6 +59,9 @@ while [[ $# -gt 0 ]]; do
         --model) MODEL="$2"; shift 2 ;;
         --need) NEED="$2"; shift 2 ;;
         --slug) SLUG="$2"; shift 2 ;;
+        --owner-email) OWNER_EMAIL="$2"; shift 2 ;;
+        --domain) DOMAIN="$2"; shift 2 ;;
+        --url) URL="$2"; shift 2 ;;
         --origin) ORIGIN="$2"; shift 2 ;;
         --captain-hex) CAPTAIN_HEX="$2"; shift 2 ;;
         *) echo "[ERROR] Argument inconnu : $1" >&2; exit 2 ;;
@@ -58,11 +69,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$MODE" in
-    mine-requests|observe-love|explore|apply|forge) ;;
-    *) echo "[ERROR] --mode requis parmi : mine-requests|observe-love|explore|apply|forge (reçu: '${MODE}')" >&2; exit 2 ;;
+    mine-requests|observe-love|explore|apply|forge|forge-scraper) ;;
+    *) echo "[ERROR] --mode requis parmi : mine-requests|observe-love|explore|apply|forge|forge-scraper (reçu: '${MODE}')" >&2; exit 2 ;;
 esac
 if [[ "$MODE" == "forge" ]] && [[ -z "$NEED" ]]; then
     echo "[ERROR] --need requis pour le mode forge" >&2
+    exit 2
+fi
+if [[ "$MODE" == "forge-scraper" ]] && { [[ -z "$OWNER_EMAIL" ]] || [[ -z "$DOMAIN" ]]; }; then
+    echo "[ERROR] --owner-email et --domain requis pour le mode forge-scraper" >&2
     exit 2
 fi
 
@@ -78,6 +93,13 @@ fi
 # Environnement complet de la station (CAPTAINEMAIL notamment) — jamais
 # disponible sous uvicorn, requis pour toute notification capitaine.
 source "${ZEN_HOME}/Astroport.ONE/tools/my.sh" >/dev/null 2>&1 || true
+
+# Le mode forge invoque `claude` (CLI Claude Code) en sous-processus depuis
+# arbor_tool_forge.py — installé typiquement dans ~/.local/bin/claude, absent
+# du PATH restreint d'un service systemd (constaté : PATH sans ~/.local/bin
+# sous le service upassport). Sans cette ligne, claude_available() renverrait
+# faux même avec un compte parfaitement configuré.
+export PATH="${HOME}/.local/bin:${PATH}"
 
 RUN_ID="$(date +%s)-$$"
 NOW_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -108,8 +130,13 @@ case "$MODE" in
         ARBOR_PY_ARGS=(--need "$NEED" --notify-captain)
         [[ -n "$SLUG" ]] && ARBOR_PY_ARGS+=(--slug "$SLUG")
         ;;
+    forge-scraper)
+        ARBOR_SCRIPT="${MY_PATH}/arbor_scraper_forge.py"
+        ARBOR_PY_ARGS=(--owner-email "$OWNER_EMAIL" --domain "$DOMAIN" --notify-captain)
+        [[ -n "$URL" ]] && ARBOR_PY_ARGS+=(--url "$URL")
+        ;;
 esac
-[[ -n "$MODEL" ]] && [[ "$MODE" != "forge" ]] && ARBOR_PY_ARGS+=(--model "$MODEL")
+[[ -n "$MODEL" ]] && [[ "$MODE" != "forge" ]] && [[ "$MODE" != "forge-scraper" ]] && ARBOR_PY_ARGS+=(--model "$MODEL")
 
 START_TS=$(date +%s)
 "$PYTHON_BIN" "$ARBOR_SCRIPT" "${ARBOR_PY_ARGS[@]}" >> "$LOG_FILE" 2>&1
@@ -117,12 +144,13 @@ RC=$?
 END_TS=$(date +%s)
 DURATION=$(( END_TS - START_TS ))
 
-# Branche produite (si apply/forge a réussi) — best-effort, ne bloque jamais
-# la finalisation de l'état même si git échoue. arbor_tool_forge.py réutilise
-# le même préfixe de branche refs/heads/arbor/ (cf. arbor_self_improve.py::
-# BRANCH_PREFIX) — même détection pour les deux modes.
+# Branche produite (si apply/forge/forge-scraper a réussi) — best-effort, ne
+# bloque jamais la finalisation de l'état même si git échoue.
+# arbor_tool_forge.py et arbor_scraper_forge.py réutilisent le même préfixe
+# de branche refs/heads/arbor/ (cf. arbor_self_improve.py::BRANCH_PREFIX) —
+# même détection pour les trois modes.
 BRANCH=""
-if [[ "$MODE" == "apply" || "$MODE" == "forge" ]] && [[ $RC -eq 0 ]]; then
+if [[ "$MODE" == "apply" || "$MODE" == "forge" || "$MODE" == "forge-scraper" ]] && [[ $RC -eq 0 ]]; then
     BRANCH=$(cd "${ZEN_HOME}/Astroport.ONE" 2>/dev/null \
         && git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/arbor/ 2>/dev/null \
         | head -1)

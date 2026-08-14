@@ -104,6 +104,17 @@ def main() -> None:
         new_fields["public"] = bool(payload["public"])
     if "photo" in payload:
         new_fields["photo"] = str(payload["photo"]).strip()[:500]
+    # Photo chiffrée UENC (AES-256-GCM, cf. UPassport routers/media_upload.py
+    # POST /api/fileupload/encrypted) : photo_cid (CID IPFS du blob chiffré)
+    # + photo_enc_key (clé hex générée côté client). Stockées localement
+    # seulement — JAMAIS republiées sur le relai (voir plus bas, content_fields
+    # ne les inclut pas) : la clé ne doit sortir que via la réponse HTTP déjà
+    # authentifiée de GET /atom4love/profile (public / propriétaire / ami
+    # réciproque, cf. identity.py::get_atom4love_profile).
+    if "photo_cid" in payload:
+        new_fields["photo_cid"] = str(payload["photo_cid"]).strip()[:100]
+    if "photo_enc_key" in payload:
+        new_fields["photo_enc_key"] = str(payload["photo_enc_key"]).strip()[:64]
     if "manifestation_mode" in payload:
         try:
             mode = float(payload["manifestation_mode"])

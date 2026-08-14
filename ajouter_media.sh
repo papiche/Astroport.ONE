@@ -461,14 +461,14 @@ ask_tmdb_metadata() {
 }
 
 ########################################################################
-# Encode en H264/AAC en UN seul passage : conversion + resize si > 650 Mo
+# Encode en H264/AAC en UN seul passage : conversion + resize si > 1024 Mo
 # Piste audio française par défaut ; dialogue de choix si plusieurs pistes
 #   et mode interactif (MEDIA_INTERACTIVE != "no")
 # GPU : nvenc → vaapi → CPU libx264
 _encode_video() {
     local src="$1" dst="$2"
-    local max_bytes=$(( 650 * 1024 * 1024 ))
-    local tgt_bytes=$(( 600 * 1024 * 1024 ))
+    local max_bytes=$(( 1024 * 1024 * 1024 ))
+    local tgt_bytes=$(( 950 * 1024 * 1024 ))
     local SUB_FILE=""
     trap 'rm -f "$SUB_FILE"' RETURN
 
@@ -599,27 +599,30 @@ _encode_video() {
     w=$(echo "$dims" | cut -d'x' -f1)
     h=$(echo "$dims" | cut -d'x' -f2)
 
-    # Scale + bitrate si source trop grande
-    local scale_filter="" tgt_vkbps="" maxrate="" bufsize=""
+    # Plafond de débit : toujours calculé (même sans resize), pour éviter
+    # qu'un ré-encodage depuis un codec source plus efficace (HEVC/AV1 → H264)
+    # ne fasse gonfler la taille finale au-delà de tgt_bytes
+    local duration tgt_vkbps maxrate bufsize
+    duration=$(ffprobe -v error -show_entries format=duration \
+        -of default=noprint_wrappers=1:nokey=1 "$src" 2>/dev/null | cut -d'.' -f1)
+    if [[ -n "$duration" && "$duration" -gt 0 ]]; then
+        tgt_vkbps=$(( (tgt_bytes * 8 / 1000) / duration - 128 ))
+        [[ $tgt_vkbps -lt 400 ]] && tgt_vkbps=400
+    else
+        tgt_vkbps=800
+    fi
+    maxrate=$tgt_vkbps
+    bufsize=$(( tgt_vkbps * 2 ))
+
+    # Scale si source trop grande
+    local scale_filter=""
     if [[ $src_size -gt $max_bytes ]]; then
         local factor new_w new_h
         factor=$(awk "BEGIN{printf \"%.4f\", sqrt($src_size / $tgt_bytes) * 1.1}")
         new_w=$(awk "BEGIN{w=int($w/$factor); if(w%2)w--; if(w<320)w=320; print w}")
         new_h=$(awk "BEGIN{h=int($h/$factor); if(h%2)h--; if(h<240)h=240; print h}")
         scale_filter="scale=${new_w}:${new_h}"
-
-        local duration
-        duration=$(ffprobe -v error -show_entries format=duration \
-            -of default=noprint_wrappers=1:nokey=1 "$src" 2>/dev/null | cut -d'.' -f1)
-        if [[ -n "$duration" && "$duration" -gt 0 ]]; then
-            tgt_vkbps=$(( (tgt_bytes * 8 / 1000) / duration - 128 ))
-            [[ $tgt_vkbps -lt 400 ]] && tgt_vkbps=400
-        else
-            tgt_vkbps=800
-        fi
-        maxrate=$(( tgt_vkbps * 2 ))
-        bufsize=$(( tgt_vkbps * 4 ))
-        echo "📐 ${w}x${h} → ${new_w}x${new_h} | bitrate cible : ${tgt_vkbps} kbps"
+        echo "📐 ${w}x${h} → ${new_w}x${new_h} | plafond débit : ${tgt_vkbps} kbps"
         notify_user "Encodage + resize ${new_w}x${new_h} @ ${tgt_vkbps}kbps…" normal
     else
         notify_user "Encodage vidéo en cours…" normal
@@ -634,20 +637,20 @@ _encode_video() {
     local -a A_ARGS=(-map "0:v:0" -map "0:a:${audio_stream}"
                      -pix_fmt yuv420p
                      -c:a aac -ac 2 -b:a 128k
-                     -movflags +faststart)
-    local -a B_ARGS=()
-    [[ -n "$tgt_vkbps" ]] && B_ARGS=(-b:v "${tgt_vkbps}k" -maxrate "${maxrate}k" -bufsize "${bufsize}k")
+                     -g 50 -movflags +faststart)
 
     local ok=1
 
-    # NVIDIA nvenc
+    # NVIDIA nvenc — qualité constante plafonnée (VBR+CQ : n'utilise que le débit
+    # nécessaire à la qualité visée, avec un plafond dur en cas de scène complexe)
     if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null 2>&1; then
         local -a VF_NV=()
         [[ -n "$VF_CHAIN" ]] && VF_NV=(-vf "$VF_CHAIN")
         echo "🎮 GPU NVIDIA (nvenc)"
         if ffmpeg -loglevel error -hwaccel cuda -i "$src" \
                 "${A_ARGS[@]}" -c:v h264_nvenc -preset p4 -profile:v main \
-                "${B_ARGS[@]}" "${VF_NV[@]}" -y "$dst" 2>/dev/null; then
+                -rc vbr -cq 21 -b:v 0 -maxrate "${maxrate}k" -bufsize "${bufsize}k" \
+                "${VF_NV[@]}" -y "$dst" 2>/dev/null; then
             echo "✅ Encodage GPU nvenc terminé"
             ok=0
         else
@@ -655,7 +658,8 @@ _encode_video() {
         fi
     fi
 
-    # VA-API
+    # VA-API — CBR strict : le support qualité constante (ICQ/global_quality)
+    # varie trop selon les drivers Mesa/Intel, CBR garantit le respect du plafond
     if [[ $ok -ne 0 ]]; then
         local vdev
         vdev=$(find /dev/dri -name 'renderD*' 2>/dev/null | sort | head -1)
@@ -665,7 +669,8 @@ _encode_video() {
             echo "🎮 GPU VA-API ($vdev)"
             if ffmpeg -loglevel error -vaapi_device "$vdev" -i "$src" \
                     "${A_ARGS[@]}" -c:v h264_vaapi \
-                    "${B_ARGS[@]}" -vf "$vf_va" -y "$dst" 2>/dev/null; then
+                    -rc_mode CBR -b:v "${tgt_vkbps}k" -maxrate "${maxrate}k" -bufsize "${bufsize}k" \
+                    -vf "$vf_va" -y "$dst" 2>/dev/null; then
                 echo "✅ Encodage GPU vaapi terminé"
                 ok=0
             else
@@ -674,7 +679,7 @@ _encode_video() {
         fi
     fi
 
-    # CPU libx264
+    # CPU libx264 — CRF plafonné (qualité constante avec plafond de débit VBV)
     if [[ $ok -ne 0 ]]; then
         local -a VF_CPU=()
         [[ -n "$VF_CHAIN" ]] && VF_CPU=(-vf "$VF_CHAIN")
@@ -682,7 +687,8 @@ _encode_video() {
         notify_user "Encodage CPU — patience…" low
         if ffmpeg -loglevel error -i "$src" \
                 "${A_ARGS[@]}" -c:v libx264 -profile:v main -level 4.1 -preset fast \
-                "${B_ARGS[@]}" "${VF_CPU[@]}" -y "$dst"; then
+                -crf 21 -maxrate "${maxrate}k" -bufsize "${bufsize}k" \
+                "${VF_CPU[@]}" -y "$dst"; then
             echo "✅ Encodage CPU terminé"
             ok=0
         fi

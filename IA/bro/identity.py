@@ -254,7 +254,7 @@ def _ensure_identity_templates(owner_email):
     préfixés par un point : exclus de la publication IPNS de
     ~/.zen/game/nostr/<email>/ (ipfs add ignore les chemins cachés par
     défaut), l'identité reste privée à la station du capitaine."""
-    identity_dir = os.path.expanduser(f"~/.zen/game/nostr/{owner_email}/identity")
+    identity_dir = os.path.join(_owner_dir(owner_email), "identity")
     try:
         os.makedirs(identity_dir, exist_ok=True)
         for filename, default_content in _IDENTITY_TEMPLATES.items():

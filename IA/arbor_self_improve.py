@@ -451,11 +451,21 @@ def _summarize_tool_cluster(sample_texts):
         return "(résumé indisponible)"
 
 
-def mine_tool_requests():
+def mine_tool_requests(persist=True, summarize=True):
     """Analyse le corpus multi-utilisateurs des demandes non satisfaites,
     détecte les patterns récurrents (≥ MIN_CLUSTER_SIZE demandes similaires)
     jamais encore signalés, et retourne un résumé par cluster frais. Ne
-    modifie aucun code — seule la notification capitaine en découle."""
+    modifie aucun code — seule la notification capitaine en découle.
+
+    persist=False : ne marque RIEN comme "vu" (aucun appel à _save_mined_state)
+    — nécessaire pour une prévisualisation en lecture seule (panneau admin
+    ARBOR) : appeler cette fonction avec persist=True depuis un simple
+    affichage marquerait les patterns comme traités sans jamais notifier le
+    capitaine, perte de signal irréversible (aucun autre endroit ne conserve
+    le résumé). CLI/cron (--mine-requests) gardent persist=True par défaut.
+
+    summarize=False : sinon _summarize_tool_cluster() (un appel LLM par
+    cluster frais) — coûteux, à éviter pour un simple comptage (badge)."""
     min_cluster_size = arbor_config.get_int("ARBOR_MIN_CLUSTER_SIZE", MIN_CLUSTER_SIZE, 2, 50)
     similarity = arbor_config.get_float("ARBOR_SIMILARITY_THRESHOLD", CLUSTER_SIMILARITY_THRESHOLD, 0.3, 0.95)
 
@@ -477,11 +487,11 @@ def mine_tool_requests():
             "count": len(c["members"]),
             "owners": owners,
             "sample_texts": sample_texts,
-            "summary": _summarize_tool_cluster(sample_texts),
+            "summary": _summarize_tool_cluster(sample_texts) if summarize else None,
         })
         already.add(fp)
 
-    if fresh_reports:
+    if fresh_reports and persist:
         _save_mined_state(already)
     return fresh_reports
 

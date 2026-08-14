@@ -50,12 +50,21 @@ G1PUBNOSTR=$(cat "$_G1PUB_FILE")
 ## .secret.love a bien été créé (cf. write_secret_love dans atom4love_publish.py) :
 ## on évite ainsi tout .BIRTHDATE orphelin sans clé LOVE associée.
 if [[ -n "${BIRTH_DATETIME}" && -n "${BIRTH_LAT}" && -n "${BIRTH_LON}" ]]; then
-    _PY_RESULT=$(python3 "${MY_PATH}/atom4love_publish.py" "${EMAIL}" "${BIRTH_DATETIME}" \
+    # UPLANETNAME est une variable locale (jamais exportée par my.sh) — transmise
+    # explicitement, même convention que atom4love_profile.sh (sinon uplanet_crypto
+    # retombe sur son fallback ~/.ipfs/swarm.key, identique en pratique mais moins
+    # explicite).
+    _PY_RESULT=$(UPLANETNAME="${UPLANETNAME}" python3 "${MY_PATH}/atom4love_publish.py" "${EMAIL}" "${BIRTH_DATETIME}" \
         "${BIRTH_LAT}" "${BIRTH_LON}" "${BIRTH_WEIGHT:-3.5}" "${POLARITY:-0}" \
         "${CONCEPTION_DATETIME}")
+    # NB: [[ -s .secret.love ]] ne suffit PAS comme signal de succès — le fichier
+    # peut déjà exister d'une activation PRÉCÉDENTE alors que CET appel vient
+    # d'être refusé (anti-écrasement, cf. atom4love_publish.py::LOVE_KEY_EXISTS_MISMATCH).
+    # Seul le champ "activated" du JSON retourné fait foi.
+    _PY_ACTIVATED=$(echo "${_PY_RESULT}" | tail -n1 | jq -r '.activated // false' 2>/dev/null)
 
-    if [[ -s "${_NOSTR_DIR}/.secret.love" ]]; then
-        ## Clé LOVE créée avec succès — on peut persister les données de naissance/conception.
+    if [[ "${_PY_ACTIVATED}" == "true" ]]; then
+        ## Clé LOVE créée/republiée avec succès — on peut persister les données de naissance/conception.
         # .BIRTHDATE (YYYY-MM-DD) : clair — utilisé par kin.sh et did_manager_nostr.sh
         # .birth_datetime.enc, .birth_weight.enc, .conception_datetime.enc : chiffrés
         # avec la clé publique G1PUBNOSTR du joueur → seul le joueur peut déchiffrer.
@@ -95,7 +104,7 @@ if [[ -n "${BIRTH_DATETIME}" && -n "${BIRTH_LAT}" && -n "${BIRTH_LON}" ]]; then
         "${MY_PATH}/N2_Genesis.sh" "${EMAIL}" >&2 || \
             echo "[atom4love_activate] N2_Genesis.sh KO (non-bloquant)" >&2
     else
-        echo "❌ atom4love_publish.py n'a pas créé .secret.love — données de naissance non persistées" >&2
+        echo "❌ atom4love_publish.py n'a pas activé la clé LOVE — données de naissance non persistées (${_PY_RESULT})" >&2
     fi
     echo "${_PY_RESULT}"
 else
