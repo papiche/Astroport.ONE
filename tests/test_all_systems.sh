@@ -219,6 +219,7 @@ main() {
         run_test_script "$MY_PATH/test_multipass_zencard.sh"  "MultipassZENCard"
         run_test_script "$MY_PATH/test_did_system.sh"         "DID"
         run_test_script "$MY_PATH/test_oracle_system.sh"      "Oracle"
+        run_test_script "$MY_PATH/test_kin_oracle.sh"         "KinOracle"
         run_test_script "$MY_PATH/test_wotx2_system.sh"       "WoTx2"
         run_test_script "$MY_PATH/test_ore_system.sh"         "ORE"
         run_test_script "$MY_PATH/test_badge_system.sh"       "Badge"
