@@ -317,7 +317,11 @@ ask_tmdb_metadata() {
             [[ -z "$PLAYER" ]] && SERIES_NAME=$(zenity --entry --width 400 --title "Nom de la série" --text "Nom de la série" --entry-text="$FILE_TITLE")
             [[ -z "$SERIES_NAME" ]] && SERIES_NAME="$FILE_TITLE"
         fi
-        SERIES_NAME=$(echo "${SERIES_NAME}" | _detox)
+        # NE PAS passer par _detox() ici : c'est un sanitizer de NOM DE FICHIER
+        # (accents translittérés, espaces -> underscores) — il détruirait le nom
+        # propre récupéré depuis TMDB avant publication NOSTR (series_name tag).
+        # Un simple trim des espaces superflus suffit.
+        SERIES_NAME=$(echo "${SERIES_NAME}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/  */ /g')
 
         local ep_default="$FILE_TITLE"
         if [[ "$SCRAPE_TMDB" == "yes" ]]; then
@@ -397,7 +401,11 @@ ask_tmdb_metadata() {
         [[ -n "$SEASON_NUMBER" ]] && ! [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]] && SEASON_NUMBER=""
         [[ -n "$EPISODE_NUMBER" ]] && ! [[ "$EPISODE_NUMBER" =~ ^[0-9]+$ ]] && EPISODE_NUMBER=""
         if [[ -n "$SEASON_NUMBER" && -n "$EPISODE_NUMBER" ]]; then
-            TITLE_WITH_EPISODE="${TITLE} - S${SEASON_NUMBER}E${EPISODE_NUMBER}"
+            # Construit depuis EPISODE_NAME_FOR_PUBLICATION (nom propre, accents
+            # préservés) et NON depuis TITLE (= EPISODE_NAME_FOR_FILENAME, detoxé
+            # pour servir de nom de fichier) — sinon le titre publié sur NOSTR
+            # perd ses accents/caractères spéciaux.
+            TITLE_WITH_EPISODE="${EPISODE_NAME_FOR_PUBLICATION} - S${SEASON_NUMBER}E${EPISODE_NUMBER}"
             echo "📺 S${SEASON_NUMBER}E${EPISODE_NUMBER} — $TITLE_WITH_EPISODE"
         fi
     fi
