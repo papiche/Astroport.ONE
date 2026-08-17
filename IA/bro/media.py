@@ -19,8 +19,9 @@ from prompt_safety import wrap_untrusted
 from bro._shared import BRO_IA_PATH, BRO_WATCH_CORE_PATH, PYTHON_BIN, _owner_dir
 from bro.nostr import send_dm_to_owner
 from bro.watch_store import _load_manifest, is_scraper_enabled, store_log
+from bro_url_content import extract_urls
 
-__all__ = ['_IA_IMG_URL_RE', '_extract_image_url', '_describe_image_url', '_call_generator', '_MEDIA_RUN_TIMEOUT_SEC', '_MEDIA_PROGRESS_MSG', '_dispatch_media_background', '_run_recognition_script', '_run_media_background', '_MEDIA_TAG_HANDLERS', 'SCRAPER_RUN_TIMEOUT_SEC', '_cookie_file_path', '_find_scraper_script', '_SCRAPER_ICONS', 'list_station_scrapers', '_available_scraper_domains', '_extract_scraper_domain', '_run_scraper_now', '_run_scraper_background', 'CRAFT_RUN_TIMEOUT_SEC', 'BADGE_RUN_TIMEOUT_SEC', '_run_craft_background', '_run_badge_background']
+__all__ = ['_IA_IMG_URL_RE', '_extract_image_url', '_describe_image_url', '_call_generator', '_capture_screenshot', '_MEDIA_RUN_TIMEOUT_SEC', '_MEDIA_PROGRESS_MSG', '_dispatch_media_background', '_run_recognition_script', '_run_media_background', '_MEDIA_TAG_HANDLERS', 'SCRAPER_RUN_TIMEOUT_SEC', '_cookie_file_path', '_find_scraper_script', '_SCRAPER_ICONS', 'list_station_scrapers', '_available_scraper_domains', '_extract_scraper_domain', '_run_scraper_now', '_run_scraper_background', 'CRAFT_RUN_TIMEOUT_SEC', 'BADGE_RUN_TIMEOUT_SEC', '_run_craft_background', '_run_badge_background']
 
 
 
@@ -68,7 +69,45 @@ def _call_generator(script_name, prompt):
     except Exception:
         return None
 
-_MEDIA_RUN_TIMEOUT_SEC = {"image": 300, "video": 300, "music": 300, "plantnet": 60, "inventory": 60, "tts": 150}
+def _capture_screenshot(url, width=1200, height=800):
+    """Capture une page web via IA/../tools/page_screenshot.py — le MÊME outil
+    Playwright que RUNTIME/NOSTR.UMAP.refresh.sh et RUNTIME/UPLANET.refresh.sh
+    utilisent déjà pour générer les cartes OpenStreetMap (Umap.jpg, SectorMap.jpg,
+    RegionMap.jpg) et les photos de profil NOSTR des UMAP/SECTOR/REGION — un seul
+    outil de capture d'écran pour toute la station, pas de logique dupliquée.
+    Publie le résultat sur IPFS. Retourne l'URL publique, ou None en cas d'échec
+    (page injoignable, navigateur headless absent, échec de l'ajout IPFS)."""
+    script = os.path.join(os.path.dirname(BRO_IA_PATH), "tools", "page_screenshot.py")
+    if not os.path.isfile(script):
+        return None
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp_path = tmp.name
+        result = subprocess.run(
+            [PYTHON_BIN, script, url, tmp_path, str(width), str(height)],
+            capture_output=True, text=True, timeout=100,
+        )
+        if result.returncode != 0 or not os.path.isfile(tmp_path) or os.path.getsize(tmp_path) == 0:
+            return None
+        cid_result = subprocess.run(
+            ["ipfs", "add", "-q", tmp_path], capture_output=True, text=True, timeout=30,
+        )
+        cid = cid_result.stdout.strip()
+        if not cid:
+            return None
+        gateway = os.environ.get("myLIBRA") or "https://ipfs.copylaradio.com"
+        return f"{gateway}/ipfs/{cid}"
+    except Exception:
+        return None
+    finally:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+_MEDIA_RUN_TIMEOUT_SEC = {"image": 300, "video": 300, "music": 300, "plantnet": 60, "inventory": 60, "tts": 150, "screenshot": 110}
 
 _MEDIA_PROGRESS_MSG = {
     "image": "🖼️ Génération d'image en cours",
@@ -77,6 +116,7 @@ _MEDIA_PROGRESS_MSG = {
     "plantnet": "🌿 Identification botanique en cours",
     "inventory": "📦 Inventaire en cours",
     "tts": "🔊 Préparation de la réponse vocale en cours",
+    "screenshot": "📸 Capture de la page en cours",
 }
 
 def _dispatch_media_background(media_type, owner_email, payload):
@@ -137,6 +177,10 @@ def _run_media_background(media_type, owner_email, payload):
             "inventory_recognition.py", payload["img_url"],
             "⚠️ Inventaire vide ou non reconnu.",
             "⚠️ Inventaire non disponible sur cette station.", "⚠️ Service inventaire indisponible.")
+    elif media_type == "screenshot":
+        img_url = _capture_screenshot(payload["url"])
+        reply = f"📸 Capture :\n{img_url}" if img_url else \
+            "⚠️ Capture indisponible (page injoignable ou navigateur headless manquant)."
     elif media_type == "tts":
         voice = payload["voice"]
         clean_question = payload.get("clean_question", "")
@@ -217,6 +261,16 @@ _MEDIA_TAG_HANDLERS = (
                 "img_url": img_url or "",
             },
         ),
+    },
+    {
+        "pattern": r'#capture\b|#screenshot\b',
+        "description": "#capture URL : prend une capture d'écran d'une page web (même outil "
+                        "Playwright que les cartes OpenStreetMap UMAP/SECTOR/REGION).",
+        # requires_url : garde vérifiée par _handle_ia_responder_tags avant
+        # d'appeler build() (comme requires_img) — extract_urls(text) est
+        # donc garanti non-vide ici.
+        "requires_url": "📸 Indique l'URL à capturer avec #capture, ex: #capture https://example.com",
+        "build": lambda text, clean, img_url: ("screenshot", {"url": extract_urls(text)[0]}),
     },
     {
         # advertise_only : pas de "pattern"/"build" — la reconnaissance

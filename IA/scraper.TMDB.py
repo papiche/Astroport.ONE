@@ -47,7 +47,14 @@ def scrape_tmdb_page(url):
         
         # Method 1: h2 with link and span.release_date (actual TMDB structure)
         # <h2><a>Sexy Beast</a> <span class="tag release_date">(2024)</span></h2>
-        title_elem = soup.find('h2', class_=re.compile('title|10', re.I))
+        # NB: exclut le h2 "auth-card-title" (bouton "Connexion" du header,
+        # présent sur toutes les pages TMDB) que la regex 'title|10' matchait
+        # à tort avant d'atteindre le vrai titre du film/série.
+        title_elem = next(
+            (h for h in soup.find_all('h2', class_=re.compile('title|10', re.I))
+             if not h.has_attr('data-auth-title')),
+            None
+        )
         if title_elem:
             title_link = title_elem.find('a')
             if title_link:

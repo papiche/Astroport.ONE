@@ -103,6 +103,24 @@ if [[ -n "${BIRTH_DATETIME}" && -n "${BIRTH_LAT}" && -n "${BIRTH_LON}" ]]; then
         # par MULTIPASS et par identité LOVE (anti-Sybil, cf. N2_Genesis.sh).
         "${MY_PATH}/N2_Genesis.sh" "${EMAIL}" >&2 || \
             echo "[atom4love_activate] N2_Genesis.sh KO (non-bloquant)" >&2
+
+        # Email dédié "Bienvenue dans LOVE" — une seule fois par compte, quel que
+        # soit le nombre de republications idempotentes (mêmes données de naissance).
+        # Aucune donnée identifiante dans ce message : confirme juste l'activation
+        # et pointe vers atomic_dream.html. La suite (newsletter KIN) est un flux
+        # opt-in séparé, réglé via .mailjet (kin.*), pas déclenché ici.
+        _LOVE_WELCOME_TPL="${MY_PATH}/../templates/NOSTR/love_welcome.html"
+        _LOVE_WELCOME_SENT="${_NOSTR_DIR}/.love_welcome_sent"
+        if [[ -s "${_LOVE_WELCOME_TPL}" && ! -s "${_LOVE_WELCOME_SENT}" ]]; then
+            _tmp_love=$(mktemp)
+            sed -e "s~http://127.0.0.1:8080~${myLIBRA}~g" \
+                -e "s~_uSPOT_~${uSPOT}~g" \
+                "${_LOVE_WELCOME_TPL}" > "${_tmp_love}"
+            "${MY_PATH}/mailjet.sh" --channel milestones --template "${_LOVE_WELCOME_TPL}" --expire 7d \
+                "${EMAIL}" "${_tmp_love}" "💭 Votre clé LOVE est active" >&2
+            date -u > "${_LOVE_WELCOME_SENT}"
+            rm -f "${_tmp_love}"
+        fi
     else
         echo "❌ atom4love_publish.py n'a pas activé la clé LOVE — données de naissance non persistées (${_PY_RESULT})" >&2
     fi

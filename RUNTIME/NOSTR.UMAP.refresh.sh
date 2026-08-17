@@ -1966,24 +1966,45 @@ create_aggregate_journal() {
     log "Found ${#liked_event_ids[@]} unique recently liked messages to process for ${type} ${geo_id}."
 
     # 3. Process each liked message
+    # Kinds 1222/1244 (coracle native voice messages, NIP-101 UMAP-geolocated)
+    # participate in the same SECTOR/REGION promotion as kind 1 text notes —
+    # excluded here if privately encrypted (tag ["encrypted","true"]), since a
+    # NIP-44 ciphertext blob would be meaningless in a public journal.
     for msgid in "${liked_event_ids[@]}"; do
                 local likes=$(count_likes "$msgid")
         if [[ $likes -ge $like_threshold ]]; then
             cd ~/.zen/strfry
-            local message_json=$(./strfry scan "{\"ids\": [\"${msgid}\"], \"kinds\": [1], \"limit\": 1}" 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, author: .pubkey, content: .content, created_at: .created_at}' | head -n 1)
+            local message_json=$(./strfry scan "{\"ids\": [\"${msgid}\"], \"kinds\": [1, 1222, 1244], \"limit\": 1}" 2>/dev/null \
+                | jq -c 'select(
+                    .kind == 1
+                    or ((.kind == 1222 or .kind == 1244)
+                        and ([.tags[]? | select(.[0] == "encrypted" and .[1] == "true")] | length) == 0)
+                  ) | {id: .id, author: .pubkey, content: .content, created_at: .created_at, kind: .kind, tags: .tags}' \
+                | head -n 1)
             cd - >/dev/null
 
             if [[ -n "$message_json" ]]; then
                 local content=$(echo "$message_json" | jq -r .content)
                 local author_hex=$(echo "$message_json" | jq -r .author)
                 local created_at=$(echo "$message_json" | jq -r .created_at)
+                local msg_kind=$(echo "$message_json" | jq -r .kind)
                 local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
                 local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
-                
+
+                # Voice messages carry the audio in a "url" tag, not content —
+                # surface a listenable link so the journal is actually usable.
+                local audio_line=""
+                if [[ "$msg_kind" == "1222" || "$msg_kind" == "1244" ]]; then
+                    local audio_url=$(echo "$message_json" | jq -r '.tags[]? | select(.[0] == "url") | .[1]' | head -n 1)
+                    [[ -n "$audio_url" && "$audio_url" != "null" ]] \
+                        && audio_line="🎧 [${audio_url}](${myLIBRA}${audio_url})"
+                fi
+
                 echo "### 📝 $date_str" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
                 echo "**Author**: nostr:$author_nprofile | **Likes**: ❤️ $likes" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
                 echo "" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
                 echo "$content" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
+                [[ -n "$audio_line" ]] && echo "$audio_line" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
                 echo "" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
                 fi
         fi

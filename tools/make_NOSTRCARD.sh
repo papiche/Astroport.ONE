@@ -860,11 +860,13 @@ EOFJSON
         MULTIPASS_ZINE="${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
         MAILJET_SCRIPT="${MY_PATH}/../tools/mailjet.sh"
 
+        ## Pas de --channel ici : c'est l'unique canal de remise des clés (--no-ipfs-link
+        ## exclut tout lien public de secours) — ne doit jamais dépendre d'un flux opt-out
         if [[ -s "$MULTIPASS_ZINE" ]] && [[ -x "$MAILJET_SCRIPT" ]]; then
-            if "$MAILJET_SCRIPT" --template "${MULTIPASS_ZINE}" --expire 0s \
+            if "$MAILJET_SCRIPT" --template "${MULTIPASS_ZINE}" --expire 0s --no-ipfs-link \
                 "${EMAIL}" \
                 $MULTIPASS_ZINE \
-                "MULTIPASS[Ẑ] [UPlanet:${UPLANETG1PUB:0:8}:${ZLAT}:${ZLON}]"; then
+                "🔑 Vos clés MULTIPASS — à sauvegarder maintenant"; then
                 echo "📧 MULTIPASS envoyé par email à ${EMAIL}"
             else
                 echo "ℹ️  Email non envoyé à ${EMAIL} — MULTIPASS créé avec succès (vérifiez votre boîte)"

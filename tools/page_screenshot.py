@@ -52,7 +52,14 @@ async def take_screenshot(url, output_file, width, height):
                 launch_kwargs['executable_path'] = chromium_path
 
             browser = await p.chromium.launch(**launch_kwargs)
-            page = await browser.new_page()
+            # OpenStreetMap's tile usage policy asks that automated clients
+            # identify themselves via User-Agent (operations.osmfoundation.org/
+            # policies/tiles/) — the default Playwright/Chromium UA doesn't,
+            # which risks silent throttling/blocking when this script runs
+            # across many UMAP/SECTOR/REGION map screenshots on a schedule.
+            page = await browser.new_page(
+                user_agent="UPlanet-Astroport/1.0 (+https://astroport.one; map screenshot)"
+            )
 
             # Taille de la fenêtre
             await page.set_viewport_size({'width': width, 'height': height})

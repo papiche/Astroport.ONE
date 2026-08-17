@@ -313,10 +313,9 @@ ask_tmdb_metadata() {
     SERIES_NAME="" EPISODE_NAME="" EPISODE_NAME_FOR_FILENAME="" EPISODE_NAME_FOR_PUBLICATION="" TITLE_WITH_EPISODE=""
     if [[ "$tmdb_cat" == "serie" ]]; then
         [[ "$SCRAPE_TMDB" == "yes" ]] && SERIES_NAME=$(echo "$SCRAPED_METADATA" | jq -r '.title // .name // empty' 2>/dev/null)
-        if [[ -z "$SERIES_NAME" ]]; then
-            [[ -z "$PLAYER" ]] && SERIES_NAME=$(zenity --entry --width 400 --title "Nom de la série" --text "Nom de la série" --entry-text="$FILE_TITLE")
-            [[ -z "$SERIES_NAME" ]] && SERIES_NAME="$FILE_TITLE"
-        fi
+        [[ "${MEDIA_INTERACTIVE:-yes}" != "no" ]] \
+            && SERIES_NAME=$(zenity --entry --width 400 --title "Nom de la série" --text "Nom de la série (vérifiez la valeur récupérée sur TMDB)" --entry-text="${SERIES_NAME:-$FILE_TITLE}")
+        [[ -z "$SERIES_NAME" ]] && SERIES_NAME="$FILE_TITLE"
         # NE PAS passer par _detox() ici : c'est un sanitizer de NOM DE FICHIER
         # (accents translittérés, espaces -> underscores) — il détruirait le nom
         # propre récupéré depuis TMDB avant publication NOSTR (series_name tag).
@@ -331,7 +330,11 @@ ask_tmdb_metadata() {
         fi
         local ep_clean
         ep_clean=$(echo "$ep_default" | sed 's/_/ /g;s/  */ /g;s/^ *//;s/ *$//')
-        [[ -z "$PLAYER" ]] && EPISODE_NAME=$(zenity --entry --width 400 --title "Titre de l'épisode" --text "Titre de l'épisode" --entry-text="$ep_clean") || EPISODE_NAME="$ep_clean"
+        if [[ "${MEDIA_INTERACTIVE:-yes}" != "no" ]]; then
+            EPISODE_NAME=$(zenity --entry --width 400 --title "Titre de l'épisode" --text "Titre de l'épisode (vérifiez la valeur récupérée sur TMDB)" --entry-text="$ep_clean")
+        else
+            EPISODE_NAME="$ep_clean"
+        fi
         [[ -z "$EPISODE_NAME" ]] && EPISODE_NAME="$ep_clean"
         EPISODE_NAME_FOR_FILENAME=$(echo "${EPISODE_NAME}" | _detox)
         EPISODE_NAME_FOR_PUBLICATION="$EPISODE_NAME"
@@ -347,7 +350,11 @@ ask_tmdb_metadata() {
         fi
         local title_clean
         title_clean=$(echo "$TITLE" | sed 's/_/ /g;s/  */ /g;s/^ *//;s/ *$//')
-        [[ -z "$PLAYER" ]] && TITLE=$(zenity --entry --width 300 --title "Titre" --text "Titre de la vidéo" --entry-text="$title_clean") || TITLE="$title_clean"
+        if [[ "${MEDIA_INTERACTIVE:-yes}" != "no" ]]; then
+            TITLE=$(zenity --entry --width 300 --title "Titre" --text "Titre de la vidéo (vérifiez la valeur récupérée sur TMDB)" --entry-text="$title_clean")
+        else
+            TITLE="$title_clean"
+        fi
         [[ -z "$TITLE" ]] && exit 1
         TITLE_FOR_FILENAME=$(echo "${TITLE}" | _detox)
         TITLE_FOR_PUBLICATION="$TITLE"
@@ -366,9 +373,13 @@ ask_tmdb_metadata() {
         GENRES_DEFAULT=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
         [[ "$GENRES_ARRAY" == "[]" || -z "$GENRES_ARRAY" ]] && GENRES_ARRAY="[]"
     fi
-    [[ -z "$PLAYER" ]] && GENRES=$(zenity --entry --width 400 --title "Genres" \
-        --text "Genres séparés par virgules. Ex: Action, Science Fiction" \
-        --entry-text="$GENRES_DEFAULT") || GENRES="$GENRES_DEFAULT"
+    if [[ "${MEDIA_INTERACTIVE:-yes}" != "no" ]]; then
+        GENRES=$(zenity --entry --width 400 --title "Genres" \
+            --text "Genres séparés par virgules (vérifiez la valeur récupérée sur TMDB). Ex: Action, Science Fiction" \
+            --entry-text="$GENRES_DEFAULT")
+    else
+        GENRES="$GENRES_DEFAULT"
+    fi
     [[ -z "$GENRES" ]] && GENRES="$GENRES_DEFAULT"
     if [[ -n "$GENRES" ]]; then
         GENRES_ARRAY=$(echo "$GENRES" | jq -R 'split(", ") | map(select(. != "")) | map(gsub("^\\s+|\\s+$"; ""))' 2>/dev/null || echo "[]")
@@ -425,7 +436,8 @@ ask_tmdb_metadata() {
         SCRAPED_VOTE_AVG=$(echo "$SCRAPED_METADATA" | jq -r '.vote_average // empty' 2>/dev/null)
         SCRAPED_VOTE_COUNT=$(echo "$SCRAPED_METADATA" | jq -r '.vote_count // empty' 2>/dev/null)
     fi
-    [[ -z "$PLAYER" ]] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description (optionnel)" --entry-text="$VIDEO_DESC")
+    [[ "${MEDIA_INTERACTIVE:-yes}" != "no" ]] \
+        && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description (vérifiez la valeur récupérée sur TMDB, optionnel)" --entry-text="$VIDEO_DESC")
     # Sanitiser les sauts de ligne (TMDB overview peut être multi-lignes)
     VIDEO_DESC=$(echo "${VIDEO_DESC}" | tr '\n\r' ' ')
 

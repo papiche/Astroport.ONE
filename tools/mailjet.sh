@@ -59,6 +59,12 @@ OPTIONS
         identifier facilement quel template modifier.
         Utiliser \$0 quand le HTML est généré inline dans le script appelant.
 
+    --no-ipfs-link
+        Pour tout contenu sensible (clés privées, codes PIN…) : le message
+        n'est PAS publié sur IPFS (aucun "lire en ligne", aucun lien public).
+        L'aperçu envoyé au canal NOSTR DM devient un texte générique plutôt
+        qu'un extrait du contenu réel — le secret ne quitte jamais l'email.
+
     --help, -h
         Affiche cette aide et quitte (sans écrire dans mailjet.log).
 
@@ -130,6 +136,7 @@ echo '
 EPHEMERAL_DURATION=""
 TEMPLATE_SRC=""
 MAIL_CHANNEL=""
+NO_IPFS_LINK=0
 while [[ $# -gt 0 ]]; do
     case $1 in
         --expire)
@@ -143,6 +150,10 @@ while [[ $# -gt 0 ]]; do
         --channel)
             MAIL_CHANNEL="$2"
             shift 2
+            ;;
+        --no-ipfs-link)
+            NO_IPFS_LINK=1
+            shift
             ;;
         --help|-h)
             exec "$0" --help
@@ -386,8 +397,14 @@ if [[ "$RAW_CONTENT" == *"{{UNSUB_URL}}"* ]]; then
 fi
 
 # 2. Génération du lien IPFS (Conservé pour Nostr et TiddlyWiki)
-EMAILZ=$(echo "$RAW_CONTENT" | timeout 15s ipfs add -q --pin=false)
-export TEXTPART="${myLIBRA}/ipfs/${EMAILZ}"
+# --no-ipfs-link : contenu sensible — jamais publié sur un gateway public
+if [[ "$NO_IPFS_LINK" == "1" ]]; then
+    EMAILZ=""
+    export TEXTPART=""
+else
+    EMAILZ=$(echo "$RAW_CONTENT" | timeout 15s ipfs add -q --pin=false)
+    export TEXTPART="${myLIBRA}/ipfs/${EMAILZ}"
+fi
 
 ################### IMPORT MAILJET INTO IF $4=TW
 INDEX="$4"
@@ -445,7 +462,11 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
 
     # 3. Préparation du corps de l'email
     # On intègre RAW_CONTENT directement dans le HTML
-    IPFS_ONLINE_LINK="<p style=\"text-align:center; font-size:0.85em; color:#888;\"><a href=\"${myLIBRA}/ipfs/${EMAILZ}\">🌐 Lire ce message en ligne (IPFS)</a></p><hr style=\"border:none; border-top:1px solid #eee;\">"
+    if [[ "$NO_IPFS_LINK" == "1" ]]; then
+        IPFS_ONLINE_LINK=""
+    else
+        IPFS_ONLINE_LINK="<p style=\"text-align:center; font-size:0.85em; color:#888;\"><a href=\"${myLIBRA}/ipfs/${EMAILZ}\">🌐 Lire ce message en ligne (IPFS)</a></p><hr style=\"border:none; border-top:1px solid #eee;\">"
+    fi
 
     TEMPLATE_INFO=""
     if [[ "$UPLANET" == "UPlanet ORIGIN" && -n "$TEMPLATE_SRC" ]]; then
@@ -455,12 +476,20 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
     FULL_HTML="${IPFS_ONLINE_LINK}<h3>${title}</h3><br><br>${RAW_CONTENT}<br><br><hr><p><a href=\"${uSPOT}/g1\">${UPLANET}</a> [ <a href=\"${myLIBRA}/ipns/${pseudo}\">/ipns/${pseudo}</a> ]<br />${MESSAGESIGN}</p>${TEMPLATE_INFO}"
     
     # Fallback en texte brut contenant le lien IPFS
-    PLAIN_TEXT="Voir le message sur le réseau IPFS : ${myLIBRA}/ipfs/${EMAILZ}\n\nMessage de ${UPLANET}"
+    if [[ "$NO_IPFS_LINK" == "1" ]]; then
+        PLAIN_TEXT="Message de ${UPLANET} — contenu sensible, consultez directement cet email."
+    else
+        PLAIN_TEXT="Voir le message sur le réseau IPFS : ${myLIBRA}/ipfs/${EMAILZ}\n\nMessage de ${UPLANET}"
+    fi
 
     CONTENT_SIZE=${#RAW_CONTENT}
     if [[ $CONTENT_SIZE -gt 1000000 ]]; then # Limite à 1 Mo pour l'inline
-        echo "⚠️ Message trop volumineux ($CONTENT_SIZE octets). Envoi du lien IPFS uniquement."
-        FULL_HTML="${IPFS_ONLINE_LINK}<p>Consultez le message ici.</p><h3><a href='${myLIBRA}/ipfs/${EMAILZ}'>👉 Cliquer ici pour voir le rapport complet</a></h3><br>${MESSAGESIGN}"
+        if [[ "$NO_IPFS_LINK" == "1" ]]; then
+            echo "⚠️ Message trop volumineux ($CONTENT_SIZE octets) avec --no-ipfs-link : pas de repli possible, envoi tel quel."
+        else
+            echo "⚠️ Message trop volumineux ($CONTENT_SIZE octets). Envoi du lien IPFS uniquement."
+            FULL_HTML="${IPFS_ONLINE_LINK}<p>Consultez le message ici.</p><h3><a href='${myLIBRA}/ipfs/${EMAILZ}'>👉 Cliquer ici pour voir le rapport complet</a></h3><br>${MESSAGESIGN}"
+        fi
     fi
 
     # 4. Construction du JSON sécurisé via jq (--rawfile évite ARG_MAX pour les gros HTML)
@@ -530,9 +559,15 @@ if [[ "$_nostr_active" == "true" && -n "$HEX" ]]; then
     _captain_nsec=$(cat "${HOME}/.zen/game/nostr/${CAPTAINEMAIL:-}/secret.key" 2>/dev/null)
     if [[ -f "$_ni" && -n "$_captain_nsec" ]]; then
         # Texte compact : strip HTML, 400 chars max + lien IPFS
-        _dm_text=$(echo "${RAW_CONTENT:-$title}" \
-            | sed 's/<[^>]*>//g; s/&[a-z]*;//g; s/[[:space:]]\+/ /g' \
-            | tr -d '\n' | sed 's/^ //; s/ $//' | cut -c1-400)
+        # --no-ipfs-link : jamais d'extrait du contenu réel dans l'event NOSTR
+        # (même chiffré NIP-44, un secret ne doit pas transiter par un relay)
+        if [[ "$NO_IPFS_LINK" == "1" ]]; then
+            _dm_text="Contenu sensible — consultez directement votre email, jamais republié ici."
+        else
+            _dm_text=$(echo "${RAW_CONTENT:-$title}" \
+                | sed 's/<[^>]*>//g; s/&[a-z]*;//g; s/[[:space:]]\+/ /g' \
+                | tr -d '\n' | sed 's/^ //; s/ $//' | cut -c1-400)
+        fi
         _dm_payload=$(jq -n \
             --arg type "mailjet" \
             --arg subj "${title}" \

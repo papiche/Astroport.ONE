@@ -64,6 +64,7 @@ from prompt_safety import wrap_untrusted
 # interpréteur Python complet (~1-3s) à chaque appel Ollama.
 from question import answer_question
 import memory_manager as mm  # stdlib pur (urllib), aucun risque de réinvocation venv
+from bro_url_content import extract_urls
 
 from bro._shared import *
 from bro.nostr import *
@@ -951,6 +952,8 @@ def _handle_ia_responder_tags(owner_email, text, img_url=None):
             return entry["disabled_message"]
         if entry.get("requires_img") and not img_url:
             return entry["requires_img"]
+        if entry.get("requires_url") and not extract_urls(text):
+            return entry["requires_url"]
         media_type, payload = entry["build"](text, clean, img_url)
         return _dispatch_media_background(media_type, owner_email, payload)
 
