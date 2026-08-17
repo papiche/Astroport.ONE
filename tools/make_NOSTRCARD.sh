@@ -617,13 +617,6 @@ EOFJSON
             -e "s~_CORACLEURL_~${myCORACLE:-https://coracle.copylaradio.com}~g" \
         > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
 
-    if [[ "$Z" == ":ZEN" ]]; then
-        ## Replace Cesium Access with uSPOT/check_balance?g1pub=email (html output)
-        # Escape special characters in URLs for sed
-        sed -i "s~${myLIBRA}/ipfs/QmTnSdXe5nuAyYKWikU9vtRA84EDhwWc3michnevFFpR3g/#/wot/${G1PUBNOSTR}/~${uSPOT}/check_balance?g1pub=${EMAIL}~g" \
-            "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
-    fi
-
     ### MULTIPASS FOLLOWS CAPTAIN AUTOMATICALLY
     # New MULTIPASS should follow the CAPTAIN to receive updates and guidance
     # Only if CAPTAIN exists (not first user)

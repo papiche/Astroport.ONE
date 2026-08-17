@@ -408,7 +408,9 @@ fi
 
 ################### IMPORT MAILJET INTO IF $4=TW
 INDEX="$4"
-if [[ -s ${INDEX} ]]; then
+if [[ -s ${INDEX} ]] && [[ "$NO_IPFS_LINK" == "1" ]]; then
+    echo "⚠️ --no-ipfs-link actif : pas de CID à importer, TW_INDEX ignoré pour ${INDEX}" >&2
+elif [[ -s ${INDEX} ]]; then
     echo "INSERT ZINE INTO TW"
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
     mkdir -p ~/.zen/tmp/${MOATS}

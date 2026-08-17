@@ -1,6 +1,6 @@
 #!/bin/bash
 # purge_nostr_strangers.sh - Gestionnaire de purge du relay Nostr
-# Usage: ./purge_nostr_strangers.sh [--list | --clean | --dry-run | --help]
+# Usage: ./purge_nostr_strangers.sh [--list | --list-json | --clean | --dry-run | --help]
 #
 # PERFORMANCE : toutes les données (profils, volumes, kinds par auteur, DID) sont
 # récupérées via un nombre FIXE de scans `strfry scan` (un par type de donnée),
@@ -281,6 +281,24 @@ case "$1" in
         done
         ;;
 
+    --list-json)
+        # Sortie machine-readable — même schéma de classification que --list,
+        # avec un booléen purge_candidate par ligne (cf. PURGE_CANDIDATES) pour
+        # que l'appelant (nostr_admin.html, via UPassport) n'ait pas à reparser
+        # les emojis de AUTHOR_STATUS. Convention jq -cn par ligne + jq -s .
+        # (cf. oc2uplanet.sh::_sync_rows) plutôt qu'une construction O(n²).
+        for author in "${AUTHORS[@]}"; do
+            is_candidate=false
+            for c in "${PURGE_CANDIDATES[@]}"; do
+                [[ "${c%%|*}" == "$author" ]] && is_candidate=true && break
+            done
+            jq -cn --arg hex "$author" --arg name "${AUTHOR_DISPLAY_NAME[$author]}" \
+                --arg status "${AUTHOR_STATUS[$author]}" --argjson vol "${VOL_MAP[$author]:-0}" \
+                --argjson candidate "$is_candidate" \
+                '{hex:$hex, name:$name, status:$status, volume:$vol, purge_candidate:$candidate}'
+        done | jq -s '{authors: ., candidate_count: (map(select(.purge_candidate)) | length)}'
+        ;;
+
     --dry-run)
         echo "🧪 Mode Dry-Run : comptes cibles :"
         for entry in "${PURGE_CANDIDATES[@]}"; do
@@ -306,6 +324,7 @@ case "$1" in
     --help|-h)
         echo "Usage: $0 [OPTIONS]"
         echo "  --list      Affiche l'état de tous les auteurs (MULTIPASS et NODEs)."
+        echo "  --list-json Idem --list, en JSON (authors[], candidate_count) — usage web/admin."
         echo "  --dry-run   Simulation."
         echo "  --clean     Purge TOUT le monde sans confirmation."
         echo ""
