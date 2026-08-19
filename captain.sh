@@ -2142,6 +2142,72 @@ check_cooperative_balance() {
     return 0
 }
 
+# Fonction pour promouvoir un compte MULTIPASS existant au rôle de Capitaine
+# (au lieu d'en créer un nouveau). Retourne l'email choisi sur stdout et 0
+# en cas de succès, ou 1 si l'utilisateur annule / aucun compte disponible.
+promote_existing_to_captain() {
+    print_section "PROMOTION D'UN COMPTE EXISTANT EN CAPITAINE"
+
+    local accounts=()
+    while IFS= read -r acc; do
+        [[ -n "$acc" ]] && accounts+=("$acc")
+    done < <(ls ~/.zen/game/nostr 2>/dev/null | grep "@")
+
+    if [[ ${#accounts[@]} -eq 0 ]]; then
+        print_error "Aucun compte MULTIPASS existant sur cette station"
+        return 1
+    fi
+
+    echo -e "${CYAN}Comptes MULTIPASS disponibles sur cette station :${NC}"
+    echo ""
+    local i=1
+    for acc in "${accounts[@]}"; do
+        local zencard_status="${RED}ZEN Card absente${NC}"
+        [[ -d ~/.zen/game/players/$acc ]] && zencard_status="${GREEN}ZEN Card présente${NC}"
+        echo -e "  ${WHITE}$i)${NC} $acc  ($(echo -e "$zencard_status"))"
+        ((i++))
+    done
+    echo ""
+
+    local choice
+    read -p "Choisissez le numéro du compte à promouvoir Capitaine (ENTRÉE pour annuler): " choice
+    if [[ -z "$choice" ]]; then
+        print_info "Promotion annulée"
+        return 1
+    fi
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#accounts[@]} )); then
+        print_error "Choix invalide: $choice"
+        return 1
+    fi
+
+    local email="${accounts[$((choice-1))]}"
+    print_success "Compte sélectionné : $email"
+    echo ""
+
+    if [[ ! -d ~/.zen/game/players/$email ]]; then
+        print_warning "Ce compte MULTIPASS n'a pas encore de ZEN Card — elle est requise pour le rôle de Capitaine"
+
+        local multipass_info=$(get_multipass_info "$email")
+        local npub=$(echo "$multipass_info" | cut -d'|' -f1)
+        local hex=$(echo "$multipass_info" | cut -d'|' -f2)
+        local lat=$(echo "$multipass_info" | cut -d'|' -f3)
+        local lon=$(echo "$multipass_info" | cut -d'|' -f4)
+
+        if ! create_zen_card "$email" "$lat" "$lon" "$npub" "$hex"; then
+            print_error "Impossible de créer la ZEN Card — promotion annulée"
+            return 1
+        fi
+    else
+        # ZEN Card déjà présente : basculer simplement le lien .current dessus
+        rm -f ~/.zen/game/players/.current
+        ln -s ~/.zen/game/players/${email} ~/.zen/game/players/.current
+        print_success "Lien .current basculé vers ${email}"
+    fi
+
+    echo "$email"
+    return 0
+}
+
 # Fonction principale d'embarquement
 embark_captain() {
     print_header "BIENVENUE SUR ASTROPORT.ONE - EMBARQUEMENT DU CAPITAINE"
@@ -2180,86 +2246,110 @@ embark_captain() {
         return 1
     fi
     
-    # Étape 1: Création MULTIPASS
+    # Étape 1: Compte Capitaine — promouvoir un MULTIPASS existant ou en créer un nouveau
     local email="$PRESET_EMAIL"
     local lat="$PRESET_LAT"
     local lon="$PRESET_LON"
-    
-    if [[ -z "$email" ]]; then
-        if [[ "$AUTO_MODE" == "false" ]]; then
-            read -p "📧 Email: " email
-            [[ -z "$email" ]] && { print_error "Email requis"; return 1; }
-        else
-            print_error "Email requis en mode automatique. Utilisez --email"
-        return 1
-        fi
-    fi
-    
-    # Géolocalisation automatique si pas fournie
-    if [[ -z "$lat" || -z "$lon" ]]; then
-        if get_auto_geolocation; then
-            if [[ "$AUTO_MODE" == "false" ]]; then
-                read -p "📍 Latitude [$AUTO_LAT]: " lat
-                read -p "📍 Longitude [$AUTO_LON]: " lon
-                
-                [[ -z "$lat" ]] && lat="$AUTO_LAT"
-                [[ -z "$lon" ]] && lon="$AUTO_LON"
-            else
-                lat="$AUTO_LAT"
-                lon="$AUTO_LON"
-            fi
-        else
-            if [[ "$AUTO_MODE" == "false" ]]; then
-                read -p "📍 Latitude: " lat
-                read -p "📍 Longitude: " lon
-            else
-                print_error "Coordonnées requises en mode automatique. Utilisez --lat et --lon"
+    local use_existing=false
+
+    local existing_multipass_count=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
+    if [[ "$AUTO_MODE" == "false" && -z "$email" && $existing_multipass_count -gt 0 ]]; then
+        echo -e "${YELLOW}${existing_multipass_count} compte(s) MULTIPASS existent déjà sur cette station.${NC}"
+        echo ""
+        echo "  1) Promouvoir un compte MULTIPASS existant en Capitaine"
+        echo "  2) Créer un nouveau compte Capitaine (nouveau MULTIPASS + ZEN Card)"
+        echo ""
+        read -p "Votre choix [1/2]: " embark_mode_choice
+        echo ""
+        if [[ "$embark_mode_choice" == "1" ]]; then
+            email=$(promote_existing_to_captain)
+            if [[ $? -ne 0 || -z "$email" ]]; then
+                if [[ "$AUTO_MODE" == "false" ]]; then
+                    read -p "Appuyez sur ENTRÉE pour retourner au menu."
+                fi
                 return 1
             fi
+            use_existing=true
         fi
     fi
-    
-    # Valeurs par défaut
-    [[ -z "$lat" ]] && lat="0.00"
-    [[ -z "$lon" ]] && lon="0.00"
-    
-    # Créer le MULTIPASS
-    if ! create_multipass "$email" "$lat" "$lon" "$PRESET_LANG"; then
-        if [[ "$AUTO_MODE" == "false" ]]; then
-            read -p "Appuyez sur ENTRÉE pour retourner au menu."
+
+    if [[ "$use_existing" == "false" ]]; then
+        if [[ -z "$email" ]]; then
+            if [[ "$AUTO_MODE" == "false" ]]; then
+                read -p "📧 Email: " email
+                [[ -z "$email" ]] && { print_error "Email requis"; return 1; }
+            else
+                print_error "Email requis en mode automatique. Utilisez --email"
+            return 1
+            fi
         fi
-        return 1
-    fi
-    
-    # Vérifier que le compte MULTIPASS a bien été créé
-    local multipass_count=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
-    if [[ $multipass_count -eq 0 ]]; then
-        print_error "Aucun compte MULTIPASS trouvé. La création a échoué."
-        return 1
-    fi
-    
-    print_success "Compte MULTIPASS détecté!"
-    
-    # Étape 2: Création ZEN Card
-    # Récupérer les informations du MULTIPASS
-    local multipass_info=$(get_multipass_info "$email")
-    local npub=$(echo "$multipass_info" | cut -d'|' -f1)
-    local hex=$(echo "$multipass_info" | cut -d'|' -f2)
-    local multipass_lat=$(echo "$multipass_info" | cut -d'|' -f3)
-    local multipass_lon=$(echo "$multipass_info" | cut -d'|' -f4)
-    
-    # Utiliser les coordonnées du MULTIPASS si disponibles
-    [[ -n "$multipass_lat" ]] && lat="$multipass_lat"
-    [[ -n "$multipass_lon" ]] && lon="$multipass_lon"
-    
-    # Créer la ZEN Card
-    if ! create_zen_card "$email" "$lat" "$lon" "$npub" "$hex"; then
-        if [[ "$AUTO_MODE" == "false" ]]; then
-            read -p "Appuyez sur ENTRÉE pour continuer..."
+
+        # Géolocalisation automatique si pas fournie
+        if [[ -z "$lat" || -z "$lon" ]]; then
+            if get_auto_geolocation; then
+                if [[ "$AUTO_MODE" == "false" ]]; then
+                    read -p "📍 Latitude [$AUTO_LAT]: " lat
+                    read -p "📍 Longitude [$AUTO_LON]: " lon
+
+                    [[ -z "$lat" ]] && lat="$AUTO_LAT"
+                    [[ -z "$lon" ]] && lon="$AUTO_LON"
+                else
+                    lat="$AUTO_LAT"
+                    lon="$AUTO_LON"
+                fi
+            else
+                if [[ "$AUTO_MODE" == "false" ]]; then
+                    read -p "📍 Latitude: " lat
+                    read -p "📍 Longitude: " lon
+                else
+                    print_error "Coordonnées requises en mode automatique. Utilisez --lat et --lon"
+                    return 1
+                fi
+            fi
         fi
-        return 1
+
+        # Valeurs par défaut
+        [[ -z "$lat" ]] && lat="0.00"
+        [[ -z "$lon" ]] && lon="0.00"
+
+        # Créer le MULTIPASS
+        if ! create_multipass "$email" "$lat" "$lon" "$PRESET_LANG"; then
+            if [[ "$AUTO_MODE" == "false" ]]; then
+                read -p "Appuyez sur ENTRÉE pour retourner au menu."
+            fi
+            return 1
+        fi
+
+        # Vérifier que le compte MULTIPASS a bien été créé
+        local multipass_count=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
+        if [[ $multipass_count -eq 0 ]]; then
+            print_error "Aucun compte MULTIPASS trouvé. La création a échoué."
+            return 1
+        fi
+
+        print_success "Compte MULTIPASS détecté!"
+
+        # Étape 2: Création ZEN Card
+        # Récupérer les informations du MULTIPASS
+        local multipass_info=$(get_multipass_info "$email")
+        local npub=$(echo "$multipass_info" | cut -d'|' -f1)
+        local hex=$(echo "$multipass_info" | cut -d'|' -f2)
+        local multipass_lat=$(echo "$multipass_info" | cut -d'|' -f3)
+        local multipass_lon=$(echo "$multipass_info" | cut -d'|' -f4)
+
+        # Utiliser les coordonnées du MULTIPASS si disponibles
+        [[ -n "$multipass_lat" ]] && lat="$multipass_lat"
+        [[ -n "$multipass_lon" ]] && lon="$multipass_lon"
+
+        # Créer la ZEN Card
+        if ! create_zen_card "$email" "$lat" "$lon" "$npub" "$hex"; then
+            if [[ "$AUTO_MODE" == "false" ]]; then
+                read -p "Appuyez sur ENTRÉE pour continuer..."
+            fi
+            return 1
+        fi
     fi
-    
+
     # Étape 3: Mettre à jour le DID avec le statut CAPTAIN
     print_section "INSCRIPTION CAPITAINE - MISE À JOUR DU DID"
     
