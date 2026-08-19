@@ -432,6 +432,34 @@ EOFGOALS
         && "$OVH_TOOL" upsert "${YOUSER}" "/ipns/${NOSTRNS}" 2>/dev/null \
         || true
 
+    ## PUBLISH MINIMAL NOSTR PROFILE + RELAY LIST — BEFORE .multipass.json
+    ## UPassport's /g1nostr API polls for .multipass.json and returns the nsec
+    ## to the client the instant it appears (~10-15s in, see
+    ## UPassport/routers/identity.py). The enriched profile publish further
+    ## down (with Cesium+/GChange+ lookups) only runs after several more
+    ## network round-trips — a client logging in immediately after receiving
+    ## its nsec would query relays for its own kind:10002 relay list and find
+    ## nothing yet. Publish now with sane defaults instead: kind:0 and
+    ## kind:10002 are both replaceable events, so the enriched publish below
+    ## safely supersedes this one once Cesium+/GChange+ data — if any — comes
+    ## back.
+    [[ ${UPLANETG1PUB:0:8} == "g1LBF94v" ]] && _EARLY_ORIGIN="ORIGIN" || _EARLY_ORIGIN="${UPLANETG1PUB:0:8}"
+    _EARLY_AVATAR="$myLIBRA/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg"
+    ${MY_PATH}/../tools/nostr_setup_profile.py \
+        "$NPRIV" \
+        "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
+        "⏰ UPlanet Ẑen ${_EARLY_ORIGIN} // Welcome // ${myLIBRA}/ipns/copylaradio.com // DID: did:nostr:${HEX}" \
+        "$_EARLY_AVATAR" \
+        "$_EARLY_AVATAR" \
+        "" "$myLIBRA/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \
+        "wss://relay.copylaradio.com" "$myRELAY" \
+        --g1v2 "$G1PUBNOSTR" \
+        --email "$EMAIL" \
+        --ipns_vault "/ipns/${NOSTRNS}" \
+        &>/dev/null \
+        && echo "✅ Early Nostr profile + relay list published (relays ready before API response)" \
+        || echo "⚠️  Early Nostr profile publication failed (enriched republish further down will retry)"
+
     ## Create uSPOT/scan QR Code
     ## /ipfs/QmNd3abeAoUH1nGzwnaLNafRgtvwTSBCZyKqT8eBnEPQK9/u.scan.qr.png~/ipfs/$uSPOT_QR_ipfs
     amzqr "${uSPOT}/scan" -l H -p ${MY_PATH}/../templates/img/cloud_border.png \
