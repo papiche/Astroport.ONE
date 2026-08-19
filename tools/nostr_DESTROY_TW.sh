@@ -623,7 +623,13 @@ if [[ "$DUNIKEY_MATCHED" == "true" ]] && [[ -n "${AMOUNT_NUM}" ]]; then
     # Use bc for precise numeric comparison
     if echo "${AMOUNT_NUM} > 0" | bc -l 2>/dev/null | grep -q "1"; then
         echo "💸 Transferring ${AMOUNT} Ğ1 to primal account: ${prime}"
-        if ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "${AMOUNT}" "${prime}" "MULTIPASS:${youser}:PRIMAL:CASH-BACK" 2>/dev/null; then
+        # AMOUNT vient de G1check.sh --fresh, qui retourne le total_balance brut
+        # (cf. G1check.sh:117-118, convention ẐEN=(Ğ1-1)*10). PAYforSURE.sh compare
+        # en interne au transferable_balance (total - 1 Ğ1 de dépôt existentiel) :
+        # lui passer AMOUNT tel quel échoue systématiquement d'exactement 1 Ğ1
+        # ("Solde insuffisant"). "ALL" lui fait recalculer et transférer son propre
+        # solde transférable, sans ce décalage.
+        if ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "ALL" "${prime}" "MULTIPASS:${youser}:PRIMAL:CASH-BACK" 2>/dev/null; then
             echo "✅ G1 balance transferred successfully"
             CASHBACK_TRANSFERRED=true
         else
@@ -638,10 +644,14 @@ fi
 rm -f ~/.zen/tmp/nostr.dunikey
 
 # ── Texte de statut cashback pour les emails (montant en Ẑen, pas en Ğ1) ─────
-# 1 Ẑen = 0.1 Ğ1 (conversion directe d'un montant transféré, à ne pas
-# confondre avec la formule d'affichage de solde (COINS-1)*10 qui soustrait
-# le 1 Ğ1 de dépôt existentiel — ici AMOUNT est déjà le montant net transféré).
-AMOUNT_ZEN=$(makecoord $(echo "scale=2; ${AMOUNT_NUM:-0} * 10" | bc -l))
+# AMOUNT vient de G1check.sh --fresh = total_balance BRUT (cf. G1check.sh:117-118),
+# incluant le 1 Ğ1 de dépôt existentiel non transférable. Depuis que PAYforSURE.sh
+# est appelé en mode "ALL" (il recalcule et transfère son propre transferable_balance,
+# cf. commentaire ci-dessus), le montant réellement mobilisé/mobilisable ne peut pas
+# dépasser (AMOUNT - 1) — même formule que ZEN_BALANCE dans PAYforSURE.sh:324.
+AMOUNT_ZEN_RAW=$(echo "scale=2; (${AMOUNT_NUM:-0} - 1) * 10" | bc -l)
+[[ $(echo "${AMOUNT_ZEN_RAW} < 0" | bc -l 2>/dev/null) -eq 1 ]] && AMOUNT_ZEN_RAW="0"
+AMOUNT_ZEN=$(makecoord "${AMOUNT_ZEN_RAW}")
 [[ -z "$AMOUNT_ZEN" ]] && AMOUNT_ZEN="0.00"
 
 if [[ "$DUNIKEY_MATCHED" != "true" ]]; then
