@@ -422,30 +422,30 @@ ${MY_PATH}/TW/import_tiddler.sh \
     ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 
 ## GChange+/Cesium+ bootstrap et amis gérés par make_NOSTRCARD.sh → VISA.new.sh → Nostr WoT
+### DEPRECATED ### TiddlyWiki protocol goes to NOSTR
+# ##############################################################
+# # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
+# ##############################################################
+# if [[ $(echo "$COINS >= 1" | bc -l) -eq 1 ]]; then
+#     ##############################################################
+#     # G1PalPay.sh # WALLET TX/RX MONITORING
+#     ##############################################################
+#     echo "## RUNNING G1PalPay Wallet Monitoring "
+#     ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
 
-##############################################################
-# G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
-##############################################################
-if [[ $(echo "$COINS >= 1" | bc -l) -eq 1 ]]; then
-    ##############################################################
-    # G1PalPay.sh # WALLET TX/RX MONITORING
-    ##############################################################
-    echo "## RUNNING G1PalPay Wallet Monitoring "
-    ${MY_PATH}/G1PalPay.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}"
+#     ##############################################################
+#     # VOEUX.create.sh # TAG=voeu SUB KEY CREATION
+#     ##############################################################
+#     ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
 
-    ##############################################################
-    # VOEUX.create.sh # TAG=voeu SUB KEY CREATION
-    ##############################################################
-    ${MY_PATH}/VOEUX.create.sh ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html "${PLAYER}" "${G1PUB}"
+#     ##############################################################
+#     # VOEUX.refresh.sh # "G1Voeu" SUB RSS MERGINGS
+#     ##############################################################
+#     ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
-    ##############################################################
-    # VOEUX.refresh.sh # "G1Voeu" SUB RSS MERGINGS
-    ##############################################################
-    ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
-
-else
-    echo "> ZenCard non activée ($COINS G1 / $ZEN ẐEN) — COINS < 1"
-fi
+# else
+#     echo "> ZenCard non activée ($COINS G1 / $ZEN ẐEN) — COINS < 1"
+# fi
 
 ##################################
 ## PATCH : RESTORE PLAYER GPS.json (protect cache erased by WISH treatment)
