@@ -4,7 +4,8 @@
 # Télécharge une vidéo/audio YouTube via yt-dlp.
 # Priorité cookies : fichier MULTIPASS → navigateur par défaut → sans cookie
 # Deno uniquement en dernier recours (si premier essai échoue).
-# Usage: $0 [--json-file FILE] [--debug] [--output-dir DIR] <url> <format> [player_email]
+# Usage: $0 [--json-file FILE] [--debug] [--output-dir DIR] <url> <format> [player_email] [sub_lang]
+#        $0 --list-subs [--json-file FILE] [--debug] <url>   # liste les sous-titres dispo
 ########################################################################
 
 source "$HOME/.zen/Astroport.ONE/tools/my.sh"
@@ -12,6 +13,7 @@ source "$HOME/.zen/Astroport.ONE/tools/my.sh"
 DEBUG=0
 CUSTOM_OUTPUT_DIR=""
 JSON_FILE=""
+LIST_SUBS=0
 LOGFILE="$HOME/.zen/tmp/ajouter_media.log"
 mkdir -p "$(dirname "$LOGFILE")"
 
@@ -34,6 +36,7 @@ output_json() {
 while [[ $# -gt 0 ]]; do
     case $1 in
         --debug) DEBUG=1; shift ;;
+        --list-subs) LIST_SUBS=1; shift ;;
         --json|--no-ipfs) shift ;;
         --json-file) JSON_FILE="$2"; shift 2 ;;
         --output-dir) CUSTOM_OUTPUT_DIR="$2"; shift 2 ;;
@@ -41,14 +44,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [ $# -lt 2 ]; then
-    log_debug "Usage: $0 [--debug] [--output-dir DIR] <url> <format> [player_email]"
-    exit 1
+if [[ $LIST_SUBS -eq 1 ]]; then
+    [ $# -lt 1 ] && { log_debug "Usage: $0 --list-subs <url>"; exit 1; }
+else
+    if [ $# -lt 2 ]; then
+        log_debug "Usage: $0 [--debug] [--output-dir DIR] <url> <format> [player_email] [sub_lang]"
+        exit 1
+    fi
 fi
 
 URL="$1"
 FORMAT="$2"
 PLAYER_EMAIL="$3"
+SUB_LANG="$4"
 
 if [[ ! "$URL" =~ ^https?:// ]]; then URL="ytsearch1:$URL"; fi
 
@@ -130,6 +138,20 @@ if [[ -n "$DENO_BIN" ]]; then
 fi
 BASE_ARGS="$DENO_ARGS $COOKIESRC $BGUTIL_ARG"
 
+# --- 5bis. LISTE DES SOUS-TITRES (mode --list-subs) ---
+if [[ $LIST_SUBS -eq 1 ]]; then
+    log_debug "Listing subtitles for: $URL"
+    subs_dump=$(timeout 30 yt-dlp $BASE_ARGS --no-playlist --no-warnings --skip-download \
+        --dump-json "$URL" 2>>"$LOGFILE")
+    subs_json=$(echo "$subs_dump" | jq -c '{
+        subtitles: ((.subtitles // {}) | keys),
+        automatic_captions: ((.automatic_captions // {}) | keys)
+    }' 2>/dev/null)
+    [[ -z "$subs_json" ]] && subs_json='{"subtitles":[],"automatic_captions":[]}'
+    output_json "$subs_json"
+    exit 0
+fi
+
 log_debug "Extracting metadata for: $URL"
 # Attention : l'ordre ici DOIT être id | duration | uploader | title
 # --no-playlist : si l'URL contient v=ID&list=..., télécharge uniquement la vidéo v=ID
@@ -144,9 +166,10 @@ if [[ -z "$metadata_line" ]]; then
 fi
 
 # Découpage aligné avec la commande --print
+video_id=$(echo "$metadata_line" | cut -d '|' -f 1 | tr -d '\n')
 duration=$(echo "$metadata_line" | cut -d '|' -f 2 | tr -d '\n')
 uploader=$(echo "$metadata_line" | cut -d '|' -f 3 | tr -d '\n')
-raw_title=$(echo "$metadata_line" | cut -d '|' -f 4- | tr -d '\n')
+raw_title=$(echo "$metadata_line" | cut -d '|' -f 4- | tr -d '\n\r')
 
 # Protection : Si yt-dlp renvoie "NA" (ex: vidéo en direct), on force à 0 pour éviter le crash de Bash
 if ! [[ "$duration" =~ ^[0-9]+$ ]]; then
@@ -154,7 +177,9 @@ if ! [[ "$duration" =~ ^[0-9]+$ ]]; then
 fi
 
 media_title=$(echo "$raw_title" | detox --inline 2>/dev/null | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 100)
-[[ -z "$media_title" ]] && media_title="video_$(date +%s)"
+# Titre non-latin (arabe, cyrillique, CJK...) : detox le réduit à une chaîne vide.
+# On garde le nom de fichier lisible/traçable via l'ID YouTube plutôt qu'un timestamp opaque.
+[[ -z "$media_title" ]] && media_title="video_${video_id:-$(date +%s)}"
 
 # Calcul dynamique pour rester sous 650Mo
 VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=480]+ba/b[height<=480]/bv*[ext=mp4]+ba/b)"
@@ -172,6 +197,15 @@ fi
 # --- 6. TÉLÉCHARGEMENT ---
 log_debug "Starting download"
 COMMON_ARGS="$BASE_ARGS --no-playlist --concurrent-fragments 1 --socket-timeout 120"
+
+# Sous-titres (incrustation choisie côté ajouter_media.sh) : on tente d'abord
+# les sous-titres manuels, puis les auto-générés si aucun manuel pour cette langue
+SUB_ARGS=""
+if [[ "$FORMAT" == "mp4" && -n "$SUB_LANG" ]]; then
+    SUB_ARGS="--write-subs --write-auto-subs --sub-langs $SUB_LANG --convert-subs srt"
+    log_debug "Subtitles requested: $SUB_LANG"
+fi
+
 case "$FORMAT" in
     mp3)
         download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS \
@@ -180,7 +214,7 @@ case "$FORMAT" in
             -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
         ;;
     mp4)
-        download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS \
+        download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS $SUB_ARGS \
             -f "$VIDEO_FORMAT_FILTER" -S "res,ext:mp4:m4a" --recode-video mp4 \
             --no-mtime --embed-thumbnail --add-metadata --write-info-json \
             -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
@@ -194,7 +228,7 @@ if [[ $download_exit_code -ne 0 ]] && echo "$download_output" | grep -qE "403|Fo
     YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv'
     case "$FORMAT" in
         mp4)
-            download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS $YT_EXTRACTOR_ARGS \
+            download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS $YT_EXTRACTOR_ARGS $SUB_ARGS \
                 -f "$VIDEO_FORMAT_FILTER" --recode-video mp4 --write-info-json \
                 -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
             ;;
@@ -224,6 +258,8 @@ fi
 
 filename=$(basename "$media_file")
 metadata_file=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.info.json" 2>/dev/null | head -n 1)
+subtitle_file=""
+[[ -n "$SUB_LANG" ]] && subtitle_file=$(find "$OUTPUT_DIR" -maxdepth 1 -iname "*.srt" 2>/dev/null | head -n 1)
 
 # LE GROS BLOC JQ (Vital pour l'info.json v2.0 du contrat)
 YOUTUBE_METADATA_JSON="{}"
@@ -237,21 +273,23 @@ if [[ -n "$metadata_file" && -f "$metadata_file" ]] && command -v jq &>/dev/null
 fi
 
 json_output=$(jq -n \
-    --arg title "$media_title" \
+    --arg title "$raw_title" \
     --arg filename "$filename" \
     --arg file_path "$media_file" \
     --arg output_dir "$OUTPUT_DIR" \
     --arg duration "${duration:-0}" \
     --arg metadata_file "${metadata_file:-}" \
+    --arg subtitle_file "${subtitle_file:-}" \
     --argjson yt_meta "$YOUTUBE_METADATA_JSON" \
     '{
     success: true,
-    title: $title,
+    title: ($yt_meta.title // $title),
     filename: $filename,
     file_path: $file_path,
     output_dir: $output_dir,
     duration: ($duration | tonumber? // 0),
     metadata_file: $metadata_file,
+    subtitle_file: $subtitle_file,
     youtube_metadata: $yt_meta
 }')
 

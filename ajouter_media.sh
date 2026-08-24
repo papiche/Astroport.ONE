@@ -1000,6 +1000,38 @@ _yt_interrupt() {
 }
 
 ########################################################################
+# Incrustation de sous-titres dans une vidéo (comme pour Film/Série)
+# GPU : nvenc → vaapi → CPU libx264. Piste audio recopiée telle quelle.
+# Arg $1: source, $2: fichier sous-titres (.srt/.vtt/.ass), $3: destination
+_burn_subtitles() {
+    local src="$1" sub="$2" dst="$3"
+    local vf="subtitles='${sub}'"
+
+    if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null 2>&1; then
+        echo "🎮 Incrustation sous-titres GPU (nvenc)"
+        ffmpeg -loglevel error -hwaccel cuda -i "$src" -vf "$vf" \
+            -c:a copy -c:v h264_nvenc -preset p4 -profile:v main -rc vbr -cq 21 \
+            -y "$dst" 2>/dev/null && return 0
+        echo "⚠️  nvenc échoué — tentative VA-API..."
+    fi
+
+    local vdev
+    vdev=$(find /dev/dri -name 'renderD*' 2>/dev/null | sort | head -1)
+    if [[ -n "$vdev" ]]; then
+        echo "🎮 Incrustation sous-titres GPU (VA-API $vdev)"
+        ffmpeg -loglevel error -vaapi_device "$vdev" -i "$src" -vf "${vf},format=nv12,hwupload" \
+            -c:a copy -c:v h264_vaapi -rc_mode VBR \
+            -y "$dst" 2>/dev/null && return 0
+        echo "⚠️  vaapi échoué — repli CPU..."
+    fi
+
+    echo "🖥️  Incrustation sous-titres CPU (libx264)"
+    ffmpeg -loglevel error -i "$src" -vf "$vf" \
+        -c:a copy -c:v libx264 -profile:v main -preset fast -crf 21 \
+        -y "$dst" 2>/dev/null
+}
+
+########################################################################
 ########################################################################
 case ${CAT} in
 ########################################################################
@@ -1033,6 +1065,27 @@ case ${CAT} in
     echo "VIDEO $YTURL"
     echo "Processing URL: $YTURL"
 
+    # Choix de l'incrustation des sous-titres (comme pour Film/Série)
+    SUB_LANG=""
+    if [[ "${MEDIA_INTERACTIVE:-yes}" != "no" ]] && command -v zenity &>/dev/null; then
+        echo "🔍 Recherche des sous-titres disponibles..."
+        SUBS_LIST_JSON=$(${HOME}/.zen/Astroport.ONE/IA/scrapers/youtube/process_youtube.sh --list-subs "$YTURL" 2>/dev/null)
+        if echo "$SUBS_LIST_JSON" | jq -e '.' >/dev/null 2>&1; then
+            mapfile -t AVAILABLE_SUBS < <(echo "$SUBS_LIST_JSON" | jq -r '((.subtitles // []) + (.automatic_captions // [])) | unique | .[]' 2>/dev/null)
+            if [[ ${#AVAILABLE_SUBS[@]} -gt 0 ]]; then
+                SUB_CHOICE=$(zenity --list --width 420 --height 320 --title="📝 Sous-titres" \
+                    --text="Incruster des sous-titres dans la vidéo ?" \
+                    --column="Langue" "Aucun" "${AVAILABLE_SUBS[@]}" 2>/dev/null)
+                if [[ -n "$SUB_CHOICE" && "$SUB_CHOICE" != "Aucun" ]]; then
+                    SUB_LANG="$SUB_CHOICE"
+                    echo "📝 Sous-titres choisis : $SUB_LANG"
+                fi
+            else
+                echo "ℹ️  Aucun sous-titre disponible pour cette vidéo"
+            fi
+        fi
+    fi
+
     # Create temporary download directory
     TEMP_YOUTUBE_DIR="$HOME/.zen/tmp.media/youtube_$(date -u +%s%N | cut -b1-13)"
     mkdir -p "$TEMP_YOUTUBE_DIR"
@@ -1048,7 +1101,7 @@ case ${CAT} in
     ${HOME}/.zen/Astroport.ONE/IA/scrapers/youtube/process_youtube.sh \
         --json-file "$JSON_OUTPUT_FILE" \
         --output-dir "$TEMP_YOUTUBE_DIR" \
-        "$YTURL" "mp4" "$PLAYER" &
+        "$YTURL" "mp4" "$PLAYER" "$SUB_LANG" &
     _YT_PID=$!
 
     _yt_watchdog "$TEMP_YOUTUBE_DIR" "$_YT_PID" &
@@ -1092,7 +1145,7 @@ case ${CAT} in
             ${HOME}/.zen/Astroport.ONE/IA/scrapers/youtube/process_youtube.sh \
                 --json-file "$JSON_OUTPUT_FILE" \
                 --output-dir "$TEMP_YOUTUBE_DIR" \
-                "$YTURL" "mp4" "$PLAYER"
+                "$YTURL" "mp4" "$PLAYER" "$SUB_LANG"
             if [[ ! -f "$JSON_OUTPUT_FILE" || ! -s "$JSON_OUTPUT_FILE" ]]; then
                 espeak "YouTube download failed after cookie" && exit 1
             fi
@@ -1113,12 +1166,16 @@ case ${CAT} in
     fi
 
     # Extraction des données
-    TITLE_RAW=$(echo "$YOUTUBE_JSON" | jq -r '.title // empty')
-    TITLE=$(echo "$TITLE_RAW" | sed 's/_/ /g' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
     DURATION=$(echo "$YOUTUBE_JSON" | jq -r '.duration // "0"')
     FILENAME=$(echo "$YOUTUBE_JSON" | jq -r '.filename // empty')
+    # Titre réel (non assaini) exposé par process_youtube.sh — ne plus reconvertir
+    # les "_" en espaces : ce n'est plus un nom de fichier detoxé (cf. fix titres non-latins)
+    TITLE_RAW=$(echo "$YOUTUBE_JSON" | jq -r '.title // empty')
+    TITLE=$(echo "$TITLE_RAW" | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
+    [[ -z "$TITLE" ]] && TITLE="$FILENAME"
     FILE_PATH_DOWNLOADED=$(echo "$YOUTUBE_JSON" | jq -r '.file_path // empty')
     METADATA_FILE_FROM_JSON=$(echo "$YOUTUBE_JSON" | jq -r '.metadata_file // empty')
+    SUBTITLE_FILE=$(echo "$YOUTUBE_JSON" | jq -r '.subtitle_file // empty')
 
     if [[ -z "$FILENAME" || -z "$FILE_PATH_DOWNLOADED" || ! -f "$FILE_PATH_DOWNLOADED" ]]; then
         echo "❌ ERROR: Downloaded file not found."
@@ -1128,6 +1185,24 @@ case ${CAT} in
 
     echo "✅ Downloaded: $FILENAME (Duration: $DURATION s)"
     espeak "Download completed successfully." 2>/dev/null || true
+
+    # Incrustation des sous-titres (choisis avant le téléchargement)
+    if [[ -n "$SUBTITLE_FILE" && -f "$SUBTITLE_FILE" ]]; then
+        echo "📝 Incrustation des sous-titres ($SUB_LANG)..."
+        notify_user "Incrustation des sous-titres…" normal
+        espeak "Burning subtitles into video" 2>/dev/null || true
+        SUBTITLED_FILE="${FILE_PATH_DOWNLOADED%.*}_subs.mp4"
+        if _burn_subtitles "$FILE_PATH_DOWNLOADED" "$SUBTITLE_FILE" "$SUBTITLED_FILE" && [[ -s "$SUBTITLED_FILE" ]]; then
+            rm -f "$FILE_PATH_DOWNLOADED"
+            FILE_PATH_DOWNLOADED="$SUBTITLED_FILE"
+            FILENAME="$(basename "$SUBTITLED_FILE")"
+            echo "✅ Sous-titres incrustés"
+            notify_user "Sous-titres incrustés ✅" normal
+        else
+            echo "⚠️  Échec incrustation sous-titres — vidéo originale conservée"
+            rm -f "$SUBTITLED_FILE"
+        fi
+    fi
 
     # NIP-42 Authentication
     echo "🔐 Sending NIP-42 authentication event..."
