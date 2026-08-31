@@ -341,31 +341,31 @@ rnc_repair_tier1() {
     # Bio narrative BRO (identity/*.md) — jamais écrasée si déjà présente
     mkdir -p "${NDIR}/identity/"
     if [[ "${DRY}" != "1" ]]; then
-        [[ ! -f "${NDIR}/identity/.Core.md" ]] && cat > "${NDIR}/identity/.Core.md" <<'EOFCORE'
+        [[ ! -s "${NDIR}/identity/.Core.md" ]] && cat > "${NDIR}/identity/.Core.md" <<'EOFCORE'
 <!--
   Qui es-tu ? Ton métier, ta mission, ce qui te définit.
   Écris librement en dessous de ce commentaire — BRO le lira à chaque réponse.
 -->
 EOFCORE
-        [[ ! -f "${NDIR}/identity/.Style.md" ]] && cat > "${NDIR}/identity/.Style.md" <<'EOFSTYLE'
+        [[ ! -s "${NDIR}/identity/.Style.md" ]] && cat > "${NDIR}/identity/.Style.md" <<'EOFSTYLE'
 <!--
   Ton ton : tutoiement ou vouvoiement, concis ou verbeux, emojis préférés,
   expressions à éviter ou à privilégier.
 -->
 EOFSTYLE
-        [[ ! -f "${NDIR}/identity/.Rules.md" ]] && cat > "${NDIR}/identity/.Rules.md" <<'EOFRULES'
+        [[ ! -s "${NDIR}/identity/.Rules.md" ]] && cat > "${NDIR}/identity/.Rules.md" <<'EOFRULES'
 <!--
   Ce que BRO ne doit jamais faire ou dire en ton nom.
 -->
 EOFRULES
-        [[ ! -f "${NDIR}/identity/.Preferences.md" ]] && cat > "${NDIR}/identity/.Preferences.md" <<'EOFPREFS'
+        [[ ! -s "${NDIR}/identity/.Preferences.md" ]] && cat > "${NDIR}/identity/.Preferences.md" <<'EOFPREFS'
 <!--
   Tes préférences et contraintes personnelles (santé, alimentation,
   centres d'intérêt...). BRO peut proposer d'y ajouter une ligne quand
   tu lui confies une information durable via #rec.
 -->
 EOFPREFS
-        [[ ! -f "${NDIR}/identity/.Objectifs.md" ]] && cat > "${NDIR}/identity/.Objectifs.md" <<'EOFGOALS'
+        [[ ! -s "${NDIR}/identity/.Objectifs.md" ]] && cat > "${NDIR}/identity/.Objectifs.md" <<'EOFGOALS'
 <!--
   Tes objectifs en cours, un par ligne, au format checkbox :
     - [ ] Avancer sur DevOps

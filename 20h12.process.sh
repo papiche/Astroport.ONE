@@ -65,6 +65,13 @@ _RAW_CRON_LOG="$LOG_DIR/20h12.log"
 if [[ -f "$_RAW_CRON_LOG" ]] && [[ $(stat -c%s "$_RAW_CRON_LOG" 2>/dev/null || echo 0) -gt 2000000 ]]; then
     tail -n 200 "$_RAW_CRON_LOG" > "${_RAW_CRON_LOG}.tmp" && mv "${_RAW_CRON_LOG}.tmp" "$_RAW_CRON_LOG"
 fi
+## Rotation défensive du log d'erreurs backfill constellation (fichier
+## persistant hors ~/.zen/tmp/, donc jamais purgé par le nettoyage quotidien —
+## observé à 80000+ lignes / 6.8Mo après plusieurs semaines de retries P2P)
+_CONST_ERR_LOG="$HOME/.zen/strfry/constellation-backfill.error.log"
+if [[ -f "$_CONST_ERR_LOG" ]] && [[ $(stat -c%s "$_CONST_ERR_LOG" 2>/dev/null || echo 0) -gt 2000000 ]]; then
+    tail -n 3000 "$_CONST_ERR_LOG" > "${_CONST_ERR_LOG}.tmp" && mv "${_CONST_ERR_LOG}.tmp" "$_CONST_ERR_LOG"
+fi
 LOG_FILE="$LOG_DIR/20h12_$(date +%Y%m%d).log"
 
 ## Anti-doublon : le cron horaire fixe (heure solaire) ET le rattrapage @reboot
@@ -285,15 +292,67 @@ else:
         print(f"- {tool} : {n}x ({'reussi' if ok else 'echec'})")
 PYEOF
 
-echo "=== YOUTUBE / IA SCRAPERS ===================================" >> $LOG_FILE
-tail -n 300 $HOME/.zen/tmp/IA.log 2>/dev/null >> $LOG_FILE
-tail -n 300 $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
+## N'afficher que les lignes signal (erreur/échec) — IA.log peut contenir
+## le prompt LLM complet (génération de message de commit) sur plusieurs
+## dizaines de lignes sans aucun rapport avec un incident à surveiller.
+echo "=== YOUTUBE / IA SCRAPERS (erreurs/avertissements) ===========" >> $LOG_FILE
+_yt_ia_hits=$(grep -hEi "error|warn|échec|failed|exception" \
+    $HOME/.zen/tmp/IA.log $HOME/.zen/tmp/youtube.com_* 2>/dev/null | tail -n 50)
+if [[ -n "$_yt_ia_hits" ]]; then
+    echo "$_yt_ia_hits" >> "$LOG_FILE"
+else
+    echo "(aucune erreur/avertissement détecté)" >> "$LOG_FILE"
+fi
 
-echo "=== NOSTR / CONSTELLATION ERRORS =============================" >> $LOG_FILE
-for file in $HOME/.zen/tmp/nostr_*.log; do
-    tail -n 300 "$file" 2>/dev/null >> "$LOG_FILE"
-done
-tail -n 300 $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
+## Résumé compté plutôt que dump brut : les retries P2P (backfill
+## constellation) et "NO PROFILE FOUND" par pubkey se répètent à l'identique
+## des dizaines de fois par jour — seul le compte importe pour la surveillance,
+## pas chaque occurrence individuelle.
+echo "=== NOSTR / CONSTELLATION ERRORS (résumé 24h) ==================" >> $LOG_FILE
+python3 - <<'PYEOF' >> "$LOG_FILE" 2>/dev/null
+import glob, os, re
+
+ERROR_CAP = 30
+WARN_CAP = 20
+READ_TAIL = 3000  # lignes lues par fichier (constellation-backfill.error.log
+                   # est persistant, jamais vidé par le nettoyage de ~/.zen/tmp/)
+
+hex_re = re.compile(r'\b[0-9a-f]{6,}(\.\.\.)?\b', re.I)
+ts_re = re.compile(r'^\[?\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}\]?\s*-?\s*')
+
+files = sorted(glob.glob(os.path.expanduser("~/.zen/tmp/nostr_*.log")))
+files.append(os.path.expanduser("~/.zen/strfry/constellation-backfill.error.log"))
+
+errors, warn_counts, total_warn = [], {}, 0
+for path in files:
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()[-READ_TAIL:]
+    except FileNotFoundError:
+        continue
+    for line in lines:
+        line = line.rstrip("\n")
+        if "[ERROR]" in line or " ERROR " in line:
+            errors.append(line)
+        elif "[WARN]" in line or " WARN " in line:
+            key = hex_re.sub("<hex>", ts_re.sub("", line))
+            warn_counts[key] = warn_counts.get(key, 0) + 1
+            total_warn += 1
+
+if errors:
+    print(f"ERREURS ({len(errors)}, {min(len(errors), ERROR_CAP)} dernières affichées) :")
+    for e in errors[-ERROR_CAP:]:
+        print(f"  {e}")
+else:
+    print("Aucune ERROR")
+
+if warn_counts:
+    print(f"\nAVERTISSEMENTS ({total_warn} occurrences, top {WARN_CAP}) :")
+    for msg, n in sorted(warn_counts.items(), key=lambda kv: -kv[1])[:WARN_CAP]:
+        print(f"  {n:>4}x  {msg}")
+else:
+    print("Aucun WARN")
+PYEOF
 
 echo "=== SYSTEM/INSTALL ERRORS ====================================" >> $LOG_FILE
 if [ -f "$HOME/.zen/install.errors.log" ]; then
