@@ -36,6 +36,7 @@ PACKAGES=(
     robohash substrate-interface websocket-client websockets imap_tools
     "fastapi<0.111,>=0.110" "starlette<0.37,>=0.36.3" aiofiles jinja2
     python-multipart python-magic uvicorn python-telegram-bot
+    qdrant-client vobject phonenumbers astronomy-engine
 )
 # fastapi/starlette épinglés (voir install.sh, même incident du 2026-07-28)
 

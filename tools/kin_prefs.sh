@@ -19,7 +19,7 @@
 _KIN_DAILY=true
 _KIN_WEEKLY=true
 _KIN_SCOPE="relay"
-_KIN_TYPES="quartet occult analog tone guide antipode"
+_KIN_TYPES="quartet occult analog tone guide antipode synastry synastry_group"
 _KIN_SCAN_FILTER='{"kinds":[30800]}'
 _KIN_LANGAGE="curieux"   # pragmatique | curieux | symbolique | cosmique
 
@@ -32,7 +32,7 @@ _kin_prefs_load() {
     # Réinitialiser aux défauts
     _KIN_DAILY=true; _KIN_WEEKLY=true
     _KIN_SCOPE="relay"
-    _KIN_TYPES="quartet occult analog tone guide antipode"
+    _KIN_TYPES="quartet occult analog tone guide antipode synastry synastry_group"
 
     [[ ! -f "$_pfile" ]] && return 0
 
@@ -47,7 +47,7 @@ _kin_prefs_load() {
     _kd=$(jq -r '.kin.daily  // true'                                              "$_pfile" 2>/dev/null)
     _kw=$(jq -r '.kin.weekly // true'                                              "$_pfile" 2>/dev/null)
     _ks=$(jq -r '.kin.scope  // "relay"'                                           "$_pfile" 2>/dev/null)
-    _kt=$(jq -r '(.kin.types // ["quartet","occult","analog","tone","guide","antipode"]) | join(" ")' \
+    _kt=$(jq -r '(.kin.types // ["quartet","occult","analog","tone","guide","antipode","synastry","synastry_group"]) | join(" ")' \
                                                                                     "$_pfile" 2>/dev/null)
 
     [[ "$_kd" == "false" ]] && _KIN_DAILY=false
@@ -137,11 +137,12 @@ _kin_vibe_intro() {
     # Normaliser le type
     local _t="paire"
     case "$_gtype" in
-        *Quatuor*)  _t="quatuor" ;;
-        *Guide*)    _t="guide"   ;;
-        *Antipode*) _t="antipode";;
-        *Tonalit*)  _t="groupe"  ;;
-        *)          _t="paire"   ;;
+        *Quatuor*)   _t="quatuor"   ;;
+        *Guide*)     _t="guide"     ;;
+        *Antipode*)  _t="antipode"  ;;
+        *Synastrie*) _t="synastrie" ;;
+        *Tonalit*)   _t="groupe"    ;;
+        *)           _t="paire"     ;;
     esac
 
     local _html=""
@@ -158,6 +159,8 @@ _kin_vibe_intro() {
             _html="Le calendrier Tzolkin place ces deux profils dans une relation de transmission naturelle — l'un a développé des compétences que l'autre est en train d'acquérir." ;;
         pragmatique:antipode)
             _html="Ces deux profils Tzolkin se font face — perspectives diamétralement opposées qui, en dialogue, produisent souvent des idées qu'aucun des deux n'aurait trouvées seul." ;;
+        pragmatique:synastrie)
+            _html="En complément du Tzolkin, une comparaison des positions du Soleil, de la Lune, de Vénus et de Mars à la naissance fait ressortir un aspect marquant entre vos deux thèmes — une donnée indépendante du calendrier maya qui pointe dans la même direction." ;;
 
         # ── CURIEUX ──
         curieux:paire)
@@ -170,6 +173,8 @@ _kin_vibe_intro() {
             _html="Le Tzolkin détecte une relation de mentorat naturelle entre ces profils — le &laquo;&nbsp;Guide&nbsp;&raquo; a traversé un chemin que l'autre est en train d'explorer. Ça peut valoir une conversation." ;;
         curieux:antipode)
             _html="En Tzolkin, l'&laquo;&nbsp;Antipode&nbsp;&raquo; est votre &laquo;&nbsp;challenger créateur&nbsp;&raquo; — celui dont la vision vous bouscule utilement. La tension est réelle, mais souvent productive." ;;
+        curieux:synastrie)
+            _html="Au-delà du Tzolkin, l'astrologie occidentale compare aussi les planètes du jour de naissance — Soleil, Lune, Vénus, Mars. Un aspect marquant ressort entre vos deux thèmes, avec un tout autre calendrier que le maya." ;;
 
         # ── SYMBOLIQUE ──
         symbolique:paire)
@@ -182,6 +187,8 @@ _kin_vibe_intro() {
             _html="Dans l'Oracle Dreamspell, le Guide est le 5ème pouvoir — le mentor de la même famille-couleur. Cette relation n'est pas hiérarchique&nbsp;: le Guide a traversé le chemin, le guidé l'éclaire d'un regard neuf." ;;
         symbolique:antipode)
             _html="L'Antipode est votre défi créateur — sceau+10, tonalité miroir. Pas un ennemi, mais un <em>sparring partner</em> cosmique. Là où vous avancez, il questionne. Là où il doute, vous éclairez." ;;
+        symbolique:synastrie)
+            _html="La synastrie occidentale superpose vos deux ciels de naissance. Un aspect entre vos planètes — <em>angle exact ou presque</em> — vient éclairer d'une autre lumière ce que le Tzolkin avait déjà esquissé." ;;
 
         # ── COSMIQUE ──
         cosmique:paire)
@@ -194,6 +201,8 @@ _kin_vibe_intro() {
             _html="Le Guide et son guidé sont deux expressions d'une même conscience en mouvement. L'un a intégré ce que l'autre est venu apprendre — et en retour, le guidé rappelle au Guide l'essentiel de sa propre origine." ;;
         cosmique:antipode)
             _html="L'Antipode est la partie de vous-même qui s'est incarnée dans un autre corps pour vous offrir le défi dont vous aviez besoin. Votre friction n'est pas un accident&nbsp;: c'est le frottement qui allume la lumière." ;;
+        cosmique:synastrie)
+            _html="Le ciel du jour de votre naissance porte sa propre mémoire. Vos planètes — Soleil, Lune, Vénus, Mars — dessinent un dialogue silencieux entre vos deux thèmes, une résonance qui existait avant même que le Tzolkin ne la nomme." ;;
 
         # Fallback
         *)

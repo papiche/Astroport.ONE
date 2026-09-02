@@ -946,7 +946,7 @@ _PIP_PKGS=(
     robohash substrate-interface websocket-client websockets imap_tools
     "fastapi<0.111,>=0.110" "starlette<0.37,>=0.36.3" aiofiles jinja2
     python-multipart python-magic uvicorn python-telegram-bot
-    qdrant-client vobject phonenumbers
+    qdrant-client vobject phonenumbers astronomy-engine
 )
 # fastapi/starlette épinglés depuis l'incident du 2026-07-28 : un `pip install -U`
 # sans borne fait sauter fastapi vers une version qui tire une starlette

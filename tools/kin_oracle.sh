@@ -260,6 +260,7 @@ declare -A email_k_count=()  # email → nombre de résonances live
 declare -A email_resonance_graph=() # email → "email1:k1 email2:k2 …" (graphe pairs)
 declare -A email_kin_conception=()  # email → kin_conception depuis Kind 30078
 declare -A email_archetype=()       # email → archétype alchimique (texte)
+declare -A email_natal_planets=()   # email → JSON positions Soleil/Lune/Vénus/Mars (planet_oracle.py)
 
 # ─── Scan DID (kind 30800) : peupler pubkey_email[], email_phi[], email_nostrns[] ──
 _scan_did_mapping() {
@@ -372,6 +373,81 @@ print('ok' if expected==proof else 'fail')
         ((count++))
     done < <(cd "$strfry_dir" && ./strfry scan '{"kinds":[30078],"#d":["atom4love"]}' 2>/dev/null)
     echo "$count"
+}
+
+# ─── Synastrie planétaire (Soleil/Lune/Vénus/Mars) via planet_oracle.py ──────
+# .BIRTHDATE et .birth_gps sont en clair sur la station (écrits par
+# atom4love_activate.sh) — pas besoin de déchiffrer l'événement atom4love-priv.
+
+_planet_oracle_py() {
+    local _py="${HOME}/.astro/bin/python3"
+    [[ -x "$_py" ]] || _py="python3"
+    "$_py" "${_KOR_DIR}/planet_oracle.py" "$@" 2>/dev/null
+}
+
+# Peuple email_natal_planets[EMAIL] (JSON) depuis .BIRTHDATE/.birth_gps. 0 si ok, 1 sinon.
+_get_member_natal() {
+    local _email="$1"
+    [[ -n "${email_natal_planets[$_email]:-}" ]] && return 0
+    local _bdate_file="${HOME}/.zen/game/nostr/${_email}/.BIRTHDATE"
+    [[ -s "$_bdate_file" ]] || return 1
+    local _bdate; _bdate=$(tr -d '[:space:]' < "$_bdate_file")
+    [[ -z "$_bdate" ]] && return 1
+
+    local _lat=0 _lon=0
+    local _gps_file="${HOME}/.zen/game/nostr/${_email}/.birth_gps"
+    if [[ -s "$_gps_file" ]]; then
+        local _gps; _gps=$(cat "$_gps_file")
+        _lat=$(echo "$_gps" | grep -oP '(?<=LAT=)[^;]+' | tr -d ' ')
+        _lon=$(echo "$_gps" | grep -oP '(?<=LON=)[^;]+' | tr -d ' ')
+    fi
+
+    # Heure de naissance non stockée en clair (seule .BIRTHDATE existe) → midi UTC
+    # par défaut. Imprécision assumée : pas d'Ascendant/Maisons calculé ici, seules
+    # les longitudes géocentriques (peu sensibles à l'heure) sont utilisées.
+    local _json; _json=$(_planet_oracle_py --natal "$_bdate" "12:00" "${_lat:-0}" "${_lon:-0}")
+    [[ -z "$_json" ]] && return 1
+    email_natal_planets["$_email"]="$_json"
+}
+
+# Calcule et retourne (stdout) le JSON synastrie brut entre deux emails ;
+# rien + code 1 si l'un des deux n'a pas de natal disponible. Réutilisé par
+# _synastry_block (rendu HTML, enrichissement des paires Tzolkin) et le
+# groupe "Constellations Synastriques" (KIN.news.sh, indépendant du Kin) qui
+# n'a besoin que du score pour filtrer les paires du réseau entier.
+_synastry_score_raw() {
+    local _ea="$1" _eb="$2"
+    _get_member_natal "$_ea" || return 1
+    _get_member_natal "$_eb" || return 1
+    local _result; _result=$(_planet_oracle_py --synastry \
+        "${email_natal_planets[$_ea]}" "${email_natal_planets[$_eb]}")
+    [[ -z "$_result" ]] && return 1
+    echo "$_result"
+}
+
+# Bloc HTML "éclairage planétaire" pour une paire déjà détectée par le Tzolkin
+# (Occulte/Analogue/Guide/Antipode). Retourne 1 sans rien imprimer si l'un des
+# deux membres n'a pas de natal disponible.
+_synastry_block() {
+    local _ea="$1" _eb="$2"
+    local _result; _result=$(_synastry_score_raw "$_ea" "$_eb") || return 1
+
+    local _score _body_a _body_b _aspect
+    _score=$(echo "$_result" | jq -r '.score // empty')
+    _body_a=$(echo "$_result" | jq -r '.top_aspect.body_a // empty')
+    _body_b=$(echo "$_result" | jq -r '.top_aspect.body_b // empty')
+    _aspect=$(echo "$_result" | jq -r '.top_aspect.aspect // empty')
+    [[ -z "$_score" || -z "$_aspect" ]] && return 1
+
+    local -A _fr_body=([sun]="Soleil" [moon]="Lune" [mercury]="Mercure" [venus]="Vénus" [mars]="Mars" [jupiter]="Jupiter" [saturn]="Saturne")
+    local -A _fr_aspect=([conjonction]="conjonction" [sextile]="sextile" [carre]="carré" [trigone]="trigone" [opposition]="opposition")
+    local _label="${_fr_body[$_body_a]:-$_body_a} ${_fr_aspect[$_aspect]:-$_aspect} ${_fr_body[$_body_b]:-$_body_b}"
+
+    printf '<div style="margin-top:.8rem;padding:.8rem 1rem;background:linear-gradient(135deg,#faf5ff,#f3e8ff);border-radius:8px;border:1px solid #d8b4fe">'
+    printf '<div style="font-size:.75rem;color:#7c3aed;font-weight:700;margin-bottom:.3rem">🪐 Éclairage planétaire — %s%%</div>' "${_score%.*}"
+    printf '<div style="font-size:.82rem;color:#4c1d95;font-weight:600;margin-bottom:.4rem">%s</div>' "$_label"
+    _kin_vibe_intro "*Synastrie*" "${_KIN_LANGAGE:-curieux}"
+    printf '</div>\n'
 }
 
 # ─── Scan Kind 1 Spacememory : hexagones fréquentés ─────────────────────────

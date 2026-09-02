@@ -25,6 +25,9 @@ source "${MY_PATH}/../tools/kin_oracle.sh"
 # Préférences KIN par membre (scope N1/N2/relay, types, daily/weekly)
 # shellcheck source=/dev/null
 source "${MY_PATH}/../tools/kin_prefs.sh"
+# Config coopérative station-wide (SYNASTRY_ENABLED, SYNASTRY_MIN_SCORE, etc.)
+# shellcheck source=/dev/null
+. "${MY_PATH}/../tools/cooperative_config.sh" 2>/dev/null || true
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GPS — variables de filtre (fonctions dans kin_oracle.sh)
@@ -33,6 +36,9 @@ GPS_LAT=""
 GPS_LON=""
 GPS_RADIUS=""
 FORCE=false
+# --synastry-only : n'exécute que la section 8 (Constellations Synastriques,
+# indépendante du Kin) — utilisé par le déclenchement manuel Capitaine.
+SYNASTRY_ONLY=false
 # En mode --player, seul ce joueur local reçoit ses correspondances Kin.
 # Les autres membres du relay sont scannés pour trouver les groupes, mais
 # aucun email ne leur est envoyé (leur machine s'en charge).
@@ -58,6 +64,8 @@ while [[ $# -gt 0 ]]; do
             TARGET_PLAYER="${2:-}"; shift 2 ;;
         --force)
             FORCE=true; shift ;;
+        --synastry-only)
+            SYNASTRY_ONLY=true; shift ;;
         --help|-h)
             grep '^#~' "$0" | sed 's/^#~ \?//'
             exit 0 ;;
@@ -155,6 +163,12 @@ _scan_did_mapping 2>/dev/null
 # Complète avec les clés LOVE locales pas encore liées au DID (comptes
 # activés avant le lien verificationMethod #atom4love-key)
 _scan_local_love_keys 2>/dev/null
+
+# --synastry-only : ignore tout le mécanisme Kin/Dreamspell (quatuors,
+# occultes, analogues, tonalités, guides, antipodes, cymatiques, swarm) et ne
+# traite QUE la section 8 "Constellations Synastriques" plus bas. Utilisé par
+# le déclenchement manuel Capitaine (POST /api/nostr/admin/synastry_trigger).
+if [[ "$SYNASTRY_ONLY" != "true" ]]; then
 declare -A kin_emails=()    # kin_number → "email1 email2 …"
 declare -A email_zencard=() # emails avec ẐEN Card activée (.metadata.zencardWallet ou .g1pub local)
 total_profiles=0
@@ -460,6 +474,13 @@ for kin in "${!kin_emails[@]}"; do
     read -ra _o_ems <<< "${kin_emails[$occ]:-}"
     _MATCH_GROUP_HTML=$(_kin_member_card_rich "$kin" "" "" "${_k_ems[@]}")$(_kin_member_card_rich "$occ" "" "" "${_o_ems[@]}")
     _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $occ)
+    for _sea in "${_k_ems[@]}"; do
+        [[ -z "$_sea" ]] && continue
+        for _seb in "${_o_ems[@]}"; do
+            [[ -z "$_seb" ]] && continue
+            _MATCH_GROUP_HTML+=$(_synastry_block "$_sea" "$_seb")
+        done
+    done
     _send_group "Paire Occulte" "${_k_ems[@]}" "${_o_ems[@]}"
 done
 [[ $occult_count -eq 0 ]] && echo "  ℹ️  Aucune paire occulte isolée"
@@ -487,6 +508,13 @@ for kin in "${!kin_emails[@]}"; do
     read -ra _a_ems <<< "${kin_emails[$ana]:-}"
     _MATCH_GROUP_HTML=$(_kin_member_card_rich "$kin" "" "" "${_k_ems[@]}")$(_kin_member_card_rich "$ana" "" "" "${_a_ems[@]}")
     _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $ana)
+    for _sea in "${_k_ems[@]}"; do
+        [[ -z "$_sea" ]] && continue
+        for _seb in "${_a_ems[@]}"; do
+            [[ -z "$_seb" ]] && continue
+            _MATCH_GROUP_HTML+=$(_synastry_block "$_sea" "$_seb")
+        done
+    done
     _send_group "Paire Analogue" "${_k_ems[@]}" "${_a_ems[@]}"
 done
 [[ $analog_count -eq 0 ]] && echo "  ℹ️  Aucune paire analogue isolée"
@@ -551,6 +579,13 @@ for kin in "${!kin_emails[@]}"; do
     _MATCH_GROUP_HTML=$(_kin_member_card_rich "$guide" "" "" "${_g_ems[@]}")
     _MATCH_GROUP_HTML+=$(_kin_member_card_rich "$kin"  "" "" "${_k_ems[@]}")
     _MATCH_GROUP_HTML+=$(_kin_meeting_block $guide $kin)
+    for _sea in "${_g_ems[@]}"; do
+        [[ -z "$_sea" ]] && continue
+        for _seb in "${_k_ems[@]}"; do
+            [[ -z "$_seb" ]] && continue
+            _MATCH_GROUP_HTML+=$(_synastry_block "$_sea" "$_seb")
+        done
+    done
     _send_group "Relation Guide — Kin ${guide} guide Kin ${kin}" "${_g_ems[@]}" "${_k_ems[@]}"
 done
 [[ $guide_count -eq 0 ]] && echo "  ℹ️  Aucune paire Guide isolée"
@@ -577,6 +612,13 @@ for kin in "${!kin_emails[@]}"; do
     _MATCH_GROUP_HTML=$(_kin_member_card_rich "$kin"  "" "" "${_a_ems[@]}")
     _MATCH_GROUP_HTML+=$(_kin_member_card_rich "$anti" "" "" "${_b_ems[@]}")
     _MATCH_GROUP_HTML+=$(_kin_meeting_block $kin $anti)
+    for _sea in "${_a_ems[@]}"; do
+        [[ -z "$_sea" ]] && continue
+        for _seb in "${_b_ems[@]}"; do
+            [[ -z "$_seb" ]] && continue
+            _MATCH_GROUP_HTML+=$(_synastry_block "$_sea" "$_seb")
+        done
+    done
     _send_group "Paire Antipode — Defi Createur" "${_a_ems[@]}" "${_b_ems[@]}"
 done
 [[ $antipode_count -eq 0 ]] && echo "  ℹ️  Aucune paire Antipode isolée"
@@ -848,6 +890,156 @@ HTMLEOF
 done
 
 [[ $swarm_count -eq 0 ]] && echo "  ℹ️  Aucun swarm géographique détecté cette semaine"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 8. CONSTELLATIONS SYNASTRIQUES — matching planétaire indépendant du Kin
+# ─────────────────────────────────────────────────────────────────────────────
+# Toujours exécuté (même en --synastry-only) : compare TOUS les membres ayant
+# une date de naissance, sans passer par l'arithmétique Tzolkin. Contrôle
+# station via coop_config_get (Capitaine, nostr_admin.html → onglet NODE).
+_SYNASTRY_ENABLED=$(coop_config_get "SYNASTRY_ENABLED" 2>/dev/null)
+_SYNASTRY_MIN_SCORE=$(coop_config_get "SYNASTRY_MIN_SCORE" 2>/dev/null)
+[[ -z "$_SYNASTRY_MIN_SCORE" ]] && _SYNASTRY_MIN_SCORE=65
+
+synastry_group_count=0
+_syn_pairs_scanned=0
+_syn_members_with_birthdate=0
+_syn_emails_sent=0
+
+if [[ "$_SYNASTRY_ENABLED" == "false" ]]; then
+    echo ""
+    echo "  ℹ️  Constellations Synastriques désactivées (SYNASTRY_ENABLED=false, config Capitaine)"
+else
+    echo ""
+    echo "  ┌──────────────────────────────────────────────────────"
+    echo "  │ 🌌 CONSTELLATIONS SYNASTRIQUES (planètes, indépendant du Kin)"
+    echo "  └──────────────────────────────────────────────────────"
+
+    # Liste dédupliquée de tous les emails connus (pubkey_email[] peuplé par
+    # _scan_did_mapping/_scan_local_love_keys ci-dessus, indépendamment du scan
+    # Kin qui peut être sauté en mode --synastry-only)
+    declare -A _syn_seen_email=()
+    declare -a _syn_all_emails=()
+    for _pe in "${pubkey_email[@]}"; do
+        [[ -z "$_pe" || -n "${_syn_seen_email[$_pe]:-}" ]] && continue
+        _syn_seen_email[$_pe]=1
+        _syn_all_emails+=("$_pe")
+    done
+
+    # Ne garder que les emails avec un natal disponible ET ayant activé le
+    # type "synastry_group" dans leurs propres préférences (.mailjet)
+    declare -a _syn_natal_emails=()
+    for _se in "${_syn_all_emails[@]}"; do
+        _get_member_natal "$_se" || continue
+        _kin_prefs_load "$_se"
+        _kin_type_enabled "synastry_group" || continue
+        _syn_natal_emails+=("$_se")
+    done
+    _syn_members_with_birthdate=${#_syn_natal_emails[@]}
+    printf "  📊 %d membre(s) avec date de naissance + type activé\n" "$_syn_members_with_birthdate"
+
+    # Boucle O(n²) — score par paire, seuil SYNASTRY_MIN_SCORE
+    declare -A _syn_best=()  # email → "score:autre_email score:autre_email ..."
+    for (( _si=0; _si < ${#_syn_natal_emails[@]}; _si++ )); do
+        _sea="${_syn_natal_emails[$_si]}"
+        for (( _sj=_si+1; _sj < ${#_syn_natal_emails[@]}; _sj++ )); do
+            _seb="${_syn_natal_emails[$_sj]}"
+            ((_syn_pairs_scanned++))
+            _sresult=$(_synastry_score_raw "$_sea" "$_seb") || continue
+            _sscore=$(echo "$_sresult" | jq -r '.score // 0')
+            _sok=$(awk -v s="$_sscore" -v m="$_SYNASTRY_MIN_SCORE" 'BEGIN{print (s>=m)?"yes":"no"}')
+            [[ "$_sok" != "yes" ]] && continue
+            _syn_best[$_sea]+="${_sscore}:${_seb} "
+            _syn_best[$_seb]+="${_sscore}:${_sea} "
+        done
+    done
+
+    # Envoi : top 3 matches par membre (évite qu'un membre "central" reçoive
+    # une liste trop longue), email dédié, heredoc propre à ce groupe
+    declare -A _fr_body=([sun]="Soleil" [moon]="Lune" [mercury]="Mercure" [venus]="Vénus" [mars]="Mars" [jupiter]="Jupiter" [saturn]="Saturne")
+    declare -A _fr_aspect=([conjonction]="conjonction" [sextile]="sextile" [carre]="carré" [trigone]="trigone" [opposition]="opposition")
+    for _dest in "${!_syn_best[@]}"; do
+        [[ -n "${TARGET_PLAYER:-}" && "$_dest" != "$TARGET_PLAYER" ]] && continue
+        declare -a _sorted_matches=()
+        mapfile -t _sorted_matches < <(echo "${_syn_best[$_dest]}" | tr ' ' '\n' | grep -v '^$' | sort -t: -k1 -rn | head -3)
+        [[ ${#_sorted_matches[@]} -eq 0 ]] && continue
+        ((synastry_group_count++))
+
+        _syn_matches_html=""
+        for _sm in "${_sorted_matches[@]}"; do
+            _sm_score="${_sm%%:*}"
+            _sm_email="${_sm#*:}"
+            _sresult=$(_synastry_score_raw "$_dest" "$_sm_email")
+            _sm_body_a=$(echo "$_sresult" | jq -r '.top_aspect.body_a // empty')
+            _sm_body_b=$(echo "$_sresult" | jq -r '.top_aspect.body_b // empty')
+            _sm_aspect=$(echo "$_sresult" | jq -r '.top_aspect.aspect // empty')
+            _sm_label="${_fr_body[$_sm_body_a]:-$_sm_body_a} ${_fr_aspect[$_sm_aspect]:-$_sm_aspect} ${_fr_body[$_sm_body_b]:-$_sm_body_b}"
+            _syn_matches_html+=$(printf '<div style="margin:.5rem 0;padding:.7rem 1rem;background:#f5f3ff;border-radius:8px;border-left:3px solid #7c3aed"><div style="font-weight:700;color:#5b21b6">%s%% — %s</div><div style="font-size:.78rem;color:#6b7280">%s</div></div>' \
+                "${_sm_score%.*}" "$_sm_email" "$_sm_label")
+        done
+
+        _tmpsyn=$(mktemp /tmp/kin_synastry_XXXXXX.html)
+        cat << SYNEOF > "$_tmpsyn"
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌌 Constellations Synastriques</title>
+<style>
+body{margin:0;background:#0f0e17;font-family:-apple-system,sans-serif}
+.w{max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden}
+.ft{background:#f7f7fb;padding:1rem;text-align:center;font-size:.7rem;color:#9ca3af}
+</style></head><body><div class="w">
+<div style="background:linear-gradient(135deg,#3b0764,#7c3aed);padding:1.4rem;color:#fff">
+  <div style="font-size:1.1rem;font-weight:700">🌌 Constellations Synastriques</div>
+  <div style="font-size:.85rem;opacity:.9;margin-top:.3rem">
+    Vos planètes de naissance (Soleil, Lune, Mercure, Vénus, Mars, Jupiter, Saturne)
+    dessinent des aspects marquants avec ${#_sorted_matches[@]} autre(s) membre(s) —
+    indépendamment de votre Kin Maya.
+  </div>
+</div>
+<div style="padding:1rem 1.2rem">
+  <div style="background:#f0f9ff;border-radius:10px;padding:.9rem;margin-bottom:1rem;font-size:.83rem;color:#0369a1;border-left:3px solid #7c3aed">
+    <strong>🪐 Une autre lecture</strong><br>
+    Ce classement s'appuie uniquement sur la synastrie occidentale (positions
+    planétaires réelles à la naissance) — un axe de matching complémentaire au
+    calendrier Tzolkin, qui ne regarde jamais votre Kin.
+  </div>
+  ${_syn_matches_html}
+  <div style="text-align:center;margin-top:1rem">
+    <a href="https://u.copylaradio.com/apk/atom4love.apk"
+       style="background:#7c3aed;color:#fff;padding:.5rem 1.2rem;border-radius:8px;
+              text-decoration:none;font-size:.85rem;font-weight:600">
+      ⚛ Ouvrir ATOM4LOVE
+    </a>
+  </div>
+</div>
+<div class="ft">ATOM4LOVE Alpha · G1FabLab · UPlanet ORIGIN</div>
+</div></body></html>
+SYNEOF
+        if [[ -x "$MJ" ]]; then
+            "$MJ" "$_dest" "$_tmpsyn" \
+                "🌌 Constellations Synastriques — ${#_sorted_matches[@]} match(es) planétaire(s)" 2>/dev/null && \
+                { printf "    📧 Constellation Synastrique → %s\n" "$_dest"; ((_syn_emails_sent++)); }
+        fi
+        rm -f "$_tmpsyn"
+    done
+    [[ $synastry_group_count -eq 0 ]] && echo "  ℹ️  Aucune constellation synastrique au-dessus du seuil (${_SYNASTRY_MIN_SCORE}%)"
+fi
+
+# Stats pour la console Capitaine (GET /api/nostr/admin/synastry_stats)
+_SYN_STATS_FILE="${HOME}/.zen/tmp/${IPFSNODEID}/kin_synastry_stats.json"
+mkdir -p "$(dirname "$_SYN_STATS_FILE")" 2>/dev/null
+cat > "$_SYN_STATS_FILE" << STATSEOF 2>/dev/null
+{
+  "generated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "enabled": $( [[ "$_SYNASTRY_ENABLED" == "false" ]] && echo false || echo true ),
+  "min_score": ${_SYNASTRY_MIN_SCORE},
+  "members_with_birthdate": ${_syn_members_with_birthdate:-0},
+  "pairs_scanned": ${_syn_pairs_scanned:-0},
+  "matches_found": ${synastry_group_count:-0},
+  "emails_sent": ${_syn_emails_sent:-0}
+}
+STATSEOF
 
 touch "$MARKER_FILE"
 exit 0
