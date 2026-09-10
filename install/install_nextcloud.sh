@@ -60,6 +60,16 @@ else
         ## Attendre que le conteneur soit prêt avant de relancer NPM
         echo "⏳ Attente NextCloud (30s pour initialisation)..."
         sleep 30
+        ## Rattacher NPM aux réseaux Docker de NextCloud AIO (idempotent — tolère une
+        ## connexion déjà existante). Nécessaire pour joindre les conteneurs AIO par nom
+        ## (ex: nextcloud-aio-mastercontainer:8080, le dashboard admin, non publié sur 0.0.0.0
+        ## contrairement à :8001 qui lui passe par la gateway docker sans besoin de ce réseau).
+        _NPM_CONTAINER=$(docker ps --format '{{.Names}}\t{{.Image}}' | awk -F'\t' '$2 ~ /nginx-proxy-manager/ {print $1; exit}')
+        if [[ -n "$_NPM_CONTAINER" ]]; then
+            docker network connect dragon-net "$_NPM_CONTAINER" 2>/dev/null || true
+            docker network connect nextcloud-aio "$_NPM_CONTAINER" 2>/dev/null || true
+            echo "🔗 NPM (${_NPM_CONTAINER}) rattaché à dragon-net + nextcloud-aio"
+        fi
         ## Re-lancer setup_npm.sh pour créer le proxy cloud.DOMAIN → :8001
         echo "🔧 Création proxy cloud.${DOMAIN_DISPLAY:-DOMAIN} via NPM..."
         bash "$HOME/.zen/Astroport.ONE/install/setup/setup_npm.sh" 2>/dev/null \
