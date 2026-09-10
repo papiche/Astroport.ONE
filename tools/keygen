@@ -35,6 +35,7 @@ from jwcrypto import jwk
 import logging as log
 import nacl.bindings
 import nacl.encoding
+import nacl.public
 # import pgpy  # Replaced with python-gnupg due to imghdr compatibility issues
 import pynentry
 import os
@@ -131,7 +132,7 @@ class keygen:
         self.parser.add_argument(
             "-t",
             "--type",
-            choices=['b58mh','b64mh','base58','base64','duniter','ipfs','jwk','bitcoin','ssh','monero','pgp','nostr'],
+            choices=['b58mh','b64mh','base58','base64','duniter','ipfs','jwk','bitcoin','ssh','monero','pgp','nostr','meshtastic'],
             default="base58",
             dest="type",
             help="output text format, default: base58",
@@ -434,9 +435,43 @@ Expire-Date: 0
         log.debug("keygen.nostr_public_npub=%s" % self.nostr_public_npub)
 
 
+    def do_meshtastic(self):
+        log.debug("keygen.do_meshtastic()")
+        self.meshtastic_from_ed25519_from_existing_seed()
+        self._output(self.meshtastic_public_b64, self.meshtastic_private_b64, 'pub: ', 'priv: ')
+
+    def meshtastic_from_ed25519_from_existing_seed(self):
+        log.debug("keygen.meshtastic_from_ed25519_from_existing_seed()")
+        try:
+            # Dérivation à domaine séparé : contrairement à nostr (sha256(seed)
+            # nu, sans suffixe) ou ipfs/ssh (seed brut réutilisé tel quel),
+            # le suffixe "meshtastic" isole ce scalaire X25519 des autres clés
+            # de la chaîne Y-Level — aucun lien mathématique direct avec la
+            # clé IPFS/SSH (même courbe edwards25519/curve25519 sinon).
+            ed25519_seed = self.ed25519_seed_bytes
+            x25519_seed = hashlib.sha256(ed25519_seed + b"meshtastic").digest()
+            private_key = nacl.public.PrivateKey(x25519_seed)
+
+            self.meshtastic_private_b64 = base64.b64encode(bytes(private_key)).decode('ascii')
+            self.meshtastic_public_b64 = base64.b64encode(bytes(private_key.public_key)).decode('ascii')
+        except Exception as e:
+            log.error(f'Unable to get meshtastic key from ed25519 seed: {e}')
+            exit(2)
+        log.debug("keygen.meshtastic_private_b64=%s" % self.meshtastic_private_b64)
+        log.debug("keygen.meshtastic_public_b64=%s" % self.meshtastic_public_b64)
+
+
     def _output_file(self):
         log.debug("keygen._output_file()")
         try:
+            if self.type == 'meshtastic':
+                if not hasattr(self, 'meshtastic_private_b64'):
+                    self.meshtastic_from_ed25519_from_existing_seed()
+                with open(self.output, "w") as private_file:
+                    private_file.write(self.meshtastic_private_b64)
+                with open(f"{self.output}.pub", "w") as public_file:
+                    public_file.write(self.meshtastic_public_b64)
+                return
             if self.type == 'ssh':
                 if not hasattr(self, 'ssh_private_key') or not hasattr(self, 'ssh_public_key'):
                     self.generate_ssh_ed25519_key()

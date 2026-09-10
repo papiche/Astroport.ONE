@@ -97,6 +97,13 @@ def nostr_setup_profile(args):
         tags.append(["i", f"umap_updated:{args.umap_updated}", ""])  # Last map refresh date (YYYYMMDD)
     if args.home_station:
         tags.append(["i", f"home_station:{args.home_station}", ""])
+    if args.meshtastic_pub:
+        # Jumelage NIP-39 : clé publique X25519 Meshtastic/LoRa (base64) dérivée
+        # de la même chaîne Y-Level (voir keygen -t meshtastic) — permet à un
+        # autre nœud de retrouver l'identité NOSTR d'un pair reçu via LoRa,
+        # puis de vérifier un follow réciproque avant d'accepter ses ordres.
+        metadata["meshtastic_pub"] = args.meshtastic_pub
+        tags.append(["i", f"meshtastic:{args.meshtastic_pub}", ""])
 
     # Create and publish PROFILE + metadata event
     metadata_event = Event(kind=0, content=json.dumps(metadata), tags=tags)
@@ -153,6 +160,7 @@ if __name__ == "__main__":
     parser.add_argument("--umaproot", help="IPFS root CID of UMAP directory", default=None)
     parser.add_argument("--umap_updated", help="Last map refresh date (YYYYMMDD format)", default=None)
     parser.add_argument("--home_station", help="Home station IPFSNODEID:NODE_HEX (for roaming sync)", default=None)
+    parser.add_argument("--meshtastic_pub", help="Meshtastic/LoRa X25519 public key (base64, keygen -t meshtastic)", default=None)
 
     args = parser.parse_args()
     nostr_setup_profile(args)
