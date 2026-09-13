@@ -1,0 +1,9 @@
+{
+  "devices": [
+    {
+      "name": "MPPT Toit",
+      "mac": "AA:BB:CC:DD:EE:FF",
+      "key": "0123456789abcdef0123456789abcdef"
+    }
+  ]
+}

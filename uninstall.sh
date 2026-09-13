@@ -125,6 +125,10 @@ sudo rm -f /etc/systemd/system/nextcloud-exporter.service
 sudo rm -f /etc/systemd/system/astroport-exporter.service
 sudo rm -f /etc/systemd/system/comfyui.service
 sudo rm -f /etc/systemd/system/powerjoular.service
+# Victron MPPT BLE monitor (install_victron.sh)
+sudo systemctl stop victron-mppt-monitor.service 2>/dev/null || true
+sudo systemctl disable victron-mppt-monitor.service 2>/dev/null || true
+sudo rm -f /etc/systemd/system/victron-mppt-monitor.service
 # Prometheus metrics collector timer+service (install_prometheus.sh)
 sudo systemctl stop    astroport-metrics.timer  2>/dev/null || true
 sudo systemctl disable astroport-metrics.timer  2>/dev/null || true

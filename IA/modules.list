@@ -30,5 +30,6 @@ vane|3002|docker:vane|ai-company|Vane Search Engine
 leann|-|-|leann|LeAnn NextCloud RAG
 youtube-antibot|-|-|youtube-antibot|YouTube Anti-Bot Deno+EJS+bgutil
 powerjoular|-|-|powerjoular|Power Consumption Monitor
+victron|-|systemctl:victron-mppt-monitor|victron|Victron MPPT BLE Monitor
 prometheus|-|-|prometheus|Prometheus Metrics Server
 zelkova|-|-|zelkova|Zelkova ẐEN Wallet PWA
