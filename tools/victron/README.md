@@ -99,8 +99,20 @@ Options utiles :
 
 ## 5. Surveillance permanente (service systemd)
 
-Géré par `install_victron.sh` (voir plus haut). Par défaut, le CSV est écrit
-dans `~/.zen/tmp/victron/readings.csv`.
+Géré par `install_victron.sh` (voir plus haut). Par défaut, le CSV et
+l'historique quotidien agrégé sont écrits en local dans `~/.zen/game/victron/`
+— **jamais** directement sous `~/.zen/tmp/$IPFSNODEID/`, qui est ré-ajouté à
+IPFS en entier à chaque publication IPNS : un fichier qui grossit
+indéfiniment y alourdirait la balise publiée un peu plus chaque jour (cette
+règle vaut pour tout log longue durée diffusé par une station Astroport.ONE).
+
+Seul le **CID** de l'historique agrégé (`victron_history.json`) est publié :
+`victron_stats.sh publish-cid` l'épingle sur IPFS et écrit son CID dans un
+petit fichier pointeur, `~/.zen/tmp/$IPFSNODEID/VICTRON/victron_history.json.ipfs`
+(quelques octets, peu importe la taille de l'historique). Pour le lire
+depuis le swarm : récupérer le CID via
+`/ipns/$IPFSNODEID/VICTRON/victron_history.json.ipfs`, puis le contenu via
+`/ipfs/<CID>`. Ce pointeur est régénéré chaque jour par `20h12.process.sh`.
 
 ```bash
 sudo systemctl status victron-mppt-monitor
@@ -118,6 +130,11 @@ journalctl -u victron-mppt-monitor -f
 - Si `discover` ne trouve rien : vérifier que "Instant Readout" est activé
   sur le régulateur (VictronConnect → réglages produit) et que vous êtes à
   moins de ~10-15 m à vue directe.
-- Prochaine étape envisagée (hors scope de ce module) : publier ces
-  lectures comme événements NOSTR pour affichage constellation dans
-  `UPlanet/earth/economy.Swarm.html` — cf. discussion en cours.
+- Intégration constellation : `RUNTIME/ECONOMY.broadcast.sh` publie les
+  agrégats (`victron_stats.sh solar-stats` : puissance instantanée, Wh
+  jour/mois/total, tension batterie, état de charge) dans son événement
+  NOSTR kind 30850, affichés dans `UPlanet/earth/economy.Swarm.html` et
+  dans la page dédiée `UPlanet/earth/victron.html`. L'historique quotidien
+  complet reste consultable via son CID publié (voir section précédente)
+  pour un futur graphique multi-jours par station (non NOSTR — fichier
+  épinglé sur IPFS, pointeur seul sous IPNS).

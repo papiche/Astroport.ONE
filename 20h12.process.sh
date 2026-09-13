@@ -878,6 +878,31 @@ else
 fi
 
 ########################################################################
+## VICTRON MPPT SOLAR MONITOR (victron-mppt-monitor.service, si installé)
+## Watchdog + historique quotidien (analogue à PowerJoular, sans rapport HTML)
+########################################################################
+## CSV/historique en local (~/.zen/game/victron/, jamais sous ~/.zen/tmp/$IPFSNODEID/
+## qui est ré-ajouté en entier à IPFS à chaque publication IPNS — un fichier qui
+## grossit indéfiniment y alourdirait la balise publiée un peu plus chaque jour).
+## Seul le CID de l'historique agrégé est publié (fichier pointeur, cf. publish-cid).
+VICTRON_CSV="${VICTRON_CSV:-$HOME/.zen/game/victron/readings.csv}"
+VICTRON_STATS_SH="${MY_PATH}/tools/victron/victron_stats.sh"
+if systemctl is-enabled victron-mppt-monitor.service &>/dev/null; then
+    if ! systemctl is-active --quiet victron-mppt-monitor.service; then
+        echo "🔆 victron-mppt-monitor.service inactif — relance..." >> $LOG_FILE
+        sudo systemctl start victron-mppt-monitor.service 2>&1 | tee -a $LOG_FILE \
+            && echo "✅ victron-mppt-monitor.service relancé" >> $LOG_FILE \
+            || echo "⚠️ Impossible de relancer victron-mppt-monitor.service" >> $LOG_FILE
+    else
+        echo "✅ victron-mppt-monitor.service actif" >> $LOG_FILE
+    fi
+    if [[ -s "$VICTRON_CSV" ]]; then
+        "$VICTRON_STATS_SH" record-daily-history "$VICTRON_CSV" 2>&1 | tee -a $LOG_FILE || true
+        IPFSNODEID="$IPFSNODEID" "$VICTRON_STATS_SH" publish-cid 2>&1 | tee -a $LOG_FILE || true
+    fi
+fi
+
+########################################################################
 ## TUNNEL WATCHDOG — Relance les tunnels P2P persistants tombés
 ## Les tunnels activés via `astrosystemctl enable` sont dans ~/.zen/tunnels/enabled/
 ########################################################################

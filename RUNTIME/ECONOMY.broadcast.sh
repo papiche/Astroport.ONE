@@ -442,6 +442,32 @@ ENERGY_SINCE=$(echo "$ENERGY_JSON" | jq -r '.since // ""' 2>/dev/null || echo ""
 log_output "  Énergie: jour=${ENERGY_TODAY_KWH}kWh mois=${ENERGY_MONTH_KWH}kWh total=${ENERGY_TOTAL_KWH}kWh (${ENERGY_DAYS_RECORDED}j suivi(s), moy récente ${ENERGY_AVG_W_RECENT}W)"
 
 ###############################################################################
+# COLLECT SOLAR DATA (Victron MPPT BLE monitor, si présent)
+# Alimenté chaque jour par 20h12.process.sh → victron_stats.sh record-daily-history
+# → ~/.zen/game/victron/victron_history.json (local ; le CID de ce fichier est
+# publié séparément par victron_stats.sh publish-cid, cf. 20h12.process.sh).
+# Absent sur les stations sans régulateur.
+###############################################################################
+
+log_output "🔆 Collecting solar production (victron_stats solar-stats)..."
+
+VICTRON_STATS_SH="${MY_PATH}/../tools/victron/victron_stats.sh"
+SOLAR_JSON='{"since":null,"today_wh":0,"month_wh":0,"total_wh":0,"days_recorded":0,"power_w":0,"battery_v":0,"charge_state":"unknown"}'
+if [[ -x "$VICTRON_STATS_SH" ]]; then
+    SOLAR_JSON=$("$VICTRON_STATS_SH" solar-stats 2>/dev/null || echo "$SOLAR_JSON")
+fi
+
+SOLAR_POWER_W=$(echo "$SOLAR_JSON" | jq -r '.power_w // 0 | (. * 100 | round) / 100' 2>/dev/null || echo 0)
+SOLAR_YIELD_TODAY_WH=$(echo "$SOLAR_JSON" | jq -r '.today_wh // 0 | (. * 100 | round) / 100' 2>/dev/null || echo 0)
+SOLAR_MONTH_WH=$(echo "$SOLAR_JSON" | jq -r '.month_wh // 0 | (. * 100 | round) / 100' 2>/dev/null || echo 0)
+SOLAR_TOTAL_WH=$(echo "$SOLAR_JSON" | jq -r '.total_wh // 0 | (. * 100 | round) / 100' 2>/dev/null || echo 0)
+SOLAR_BATTERY_V=$(echo "$SOLAR_JSON" | jq -r '.battery_v // 0 | (. * 100 | round) / 100' 2>/dev/null || echo 0)
+SOLAR_CHARGE_STATE=$(echo "$SOLAR_JSON" | jq -r '.charge_state // "unknown"' 2>/dev/null || echo "unknown")
+SOLAR_DAYS_RECORDED=$(echo "$SOLAR_JSON" | jq -r '.days_recorded // 0' 2>/dev/null || echo 0)
+
+log_output "  Solaire: instant=${SOLAR_POWER_W}W jour=${SOLAR_YIELD_TODAY_WH}Wh mois=${SOLAR_MONTH_WH}Wh total=${SOLAR_TOTAL_WH}Wh (batterie=${SOLAR_BATTERY_V}V état=${SOLAR_CHARGE_STATE})"
+
+###############################################################################
 # GET DEPRECIATION DATA
 ###############################################################################
 
@@ -601,6 +627,15 @@ CONTENT_JSON=$(cat <<EOF
       "avg_w_recent":  ${ENERGY_AVG_W_RECENT:-0},
       "days_recorded": ${ENERGY_DAYS_RECORDED:-0},
       "since":         "${ENERGY_SINCE:-}"
+    },
+    "solar": {
+      "power_w":         ${SOLAR_POWER_W:-0},
+      "yield_today_wh":  ${SOLAR_YIELD_TODAY_WH:-0},
+      "month_wh":        ${SOLAR_MONTH_WH:-0},
+      "total_wh":        ${SOLAR_TOTAL_WH:-0},
+      "battery_v":       ${SOLAR_BATTERY_V:-0},
+      "charge_state":    "${SOLAR_CHARGE_STATE:-unknown}",
+      "days_recorded":   ${SOLAR_DAYS_RECORDED:-0}
     }
   }
 }
@@ -665,6 +700,9 @@ TAGS_JSON=$(cat <<EOF
   ["hw:disk_write_mbps", "${HW_DISK_WRITE_MBPS:-0}"],["hw:disk_read_mbps", "${HW_DISK_READ_MBPS:-0}"],
   ["hw:energy_today_kwh", "${ENERGY_TODAY_KWH:-0}"],["hw:energy_month_kwh", "${ENERGY_MONTH_KWH:-0}"],
   ["hw:energy_total_kwh", "${ENERGY_TOTAL_KWH:-0}"],["hw:avg_w_recent", "${ENERGY_AVG_W_RECENT:-0}"],
+  ["hw:solar_power_w", "${SOLAR_POWER_W:-0}"],["hw:solar_yield_today_wh", "${SOLAR_YIELD_TODAY_WH:-0}"],
+  ["hw:solar_month_wh", "${SOLAR_MONTH_WH:-0}"],["hw:solar_total_wh", "${SOLAR_TOTAL_WH:-0}"],
+  ["hw:solar_battery_v", "${SOLAR_BATTERY_V:-0}"],["hw:solar_charge_state", "${SOLAR_CHARGE_STATE:-unknown}"],
   ["station:url", "$uSPOT"]
 ]
 EOF

@@ -64,8 +64,12 @@ fi
 ########################################################################
 # 4. Service systemd (tourne sous l'utilisateur courant — pas de root requis
 #    pour le scan BLE via BlueZ/D-Bus)
+# CSV en local uniquement (~/.zen/game/, jamais sous ~/.zen/tmp/$IPFSNODEID/
+# qui est ré-ajouté en entier à IPFS à chaque publication IPNS) — seul le CID
+# de l'historique agrégé quotidien est publié, via victron_stats.sh publish-cid
+# (cf. RUNTIME/ECONOMY.broadcast.sh et 20h12.process.sh).
 ########################################################################
-CSV_DIR="$HOME/.zen/tmp/victron"
+CSV_DIR="$HOME/.zen/game/victron"
 mkdir -p "$CSV_DIR"
 
 echo "[install_victron][$(timestamp)] Installing systemd service..." >&2
