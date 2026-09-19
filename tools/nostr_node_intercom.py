@@ -11,6 +11,12 @@ permettant à un NODE de router les messages sans ambiguïté :
   zen_like    — paiement ZEN/G1 relayé depuis station visiteur
   comfyui_job    — job vidéo délégué à un Brain GPU
   comfyui_result — résultat renvoyé par le Brain au satellite
+  vision_analysis_job    — détection de visages (InsightFace) déléguée à un Brain GPU
+  vision_analysis_result — embeddings de visages renvoyés par le Brain au satellite
+
+Sous-commande `unwrap-giftwrap` : dé-wrap NIP-59/NIP-17 (kind 1059 → seal kind 13
+→ rumor kind 14/15), utilisé par IA/bro/bro_dm_daemon.sh pour les messages
+fichier chiffrés reçus entre MULTIPASS (voir filter/1059.sh).
 
 Chiffrement : NIP-44 (ChaCha20-Poly1305 + HKDF-SHA256) pour l'envoi.
 Déchiffrement : NIP-44 avec fallback NIP-04 (AES-256-CBC) pour la rétrocompatibilité.
@@ -517,6 +523,101 @@ def cmd_decrypt(args):
         sys.exit(1)
 
 
+# ── unwrap-giftwrap (NIP-59 / NIP-17) ────────────────────────────────────────
+# Dé-wrap des deux couches d'un gift wrap NIP-59 :
+#
+#   kind 1059 (gift wrap, signé par une clé ÉPHÉMÈRE)
+#     └─ content = nip44(seal, ephemeral_priv → recipient_pub)
+#          kind 13 (seal, signé par le VRAI expéditeur, tags=[])
+#            └─ content = nip44(rumor, sender_priv → recipient_pub)
+#                 kind 14 (chat) ou 15 (fichier) — NON signé (pas de .sig)
+#
+# Les deux couches se déchiffrent avec le MÊME nsec destinataire ; seule la
+# clé publique "de l'autre partie" change : wrap["pubkey"] (éphémère) pour la
+# couche externe, seal["pubkey"] (expéditeur réel) pour la couche interne.
+
+def cmd_unwrap_giftwrap(args):
+    """Dé-wrap un kind 1059 → {"rumor": {...}, "sender": "<hex>", "verified": bool}."""
+    nsec = args.nsec or os.environ.get('NOSTR_NSEC', '')
+    if not nsec:
+        print("ERROR: NSEC absent (--nsec, --nsec-stdin ou NOSTR_NSEC)", file=sys.stderr)
+        sys.exit(1)
+    try:
+        priv_hex = _nsec_to_hex(nsec)
+    except Exception as exc:
+        print(f"ERROR: NSEC invalide : {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    ## L'event vient de --event-file si fourni (cas --nsec-stdin : stdin est pris
+    ## par le NSEC), sinon de stdin — même convention que `decrypt`.
+    try:
+        if getattr(args, "event_file", None):
+            with open(args.event_file, "r", encoding="utf-8") as fh:
+                wrap = json.load(fh)
+        else:
+            wrap = json.load(sys.stdin)
+    except Exception as exc:
+        print(f"ERROR: event JSON illisible : {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if isinstance(wrap, dict) and "event" in wrap:
+        wrap = wrap["event"]
+    if not isinstance(wrap, dict):
+        print("ERROR: event JSON n'est pas un objet", file=sys.stderr)
+        sys.exit(1)
+    if wrap.get("kind") != 1059:
+        print(f"ERROR: kind {wrap.get('kind')} — un gift wrap NIP-59 est de kind 1059",
+              file=sys.stderr)
+        sys.exit(1)
+
+    ephemeral_pub = wrap.get("pubkey", "")
+    if len(ephemeral_pub) != 64:
+        print("ERROR: pubkey éphémère absente/invalide sur le gift wrap", file=sys.stderr)
+        sys.exit(1)
+
+    ## ── Couche 1 : gift wrap → seal (kind 13) ──
+    try:
+        seal_json = _decrypt_content(wrap.get("content", ""), priv_hex, ephemeral_pub)
+        seal = json.loads(seal_json)
+    except Exception as exc:
+        print(f"ERROR: déchiffrement de la couche gift-wrap échoué : {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if not isinstance(seal, dict) or seal.get("kind") != 13:
+        print(f"ERROR: la couche interne n'est pas un seal kind 13 "
+              f"(kind={seal.get('kind') if isinstance(seal, dict) else '?'})", file=sys.stderr)
+        sys.exit(1)
+
+    sender_pub = seal.get("pubkey", "")
+    if len(sender_pub) != 64:
+        print("ERROR: pubkey expéditeur absente/invalide sur le seal", file=sys.stderr)
+        sys.exit(1)
+
+    ## ── Couche 2 : seal → rumor (kind 14/15, non signé) ──
+    try:
+        rumor_json = _decrypt_content(seal.get("content", ""), priv_hex, sender_pub)
+        rumor = json.loads(rumor_json)
+    except Exception as exc:
+        print(f"ERROR: déchiffrement de la couche seal échoué : {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if not isinstance(rumor, dict):
+        print("ERROR: le rumor déchiffré n'est pas un objet JSON", file=sys.stderr)
+        sys.exit(1)
+
+    ## Protection anti-usurpation exigée par NIP-17 : le rumor n'est pas signé,
+    ## seul le seal l'est. Un rumor prétendant venir de quelqu'un d'autre que
+    ## l'auteur du seal est une tentative d'usurpation d'identité → verified=false
+    ## (on retourne quand même le contenu, l'appelant décide quoi en faire).
+    verified = rumor.get("pubkey") == sender_pub
+
+    print(json.dumps({
+        "rumor":    rumor,
+        "sender":   sender_pub,
+        "verified": verified,
+    }))
+
+
 # ── main ──────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -565,6 +666,16 @@ if __name__ == "__main__":
     # --nsec-stdin absent ici : decrypt lit déjà le JSON depuis stdin
     # Fallback : variable d'environnement NOSTR_NSEC (invisible dans ps aux)
 
+    p_unwrap = sub.add_parser("unwrap-giftwrap",
+                              help="Dé-wrap un gift wrap NIP-59/NIP-17 (kind 1059) → rumor kind 14/15")
+    p_unwrap.add_argument("--nsec", default=None,
+                          help="NSEC du DESTINATAIRE (fallback : NOSTR_NSEC)")
+    p_unwrap.add_argument("--nsec-stdin", action="store_true",
+                          help="Lire le NSEC depuis la première ligne de stdin "
+                               "(impose --event-file, stdin étant alors occupé)")
+    p_unwrap.add_argument("--event-file", default=None,
+                          help="Fichier JSON de l'event kind 1059 (défaut : stdin)")
+
     p_pub = sub.add_parser("publish", help="Publier un event NOSTR non chiffré (any kind)")
     p_pub.add_argument("--nsec",       default=None)
     p_pub.add_argument("--nsec-stdin", action="store_true",
@@ -585,19 +696,28 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # unwrap-giftwrap : stdin sert au NSEC uniquement si l'event vient d'un
+    # fichier — sinon les deux flux se disputeraient stdin.
+    if args.cmd == "unwrap-giftwrap" and getattr(args, "nsec_stdin", False) \
+            and not getattr(args, "event_file", None):
+        parser.error("--nsec-stdin impose --event-file (stdin est occupé par le NSEC)")
+
     # Résolution NSEC pour les sous-commandes qui en ont besoin
     # (send, send-udrive, receive, publish supportent --nsec-stdin ;
-    #  decrypt : --nsec requis car stdin est déjà occupé par le JSON ;
+    #  decrypt, unwrap-giftwrap : --nsec / NOSTR_NSEC car stdin porte le JSON
+    #  (sauf unwrap-giftwrap + --event-file, cf. ci-dessus) ;
     #  query, verify : pas de NSEC)
     if getattr(args, "nsec_stdin", False):
         args.nsec = sys.stdin.readline().strip()
-    elif args.cmd not in ("query", "decrypt", "verify") and not getattr(args, "nsec", None):
+    elif args.cmd not in ("query", "decrypt", "verify", "unwrap-giftwrap") \
+            and not getattr(args, "nsec", None):
         parser.error("--nsec ou --nsec-stdin requis")
 
     {
-        "send":        cmd_send,
-        "send-udrive": cmd_send_udrive,
-        "decrypt":     cmd_decrypt,
+        "send":             cmd_send,
+        "send-udrive":      cmd_send_udrive,
+        "decrypt":          cmd_decrypt,
+        "unwrap-giftwrap":  cmd_unwrap_giftwrap,
         "receive":     cmd_receive,
         "publish":     cmd_publish,
         "query":       cmd_query,

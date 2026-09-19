@@ -198,37 +198,70 @@ def add_metadata_protection(message: str, sender_hex: str, recipient_hex: str) -
     
     return protected_message
 
+def _randomized_past_timestamp(max_days: int = 2) -> int:
+    """created_at randomisé jusqu'à `max_days` jours dans le passé.
+
+    Recommandation explicite de NIP-59/NIP-17 : seal et gift wrap ne doivent PAS
+    porter l'heure réelle d'émission, sinon la corrélation temporelle entre les
+    1059 vus par un relay reconstitue la conversation sans jamais la déchiffrer."""
+    return int(time.time()) - secrets.randbelow(max_days * 24 * 3600 + 1)
+
+
+def _signed_event(kind: int, content: str, tags: list, priv_hex: str,
+                  created_at: int = None) -> dict:
+    """Construit et signe un event via pynostr.event.Event.
+
+    L'id NOSTR est le sha256 du tableau sérialisé [0,pubkey,created_at,kind,tags,
+    content] (NIP-01) — jamais le hash du dict de l'event. Event.serialize() le
+    fait correctement (separators compacts, ensure_ascii=False) ; c'est la seule
+    voie utilisée ici, pour tous les kinds."""
+    priv_obj = PrivateKey.from_hex(priv_hex)
+    event = Event(
+        kind=kind,
+        content=content,
+        tags=tags,
+        pubkey=priv_obj.public_key.hex(),
+        created_at=created_at if created_at is not None else int(time.time()),
+    )
+    event.sign(priv_hex)
+    return event.to_dict()
+
+
 def create_gift_wrapped_message(inner_event: dict, sender_private_key: str, recipient_public_key: str) -> dict:
     """
-    Create a gift-wrapped message (NIP-17) for additional privacy.
-    This hides the sender's identity by wrapping the message in another event.
+    Create a gift-wrapped message (NIP-59 / NIP-17): rumor → seal → gift wrap.
+
+    Trois couches, conformément à la spec :
+      1. rumor      — `inner_event`, NON signé (aucun .sig : c'est ce qui rend le
+                      message déniable). Fourni par l'appelant.
+      2. seal       — kind 13 signé par le VRAI expéditeur, tags=[] (imposé par
+                      NIP-59 : le moindre tag fuiterait des métadonnées en clair),
+                      content = nip44(rumor, sender_priv → recipient_pub).
+      3. gift wrap  — kind 1059 signé par une clé ÉPHÉMÈRE jetable,
+                      tags=[["p", recipient]], content = nip44(seal, ephemeral_priv
+                      → recipient_pub). Seul le tag #p est public.
+
+    Correctif (conformité NIP-01) : l'id du 1059 était auparavant calculé comme
+    sha256 du dict de l'event trié par clés — ce qui n'est PAS l'id NOSTR. Tout
+    client conforme rejetait l'event (id mismatch). Les deux events passent
+    désormais par pynostr.event.Event, qui sérialise et signe correctement
+    (même chemin que les DM kind 4 de ce fichier, validé en production).
     """
-    # Generate ephemeral keypair for gift wrapping
-    ephemeral_private, ephemeral_public = generate_ephemeral_keypair()
-    
-    # Create the inner event (the actual message)
-    inner_event_json = json.dumps(inner_event)
-    
-    # Encrypt the inner event with the recipient's public key
-    encrypted_inner = nip44_encrypt(inner_event_json, ephemeral_private, recipient_public_key)
-    
-    # Create the gift-wrapped event
-    gift_event = {
-        "kind": 1059,  # Gift wrap event kind
-        "content": encrypted_inner,
-        "tags": [
-            ["p", recipient_public_key],
-            ["wrapped", "true"]
-        ],
-        "pubkey": ephemeral_public,
-        "created_at": int(time.time())
-    }
-    
-    # Sign with ephemeral key
-    ephemeral_key_obj = PrivateKey.from_hex(ephemeral_private)
-    gift_event["id"] = hashlib.sha256(json.dumps(gift_event, separators=(',', ':'), sort_keys=True).encode()).hexdigest()
-    gift_event["sig"] = ephemeral_key_obj.sign(gift_event["id"]).hex()
-    
+    # Clé éphémère jetable : c'est elle qui masque l'identité de l'expéditeur
+    # vis-à-vis du relay (aucune corrélation entre deux gift wraps successifs).
+    ephemeral_private, _ephemeral_public = generate_ephemeral_keypair()
+
+    # ── Couche 2 : seal (kind 13) ──
+    sealed_content = nip44_encrypt(json.dumps(inner_event), sender_private_key, recipient_public_key)
+    seal = _signed_event(13, sealed_content, [], sender_private_key,
+                         created_at=_randomized_past_timestamp())
+
+    # ── Couche 3 : gift wrap (kind 1059) ──
+    wrapped_content = nip44_encrypt(json.dumps(seal), ephemeral_private, recipient_public_key)
+    gift_event = _signed_event(1059, wrapped_content, [["p", recipient_public_key]],
+                               ephemeral_private,
+                               created_at=_randomized_past_timestamp())
+
     return gift_event
 
 class SecureNostrWebSocketClient:
@@ -547,6 +580,78 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
         if client:
             client.close()
 
+def send_nip17_file_message(sender_nsec: str, recipient_hex: str, ipfs_url: str, file_type: str,
+                            decryption_key_hex: str, decryption_nonce_hex: str,
+                            x_hash: str, ox_hash: str, relay_url: str = DEFAULT_RELAY,
+                            extra_relays: list = None, size: int = None) -> bool:
+    """Envoie un message fichier NIP-17 (rumor kind:15) gift-wrappé.
+
+    Le fichier lui-même n'est JAMAIS transmis : seul le CID/URL IPFS du blob
+    chiffré voyage, avec la clé AES-256-GCM et son IV dans les tags du rumor —
+    donc à l'intérieur des deux couches de chiffrement NIP-59. Le relay ne voit
+    qu'un kind 1059 opaque adressé à une clé éphémère.
+
+    x  = sha256 du blob chiffré tel qu'il est sur IPFS (vérifiable AVANT
+         déchiffrement — détecte un CID corrompu/substitué)
+    ox = sha256 du fichier ORIGINAL en clair (vérifiable APRÈS déchiffrement —
+         détecte une clé/IV erronés ou une altération du clair)
+
+    Retourne True si l'event a été accepté par au moins un relay.
+    """
+    try:
+        priv_key_obj = PrivateKey.from_nsec(sender_nsec)
+        sender_priv_hex = priv_key_obj.hex()
+        sender_pub_hex = priv_key_obj.public_key.hex()
+
+        tags = [
+            ["p", recipient_hex],
+            ["file-type", file_type],
+            ["encryption-algorithm", "aes-gcm"],
+            ["decryption-key", decryption_key_hex],
+            ["decryption-nonce", decryption_nonce_hex],
+            ["x", x_hash],
+            ["ox", ox_hash],
+        ]
+        if size:
+            tags.append(["size", str(size)])
+
+        # Rumor : NON signé (pas de .id ni de .sig) — c'est ce qui rend le
+        # message déniable, cf. NIP-59. Seul le seal qui l'enveloppe est signé.
+        rumor = {
+            "pubkey":     sender_pub_hex,
+            "created_at": int(time.time()),
+            "kind":       15,
+            "tags":       tags,
+            "content":    ipfs_url,
+        }
+
+        gift_event = create_gift_wrapped_message(rumor, sender_priv_hex, recipient_hex)
+
+        print("🎁 Message fichier NIP-17 (rumor kind:15 → seal kind:13 → gift wrap kind:1059)")
+        print(f"   - Gift wrap ID: {gift_event.get('id', 'N/A')}")
+        print(f"   - Destinataire: {recipient_hex[:16]}…")
+        print(f"   - Fichier: {file_type} — {ipfs_url}")
+
+        success = _publish_event_to_relay(gift_event, relay_url)
+        print(f"{'✅' if success else '❌'} Publication vers {relay_url} : "
+              f"{'ok' if success else 'échec'}")
+
+        for relay in (extra_relays or []):
+            if relay == relay_url:
+                continue
+            ok = _publish_event_to_relay(gift_event, relay)
+            print(f"{'✅' if ok else '❌'} Republication vers {relay} : {'ok' if ok else 'échec'}")
+            success = success or ok
+
+        return success
+
+    except Exception as e:
+        print(f"\n⚠️ Error (file-message): {type(e).__name__}: {str(e)}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     # Pre-process --nsec-stdin before argparse to avoid positional arg offset:
     # argparse would greedily assign recipient_hex to sender_nsec (optional),
@@ -565,7 +670,10 @@ def main():
     parser.add_argument("sender_nsec", nargs="?", default=None,
                        help="NSEC private key of the sender (or use --nsec-stdin)")
     parser.add_argument("recipient_hex", help="Hex public key of the recipient")
-    parser.add_argument("message", help="Message content to send")
+    # `message` devient optionnel : en mode --file-message le contenu du rumor
+    # kind:15 est l'URL IPFS (--ipfs-url), pas un texte libre.
+    parser.add_argument("message", nargs="?", default=None,
+                       help="Message content to send (inutile avec --file-message)")
     parser.add_argument("relay_url", nargs="?", default=DEFAULT_RELAY,
                        help=f"Relay URL (default: {DEFAULT_RELAY})")
 
@@ -591,7 +699,36 @@ def main():
                             "event signé (même id) vers chacun, sans dupliquer visuellement "
                             "le message pour un lecteur abonné à un seul de ces relais")
 
+    # ── Message fichier NIP-17 (rumor kind:15) ──
+    # Additif, exactement comme --gift-wrap : ignoré si absent, aucun appelant
+    # existant n'est affecté. Utilisé par IA/bro/satellite_face_matcher.py pour
+    # partager une photo chiffrée avec un ami reconnu sur un visage.
+    parser.add_argument("--file-message", action="store_true",
+                       help="Envoie un message fichier NIP-17 (rumor kind:15 gift-wrappé) "
+                            "au lieu d'un DM kind 4 — le fichier reste sur IPFS, chiffré")
+    parser.add_argument("--ipfs-url", type=str, default=None,
+                       help="URL ou CID IPFS du blob CHIFFRÉ (contenu du rumor kind:15)")
+    parser.add_argument("--file-type", type=str, default="application/octet-stream",
+                       help="Type MIME du fichier en clair (tag 'file-type')")
+    parser.add_argument("--decryption-key", type=str, default=None,
+                       help="Clé AES-256 en hex (64 chars) — tag 'decryption-key'")
+    parser.add_argument("--decryption-nonce", type=str, default=None,
+                       help="IV/nonce AES-GCM en hex (24 chars) — tag 'decryption-nonce'")
+    parser.add_argument("--x-hash", type=str, default=None,
+                       help="sha256 hex du blob CHIFFRÉ (tag 'x')")
+    parser.add_argument("--ox-hash", type=str, default=None,
+                       help="sha256 hex du fichier ORIGINAL en clair (tag 'ox')")
+    parser.add_argument("--size", type=int, default=None,
+                       help="Taille du blob chiffré en octets (tag 'size', optionnel)")
+    parser.add_argument("--relay", type=str, default=None,
+                       help="Relais principal, alternative nommée au 4e positionnel relay_url. "
+                            "Indispensable avec --file-message : sans `message`, un relais "
+                            "passé en positionnel serait interprété COMME le message.")
+
     args = parser.parse_args()
+
+    if args.relay:
+        args.relay_url = args.relay
 
     # Resolve NSEC source
     if args.nsec_stdin:
@@ -610,8 +747,39 @@ def main():
     if len(args.recipient_hex) != 64:
         print("Error: Recipient key must be 64-character hex string", file=sys.stderr)
         sys.exit(1)
-    
-    if not args.message.strip():
+
+    extra_relays = [r.strip() for r in args.extra_relays.split(",") if r.strip()] if args.extra_relays else None
+
+    # ── Mode message fichier NIP-17 : branche séparée, ne passe jamais par
+    #    send_secure_direct_message (pas de kind 4, pas de texte).
+    if args.file_message:
+        _missing = [n for n, v in (
+            ("--ipfs-url", args.ipfs_url),
+            ("--decryption-key", args.decryption_key),
+            ("--decryption-nonce", args.decryption_nonce),
+            ("--x-hash", args.x_hash),
+            ("--ox-hash", args.ox_hash),
+        ) if not v]
+        if _missing:
+            print(f"Error: --file-message requiert {', '.join(_missing)}", file=sys.stderr)
+            sys.exit(1)
+
+        ok = send_nip17_file_message(
+            sender_nsec,
+            args.recipient_hex,
+            args.ipfs_url,
+            args.file_type,
+            args.decryption_key,
+            args.decryption_nonce,
+            args.x_hash,
+            args.ox_hash,
+            relay_url=args.relay_url,
+            extra_relays=extra_relays,
+            size=args.size,
+        )
+        sys.exit(0 if ok else 1)
+
+    if not args.message or not args.message.strip():
         print("Error: Message cannot be empty", file=sys.stderr)
         sys.exit(1)
 
@@ -627,8 +795,6 @@ def main():
         except Exception as e:
             print(f"Error: --extra-tags n'est pas du JSON valide: {e}", file=sys.stderr)
             sys.exit(1)
-
-    extra_relays = [r.strip() for r in args.extra_relays.split(",") if r.strip()] if args.extra_relays else None
 
     # Send the secure message
     success = send_secure_direct_message(

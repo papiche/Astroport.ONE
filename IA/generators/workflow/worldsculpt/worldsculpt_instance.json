@@ -1,0 +1,1354 @@
+{
+ "last_node_id": 26,
+ "last_link_id": 34,
+ "nodes": [
+  {
+   "id": 1,
+   "type": "UNETLoader",
+   "pos": [
+    0,
+    0
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 1,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      1
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "UNETLoader"
+   },
+   "widgets_values": [
+    "pixal3d_bf16.safetensors",
+    "default"
+   ]
+  },
+  {
+   "id": 2,
+   "type": "WorldSculptLoraLoader",
+   "pos": [
+    380,
+    0
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 2,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 1
+    }
+   ],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      2
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "WorldSculptLoraLoader"
+   },
+   "widgets_values": [
+    "worldsculpt_ss_lora.pt",
+    "ss",
+    1.0
+   ]
+  },
+  {
+   "id": 3,
+   "type": "WorldSculptLoraLoader",
+   "pos": [
+    760,
+    0
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 3,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 2
+    }
+   ],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      8,
+      22
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "WorldSculptLoraLoader"
+   },
+   "widgets_values": [
+    "worldsculpt_shape_lora.pt",
+    "shape",
+    1.0
+   ]
+  },
+  {
+   "id": 4,
+   "type": "WorldSculptAggregatorLoader",
+   "pos": [
+    380,
+    160
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 4,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "aggregator",
+     "type": "WS_AGGREGATOR",
+     "links": [
+      7
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "WorldSculptAggregatorLoader"
+   },
+   "widgets_values": [
+    "worldsculpt_ss_aggregator.pt"
+   ]
+  },
+  {
+   "id": 5,
+   "type": "WorldSculptAggregatorLoader",
+   "pos": [
+    760,
+    160
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "aggregator",
+     "type": "WS_AGGREGATOR",
+     "links": [
+      21
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "WorldSculptAggregatorLoader"
+   },
+   "widgets_values": [
+    "worldsculpt_shape_aggregator.pt"
+   ]
+  },
+  {
+   "id": 6,
+   "type": "CLIPVisionLoader",
+   "pos": [
+    0,
+    160
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 6,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "CLIP_VISION",
+     "type": "CLIP_VISION",
+     "links": [
+      5,
+      20
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CLIPVisionLoader"
+   },
+   "widgets_values": [
+    "dino_v3_L_naf_fp32.safetensors"
+   ]
+  },
+  {
+   "id": 7,
+   "type": "VAELoader",
+   "pos": [
+    0,
+    280
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 7,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      16,
+      29
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VAELoader"
+   },
+   "widgets_values": [
+    "trellis_2_shape_vae_bf16.safetensors"
+   ]
+  },
+  {
+   "id": 8,
+   "type": "WorldSculptLoadScene",
+   "pos": [
+    0,
+    420
+   ],
+   "size": [
+    420,
+    120
+   ],
+   "flags": {},
+   "order": 8,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "scene",
+     "type": "WS_SCENE",
+     "links": [
+      3
+     ]
+    },
+    {
+     "name": "instance_count",
+     "type": "INT",
+     "links": []
+    },
+    {
+     "name": "instance_names",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "WorldSculptLoadScene"
+   },
+   "widgets_values": [
+    "C:/Users/terry-pc/AppData/Local/Temp/claude/I--ComfyUI/d0704764-6e5d-4a13-bf7d-c7fce4ac2785/scratchpad/ws/data/marble_serene_living_room_countryside_view"
+   ]
+  },
+  {
+   "id": 9,
+   "type": "WorldSculptInstanceViews",
+   "pos": [
+    480,
+    420
+   ],
+   "size": [
+    360,
+    260
+   ],
+   "flags": {},
+   "order": 9,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "scene",
+     "type": "WS_SCENE",
+     "link": 3
+    }
+   ],
+   "outputs": [
+    {
+     "name": "views",
+     "type": "WS_VIEWS",
+     "links": [
+      6,
+      33
+     ]
+    },
+    {
+     "name": "anchor_preview",
+     "type": "IMAGE",
+     "links": [
+      4
+     ]
+    },
+    {
+     "name": "instance_name",
+     "type": "STRING",
+     "links": []
+    },
+    {
+     "name": "view_count",
+     "type": "INT",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "WorldSculptInstanceViews"
+   },
+   "widgets_values": [
+    0,
+    1024,
+    20,
+    "area",
+    0.001,
+    3.0,
+    true,
+    95.0
+   ]
+  },
+  {
+   "id": 10,
+   "type": "PreviewImage",
+   "pos": [
+    880,
+    420
+   ],
+   "size": [
+    260,
+    260
+   ],
+   "flags": {},
+   "order": 10,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 4
+    }
+   ],
+   "outputs": [],
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   },
+   "widgets_values": []
+  },
+  {
+   "id": 11,
+   "type": "WorldSculptSSConditioning",
+   "pos": [
+    1200,
+    0
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 11,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "clip_vision_model",
+     "type": "CLIP_VISION",
+     "link": 5
+    },
+    {
+     "name": "views",
+     "type": "WS_VIEWS",
+     "link": 6
+    },
+    {
+     "name": "aggregator",
+     "type": "WS_AGGREGATOR",
+     "link": 7
+    }
+   ],
+   "outputs": [
+    {
+     "name": "positive",
+     "type": "CONDITIONING",
+     "links": [
+      12,
+      17
+     ]
+    },
+    {
+     "name": "negative",
+     "type": "CONDITIONING",
+     "links": [
+      13,
+      18
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "WorldSculptSSConditioning"
+   },
+   "widgets_values": []
+  },
+  {
+   "id": 12,
+   "type": "EmptyTrellis2LatentStructure",
+   "pos": [
+    1200,
+    160
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 12,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      14
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "EmptyTrellis2LatentStructure"
+   },
+   "widgets_values": [
+    1
+   ]
+  },
+  {
+   "id": 13,
+   "type": "CFGOverride",
+   "pos": [
+    1200,
+    300
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 13,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 8
+    }
+   ],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      9
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CFGOverride"
+   },
+   "widgets_values": [
+    1.0,
+    0.667,
+    1.0
+   ]
+  },
+  {
+   "id": 14,
+   "type": "RescaleCFG",
+   "pos": [
+    1200,
+    440
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 14,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 9
+    }
+   ],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      10
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "RescaleCFG"
+   },
+   "widgets_values": [
+    0.7
+   ]
+  },
+  {
+   "id": 15,
+   "type": "ModelSamplingSD3",
+   "pos": [
+    1200,
+    560
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 15,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 10
+    }
+   ],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      11
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "ModelSamplingSD3"
+   },
+   "widgets_values": [
+    5.0
+   ]
+  },
+  {
+   "id": 16,
+   "type": "KSampler",
+   "pos": [
+    1600,
+    0
+   ],
+   "size": [
+    320,
+    280
+   ],
+   "flags": {},
+   "order": 16,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 11
+    },
+    {
+     "name": "positive",
+     "type": "CONDITIONING",
+     "link": 12
+    },
+    {
+     "name": "negative",
+     "type": "CONDITIONING",
+     "link": 13
+    },
+    {
+     "name": "latent_image",
+     "type": "LATENT",
+     "link": 14
+    }
+   ],
+   "outputs": [
+    {
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      15
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "KSampler"
+   },
+   "widgets_values": [
+    42,
+    "fixed",
+    12,
+    7.5,
+    "euler",
+    "normal",
+    1.0
+   ]
+  },
+  {
+   "id": 17,
+   "type": "VaeDecodeStructureTrellis2",
+   "pos": [
+    1600,
+    320
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 17,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "samples",
+     "type": "LATENT",
+     "link": 15
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 16
+    }
+   ],
+   "outputs": [
+    {
+     "name": "voxel",
+     "type": "VOXEL",
+     "links": [
+      19
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VaeDecodeStructureTrellis2"
+   },
+   "widgets_values": [
+    "64"
+   ]
+  },
+  {
+   "id": 18,
+   "type": "WorldSculptShapeStage",
+   "pos": [
+    2000,
+    0
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 18,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "positive",
+     "type": "CONDITIONING",
+     "link": 17
+    },
+    {
+     "name": "negative",
+     "type": "CONDITIONING",
+     "link": 18
+    },
+    {
+     "name": "voxel",
+     "type": "VOXEL",
+     "link": 19
+    },
+    {
+     "name": "clip_vision_model",
+     "type": "CLIP_VISION",
+     "link": 20
+    },
+    {
+     "name": "aggregator",
+     "type": "WS_AGGREGATOR",
+     "link": 21
+    }
+   ],
+   "outputs": [
+    {
+     "name": "positive",
+     "type": "CONDITIONING",
+     "links": [
+      25
+     ]
+    },
+    {
+     "name": "negative",
+     "type": "CONDITIONING",
+     "links": [
+      26
+     ]
+    },
+    {
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      27
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "WorldSculptShapeStage"
+   },
+   "widgets_values": []
+  },
+  {
+   "id": 19,
+   "type": "CFGOverride",
+   "pos": [
+    2000,
+    300
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 19,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 22
+    }
+   ],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      23
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "CFGOverride"
+   },
+   "widgets_values": [
+    1.0,
+    0.769,
+    1.0
+   ]
+  },
+  {
+   "id": 20,
+   "type": "RescaleCFG",
+   "pos": [
+    2000,
+    440
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 20,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 23
+    }
+   ],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      24
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "RescaleCFG"
+   },
+   "widgets_values": [
+    0.5
+   ]
+  },
+  {
+   "id": 21,
+   "type": "KSampler",
+   "pos": [
+    2400,
+    0
+   ],
+   "size": [
+    320,
+    280
+   ],
+   "flags": {},
+   "order": 21,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 24
+    },
+    {
+     "name": "positive",
+     "type": "CONDITIONING",
+     "link": 25
+    },
+    {
+     "name": "negative",
+     "type": "CONDITIONING",
+     "link": 26
+    },
+    {
+     "name": "latent_image",
+     "type": "LATENT",
+     "link": 27
+    }
+   ],
+   "outputs": [
+    {
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      28
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "KSampler"
+   },
+   "widgets_values": [
+    42,
+    "fixed",
+    12,
+    7.5,
+    "euler",
+    "normal",
+    1.0
+   ]
+  },
+  {
+   "id": 22,
+   "type": "VaeDecodeShapeTrellis",
+   "pos": [
+    2400,
+    320
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 22,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "samples",
+     "type": "LATENT",
+     "link": 28
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 29
+    }
+   ],
+   "outputs": [
+    {
+     "name": "mesh",
+     "type": "MESH",
+     "links": [
+      30
+     ]
+    },
+    {
+     "name": "shape_subdivides",
+     "type": "SHAPE_SUBDIVIDES",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "VaeDecodeShapeTrellis"
+   },
+   "widgets_values": []
+  },
+  {
+   "id": 23,
+   "type": "RemeshMesh",
+   "pos": [
+    2800,
+    0
+   ],
+   "size": [
+    320,
+    300
+   ],
+   "flags": {},
+   "order": 23,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "mesh",
+     "type": "MESH",
+     "link": 30
+    }
+   ],
+   "outputs": [
+    {
+     "name": "mesh",
+     "type": "MESH",
+     "links": [
+      31
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "RemeshMesh"
+   },
+   "widgets_values": [
+    768,
+    "udf",
+    false,
+    false,
+    false,
+    1.0,
+    0.0,
+    false,
+    20,
+    0.01,
+    20000000
+   ]
+  },
+  {
+   "id": 24,
+   "type": "DecimateMesh",
+   "pos": [
+    2800,
+    340
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 24,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "mesh",
+     "type": "MESH",
+     "link": 31
+    }
+   ],
+   "outputs": [
+    {
+     "name": "mesh",
+     "type": "MESH",
+     "links": [
+      32
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "DecimateMesh"
+   },
+   "widgets_values": [
+    200000,
+    "midpoint"
+   ]
+  },
+  {
+   "id": 25,
+   "type": "WorldSculptPlaceMesh",
+   "pos": [
+    2800,
+    500
+   ],
+   "size": [
+    320,
+    120
+   ],
+   "flags": {},
+   "order": 25,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "mesh",
+     "type": "MESH",
+     "link": 32
+    },
+    {
+     "name": "views",
+     "type": "WS_VIEWS",
+     "link": 33
+    }
+   ],
+   "outputs": [
+    {
+     "name": "mesh",
+     "type": "MESH",
+     "links": [
+      34
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "WorldSculptPlaceMesh"
+   },
+   "widgets_values": [
+    "y_up"
+   ]
+  },
+  {
+   "id": 26,
+   "type": "SaveGLB",
+   "pos": [
+    3200,
+    0
+   ],
+   "size": [
+    320,
+    200
+   ],
+   "flags": {},
+   "order": 26,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "mesh",
+     "type": "MESH",
+     "link": 34
+    }
+   ],
+   "outputs": [],
+   "properties": {
+    "Node name for S&R": "SaveGLB"
+   },
+   "widgets_values": [
+    "3d/worldsculpt",
+    ""
+   ]
+  }
+ ],
+ "links": [
+  [
+   1,
+   1,
+   0,
+   2,
+   0,
+   "MODEL"
+  ],
+  [
+   2,
+   2,
+   0,
+   3,
+   0,
+   "MODEL"
+  ],
+  [
+   3,
+   8,
+   0,
+   9,
+   0,
+   "WS_SCENE"
+  ],
+  [
+   4,
+   9,
+   1,
+   10,
+   0,
+   "IMAGE"
+  ],
+  [
+   5,
+   6,
+   0,
+   11,
+   0,
+   "CLIP_VISION"
+  ],
+  [
+   6,
+   9,
+   0,
+   11,
+   1,
+   "WS_VIEWS"
+  ],
+  [
+   7,
+   4,
+   0,
+   11,
+   2,
+   "WS_AGGREGATOR"
+  ],
+  [
+   8,
+   3,
+   0,
+   13,
+   0,
+   "MODEL"
+  ],
+  [
+   9,
+   13,
+   0,
+   14,
+   0,
+   "MODEL"
+  ],
+  [
+   10,
+   14,
+   0,
+   15,
+   0,
+   "MODEL"
+  ],
+  [
+   11,
+   15,
+   0,
+   16,
+   0,
+   "MODEL"
+  ],
+  [
+   12,
+   11,
+   0,
+   16,
+   1,
+   "CONDITIONING"
+  ],
+  [
+   13,
+   11,
+   1,
+   16,
+   2,
+   "CONDITIONING"
+  ],
+  [
+   14,
+   12,
+   0,
+   16,
+   3,
+   "LATENT"
+  ],
+  [
+   15,
+   16,
+   0,
+   17,
+   0,
+   "LATENT"
+  ],
+  [
+   16,
+   7,
+   0,
+   17,
+   1,
+   "VAE"
+  ],
+  [
+   17,
+   11,
+   0,
+   18,
+   0,
+   "CONDITIONING"
+  ],
+  [
+   18,
+   11,
+   1,
+   18,
+   1,
+   "CONDITIONING"
+  ],
+  [
+   19,
+   17,
+   0,
+   18,
+   2,
+   "VOXEL"
+  ],
+  [
+   20,
+   6,
+   0,
+   18,
+   3,
+   "CLIP_VISION"
+  ],
+  [
+   21,
+   5,
+   0,
+   18,
+   4,
+   "WS_AGGREGATOR"
+  ],
+  [
+   22,
+   3,
+   0,
+   19,
+   0,
+   "MODEL"
+  ],
+  [
+   23,
+   19,
+   0,
+   20,
+   0,
+   "MODEL"
+  ],
+  [
+   24,
+   20,
+   0,
+   21,
+   0,
+   "MODEL"
+  ],
+  [
+   25,
+   18,
+   0,
+   21,
+   1,
+   "CONDITIONING"
+  ],
+  [
+   26,
+   18,
+   1,
+   21,
+   2,
+   "CONDITIONING"
+  ],
+  [
+   27,
+   18,
+   2,
+   21,
+   3,
+   "LATENT"
+  ],
+  [
+   28,
+   21,
+   0,
+   22,
+   0,
+   "LATENT"
+  ],
+  [
+   29,
+   7,
+   0,
+   22,
+   1,
+   "VAE"
+  ],
+  [
+   30,
+   22,
+   0,
+   23,
+   0,
+   "MESH"
+  ],
+  [
+   31,
+   23,
+   0,
+   24,
+   0,
+   "MESH"
+  ],
+  [
+   32,
+   24,
+   0,
+   25,
+   0,
+   "MESH"
+  ],
+  [
+   33,
+   9,
+   0,
+   25,
+   1,
+   "WS_VIEWS"
+  ],
+  [
+   34,
+   25,
+   0,
+   26,
+   0,
+   "MESH"
+  ]
+ ],
+ "groups": [],
+ "config": {},
+ "extra": {},
+ "version": 0.4
+}

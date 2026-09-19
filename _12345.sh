@@ -850,6 +850,7 @@ NODE12345="{
     \"myAPI\" : \"${myAPI}\",
     \"myRELAY\" : \"${myRELAY}\",
     \"uSPOT\" : \"${uSPOT}\",
+    \"cloud_dav_url\" : \"${uSPOT}/dav/\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
     \"astroport\" : \"http://${myIP}:12345\",
     \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",

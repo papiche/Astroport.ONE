@@ -1016,6 +1016,17 @@ while IFS= read -r -d '' file; do
             log_message "         ✅ Hash IPFS obtenu: $ipfs_hash"
             log_message "      ✅ Fichier ajouté avec succès - Link: $ipfs_link"
 
+            # ── Hook FaceID : déclencher l'analyse de visages sur les images ──
+            # DOIT rester avant le rm -f plus bas (le fichier disparaît du disque
+            # dès qu'il est sur IPFS), mais le travail réel se fait depuis IPFS,
+            # donc le script est lancé en arrière-plan : l'indexation ne doit
+            # jamais attendre un Brain GPU distant. Échec silencieux par design
+            # (voir trigger_bro_vision_analysis.sh : exit 0 si pas de cible).
+            if [[ "$file_type" == "image" ]]; then
+                bash "$HOME/.zen/Astroport.ONE/tools/trigger_bro_vision_analysis.sh" \
+                    "$SOURCE_DIR" "$relative_path" "$ipfs_link" &
+            fi
+
             # Dépinner l'ancien hash si il existait et qu'il est différent du nouveau
             if [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "$ipfs_link" ]; then
                 unpin_ipfs_hash "$old_ipfs_link" "fichier modifié: $relative_path"

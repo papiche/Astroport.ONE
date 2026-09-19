@@ -41,6 +41,11 @@ SELF_DM_QUEUE_DIR="$HOME/.zen/tmp/bro_self_dm_queue"
 ## avec .secret.love de ce compte (détenue server-side, contrairement au
 ## self-DM ci-dessus).
 LOVE_DM_QUEUE_DIR="$HOME/.zen/tmp/bro_love_dm_queue"
+## Gift wrap NIP-59/NIP-17 (kind 1059 adressé au HEX MULTIPASS d'un compte
+## local) — déposé par filter/1059.sh avec {"giftwrap":true,"email":...}.
+## Déchiffrable ici avec .secret.nostr de ce compte (détenu server-side) :
+## le gift wrap cible le VRAI pubkey du destinataire, pas NODE_HEX.
+GIFTWRAP_QUEUE_DIR="$HOME/.zen/tmp/bro_giftwrap_queue"
 PID_FILE="$HOME/.zen/tmp/bro_dm_daemon.pid"
 LOG_FILE="$HOME/.zen/tmp/bro_dm_daemon.log"
 INTERCOM="${HOME}/.zen/Astroport.ONE/tools/nostr_node_intercom.py"
@@ -51,7 +56,7 @@ BRO_WATCH_CORE="$MY_PATH/../bro_watch_core.py"
 ## Déduplication inter-sources (filter/4.sh + constellation subscriber)
 _DEDUP_DIR="$HOME/.zen/tmp/bro_dm_dedup"
 
-mkdir -p "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" "$LOVE_DM_QUEUE_DIR" "$_DEDUP_DIR"
+mkdir -p "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" "$LOVE_DM_QUEUE_DIR" "$GIFTWRAP_QUEUE_DIR" "$_DEDUP_DIR"
 mkdir -p "$HOME/.zen/flashmem"
 
 ## Traitement sériel : un seul job à la fois (pas de parallélisme)
@@ -411,22 +416,9 @@ _handle_bro_image() {
         return 1
     fi
 
-    ## Déchiffrement AES-GCM — format UENC : magic[4] ver[1] enc_type[1] iv[12] ciphertext+tag
-    if ! ~/.astro/bin/python3 - "$tmp_enc" "$enc_key" "$tmp_img" 2>/dev/null <<'PYEOF'
-import sys
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-enc_file, key_hex, out_file = sys.argv[1], sys.argv[2], sys.argv[3]
-with open(enc_file, 'rb') as f:
-    data = f.read()
-if data[:4] != b'UENC':
-    sys.exit(1)
-iv = data[6:18]
-ciphertext = data[18:]
-plaintext = AESGCM(bytes.fromhex(key_hex)).decrypt(iv, ciphertext, None)
-with open(out_file, 'wb') as f:
-    f.write(plaintext)
-PYEOF
-    then
+    ## Déchiffrement AES-GCM — format UENC, via le codec partagé (tools/uenc_codec.py)
+    if ! ~/.astro/bin/python3 "$HOME/.zen/Astroport.ONE/tools/uenc_codec.py" decrypt "$enc_key" \
+        < "$tmp_enc" > "$tmp_img" 2>/dev/null; then
         _log "WARN: déchiffrement AES-GCM échoué pour CID ${cid:0:12}…"
         _send_dm "$sender" "❌ Échec du déchiffrement de l'image." "${_RELAYS[0]}"
         rm -f "$tmp_enc" "$tmp_img"
@@ -1202,6 +1194,217 @@ _handle_comfyui_result() {
     fi
 }
 
+## ── Canal "vision_analysis_job" : détection de visages déléguée par un satellite ──
+## Payload : email, owner_hex, path, ipfs_link, reply_node_hex
+##           (cf. tools/trigger_bro_vision_analysis.sh)
+##
+## Côté BRAIN. Même squelette que _handle_comfyui_job : verrou GPU exclusif,
+## connexion ComfyUI via comfyui.me.sh, soumission /prompt, attente WebSocket
+## via comfyui_wait.py, récupération /history — puis renvoi du résultat au
+## satellite sur le canal vision_analysis_result.
+##
+## Le workflow « Face Detect Embeddings JSON » est au format UI (nodes/links),
+## refusé tel quel par /prompt : il est converti au format API par
+## IA/comfyui_ui2api.py, qui va chercher les vrais noms d'entrée dans
+## /object_info (pas de devinette sur les signatures des custom nodes
+## InsightFaceAnalysisLoader / FaceDetectEmbeddingsToJSON).
+_handle_vision_analysis_job() {
+    local payload="$1" sender="$2"
+
+    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _REPLY_NODE_HEX
+    _payload_get "$payload" email owner_hex path ipfs_link reply_node_hex
+
+    [[ -z "$_IPFS_LINK" || -z "$_OWNER_HEX" ]] && \
+        _log "WARN: 👁️ vision_analysis_job: payload incomplet (ipfs_link/owner_hex)" && return
+
+    _log "👁️ vision_analysis_job: ${_PATH:-?} (${_EMAIL:-?}) de ${sender:0:12}…"
+
+    local _COMFYUI_URL="http://127.0.0.1:8188"
+    local _WORKFLOW="$MY_PATH/../generators/workflow/Face Detect Embeddings JSON.json"
+    local _UI2API="$MY_PATH/../comfyui_ui2api.py"
+
+    ## Helper : renvoyer un vision_analysis_result sur tous les relays connus
+    ## (même garantie de livraison que _comfyui_send_result).
+    _vision_send_result() {
+        local _to="$1" _payload_json="$2"
+        [[ -z "$_to" || ${#_to} -ne 64 ]] && return 1
+        local _r _ok=false
+        for _r in "${_RELAYS[@]}"; do
+            printf '%s\n' "$NODE_NSEC" | python3 "$INTERCOM" send \
+                --nsec-stdin \
+                --to      "$_to" \
+                --channel "vision_analysis_result" \
+                --payload "$_payload_json" \
+                --relays  "$_r" \
+                2>/dev/null && _ok=true
+        done
+        $_ok
+    }
+
+    ## Construire le payload de résultat (§B3 du contrat de canal).
+    ## faces_json vide → status=failed, tableau faces vide.
+    _vision_result_payload() {
+        local _faces_json="${1:-}" _status="${2:-failed}"
+        python3 -c "
+import json, sys
+faces_raw = sys.argv[5]
+try:
+    faces = json.loads(faces_raw) if faces_raw else []
+    if isinstance(faces, dict):
+        faces = faces.get('faces', [])
+except Exception:
+    faces = []
+print(json.dumps({
+    'email':     sys.argv[1],
+    'owner_hex': sys.argv[2],
+    'path':      sys.argv[3],
+    'ipfs_link': sys.argv[4],
+    'status':    sys.argv[6],
+    'faces':     faces,
+}))
+" "${_EMAIL:-}" "${_OWNER_HEX:-}" "${_PATH:-}" "${_IPFS_LINK:-}" "$_faces_json" "$_status" 2>/dev/null
+    }
+
+    (
+        flock -x -w 300 9 || {
+            _log "WARN: 👁️ vision_analysis_job: timeout GPU lock (>5min) — ${_PATH:-?} abandonné"
+            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")" \
+                || _log "WARN: 👁️ vision_analysis_job: notification timeout FAILED"
+            exit 1
+        }
+
+        if ! bash "$MY_PATH/../services/comfyui.me.sh" 2>/dev/null; then
+            _log "WARN: 👁️ vision_analysis_job: ComfyUI indisponible"
+            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")" \
+                || _log "WARN: 👁️ vision_analysis_job: notification ComfyUI absent FAILED"
+            exit 1
+        fi
+
+        local _tmp_dir _faces_json="" _status="failed"
+        _tmp_dir=$(mktemp -d /tmp/vision_job_XXXXXX)
+
+        ## 1. Récupérer l'image depuis IPFS
+        local _basename _img
+        _basename=$(basename "$_IPFS_LINK")
+        _img="$_tmp_dir/$_basename"
+        if ! timeout 120 ipfs get "/ipfs/${_IPFS_LINK}" -o "$_img" 2>/dev/null; then
+            _log "WARN: 👁️ vision_analysis_job: ipfs get échoué pour ${_IPFS_LINK:0:24}…"
+            rm -rf "$_tmp_dir"
+            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")"
+            exit 1
+        fi
+
+        ## 2. Téléverser l'image dans le dossier input de ComfyUI (LoadImage ne
+        ##    lit que là) — même mécanisme que generators/image_to_video.sh.
+        local _upload_resp _uploaded
+        _upload_resp=$(curl -s -X POST -F "image=@${_img};filename=${_basename}" \
+            "$_COMFYUI_URL/upload/image" 2>/dev/null)
+        _uploaded=$(jq -r '.name // empty' <<< "$_upload_resp" 2>/dev/null)
+        [[ -z "$_uploaded" ]] && _uploaded="$_basename"
+
+        ## 3. Convertir le workflow UI → API et y injecter le nom de l'image
+        local _api_workflow
+        _api_workflow=$(python3 "$_UI2API" "$_WORKFLOW" --url "$_COMFYUI_URL" \
+            --set "1.image=${_uploaded}" 2>>"$LOG_FILE")
+        if [[ -z "$_api_workflow" ]]; then
+            _log "WARN: 👁️ vision_analysis_job: conversion workflow UI→API échouée (custom nodes InsightFace absents de ce ComfyUI ?)"
+            rm -rf "$_tmp_dir"
+            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")"
+            exit 1
+        fi
+
+        ## 4. Soumettre à /prompt avec un client_id pour l'attente WebSocket ciblée
+        local _client_id _submit_resp _prompt_id
+        _client_id=$(python3 -c "import uuid; print(str(uuid.uuid4()))")
+        _submit_resp=$(jq -n --argjson wf "$_api_workflow" --arg cid "$_client_id" \
+            '{prompt:$wf, client_id:$cid}' 2>/dev/null | \
+            curl -s -X POST -H "Content-Type: application/json" --data-binary @- \
+                 "$_COMFYUI_URL/prompt" 2>/dev/null)
+        _prompt_id=$(jq -r '.prompt_id // empty' <<< "$_submit_resp" 2>/dev/null)
+        if [[ -z "$_prompt_id" ]]; then
+            ## La réponse d'erreur ComfyUI nomme précisément l'entrée fautive —
+            ## la journaliser entièrement est ce qui rend ce chemin débogable.
+            _log "WARN: 👁️ vision_analysis_job: /prompt refusé — réponse: ${_submit_resp:0:400}"
+            rm -rf "$_tmp_dir"
+            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")"
+            exit 1
+        fi
+
+        ## 5. Attendre la fin via WebSocket (comfyui_wait.py, réutilisé tel quel)
+        python3 "$MY_PATH/../comfyui_wait.py" "$_client_id" "$_prompt_id" \
+            --url "ws://127.0.0.1:8188/ws" --timeout 180 >/dev/null 2>&1
+
+        ## 6. Récupérer la sortie texte du node SaveText depuis /history
+        ##    TODO vérifier en réel (sagittarius) : la clé exacte sous laquelle
+        ##    SaveText expose son texte dans .outputs.<node_id> n'est pas
+        ##    documentée et dépend de la version du node (output_name = "text",
+        ##    mais le dict `ui` renvoyé peut utiliser "string" ou une valeur
+        ##    scalaire). On essaie donc TOUTES les formes plausibles, et on
+        ##    journalise le JSON brut si aucune ne matche — de quoi corriger
+        ##    la ligne en une minute au premier test sur la vraie machine.
+        local _history
+        _history=$(curl -s "$_COMFYUI_URL/history/${_prompt_id}" 2>/dev/null)
+        _faces_json=$(jq -r --arg id "$_prompt_id" '
+            .[$id].outputs // {} | to_entries[] | .value
+            | (.text? // .string? // empty)
+            | if type == "array" then .[0] else . end
+        ' <<< "$_history" 2>/dev/null | head -1)
+
+        if [[ -n "$_faces_json" && "$_faces_json" != "null" ]]; then
+            _status="ok"
+        else
+            _log "WARN: 👁️ vision_analysis_job: sortie SaveText introuvable dans /history — outputs bruts: $(jq -c --arg id "$_prompt_id" '.[$id].outputs // {}' <<< "$_history" 2>/dev/null | head -c 400)"
+            _faces_json=""
+        fi
+
+        rm -rf "$_tmp_dir"
+        _log "👁️ vision_analysis_job: ${_PATH:-?} status=$_status"
+
+        if [[ -n "$_REPLY_NODE_HEX" && ${#_REPLY_NODE_HEX} -eq 64 ]]; then
+            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "$_faces_json" "$_status")" \
+                && _log "👁️ vision_analysis_job: résultat → ${_REPLY_NODE_HEX:0:12}…" \
+                || _log "WARN: 👁️ vision_analysis_job: DM résultat FAILED (tous relays)"
+        fi
+    ) 9>"$_GPU_LOCK"
+}
+
+## ── Canal "vision_analysis_result" : embeddings reçus depuis un Brain ───────
+## Payload : email, owner_hex, path, ipfs_link, status, faces[]  (§B3)
+## Côté SATELLITE. Délègue entièrement l'appariement + le partage NIP-17 à
+## satellite_face_matcher.py, qui reçoit le JSON complet sur stdin.
+_handle_vision_analysis_result() {
+    local payload="$1"
+    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _STATUS
+    _payload_get "$payload" email owner_hex path ipfs_link status
+
+    _log "👁️ vision_analysis_result: ${_PATH:-?} status=${_STATUS:-?} email=${_EMAIL:-?}"
+
+    if [[ "${_STATUS:-}" != "ok" ]]; then
+        _log "ℹ️  👁️ vision_analysis_result: status≠ok — rien à apparier"
+        return
+    fi
+
+    ## Le catalogue de visages est strictement local au propriétaire : si le
+    ## compte n'est pas hébergé ici (ou en roaming), ce n'est pas à cette
+    ## station de l'écrire.
+    if ! bro_user_is_local "$_EMAIL"; then
+        _log "WARN: 👁️ vision_analysis_result: ${_EMAIL:-?} non hébergé ici (ou roaming) — ignoré"
+        return
+    fi
+
+    local _matcher="$MY_PATH/satellite_face_matcher.py"
+    if [[ ! -s "$_matcher" ]]; then
+        _log "WARN: 👁️ vision_analysis_result: satellite_face_matcher.py introuvable"
+        return
+    fi
+
+    printf '%s' "$payload" | python3 "$_matcher" \
+        "$_EMAIL" "$_OWNER_HEX" "$_PATH" "$_IPFS_LINK" \
+        >> "$LOG_FILE" 2>&1 \
+        && _log "👁️ vision_analysis_result: appariement terminé pour ${_PATH:-?}" \
+        || _log "WARN: 👁️ vision_analysis_result: satellite_face_matcher.py a échoué"
+}
+
 ## ── Canal "udrive" : sync fichier depuis IPFS → APP/uDRIVE ───────────
 _handle_udrive() {
     local payload="$1"
@@ -1461,6 +1664,239 @@ _handle_love_dm_event() {
     _LOVE_REPLY_AS=""
 }
 
+## ── Gift wrap NIP-59/NIP-17 (kind 1059, déposé par filter/1059.sh) ──────────
+## Format {"giftwrap":true,"email":"...","event":{...}} — cinquième format de
+## queue. Contrairement au kind 4 « node DM », l'enveloppe est chiffrée vers le
+## VRAI pubkey MULTIPASS du destinataire : c'est .secret.nostr de CE compte qui
+## dé-wrap (détenu server-side), jamais NODE_NSEC.
+##
+## Deux couches à ouvrir (cf. nostr_node_intercom.py unwrap-giftwrap) :
+##   1059 (clé éphémère) → 13 seal (vrai expéditeur) → 14/15 rumor (non signé)
+_handle_giftwrap_event() {
+    local event_file="$1"
+    local email
+    email=$(jq -r '.email // ""' < "$event_file" 2>/dev/null)
+    [[ -z "$email" ]] && return
+
+    local secret_file="$HOME/.zen/game/nostr/${email}/.secret.nostr"
+    if [[ ! -s "$secret_file" ]]; then
+        _log "WARN: giftwrap pour ${email} mais .secret.nostr absent — ignoré"
+        return
+    fi
+    local user_nsec
+    user_nsec=$(grep -oP 'NSEC=\K[^;]+' "$secret_file" 2>/dev/null | tr -d '[:space:]')
+    if [[ -z "$user_nsec" ]]; then
+        _log "WARN: giftwrap: NSEC illisible dans .secret.nostr pour ${email}"
+        return
+    fi
+
+    ## L'event complet doit passer par un FICHIER : --nsec-stdin occupe stdin.
+    local _wrap_tmp
+    _wrap_tmp=$(mktemp -p "${HOME}/.zen/tmp" "giftwrap_XXXXXX.json")
+    jq -c '.event' < "$event_file" > "$_wrap_tmp" 2>/dev/null
+
+    local unwrapped
+    unwrapped=$(printf '%s\n' "$user_nsec" | python3 "$INTERCOM" unwrap-giftwrap \
+        --nsec-stdin --event-file "$_wrap_tmp" 2>/dev/null)
+    rm -f "$_wrap_tmp"
+
+    if [[ -z "$unwrapped" ]]; then
+        _log "WARN: dé-wrap giftwrap échoué pour ${email} (chiffré pour une autre clé ?)"
+        return
+    fi
+
+    ## Protection anti-usurpation NIP-17 : le rumor n'est pas signé, seul le seal
+    ## l'est. Si le rumor prétend venir d'un autre auteur que le seal, quelqu'un
+    ## tente de se faire passer pour un tiers — on jette, sans traitement.
+    local verified sender rumor_kind
+    verified=$(jq -r '.verified // false' <<< "$unwrapped" 2>/dev/null)
+    sender=$(jq -r '.sender // ""' <<< "$unwrapped" 2>/dev/null)
+    if [[ "$verified" != "true" ]]; then
+        _log "WARN: 🎁 giftwrap ${email}: rumor.pubkey ≠ seal.pubkey — usurpation d'identité, ignoré"
+        return
+    fi
+
+    rumor_kind=$(jq -r '.rumor.kind // 0' <<< "$unwrapped" 2>/dev/null)
+    case "$rumor_kind" in
+        15)
+            _handle_nip17_file_message "$(jq -c '.rumor' <<< "$unwrapped")" "$email" "$sender"
+            ;;
+        14)
+            ## Message de chat NIP-17. Pas d'UI de conversation côté station
+            ## (le client la rend lui-même depuis le relay) : on journalise
+            ## seulement, pour ne rien perdre de vue sur ce canal.
+            _log "💬 giftwrap ${email}: message chat NIP-17 (kind 14) de ${sender:0:12}… — journalisé, pas de traitement station"
+            ;;
+        *)
+            _log "ℹ️  giftwrap ${email}: rumor kind ${rumor_kind} non géré — ignoré"
+            ;;
+    esac
+}
+
+## ── Message fichier NIP-17 (rumor kind 15) ─────────────────────────────────
+## Point d'entrée FaceID côté RÉCEPTION : un ami a reconnu le destinataire sur
+## une photo et la lui a partagée chiffrée (cf. IA/bro/satellite_face_matcher.py).
+##
+## Tags du rumor : file-type, encryption-algorithm, decryption-key,
+## decryption-nonce, x (sha256 du blob chiffré), ox (sha256 du clair).
+## content = URL/CID IPFS du blob chiffré.
+##
+## Les DEUX empreintes sont vérifiées : x avant déchiffrement (CID substitué ou
+## corrompu), ox après (clé/IV erronés ou clair altéré). Un échec sur l'une ou
+## l'autre abandonne — on n'écrit jamais dans le uDRIVE de quelqu'un un fichier
+## dont on n'a pas pu prouver l'intégrité.
+_handle_nip17_file_message() {
+    local rumor="$1" email="$2" sender="$3"
+
+    local _cid _file_type _key _nonce _x _ox _fname
+    _cid=$(jq -r '.content // ""' <<< "$rumor" 2>/dev/null | grep -oP '(Qm[A-Za-z0-9]{44}|baf[A-Za-z0-9]+)' | head -1)
+    _file_type=$(jq -r '.tags[]? | select(.[0]=="file-type") | .[1]' <<< "$rumor" 2>/dev/null | head -1)
+    _key=$(jq -r '.tags[]? | select(.[0]=="decryption-key") | .[1]'   <<< "$rumor" 2>/dev/null | head -1)
+    ## _nonce est lu pour être journalisé/contrôlé, mais n'est PAS passé au
+    ## déchiffrement : le format UENC porte déjà son IV dans son en-tête binaire
+    ## (MAGIC+VERSION+ENC_TYPE+IV). Le tag reste requis par NIP-17 pour les
+    ## clients qui, eux, reçoivent un ciphertext AES-GCM nu.
+    _nonce=$(jq -r '.tags[]? | select(.[0]=="decryption-nonce") | .[1]' <<< "$rumor" 2>/dev/null | head -1)
+    _x=$(jq -r '.tags[]? | select(.[0]=="x")  | .[1]' <<< "$rumor" 2>/dev/null | head -1)
+    _ox=$(jq -r '.tags[]? | select(.[0]=="ox") | .[1]' <<< "$rumor" 2>/dev/null | head -1)
+    ## Nom d'origine si l'expéditeur en a fourni un (tag non normatif NIP-17,
+    ## mais courant) — sinon un nom généré, stable et traçable.
+    _fname=$(jq -r '.tags[]? | select(.[0]=="filename" or .[0]=="alt") | .[1]' <<< "$rumor" 2>/dev/null | head -1)
+
+    if [[ -z "$_cid" || -z "$_key" || -z "$_x" || -z "$_ox" ]]; then
+        _log "WARN: 🎁 kind15 ${email}: tags incomplets (cid/key/x/ox) — ignoré"
+        return
+    fi
+    if ! bro_user_is_local "$email"; then
+        _log "WARN: 🎁 kind15: ${email} non hébergé ici (ou en roaming) — ignoré"
+        return
+    fi
+
+    local _tmp_enc _tmp_clear
+    _tmp_enc=$(mktemp -p "${HOME}/.zen/tmp"   "nip17enc_XXXXXX")
+    _tmp_clear=$(mktemp -p "${HOME}/.zen/tmp" "nip17clr_XXXXXX")
+    ## Nettoyage explicite plutôt qu'un `trap … RETURN` : un trap RETURN posé
+    ## dans une fonction reste enregistré au niveau du shell après son retour
+    ## (vérifié avec `trap -p`), ce qui laisserait traîner une commande portant
+    ## des chemins périmés dans un daemon à longue durée de vie.
+    _nip17_cleanup() { rm -f "$_tmp_enc" "$_tmp_clear"; }
+
+    if ! timeout 120 ipfs get "/ipfs/${_cid}" -o "$_tmp_enc" 2>/dev/null; then
+        _log "WARN: 🎁 kind15 ${email}: ipfs get échoué pour ${_cid:0:12}…"
+        _nip17_cleanup; return
+    fi
+
+    local _got_x
+    _got_x=$(sha256sum "$_tmp_enc" 2>/dev/null | cut -d' ' -f1)
+    if [[ "$_got_x" != "$_x" ]]; then
+        _log "WARN: 🎁 kind15 ${email}: empreinte 'x' du blob chiffré invalide (${_got_x:0:12}… ≠ ${_x:0:12}…) — abandon"
+        _nip17_cleanup; return
+    fi
+
+    ## Déchiffrement AES-256-GCM via le codec partagé (tools/uenc_codec.py) —
+    ## même format UENC que les images du chat BRO et de media_upload.py.
+    if ! ~/.astro/bin/python3 "$HOME/.zen/Astroport.ONE/tools/uenc_codec.py" decrypt "$_key" \
+            < "$_tmp_enc" > "$_tmp_clear" 2>>"$LOG_FILE"; then
+        _log "WARN: 🎁 kind15 ${email}: déchiffrement UENC échoué (clé/nonce invalides ?)"
+        _nip17_cleanup; return
+    fi
+
+    local _got_ox
+    _got_ox=$(sha256sum "$_tmp_clear" 2>/dev/null | cut -d' ' -f1)
+    if [[ "$_got_ox" != "$_ox" ]]; then
+        _log "WARN: 🎁 kind15 ${email}: empreinte 'ox' du clair invalide — abandon"
+        _nip17_cleanup; return
+    fi
+
+    ## Destination : le sous-dossier uDRIVE correspondant au type de média.
+    local _simple_type _dest_dir _udrive
+    case "${_file_type:-}" in
+        image/*) _simple_type="image" ;;
+        video/*) _simple_type="video" ;;
+        audio/*) _simple_type="audio" ;;
+        *)       _simple_type="file"  ;;
+    esac
+    _dest_dir=$(bro_udrive_type_dir "$_simple_type")
+    _udrive=$(bro_udrive_path "$email" "$_dest_dir") || { _nip17_cleanup; return; }
+
+    if [[ -z "$_fname" || "$_fname" == "null" ]]; then
+        local _ext="${_file_type##*/}"
+        [[ -z "$_ext" || "$_ext" == "$_file_type" ]] && _ext="bin"
+        [[ "$_ext" == "jpeg" ]] && _ext="jpg"
+        _fname="recu_${sender:0:8}_$(date +%s).${_ext}"
+    fi
+    ## Jamais de chemin : un nom de fichier fourni par un tiers ne doit pas
+    ## pouvoir écrire ailleurs que dans le sous-dossier visé.
+    _fname=$(basename "$_fname")
+
+    cp "$_tmp_clear" "${_udrive}/${_fname}" 2>/dev/null || {
+        _log "WARN: 🎁 kind15 ${email}: copie vers ${_udrive} échouée"
+        _nip17_cleanup; return
+    }
+    _nip17_cleanup
+    _log "🎁 kind15 ${email}: ${_fname} reçu de ${sender:0:12}… → uDRIVE/${_dest_dir}/"
+
+    ## Republier PUIS taguer : le fichier vient d'arriver, son entrée n'existe
+    ## pas encore dans manifest.json — un tag posé maintenant serait écrasé par
+    ## l'indexation. _udrive_republish gère la séquence complète.
+    _udrive_republish "$email" "${_dest_dir}/${_fname}" "reçu de ${sender:0:8}"
+}
+
+## ── Helpers uDRIVE partagés (manifest + republication) ─────────────────────
+## _manifest_add_tag EMAIL RELPATH TAG
+##   Ajoute TAG au tableau .tags de l'entrée RELPATH du manifest.json (le
+##   tableau est créé s'il n'existe pas). Idempotent ; sans effet si l'entrée
+##   RELPATH est absente du manifest. Ces clés non standard survivent à la régénération
+##   incrémentale : generate_ipfs_structure.sh recopie les métadonnées des
+##   entrées de manifest-1.json en ne supprimant que les champs canoniques
+##   (name/path/size/type/last_modified/formatted_size/ipfs_link/category).
+_manifest_add_tag() {
+    local _email="$1" _relpath="$2" _tag="$3"
+    local _udrive_root
+    _udrive_root=$(bro_udrive_path "$_email") || return 1
+    local _manifest="${_udrive_root}/manifest.json"
+    [[ -s "$_manifest" ]] || return 0
+
+    local _tmp
+    _tmp=$(mktemp -p "$(dirname "$_manifest")" "manifest_XXXXXX.json")
+    if jq --arg p "$_relpath" --arg t "$_tag" \
+        '(.files[]? | select(.path == $p) | .tags) |= ((. // []) + [$t] | unique)' \
+        "$_manifest" > "$_tmp" 2>/dev/null && [[ -s "$_tmp" ]]; then
+        mv "$_tmp" "$_manifest"
+    else
+        rm -f "$_tmp"
+        _log "WARN: manifest: tag '$_tag' non appliqué à $_relpath ($_email)"
+    fi
+}
+
+## _udrive_republish EMAIL [RELPATH TAG]
+##   Relance l'indexation incrémentale du uDRIVE (mécanisme existant inchangé :
+##   les fichiers déjà sur IPFS ne sont pas réajoutés, seul le nouveau l'est).
+##   En arrière-plan : la republication IPNS peut durer, et le daemon traite ses
+##   events en série — il ne doit pas rester bloqué dessus.
+##
+##   Avec RELPATH/TAG : indexe, PUIS tague l'entrée ainsi créée, PUIS réindexe.
+##   Cet ordre est obligatoire pour un fichier qui vient d'arriver — son entrée
+##   n'existe pas encore, et un tag posé avant serait perdu. La seconde passe
+##   est peu coûteuse : plus rien n'est à ajouter à IPFS, et elle recopie
+##   manifest.json vers manifest-1.json, ce qui rend le tag persistant à travers
+##   les régénérations suivantes.
+_udrive_republish() {
+    local _email="$1" _relpath="${2:-}" _tag="${3:-}"
+    local _udrive_root
+    _udrive_root=$(bro_udrive_path "$_email") || return 1
+    local _gen="$HOME/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh"
+    local _log_out="$HOME/.zen/tmp/bro_udrive_republish.log"
+    (
+        cd "$_udrive_root" 2>/dev/null || exit 0
+        bash "$_gen" . >> "$_log_out" 2>&1
+        if [[ -n "$_relpath" && -n "$_tag" ]]; then
+            _manifest_add_tag "$_email" "$_relpath" "$_tag"
+            bash "$_gen" . >> "$_log_out" 2>&1
+        fi
+    ) &
+}
+
 ## ── Traitement d'un event JSON ───────────────────────────────────────
 _process_event() {
     local event_file="$1"
@@ -1484,6 +1920,17 @@ _process_event() {
         fi
         ## Nettoyage automatique : supprimer les marqueurs > 24h
         find "$_DEDUP_DIR" -maxdepth 1 -mmin +1440 -delete 2>/dev/null &
+    fi
+
+    ## ── Gift wrap NIP-59/NIP-17 (kind 1059) déposé par filter/1059.sh ──────────
+    ## Format {"giftwrap":true,"email":"...","event":{"kind":1059,…}} — testé en
+    ## PREMIER : c'est le seul format dont l'event n'est pas un kind 4, donc la
+    ## chaîne de déchiffrement plus bas (INTERCOM decrypt avec NODE_NSEC) ne
+    ## pourrait rien en faire.
+    if jq -e '.giftwrap == true and .event.kind == 1059' "$event_file" >/dev/null 2>&1; then
+        _handle_giftwrap_event "$event_file"
+        rm -f "$event_file"
+        return
     fi
 
     ## ── Self-DM (canal BRO personnel propriétaire↔clone) déposé par filter/4.sh ──
@@ -1553,19 +2000,28 @@ _process_event() {
     ## constellation via bro_send_intercom(). Le sender est le NODEHEX de la station
     ## émettrice, pas un MULTIPASS utilisateur — bro_user_level() retournerait 0.
     ## On vérifie sa présence dans ~/.zen/tmp/swarm/*/HEX (même mécanisme que nostr_delete).
-    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_job|comfyui_result|self_command_relay)$ ]]; then
+    ##
+    ## vision_analysis_job/result (pipeline FaceID Brain↔Satellite) vivent ICI et
+    ## NULLE PART AILLEURS : ils sont émis uniquement par
+    ## tools/trigger_bro_vision_analysis.sh (déclenché par l'indexation uDRIVE),
+    ## jamais par un humain en chat — donc aucune entrée correspondante dans le
+    ## `case` soumis au niveau d'abonnement MULTIPASS plus bas, contrairement à
+    ## comfyui_job qui, lui, est aussi accessible à l'utilisateur.
+    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_job|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result)$ ]]; then
         if ! _is_swarm_node "$sender"; then
             _log "WARN: canal inter-NODE '$channel' de ${sender:0:12}... non reconnu comme NODE swarm — ignoré"
             return
         fi
         case "$channel" in
-            bro_ia)             _handle_bro_ia "$payload" ;;
-            vocals)             _handle_vocals "$payload" ;;
-            webcam)             _handle_webcam "$payload" ;;
-            zen_like)           _handle_zen_like "$payload" ;;
-            comfyui_job)        _handle_comfyui_job "$payload" "$sender" ;;
-            comfyui_result)     _handle_comfyui_result "$payload" ;;
-            self_command_relay) _handle_self_command_relay "$payload" ;;
+            bro_ia)                  _handle_bro_ia "$payload" ;;
+            vocals)                  _handle_vocals "$payload" ;;
+            webcam)                  _handle_webcam "$payload" ;;
+            zen_like)                _handle_zen_like "$payload" ;;
+            comfyui_job)             _handle_comfyui_job "$payload" "$sender" ;;
+            comfyui_result)          _handle_comfyui_result "$payload" ;;
+            self_command_relay)      _handle_self_command_relay "$payload" ;;
+            vision_analysis_job)     _handle_vision_analysis_job "$payload" "$sender" ;;
+            vision_analysis_result)  _handle_vision_analysis_result "$payload" ;;
         esac
         return
     fi
@@ -1762,7 +2218,7 @@ _dispatch_file() {
 }
 
 ## ── Traiter les fichiers déjà présents dans la queue ─────────────────
-for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json; do
+for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json "$GIFTWRAP_QUEUE_DIR"/*.json; do
     [[ -f "$_f" ]] && _dispatch_file "$_f"
 done
 
@@ -1776,7 +2232,7 @@ wait
 _sweep_loop() {
     while [[ "$_BRO_CLEAN_STOP" != true ]]; do
         sleep 30
-        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json "$GIFTWRAP_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
     done
 }
 _sweep_loop &
@@ -1891,8 +2347,9 @@ command -v inotifywait &>/dev/null && _inotify_ok=true
 while [[ "$_BRO_CLEAN_STOP" != true ]]; do
     if $_inotify_ok; then
         ## %w%f = chemin complet (répertoire surveillé + nom de fichier) — nécessaire
-        ## puisqu'on surveille maintenant trois répertoires (QUEUE_DIR + SELF_DM_QUEUE_DIR + LOVE_DM_QUEUE_DIR).
-        inotifywait -m -e close_write -e moved_to --format '%w%f' "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" "$LOVE_DM_QUEUE_DIR" 2>/dev/null | \
+        ## puisqu'on surveille maintenant quatre répertoires (QUEUE_DIR + SELF_DM_QUEUE_DIR
+        ## + LOVE_DM_QUEUE_DIR + GIFTWRAP_QUEUE_DIR).
+        inotifywait -m -e close_write -e moved_to --format '%w%f' "$QUEUE_DIR" "$SELF_DM_QUEUE_DIR" "$LOVE_DM_QUEUE_DIR" "$GIFTWRAP_QUEUE_DIR" 2>/dev/null | \
         while IFS= read -r _fpath; do
             [[ "$_BRO_CLEAN_STOP" == true ]] && break
             [[ "$_fpath" == *.json ]] || continue
@@ -1902,11 +2359,11 @@ while [[ "$_BRO_CLEAN_STOP" != true ]]; do
         [[ "$_BRO_CLEAN_STOP" == true ]] && break
         _log "⚠️  inotifywait terminé — retry dans 5s"
         # Traiter les fichiers arrivés pendant la coupure
-        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json "$GIFTWRAP_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
         sleep 5
     else
         # Fallback polling : move atomique garantit un seul traitement par fichier
-        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+        for _f in "$QUEUE_DIR"/*.json "$SELF_DM_QUEUE_DIR"/*.json "$LOVE_DM_QUEUE_DIR"/*.json "$GIFTWRAP_QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
         sleep 10
     fi
 done
