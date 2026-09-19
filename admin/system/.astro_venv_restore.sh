@@ -51,7 +51,20 @@ echo "🎬 Installation de Playwright et Chromium..."
 "$HOME/.astro/bin/pip" install -U playwright
 "$HOME/.astro/bin/python" -m playwright install chromium
 
-# 6. Finalisation
+# 6. Dépendances propres à UPassport (nostr-sdk, wsgidav, a2wsgi...) — PACKAGES
+#    ci-dessus n'est qu'une copie figée de _PIP_PKGS (install.sh) et ne les
+#    contient pas. Sans cette étape, une restauration de venv laisse la
+#    station sans /dav (WebDAV cloud chiffré) tant que personne ne relance
+#    manuellement ce pip install (incident constaté sur alienware, 2026-09-19).
+UPASSPORT_REQ="$HOME/.zen/UPassport/requirements.txt"
+if [ -s "$UPASSPORT_REQ" ]; then
+    echo "📦 Installation des dépendances UPassport ($UPASSPORT_REQ)..."
+    "$HOME/.astro/bin/pip" install -U -r "$UPASSPORT_REQ"
+else
+    echo "⚠️  $UPASSPORT_REQ introuvable — dépendances UPassport (wsgidav, a2wsgi...) NON installées."
+fi
+
+# 7. Finalisation
 echo "#########################################################"
 echo "✅ RESTAURATION TERMINÉE"
 echo "L'environnement ~/.astro est prêt."
