@@ -1016,16 +1016,13 @@ while IFS= read -r -d '' file; do
             log_message "         ✅ Hash IPFS obtenu: $ipfs_hash"
             log_message "      ✅ Fichier ajouté avec succès - Link: $ipfs_link"
 
-            # ── Hook FaceID : déclencher l'analyse de visages sur les images ──
-            # DOIT rester avant le rm -f plus bas (le fichier disparaît du disque
-            # dès qu'il est sur IPFS), mais le travail réel se fait depuis IPFS,
-            # donc le script est lancé en arrière-plan : l'indexation ne doit
-            # jamais attendre un Brain GPU distant. Échec silencieux par design
-            # (voir trigger_bro_vision_analysis.sh : exit 0 si pas de cible).
-            if [[ "$file_type" == "image" ]]; then
-                bash "$HOME/.zen/Astroport.ONE/tools/trigger_bro_vision_analysis.sh" \
-                    "$SOURCE_DIR" "$relative_path" "$ipfs_link" &
-            fi
+            # PAS de hook FaceID ici : ce uDRIVE est PUBLIC (manifest.json
+            # récupérable par tous via /ipns/$NOSTRNS, au même titre que les
+            # events kind 0/1). L'analyse de visages ne doit se déclencher que
+            # sur des images chiffrées — voir le PUT du cloud chiffré
+            # (UPassport/services/cloud_storage.py::_commit_plaintext, qui
+            # appelle tools/trigger_bro_vision_analysis.sh avec un CID chiffré
+            # + sa clé, jamais depuis ce script). Cf. UPassport/CLAUDE.md.
 
             # Dépinner l'ancien hash si il existait et qu'il est différent du nouveau
             if [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "$ipfs_link" ]; then

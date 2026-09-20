@@ -20,6 +20,7 @@ Exit code : 0=done, 1=erreur/timeout, 2=pas de websocket-client
 import sys
 import json
 import argparse
+import threading
 
 try:
     import websocket
@@ -41,7 +42,10 @@ def wait(client_id: str, prompt_id: str, ws_url: str, timeout: int) -> str:
         data = msg.get("data", {})
         if data.get("prompt_id") != prompt_id:
             return
-        if t == "executed":
+        # "executed" est le type historique ; certaines versions de ComfyUI
+        # émettent "execution_success" — on accepte les deux plutôt que de
+        # risquer un blocage sur un nom d'événement inattendu.
+        if t in ("executed", "execution_success"):
             outcome["status"] = "done"
             ws.close()
         elif t == "execution_error":
@@ -53,7 +57,18 @@ def wait(client_id: str, prompt_id: str, ws_url: str, timeout: int) -> str:
         outcome["status"] = f"error:{err}"
 
     ws = websocket.WebSocketApp(url, on_message=on_message, on_error=on_error)
-    ws.run_forever(ping_interval=30, ping_timeout=10, sock_opt=None)
+    # run_forever() n'a AUCUN délai global intégré (ping_timeout ne borne que
+    # le keepalive) — sans ce minuteur qui force ws.close(), un événement
+    # jamais reçu (type inattendu, message perdu) bloque le process
+    # indéfiniment malgré --timeout, qui n'était donc jamais réellement
+    # appliqué (bug constaté en prod sur sagittarius, 2026-09-20).
+    timer = threading.Timer(timeout, ws.close)
+    timer.daemon = True
+    timer.start()
+    try:
+        ws.run_forever(ping_interval=30, ping_timeout=10)
+    finally:
+        timer.cancel()
     return outcome["status"]
 
 

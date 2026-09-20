@@ -495,25 +495,34 @@ def main():
     log_message(f"Location: {args.latitude}, {args.longitude}")
     log_message(f"Force type: {args.force_type}")
     
-    # Download image
-    image_data = download_image(args.image_url)
-    if not image_data:
-        error_result = {
-            'success': False,
-            'error': 'image_download_failed',
-            'message': 'Impossible de télécharger l\'image'
-        }
-        if args.json:
-            print(json.dumps(error_result, ensure_ascii=False, indent=2))
-        else:
-            print(f"❌ {error_result['message']}")
-        sys.exit(1)
-    
-    # Save to temp file for Ollama
-    import tempfile
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
-        tmp.write(image_data)
-        temp_image_path = tmp.name
+    # image_url est soit une vraie URL (téléchargée), soit un chemin de
+    # fichier LOCAL déjà présent (cas du pipeline FaceID : l'image a déjà été
+    # déchiffrée sur le Brain par faceid.sh, elle ne doit JAMAIS être
+    # ré-uploadée en clair quelque part juste pour obtenir une URL).
+    if os.path.isfile(args.image_url):
+        log_message(f"Fichier local détecté, pas de téléchargement : {args.image_url}")
+        temp_image_path = args.image_url
+        _owns_temp_file = False
+    else:
+        image_data = download_image(args.image_url)
+        if not image_data:
+            error_result = {
+                'success': False,
+                'error': 'image_download_failed',
+                'message': 'Impossible de télécharger l\'image'
+            }
+            if args.json:
+                print(json.dumps(error_result, ensure_ascii=False, indent=2))
+            else:
+                print(f"❌ {error_result['message']}")
+            sys.exit(1)
+
+        # Save to temp file for Ollama
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            tmp.write(image_data)
+            temp_image_path = tmp.name
+        _owns_temp_file = True
     
     try:
         # Step 1: Classify image type
@@ -602,8 +611,9 @@ def main():
                 print(contract['content'])
         
     finally:
-        # Cleanup temp file
-        if os.path.exists(temp_image_path):
+        # Cleanup temp file — jamais le fichier local de l'appelant (celui-ci
+        # gère son propre cycle de vie, cf. faceid.sh::trap _cleanup EXIT).
+        if _owns_temp_file and os.path.exists(temp_image_path):
             os.remove(temp_image_path)
 
 if __name__ == "__main__":

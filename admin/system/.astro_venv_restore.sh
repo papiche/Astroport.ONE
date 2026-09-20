@@ -13,9 +13,18 @@ if [ -d "$HOME/.astro" ]; then
     rm -rf "$HOME/.astro"
 fi
 
-# 2. Création du venv
-echo "⏳ Création du nouvel environnement virtuel dans ~/.astro..."
-python3 -m venv "$HOME/.astro"
+# 2. Création du venv — Python 3.12 préféré (évite la dérive de version après
+#    upgrade OS, ex: 24.04→26.04 qui changerait le python3 par défaut), avec
+#    repli sur python3 générique pour les stations sans 3.12 (ex: Raspberry Pi
+#    sous Ubuntu 22.04 = 3.10 seulement)
+PYBIN="$(command -v python3.12 || command -v python3)"
+if [ -z "$PYBIN" ]; then
+    echo "❌ Erreur : aucun python3 trouvé (apt install python3-venv)"
+    exit 1
+fi
+[[ "$PYBIN" != *python3.12 ]] && echo "⚠️  python3.12 absent — utilisation de ${PYBIN} ($($PYBIN --version 2>&1))"
+echo "⏳ Création du nouvel environnement virtuel dans ~/.astro (${PYBIN})..."
+"$PYBIN" -m venv "$HOME/.astro"
 
 if [ ! -s "$HOME/.astro/bin/activate" ]; then
     echo "❌ Erreur : Échec de la création du venv (python3-venv est-il installé ?)"

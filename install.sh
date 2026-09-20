@@ -919,8 +919,12 @@ if [[ -d ~/.astro ]] && ! ~/.astro/bin/python3 -c "print('ok')" &>/dev/null; the
     rm -rf ~/.astro
 fi
 if [[ ! -s ~/.astro/bin/activate ]]; then
-    python3 -m venv .astro \
-        && echo "✅ Python venv créé : ~/.astro" \
+    # Python 3.12 préféré (stabilité inter-upgrades OS) — repli sur python3
+    # générique si absent (ex: Raspberry Pi sous Ubuntu 22.04 = 3.10 seulement)
+    PYBIN="$(command -v python3.12 || command -v python3)"
+    [[ "$PYBIN" != *python3.12 ]] && echo "⚠️  python3.12 absent — utilisation de ${PYBIN} ($($PYBIN --version 2>&1))"
+    "$PYBIN" -m venv .astro \
+        && echo "✅ Python venv créé : ~/.astro (${PYBIN})" \
         || { echo "❌ Création venv échouée — python3-venv installé ?"
              echo "   Réparation manuelle : ~/.zen/Astroport.ONE/admin/system/.astro_venv_restore.sh"
              exit 1; }

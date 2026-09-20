@@ -1211,17 +1211,15 @@ _handle_comfyui_result() {
 _handle_vision_analysis_job() {
     local payload="$1" sender="$2"
 
-    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _REPLY_NODE_HEX
-    _payload_get "$payload" email owner_hex path ipfs_link reply_node_hex
+    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _REPLY_NODE_HEX _DECRYPTION_KEY
+    _payload_get "$payload" email owner_hex path ipfs_link reply_node_hex decryption_key
 
     [[ -z "$_IPFS_LINK" || -z "$_OWNER_HEX" ]] && \
         _log "WARN: 👁️ vision_analysis_job: payload incomplet (ipfs_link/owner_hex)" && return
 
     _log "👁️ vision_analysis_job: ${_PATH:-?} (${_EMAIL:-?}) de ${sender:0:12}…"
 
-    local _COMFYUI_URL="http://127.0.0.1:8188"
-    local _WORKFLOW="$MY_PATH/../generators/workflow/Face Detect Embeddings JSON.json"
-    local _UI2API="$MY_PATH/../comfyui_ui2api.py"
+    local _FACEID_SH="$MY_PATH/../generators/faceid.sh"
 
     ## Helper : renvoyer un vision_analysis_result sur tous les relays connus
     ## (même garantie de livraison que _comfyui_send_result).
@@ -1249,123 +1247,64 @@ _handle_vision_analysis_job() {
 import json, sys
 faces_raw = sys.argv[5]
 try:
-    faces = json.loads(faces_raw) if faces_raw else []
-    if isinstance(faces, dict):
-        faces = faces.get('faces', [])
+    parsed = json.loads(faces_raw) if faces_raw else {}
 except Exception:
-    faces = []
-print(json.dumps({
+    parsed = {}
+
+# La sortie réelle du node SaveText est imbriquée :
+# {\"images\":[{\"faces\":[...]}, ...]} — pas {\"faces\":[...]} à plat.
+# On accepte les deux formes, plus une liste nue en repli.
+faces = []
+if isinstance(parsed, dict):
+    if isinstance(parsed.get('faces'), list):
+        faces = parsed['faces']
+    elif isinstance(parsed.get('images'), list):
+        for img in parsed['images']:
+            if isinstance(img, dict) and isinstance(img.get('faces'), list):
+                faces.extend(img['faces'])
+elif isinstance(parsed, list):
+    faces = parsed
+
+out = {
     'email':     sys.argv[1],
     'owner_hex': sys.argv[2],
     'path':      sys.argv[3],
     'ipfs_link': sys.argv[4],
     'status':    sys.argv[6],
     'faces':     faces,
-}))
+}
+# scene_analysis (faceid.sh §8.5, présent seulement si 0 visage détecté).
+if isinstance(parsed, dict) and isinstance(parsed.get('scene_analysis'), dict):
+    out['scene_analysis'] = parsed['scene_analysis']
+print(json.dumps(out))
 " "${_EMAIL:-}" "${_OWNER_HEX:-}" "${_PATH:-}" "${_IPFS_LINK:-}" "$_faces_json" "$_status" 2>/dev/null
     }
 
-    (
-        flock -x -w 300 9 || {
-            _log "WARN: 👁️ vision_analysis_job: timeout GPU lock (>5min) — ${_PATH:-?} abandonné"
-            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")" \
-                || _log "WARN: 👁️ vision_analysis_job: notification timeout FAILED"
-            exit 1
-        }
+    ## Soumission ComfyUI entièrement déléguée à generators/faceid.sh (verrou
+    ## GPU, connexion comfyui.me.sh, upload, conversion UI→API, /prompt,
+    ## attente websocket, extraction /history — voir ce script pour le détail
+    ## et pour un usage CLI direct hors pipeline DM, utile pour déboguer le
+    ## nom exact du champ de sortie SaveText sur la vraie machine sagittarius).
+    local _faces_json _status="failed"
+    if [[ -n "$_DECRYPTION_KEY" ]]; then
+        _faces_json=$(bash "$_FACEID_SH" "$_IPFS_LINK" "" "$_DECRYPTION_KEY" 2>>"$LOG_FILE")
+    else
+        _faces_json=$(bash "$_FACEID_SH" "$_IPFS_LINK" 2>>"$LOG_FILE")
+    fi
+    if [[ $? -eq 0 && -n "$_faces_json" ]]; then
+        _status="ok"
+    else
+        _log "WARN: 👁️ vision_analysis_job: faceid.sh a échoué pour ${_PATH:-?} (détail dans $LOG_FILE)"
+        _faces_json=""
+    fi
 
-        if ! bash "$MY_PATH/../services/comfyui.me.sh" 2>/dev/null; then
-            _log "WARN: 👁️ vision_analysis_job: ComfyUI indisponible"
-            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")" \
-                || _log "WARN: 👁️ vision_analysis_job: notification ComfyUI absent FAILED"
-            exit 1
-        fi
+    _log "👁️ vision_analysis_job: ${_PATH:-?} status=$_status"
 
-        local _tmp_dir _faces_json="" _status="failed"
-        _tmp_dir=$(mktemp -d /tmp/vision_job_XXXXXX)
-
-        ## 1. Récupérer l'image depuis IPFS
-        local _basename _img
-        _basename=$(basename "$_IPFS_LINK")
-        _img="$_tmp_dir/$_basename"
-        if ! timeout 120 ipfs get "/ipfs/${_IPFS_LINK}" -o "$_img" 2>/dev/null; then
-            _log "WARN: 👁️ vision_analysis_job: ipfs get échoué pour ${_IPFS_LINK:0:24}…"
-            rm -rf "$_tmp_dir"
-            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")"
-            exit 1
-        fi
-
-        ## 2. Téléverser l'image dans le dossier input de ComfyUI (LoadImage ne
-        ##    lit que là) — même mécanisme que generators/image_to_video.sh.
-        local _upload_resp _uploaded
-        _upload_resp=$(curl -s -X POST -F "image=@${_img};filename=${_basename}" \
-            "$_COMFYUI_URL/upload/image" 2>/dev/null)
-        _uploaded=$(jq -r '.name // empty' <<< "$_upload_resp" 2>/dev/null)
-        [[ -z "$_uploaded" ]] && _uploaded="$_basename"
-
-        ## 3. Convertir le workflow UI → API et y injecter le nom de l'image
-        local _api_workflow
-        _api_workflow=$(python3 "$_UI2API" "$_WORKFLOW" --url "$_COMFYUI_URL" \
-            --set "1.image=${_uploaded}" 2>>"$LOG_FILE")
-        if [[ -z "$_api_workflow" ]]; then
-            _log "WARN: 👁️ vision_analysis_job: conversion workflow UI→API échouée (custom nodes InsightFace absents de ce ComfyUI ?)"
-            rm -rf "$_tmp_dir"
-            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")"
-            exit 1
-        fi
-
-        ## 4. Soumettre à /prompt avec un client_id pour l'attente WebSocket ciblée
-        local _client_id _submit_resp _prompt_id
-        _client_id=$(python3 -c "import uuid; print(str(uuid.uuid4()))")
-        _submit_resp=$(jq -n --argjson wf "$_api_workflow" --arg cid "$_client_id" \
-            '{prompt:$wf, client_id:$cid}' 2>/dev/null | \
-            curl -s -X POST -H "Content-Type: application/json" --data-binary @- \
-                 "$_COMFYUI_URL/prompt" 2>/dev/null)
-        _prompt_id=$(jq -r '.prompt_id // empty' <<< "$_submit_resp" 2>/dev/null)
-        if [[ -z "$_prompt_id" ]]; then
-            ## La réponse d'erreur ComfyUI nomme précisément l'entrée fautive —
-            ## la journaliser entièrement est ce qui rend ce chemin débogable.
-            _log "WARN: 👁️ vision_analysis_job: /prompt refusé — réponse: ${_submit_resp:0:400}"
-            rm -rf "$_tmp_dir"
-            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "" "failed")"
-            exit 1
-        fi
-
-        ## 5. Attendre la fin via WebSocket (comfyui_wait.py, réutilisé tel quel)
-        python3 "$MY_PATH/../comfyui_wait.py" "$_client_id" "$_prompt_id" \
-            --url "ws://127.0.0.1:8188/ws" --timeout 180 >/dev/null 2>&1
-
-        ## 6. Récupérer la sortie texte du node SaveText depuis /history
-        ##    TODO vérifier en réel (sagittarius) : la clé exacte sous laquelle
-        ##    SaveText expose son texte dans .outputs.<node_id> n'est pas
-        ##    documentée et dépend de la version du node (output_name = "text",
-        ##    mais le dict `ui` renvoyé peut utiliser "string" ou une valeur
-        ##    scalaire). On essaie donc TOUTES les formes plausibles, et on
-        ##    journalise le JSON brut si aucune ne matche — de quoi corriger
-        ##    la ligne en une minute au premier test sur la vraie machine.
-        local _history
-        _history=$(curl -s "$_COMFYUI_URL/history/${_prompt_id}" 2>/dev/null)
-        _faces_json=$(jq -r --arg id "$_prompt_id" '
-            .[$id].outputs // {} | to_entries[] | .value
-            | (.text? // .string? // empty)
-            | if type == "array" then .[0] else . end
-        ' <<< "$_history" 2>/dev/null | head -1)
-
-        if [[ -n "$_faces_json" && "$_faces_json" != "null" ]]; then
-            _status="ok"
-        else
-            _log "WARN: 👁️ vision_analysis_job: sortie SaveText introuvable dans /history — outputs bruts: $(jq -c --arg id "$_prompt_id" '.[$id].outputs // {}' <<< "$_history" 2>/dev/null | head -c 400)"
-            _faces_json=""
-        fi
-
-        rm -rf "$_tmp_dir"
-        _log "👁️ vision_analysis_job: ${_PATH:-?} status=$_status"
-
-        if [[ -n "$_REPLY_NODE_HEX" && ${#_REPLY_NODE_HEX} -eq 64 ]]; then
-            _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "$_faces_json" "$_status")" \
-                && _log "👁️ vision_analysis_job: résultat → ${_REPLY_NODE_HEX:0:12}…" \
-                || _log "WARN: 👁️ vision_analysis_job: DM résultat FAILED (tous relays)"
-        fi
-    ) 9>"$_GPU_LOCK"
+    if [[ -n "$_REPLY_NODE_HEX" && ${#_REPLY_NODE_HEX} -eq 64 ]]; then
+        _vision_send_result "$_REPLY_NODE_HEX" "$(_vision_result_payload "$_faces_json" "$_status")" \
+            && _log "👁️ vision_analysis_job: résultat → ${_REPLY_NODE_HEX:0:12}…" \
+            || _log "WARN: 👁️ vision_analysis_job: DM résultat FAILED (tous relays)"
+    fi
 }
 
 ## ── Canal "vision_analysis_result" : embeddings reçus depuis un Brain ───────

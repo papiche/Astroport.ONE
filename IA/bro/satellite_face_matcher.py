@@ -4,27 +4,36 @@ satellite_face_matcher.py — Appariement FaceID + partage NIP-17 (côté Satell
 
 Dernier maillon du pipeline FaceID :
 
-    uDRIVE (image ajoutée)
-      → tools/generate_ipfs_structure.sh (hook)
+    Cloud chiffré /dav/ (PUT d'une image)
+      → UPassport/services/cloud_storage.py::_commit_plaintext
       → tools/trigger_bro_vision_analysis.sh   ── vision_analysis_job ──▶ Brain GPU
       → IA/bro/bro_dm_daemon.sh::_handle_vision_analysis_job (InsightFace/ComfyUI)
       ◀── vision_analysis_result ──
       → IA/bro/bro_dm_daemon.sh::_handle_vision_analysis_result
       → CE SCRIPT
 
+IMPORTANT (2026-09-20) : la SEULE source déclenchant ce pipeline est le cloud
+chiffré — jamais le uDRIVE public (manifest.json, publié en clair sur IPNS aux
+côtés des events kind 0/1). `ipfs_link` référence donc toujours un blob UENC
+chiffré ; ce script relit lui-même la clé dans `.ucloud/keyring.json` du
+propriétaire (même fichier que `cloud_storage.py`, même verrou flock) pour le
+déchiffrer localement — le clair ne repart jamais tel quel.
+
 Pour chaque visage détecté :
   • recherche du plus proche voisin dans la collection Qdrant `faces_{owner_hex}`
     (512 dims, distance Cosine) ;
   • visage NOMMÉ et associé à un pubkey (score ≥ SEUIL) → vérification de
-    réciprocité N1 (chacun suit l'autre) puis partage de la photo, CHIFFRÉE,
-    via un message fichier NIP-17 (rumor kind:15 gift-wrappé) ;
+    réciprocité N1 (chacun suit l'autre) puis partage de la photo, CHIFFRÉE
+    avec une clé neuve par destinataire, via un message fichier NIP-17
+    (rumor kind:15 gift-wrappé) ;
   • visage inconnu → création d'un point `Inconnu_{hash8}` STABLE (le même
     visage revu demain retombera sur ce même point au lieu d'en créer un
     nouveau) + notification BRO au propriétaire, rate-limitée à 1/24h.
 
-La photo du propriétaire n'est JAMAIS déplacée ni dupliquée : seul un blob
-chiffré (clé AES-256-GCM unique par (photo, destinataire)) est ajouté à IPFS, et
-son entrée de manifest est taguée du nom de l'ami reconnu.
+La photo du propriétaire n'est JAMAIS déplacée ni dupliquée : seul un nouveau
+blob chiffré (clé AES-256-GCM unique par (photo, destinataire)) est ajouté à
+IPFS pour l'envoi, et l'entrée `.ucloud/index.json` du propriétaire est taguée
+du nom de l'ami reconnu.
 
 Usage :
     satellite_face_matcher.py <email> <owner_hex> <path> <ipfs_link>
@@ -42,6 +51,8 @@ if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
     _os.execv(_venv_python, [_venv_python] + _sys.argv)
 del _sys, _os
 
+import contextlib
+import fcntl
 import hashlib
 import json
 import os
@@ -257,6 +268,92 @@ def _guess_mime(path: str) -> str:
             "gif": "image/gif", "webp": "image/webp", "bmp": "image/bmp"}.get(ext, "image/jpeg")
 
 
+# ── Cloud chiffré (.ucloud/) — mêmes fichiers, même verrou que ────────────────
+# UPassport/services/cloud_storage.py (index.json/keyring.json/.lock en 0600,
+# jamais publiés). Ce script relit ces fichiers en lecture seule (clé) et les
+# patch (tag) directement — pas d'import cross-projet, juste la même
+# convention de chemin et le même verrou flock (le commentaire de
+# cloud_storage.py::index_lock l'anticipe explicitement : « protège aussi bien
+# les threads du pool a2wsgi que d'éventuels scripts bash [ou Python] »).
+
+def _ucloud_dir(email: str) -> Path:
+    return ZEN / "game" / "nostr" / email / ".ucloud"
+
+
+@contextlib.contextmanager
+def _ucloud_lock(email: str, timeout: float = 10.0):
+    d = _ucloud_dir(email)
+    d.mkdir(parents=True, exist_ok=True)
+    lock_file = d / ".lock"
+    fd = os.open(str(lock_file), os.O_CREAT | os.O_RDWR, 0o600)
+    deadline = time.time() + timeout
+    try:
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError:
+                if time.time() >= deadline:
+                    raise TimeoutError(f"ucloud_lock timeout sur {lock_file}")
+                time.sleep(0.05)
+        yield
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        except OSError:
+            pass
+        os.close(fd)
+
+
+def _ucloud_get_key(email: str, cid: str) -> str:
+    """Clé AES-256 hex du blob `cid`, lue dans keyring.json. Chaîne vide si absente."""
+    keyring_file = _ucloud_dir(email) / "keyring.json"
+    try:
+        keyring = json.loads(keyring_file.read_text())
+    except Exception:
+        return ""
+    return (keyring.get(cid) or {}).get("key_hex") or ""
+
+
+def _tag_ucloud_index(email: str, path: str, names: list) -> None:
+    """Ajoute les noms reconnus au tableau `tags` de l'entrée `path` dans
+    index.json du propriétaire — pas de republication (le cloud chiffré ne
+    publie rien sur IPNS, il sert en local, cf. UPassport/CLAUDE.md)."""
+    with _ucloud_lock(email):
+        index_file = _ucloud_dir(email) / "index.json"
+        try:
+            idx = json.loads(index_file.read_text())
+        except Exception as exc:
+            _log(f"WARN: index.json illisible pour {email} : {exc}")
+            return
+
+        entry = idx.get("entries", {}).get(path)
+        if entry is None:
+            _log(f"WARN: entrée {path} absente de index.json — tags non appliqués")
+            return
+
+        tags = entry.get("tags") or []
+        touched = False
+        for name in names:
+            if name not in tags:
+                tags.append(name)
+                touched = True
+        if not touched:
+            return
+        entry["tags"] = tags
+
+        tmp = index_file.with_name(f".{index_file.name}.tmp.{os.getpid()}")
+        try:
+            tmp.write_text(json.dumps(idx, ensure_ascii=False, indent=2))
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, index_file)
+            os.chmod(index_file, 0o600)
+        except Exception as exc:
+            _log(f"WARN: écriture index.json : {exc}")
+            return
+    _log(f"index.json tagué {names} sur {path} ({email})")
+
+
 def _share_photo(email: str, owner_hex: str, path: str, ipfs_link: str,
                  friends: list) -> list:
     """Chiffre la photo et l'envoie en NIP-17 à chaque ami réciproque.
@@ -274,12 +371,25 @@ def _share_photo(email: str, owner_hex: str, path: str, ipfs_link: str,
 
     served = []
     with tempfile.TemporaryDirectory(prefix="faceid_") as tmpdir:
-        clear_path = os.path.join(tmpdir, os.path.basename(ipfs_link) or "photo")
-        if not _ipfs_get(ipfs_link, clear_path):
-            _log(f"WARN: photo {ipfs_link[:24]}… non récupérable depuis IPFS")
+        # `ipfs_link` référence un blob UENC chiffré (source = cloud chiffré,
+        # jamais le uDRIVE public) — on relit sa clé dans le keyring local du
+        # propriétaire (même fichier que cloud_storage.py) pour le déchiffrer.
+        enc_fetch_path = os.path.join(tmpdir, "source.uenc")
+        if not _ipfs_get(ipfs_link, enc_fetch_path):
+            _log(f"WARN: blob {ipfs_link[:24]}… non récupérable depuis IPFS")
             return []
 
-        clear_bytes = Path(clear_path).read_bytes()
+        source_key = _ucloud_get_key(email, ipfs_link)
+        if not source_key:
+            _log(f"WARN: clé introuvable dans keyring.json pour {ipfs_link[:24]}… — partage annulé")
+            return []
+        try:
+            clear_bytes = uenc_codec.decrypt_aes256gcm(
+                Path(enc_fetch_path).read_bytes(), source_key)
+        except Exception as exc:
+            _log(f"WARN: déchiffrement source échoué pour {ipfs_link[:24]}… : {exc}")
+            return []
+
         ox_hash = hashlib.sha256(clear_bytes).hexdigest()
         mime = _guess_mime(path)
 
@@ -333,58 +443,6 @@ def _share_photo(email: str, owner_hex: str, path: str, ipfs_link: str,
     return served
 
 
-# ── manifest.json du propriétaire (§B8) ──────────────────────────────────────
-
-def _udrive_root(email: str) -> Path:
-    return ZEN / "game" / "nostr" / email / "APP" / "uDRIVE"
-
-
-def _tag_owner_manifest(email: str, path: str, names: list) -> None:
-    """Tague l'entrée EXISTANTE de la photo avec les noms reconnus, puis relance
-    l'indexation incrémentale. La photo n'est jamais déplacée ni dupliquée :
-    l'original du propriétaire reste exactement où il est."""
-    manifest = _udrive_root(email) / "manifest.json"
-    if not manifest.exists():
-        _log(f"WARN: manifest.json absent pour {email} — tags non appliqués")
-        return
-    try:
-        data = json.loads(manifest.read_text())
-    except Exception as exc:
-        _log(f"WARN: manifest.json illisible : {exc}")
-        return
-
-    touched = False
-    for entry in data.get("files", []):
-        if entry.get("path") != path:
-            continue
-        tags = entry.get("tags") or []
-        for name in names:
-            if name not in tags:
-                tags.append(name)
-                touched = True
-        entry["tags"] = tags
-
-    if not touched:
-        return
-    try:
-        manifest.write_text(json.dumps(data, ensure_ascii=False, indent=2))
-    except Exception as exc:
-        _log(f"WARN: écriture manifest.json : {exc}")
-        return
-
-    # Republication : mécanisme incrémental existant, aucun fichier déjà sur
-    # IPFS n'est réajouté.
-    try:
-        subprocess.Popen(
-            ["bash", str(TOOLS / "generate_ipfs_structure.sh"), "."],
-            cwd=str(_udrive_root(email)),
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        _log(f"manifest tagué {names} sur {path} — republication uDRIVE lancée")
-    except Exception as exc:
-        _log(f"WARN: republication uDRIVE : {exc}")
-
-
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -406,7 +464,21 @@ def main() -> int:
 
     faces = result.get("faces") or []
     if not faces:
-        _log(f"aucun visage détecté sur {path}")
+        scene = result.get("scene_analysis")
+        if isinstance(scene, dict):
+            # Aucun visage : le Brain a enchaîné sur inventory_recognition.py
+            # (faceid.sh §8.5) — on tague l'entrée avec ce qui a été identifié,
+            # exactement comme un nom d'ami pour un visage reconnu.
+            names = list(dict.fromkeys(
+                [t for t in (scene.get("tags") or []) if t and t not in ("UPlanet", "inventory")]
+                + ([scene["name"]] if scene.get("name") else [])
+            ))
+            if names:
+                _tag_ucloud_index(email, path, names)
+            _log(f"aucun visage sur {path} — scène : "
+                 f"{scene.get('type')}/{scene.get('category')} ({scene.get('name') or '?'})")
+        else:
+            _log(f"aucun visage détecté sur {path}, pas d'analyse de scène disponible")
         return 0
 
     try:
@@ -483,7 +555,7 @@ def main() -> int:
 
     served = _share_photo(email, owner_hex, path, ipfs_link, friends)
     if served:
-        _tag_owner_manifest(email, path, served)
+        _tag_ucloud_index(email, path, served)
     return 0
 
 
