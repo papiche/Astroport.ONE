@@ -1382,10 +1382,16 @@ _is_swarm_node() {
         _stored=$(tr -d '[:space:]' < "$_f" 2>/dev/null)
         [[ "$_stored" == "$_hex" ]] && return 0
     done
-    ## Inclure aussi le NODE local lui-même (admin supprime en local → self-relay)
+    ## Inclure aussi le NODE local lui-même (admin supprime en local → self-relay ;
+    ## et depuis 2026-09-20, auto-ciblage vision_analysis_job quand aucun Brain
+    ## distant n'est connecté, cf. trigger_bro_vision_analysis.sh).
+    ## secret.nostr est UNE SEULE LIGNE "NSEC=...; NPUB=...; HEX=..." — un
+    ## `grep '^HEX='` ancré en début de ligne ne matche donc JAMAIS (bug
+    ## constaté en prod : _local_hex toujours vide, self-DM systématiquement
+    ## rejeté). Même extraction -oP que partout ailleurs dans ce fichier.
     local _local_hex
-    _local_hex=$(grep -m1 '^HEX=' "$HOME/.zen/game/secret.nostr" 2>/dev/null \
-        | cut -d= -f2- | tr -d "[:space:]'\"")
+    _local_hex=$(grep -oP 'HEX=\K[^;]+' "$HOME/.zen/game/secret.nostr" 2>/dev/null \
+        | tr -d '[:space:]')
     [[ "$_local_hex" == "$_hex" ]] && return 0
     return 1
 }
