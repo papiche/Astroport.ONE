@@ -354,6 +354,51 @@ def _tag_ucloud_index(email: str, path: str, names: list) -> None:
     _log(f"index.json tagué {names} sur {path} ({email})")
 
 
+def _tag_ucloud_scene(email: str, path: str, scene: dict) -> None:
+    """Enregistre le résultat de reconnaissance objet/lieu/scène (Ollama
+    vision, IA/inventory_recognition.py, chaîné par faceid.sh §8.5 quand
+    AUCUN visage n'est détecté sur la photo) dans l'entrée `path` de
+    index.json — champ dédié `scene`, distinct de `tags` (réservé aux noms
+    d'amis à qui la photo a été partagée) pour ne jamais confondre les deux
+    catégories côté UI (cf. UPlanet/earth/cloud.html, section « Objets &
+    lieux détectés »)."""
+    with _ucloud_lock(email):
+        index_file = _ucloud_dir(email) / "index.json"
+        try:
+            idx = json.loads(index_file.read_text())
+        except Exception as exc:
+            _log(f"WARN: index.json illisible pour {email} : {exc}")
+            return
+
+        entry = idx.get("entries", {}).get(path)
+        if entry is None:
+            _log(f"WARN: entrée {path} absente de index.json — scène non appliquée")
+            return
+
+        entry["scene"] = {
+            "type": scene.get("type"),
+            "category": scene.get("category"),
+            "name": scene.get("name"),
+            "description": scene.get("description"),
+            "confidence": scene.get("confidence"),
+            "tags": [t for t in (scene.get("tags") or [])
+                     if t and t not in ("UPlanet", "inventory")],
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        }
+
+        tmp = index_file.with_name(f".{index_file.name}.tmp.{os.getpid()}")
+        try:
+            tmp.write_text(json.dumps(idx, ensure_ascii=False, indent=2))
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, index_file)
+            os.chmod(index_file, 0o600)
+        except Exception as exc:
+            _log(f"WARN: écriture index.json (scène) : {exc}")
+            return
+    _log(f"index.json — scène enregistrée sur {path} "
+         f"({scene.get('type')}/{scene.get('category')})")
+
+
 def _share_photo(email: str, owner_hex: str, path: str, ipfs_link: str,
                  friends: list) -> list:
     """Chiffre la photo et l'envoie en NIP-17 à chaque ami réciproque.
@@ -465,18 +510,22 @@ def main() -> int:
     faces = result.get("faces") or []
     if not faces:
         scene = result.get("scene_analysis")
-        if isinstance(scene, dict):
+        # confidence == 0.0 = échec total de classification (ex. modèle Ollama
+        # indisponible) — inventory_recognition.py renvoie alors un item factice
+        # ({"name": "Erreur d'identification", ...}) qu'il ne faut PAS taguer
+        # comme s'il s'agissait d'une vraie identification (constaté en prod,
+        # 2026-09-20 : "unknown model architecture: 'mllama'").
+        if isinstance(scene, dict) and (scene.get("confidence") or 0) > 0:
             # Aucun visage : le Brain a enchaîné sur inventory_recognition.py
-            # (faceid.sh §8.5) — on tague l'entrée avec ce qui a été identifié,
-            # exactement comme un nom d'ami pour un visage reconnu.
-            names = list(dict.fromkeys(
-                [t for t in (scene.get("tags") or []) if t and t not in ("UPlanet", "inventory")]
-                + ([scene["name"]] if scene.get("name") else [])
-            ))
-            if names:
-                _tag_ucloud_index(email, path, names)
+            # (faceid.sh §8.5) — on enregistre l'identification dans un champ
+            # dédié (voir _tag_ucloud_scene), consultable via
+            # GET /mailjet/inventory (UPlanet/earth/cloud.html).
+            _tag_ucloud_scene(email, path, scene)
             _log(f"aucun visage sur {path} — scène : "
                  f"{scene.get('type')}/{scene.get('category')} ({scene.get('name') or '?'})")
+        elif isinstance(scene, dict):
+            _log(f"aucun visage sur {path} — analyse de scène échouée "
+                 f"(confidence=0) : {scene.get('description', '')[:150]}")
         else:
             _log(f"aucun visage détecté sur {path}, pas d'analyse de scène disponible")
         return 0
@@ -491,51 +540,90 @@ def main() -> int:
 
     from qdrant_client import models
 
+    # Enrôlement supervisé (FaceCloud "Mon visage" / "Photos d'un ami") :
+    # l'utilisateur a désigné l'identité AVANT l'envoi (cf.
+    # trigger_bro_vision_analysis.sh, en-têtes X-FaceID-Target-*). On saute
+    # entièrement la recherche par similarité / le bootstrap Inconnu_xxx —
+    # chaque visage détecté est catalogué DIRECTEMENT sous cette identité,
+    # comme s'il s'agissait d'un match à confiance maximale, puis rejoint le
+    # même chemin de réciprocité/partage que n'importe quel visage reconnu.
+    target_pubkey = result.get("target_pubkey") or ""
+    target_name = result.get("target_name") or "?"
+
     recognized = {}   # friend_hex → {"name":…, "pubkey":…}
-    for face in faces:
-        embedding = face.get("embedding") or []
-        if len(embedding) != FACE_VECTOR_SIZE:
-            _log(f"WARN: embedding de dimension {len(embedding)} ≠ {FACE_VECTOR_SIZE} — visage ignoré")
-            continue
+    if target_pubkey and len(target_pubkey) == 64:
+        for face in faces:
+            embedding = face.get("embedding") or []
+            if len(embedding) != FACE_VECTOR_SIZE:
+                continue
+            point_id, _ = _embedding_id(embedding)
+            try:
+                client.upsert(collection_name=collection, points=[
+                    models.PointStruct(id=point_id, vector=embedding, payload={
+                        "name": target_name,
+                        "pubkey": target_pubkey,
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                        "source_path": path,
+                        "bbox": face.get("bbox"),
+                    }),
+                ])
+                _log(f"visage enrôlé (supervisé) : {target_name} ({target_pubkey[:12]}…)")
+            except Exception as exc:
+                _log(f"WARN: upsert Qdrant (enrôlement) échoué : {exc}")
+                continue
+        if faces:
+            recognized[target_pubkey] = {"name": target_name, "pubkey": target_pubkey}
+    else:
+        for face in faces:
+            embedding = face.get("embedding") or []
+            if len(embedding) != FACE_VECTOR_SIZE:
+                _log(f"WARN: embedding de dimension {len(embedding)} ≠ {FACE_VECTOR_SIZE} — visage ignoré")
+                continue
 
-        try:
-            hits = client.query_points(collection_name=collection,
-                                       query=embedding, limit=1).points
-        except Exception as exc:
-            _log(f"WARN: recherche Qdrant échouée : {exc}")
-            continue
+            try:
+                hits = client.query_points(collection_name=collection,
+                                           query=embedding, limit=1).points
+            except Exception as exc:
+                _log(f"WARN: recherche Qdrant échouée : {exc}")
+                continue
 
-        best = hits[0] if hits else None
-        if best is not None and best.score >= MATCH_THRESHOLD:
-            payload = best.payload or {}
-            pubkey = payload.get("pubkey")
-            name = payload.get("name") or "?"
-            if pubkey and len(pubkey) == 64:
-                _log(f"visage reconnu : {name} (score {best.score:.3f})")
-                recognized[pubkey] = {"name": name, "pubkey": pubkey}
-            else:
-                # Visage déjà catalogué mais pas encore nommé : on ne recrée
-                # SURTOUT pas de point, on relance juste l'invitation à le nommer.
-                short = str(name).replace("Inconnu_", "") or "unknown"
-                _log(f"visage déjà connu mais anonyme : {name} (score {best.score:.3f})")
-                _notify_unknown_face(email, owner_hex, short, path)
-            continue
+            best = hits[0] if hits else None
+            if best is not None and best.score >= MATCH_THRESHOLD:
+                payload = best.payload or {}
+                pubkey = payload.get("pubkey")
+                name = payload.get("name") or "?"
+                if pubkey and len(pubkey) == 64:
+                    _log(f"visage reconnu : {name} (score {best.score:.3f})")
+                    recognized[pubkey] = {"name": name, "pubkey": pubkey}
+                else:
+                    # Visage déjà catalogué mais pas encore nommé : on ne recrée
+                    # SURTOUT pas de point, on relance juste l'invitation à le nommer.
+                    short = str(name).replace("Inconnu_", "") or "unknown"
+                    _log(f"visage déjà connu mais anonyme : {name} (score {best.score:.3f})")
+                    _notify_unknown_face(email, owner_hex, short, path)
+                continue
 
-        # Aucun point assez proche (connu OU déjà-inconnu) → nouveau visage.
-        point_id, short = _embedding_id(embedding)
-        try:
-            client.upsert(collection_name=collection, points=[
-                models.PointStruct(id=point_id, vector=embedding, payload={
-                    "name": f"Inconnu_{short}",
-                    "pubkey": None,
-                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                }),
-            ])
-            _log(f"nouveau visage catalogué : Inconnu_{short}")
-        except Exception as exc:
-            _log(f"WARN: upsert Qdrant échoué : {exc}")
-            continue
-        _notify_unknown_face(email, owner_hex, short, path)
+            # Aucun point assez proche (connu OU déjà-inconnu) → nouveau visage.
+            # source_path/bbox : SEULE façon de montrer un aperçu à l'utilisateur
+            # au moment de nommer (FaceCloud) — sans ça, impossible de reconnaître
+            # "Inconnu_xxx" sans deviner. bbox permet de ne recadrer QUE le visage
+            # (pas la photo entière) quand la miniature est servie.
+            point_id, short = _embedding_id(embedding)
+            try:
+                client.upsert(collection_name=collection, points=[
+                    models.PointStruct(id=point_id, vector=embedding, payload={
+                        "name": f"Inconnu_{short}",
+                        "pubkey": None,
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                        "source_path": path,
+                        "bbox": face.get("bbox"),
+                    }),
+                ])
+                _log(f"nouveau visage catalogué : Inconnu_{short}")
+            except Exception as exc:
+                _log(f"WARN: upsert Qdrant échoué : {exc}")
+                continue
+            _notify_unknown_face(email, owner_hex, short, path)
 
     if not recognized:
         return 0

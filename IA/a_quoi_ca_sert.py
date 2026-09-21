@@ -69,7 +69,7 @@ def _ensure_ollama():
     return _check_ollama_port()
 
 
-def _ollama_vision(image_bytes, prompt, model='llama3.2-vision:11b'):
+def _ollama_vision(image_bytes, prompt, model='minicpm-v4.6:latest'):
     import ollama
     def _call():
         return ollama.chat(
@@ -883,8 +883,8 @@ Scrapers utilisés (Playwright) :
     )
     parser.add_argument("image_source", help="Fichier local ou URL HTTP(S)")
     parser.add_argument("--json", action="store_true", help="Sortie JSON structurée")
-    parser.add_argument("--model", default="llama3.2-vision:11b",
-                        help="Modèle Ollama vision (défaut: llama3.2-vision:11b)")
+    parser.add_argument("--model", default="minicpm-v4.6:latest",
+                        help="Modèle Ollama vision (défaut: minicpm-v4.6:latest)")
     parser.add_argument("--cure", action="store_true",
                         help="Mode détaillé : propriétés thérapeutiques, préparations, précautions")
     parser.add_argument("--publish", dest="publish_email", nargs="?", const="__captainemail__",

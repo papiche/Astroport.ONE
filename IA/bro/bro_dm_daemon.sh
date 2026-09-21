@@ -301,7 +301,7 @@ _handle_craft() {
         _log "WARN: #craft contenu trop court pour $url — tentative describe_image"
         if command -v python3 &>/dev/null && [[ -f "$MY_PATH/../describe_image.py" ]]; then
             content=$(python3 "$MY_PATH/../describe_image.py" "$url" \
-                --model "llama3.2-vision:11b" \
+                --model "minicpm-v4.6:latest" \
                 --prompt "Décris ce tutoriel : titre, matériaux, étapes, compétences requises." \
                 2>/dev/null | head -c 4000)
         fi
@@ -1211,8 +1211,8 @@ _handle_comfyui_result() {
 _handle_vision_analysis_job() {
     local payload="$1" sender="$2"
 
-    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _REPLY_NODE_HEX _DECRYPTION_KEY
-    _payload_get "$payload" email owner_hex path ipfs_link reply_node_hex decryption_key
+    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _REPLY_NODE_HEX _DECRYPTION_KEY _TARGET_PUBKEY _TARGET_NAME
+    _payload_get "$payload" email owner_hex path ipfs_link reply_node_hex decryption_key target_pubkey target_name
 
     [[ -z "$_IPFS_LINK" || -z "$_OWNER_HEX" ]] && \
         _log "WARN: 👁️ vision_analysis_job: payload incomplet (ipfs_link/owner_hex)" && return
@@ -1248,7 +1248,13 @@ import json, sys
 faces_raw = sys.argv[5]
 try:
     parsed = json.loads(faces_raw) if faces_raw else {}
-except Exception:
+except Exception as exc:
+    # Silencieux avant 2026-09-20 : un JSON invalide (ex. sortie parasite
+    # d'une commande externe mêlée au stdout de faceid.sh) retombait sur {}
+    # sans laisser de trace, donnant un 'status=ok, faces=[]' incompréhensible
+    # côté satellite_face_matcher.py.
+    print(f'WARN:_vision_result_payload:json_parse_failed:{type(exc).__name__}:{exc} — head={faces_raw[:120]!r}',
+          file=sys.stderr)
     parsed = {}
 
 # La sortie réelle du node SaveText est imbriquée :
@@ -1276,8 +1282,19 @@ out = {
 # scene_analysis (faceid.sh §8.5, présent seulement si 0 visage détecté).
 if isinstance(parsed, dict) and isinstance(parsed.get('scene_analysis'), dict):
     out['scene_analysis'] = parsed['scene_analysis']
+
+# Enrôlement supervisé (FaceCloud) : simple relais Satellite→Brain→Satellite,
+# le Brain n'en a rien fait — satellite_face_matcher.py les lit ici pour
+# cataloguer directement sous cette identité au lieu d'auto-détecter.
+target_pubkey = sys.argv[7] if len(sys.argv) > 7 else ''
+target_name = sys.argv[8] if len(sys.argv) > 8 else ''
+if len(target_pubkey) == 64:
+    out['target_pubkey'] = target_pubkey
+    out['target_name'] = target_name
+
 print(json.dumps(out))
-" "${_EMAIL:-}" "${_OWNER_HEX:-}" "${_PATH:-}" "${_IPFS_LINK:-}" "$_faces_json" "$_status" 2>/dev/null
+" "${_EMAIL:-}" "${_OWNER_HEX:-}" "${_PATH:-}" "${_IPFS_LINK:-}" "$_faces_json" "$_status" \
+  "${_TARGET_PUBKEY:-}" "${_TARGET_NAME:-}" 2>/dev/null
     }
 
     ## Soumission ComfyUI entièrement déléguée à generators/faceid.sh (verrou

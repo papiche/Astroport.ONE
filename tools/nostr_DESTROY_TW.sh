@@ -12,6 +12,19 @@
 # - Stores next HEX in DID document and NOSTR profile
 # - Preserves ZEN Card capital shares (secret.june) - NOT emptied
 # - Maintains minimum 1 G1 in ZEN Card for capital shares management
+# - Exports uCloud (encrypted personal cloud) index.json + keyring.json —
+#   the encrypted blobs themselves stay pinned on IPFS, only the path↔CID
+#   mapping and the per-file AES keys need backing up to find/decrypt them
+#   again after restoration (dav_token is NOT backed up: it's tied to the
+#   OLD hex and the WebDAV password is only ever shown once — the restored
+#   account re-enrolls via POST /api/cloud/enroll for a fresh one)
+# - Exports the Qdrant face-recognition catalog (faces_<hex>, embeddings +
+#   name/pubkey) — collection name is tied to the OLD hex, re-created fresh
+#   under the NEW hex on restore
+# - Exports Qdrant LifeOS personal memory (memory_<hex16>, per-slot) — same
+#   principle, re-created under the NEW hex16 on restore. Collective
+#   collections (uplanet_geo, station_skills) are never touched: they don't
+#   belong to a single MULTIPASS
 # - Exports complete backup as a ZIP protected with the player's own .pass code
 #
 # Usage: ./nostr_DESTROY_TW.sh [email] [reason]
@@ -249,6 +262,13 @@ echo ""
 echo "This cryptographically encrypted backup contains:"
 echo "  • nostr_export.json - All your Nostr events"
 echo "  • uDRIVE_manifest.json - Your uDRIVE file manifest"
+echo "  • ucloud_index.json / ucloud_keyring.json - Your encrypted cloud"
+echo "    (FaceCloud) index and decryption keys — the photos themselves"
+echo "    stay on IPFS, these files are what finds and decrypts them"
+echo "  • qdrant_faces.json - Your FaceCloud face-recognition catalog"
+echo "    (embeddings + names/keys of recognized people)"
+echo "  • qdrant_lifeos.json - Your LifeOS personal memory (BRO/persona/"
+echo "    LOVE slots, embeddings + content)"
 echo "  • .secret.disco - Your OLD secret key (for reference)"
 echo "  • .next.disco - PRE-GENERATED new .disco for restoration"
 echo "  • .next.hex - Next HEX address for new relay/captain"
@@ -282,6 +302,24 @@ echo "Method 3: uDRIVE restoration"
 echo "  - Use uDRIVE_manifest.json to recreate your file structure"
 echo "  - All files are still available via IPFS links in manifest"
 echo ""
+echo "Method 4: uCloud (FaceCloud encrypted cloud) restoration"
+echo "  - Automated by nostr_RESTORE_TW.sh (copies ucloud_index.json and"
+echo "    ucloud_keyring.json into ~/.zen/game/nostr/<EMAIL>/.ucloud/)"
+echo "  - The encrypted photos/files themselves stay retrievable on IPFS"
+echo "    by the CIDs listed in ucloud_index.json — nothing to re-upload"
+echo "  - Re-enroll via FaceCloud (POST /api/cloud/enroll) afterwards to"
+echo "    get a NEW WebDAV password — the old dav_token is not restored"
+echo ""
+echo "Method 5: Qdrant face catalog restoration"
+echo "  - Automated by nostr_RESTORE_TW.sh (recreates collection"
+echo "    faces_<NEW_HEX> and re-upserts every point from qdrant_faces.json)"
+echo "  - The old collection faces_<OLD_HEX> is left untouched/orphaned"
+echo ""
+echo "Method 6: Qdrant LifeOS memory restoration"
+echo "  - Automated by nostr_RESTORE_TW.sh (recreates collection"
+echo "    memory_<NEW_HEX16> and re-upserts every point from qdrant_lifeos.json)"
+echo "  - The old collection memory_<OLD_HEX16> is left untouched/orphaned"
+echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "ZEN Card Capital Shares:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -308,6 +346,12 @@ $(if [[ -n "$NEXT_HEX" ]]; then echo "Next HEX (for restoration): ${NEXT_HEX:0:2
 This encrypted backup contains:
   • nostr_export.json - ${COUNT} Nostr events
   • uDRIVE_manifest.json - Your uDRIVE file manifest (if exists)
+  • ucloud_index.json / ucloud_keyring.json - Your FaceCloud encrypted
+    cloud index and per-file decryption keys (if exists)
+  • qdrant_faces.json - Your FaceCloud face-recognition catalog
+    (embeddings + names/keys of recognized people, if exists)
+  • qdrant_lifeos.json - Your LifeOS personal memory (BRO/persona/LOVE
+    slots, embeddings + content, if exists)
   • .secret.disco - Your OLD secret key (for reference only)
   • .next.disco - PRE-GENERATED new .disco for restoration on new relay
   • .next.hex - Next HEX address (pre-calculated)
@@ -357,6 +401,27 @@ Method 3: uDRIVE restoration
   Use uDRIVE_manifest.json to recreate your file structure
   All files are still available via IPFS links in manifest
 
+Method 4: uCloud (FaceCloud) restoration — automated by nostr_RESTORE_TW.sh
+  ucloud_index.json and ucloud_keyring.json are copied back into
+  ~/.zen/game/nostr/<EMAIL>/.ucloud/ — the encrypted photos/files
+  themselves stay retrievable on IPFS by the CIDs listed in the index,
+  nothing to re-upload. Re-enroll via FaceCloud (POST /api/cloud/enroll)
+  afterwards to get a NEW WebDAV password — the old dav_token is tied to
+  the OLD hex and is not restored.
+
+Method 5: Qdrant face catalog restoration — automated by nostr_RESTORE_TW.sh
+  A fresh collection faces_<NEW_HEX> is created and every point from
+  qdrant_faces.json (embedding + name/pubkey/timestamp/source_path/bbox)
+  is re-upserted into it. The old collection faces_<OLD_HEX> is left
+  orphaned on the previous relay/captain (not deleted, not migrated).
+
+Method 6: Qdrant LifeOS memory restoration — automated by nostr_RESTORE_TW.sh
+  A fresh collection memory_<NEW_HEX16> is created and every point from
+  qdrant_lifeos.json (embedding + slot/content) is re-upserted into it.
+  The old collection memory_<OLD_HEX16> is left orphaned on the previous
+  relay/captain (not deleted, not migrated). Collective collections
+  (uplanet_geo, station_skills) are never touched.
+
 ═══════════════════════════════════════════════════════════════
 
 ZEN CARD CAPITAL SHARES:
@@ -400,6 +465,80 @@ if [[ -f "${MANIFEST_FILE}" ]]; then
     echo "   📊 uDRIVE contains: ${TOTAL_FILES} files (${TOTAL_SIZE})"
 else
     echo "⚠️  uDRIVE manifest not found (no uDRIVE data to backup)"
+fi
+
+# Copy uCloud (encrypted personal cloud) index.json + keyring.json — the
+# actual encrypted blobs stay pinned on IPFS (cloud_storage.py::ipfs_add_bytes
+# pins at PUT time), only these two files are needed to find and decrypt them
+# again. dav_token is deliberately NOT copied: it's tied to the OLD hex and
+# the WebDAV password is only ever shown once — restoration re-enrolls
+# (POST /api/cloud/enroll, FaceCloud) instead of reusing a stale token.
+UCLOUD_DIR="${HOME}/.zen/game/nostr/${player}/.ucloud"
+if [[ -s "${UCLOUD_DIR}/index.json" ]]; then
+    cp "${UCLOUD_DIR}/index.json" "${BACKUP_DIR}/ucloud_index.json"
+    UCLOUD_ENTRIES=$(jq -r '.entries | length' "${UCLOUD_DIR}/index.json" 2>/dev/null || echo "0")
+    echo "✅ uCloud index exported (${UCLOUD_ENTRIES} entrée(s))"
+    if [[ -s "${UCLOUD_DIR}/keyring.json" ]]; then
+        cp "${UCLOUD_DIR}/keyring.json" "${BACKUP_DIR}/ucloud_keyring.json"
+        echo "✅ uCloud keyring exported"
+    else
+        echo "⚠️  uCloud keyring.json manquant — fichiers illisibles après restauration"
+    fi
+else
+    echo "ℹ️  Pas de cloud chiffré (uCloud) actif pour ${player}"
+fi
+
+# Export Qdrant face-recognition catalog (faces_<hex> — embeddings 512D +
+# payload name/pubkey/timestamp/source_path/bbox, cf.
+# Astroport.ONE/IA/bro/satellite_face_matcher.py). The collection name is
+# tied to the OLD hex and becomes orphaned after migration — a fresh
+# collection is recreated under the NEW hex on restore (nostr_RESTORE_TW.sh).
+QDRANT_URL="http://localhost:6333"
+QDRANT_API_KEY=""
+[[ -s "${HOME}/.zen/ai-company/.env" ]] && QDRANT_API_KEY=$(grep '^QDRANT_API_KEY=' "${HOME}/.zen/ai-company/.env" | cut -d= -f2-)
+QDRANT_COLLECTION="faces_${hex}"
+QDRANT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "api-key: ${QDRANT_API_KEY}" \
+    "${QDRANT_URL}/collections/${QDRANT_COLLECTION}" 2>/dev/null)
+if [[ "${QDRANT_STATUS}" == "200" ]]; then
+    QDRANT_POINTS=$(curl -s -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json" \
+        -X POST "${QDRANT_URL}/collections/${QDRANT_COLLECTION}/points/scroll" \
+        -d '{"limit":10000,"with_payload":true,"with_vector":true}' 2>/dev/null \
+        | jq -c '.result.points' 2>/dev/null)
+    if [[ -n "${QDRANT_POINTS}" ]] && [[ "${QDRANT_POINTS}" != "null" ]]; then
+        echo "${QDRANT_POINTS}" > "${BACKUP_DIR}/qdrant_faces.json"
+        QDRANT_COUNT=$(echo "${QDRANT_POINTS}" | jq 'length' 2>/dev/null || echo "0")
+        echo "✅ Qdrant face catalog exported (${QDRANT_COUNT} visage(s))"
+    else
+        echo "⚠️  Échec export catalogue Qdrant"
+    fi
+else
+    echo "ℹ️  Pas de catalogue de visages Qdrant pour ${player}"
+fi
+
+# Export Qdrant LifeOS personal memory (memory_<hex16> — mémoires par slot :
+# BRO/persona/LOVE/etc., cf. Astroport.ONE/IA/memory_manager.py). Distinct des
+# collections COLLECTIVES uplanet_geo/station_skills, volontairement JAMAIS
+# touchées ici — elles n'appartiennent pas à un seul MULTIPASS. Même principe
+# que faces_<hex> : collection nommée d'après l'ANCIEN hex16, recréée fraîche
+# sous le NOUVEAU hex16 à la restauration.
+HEX16="${hex:0:16}"
+LIFEOS_COLLECTION="memory_${HEX16}"
+LIFEOS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "api-key: ${QDRANT_API_KEY}" \
+    "${QDRANT_URL}/collections/${LIFEOS_COLLECTION}" 2>/dev/null)
+if [[ "${LIFEOS_STATUS}" == "200" ]]; then
+    LIFEOS_POINTS=$(curl -s -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json" \
+        -X POST "${QDRANT_URL}/collections/${LIFEOS_COLLECTION}/points/scroll" \
+        -d '{"limit":10000,"with_payload":true,"with_vector":true}' 2>/dev/null \
+        | jq -c '.result.points' 2>/dev/null)
+    if [[ -n "${LIFEOS_POINTS}" ]] && [[ "${LIFEOS_POINTS}" != "null" ]]; then
+        echo "${LIFEOS_POINTS}" > "${BACKUP_DIR}/qdrant_lifeos.json"
+        LIFEOS_COUNT=$(echo "${LIFEOS_POINTS}" | jq 'length' 2>/dev/null || echo "0")
+        echo "✅ LifeOS memory exported (${LIFEOS_COUNT} souvenir(s))"
+    else
+        echo "⚠️  Échec export mémoire LifeOS"
+    fi
+else
+    echo "ℹ️  Pas de mémoire LifeOS pour ${player}"
 fi
 
 # Copy .disco secret key if it exists

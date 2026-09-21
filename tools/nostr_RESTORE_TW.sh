@@ -25,6 +25,24 @@
 #
 # Numbered secret.june files (secret.june.000.IPFSNODEID, etc.) preserve
 # the cumulative cooperative capital shares history across migrations.
+#
+# uCloud (FaceCloud encrypted personal cloud) is restored from
+# ucloud_index.json + ucloud_keyring.json when present in the backup — the
+# encrypted photos/files themselves stay retrievable on IPFS by the CIDs
+# already listed in the index, nothing is re-uploaded. dav_token is NOT
+# restored (tied to the OLD hex, WebDAV password shown only once) — the
+# player re-enrolls via FaceCloud (POST /api/cloud/enroll) for a new one.
+#
+# The Qdrant face-recognition catalog (qdrant_faces.json, if present) is
+# re-upserted into a FRESH collection faces_<NEW_HEX> — the old collection
+# faces_<OLD_HEX> is tied to the identity being replaced and is left
+# orphaned on the previous relay/captain.
+#
+# The Qdrant LifeOS personal memory (qdrant_lifeos.json, if present) is
+# re-upserted the same way into memory_<NEW_HEX16> (first 16 chars of the
+# new HEX, cf. Astroport.ONE/IA/memory_manager.py::_user_hex). Collective
+# collections (uplanet_geo, station_skills) are never touched — they don't
+# belong to a single MULTIPASS.
 # -----------------------------------------------------------------------------
 
 MY_PATH="`dirname \"$0\"`"
@@ -205,6 +223,43 @@ if [[ -f "${MANIFEST_FILE}" ]]; then
     echo -e "${CYAN}   📊 uDRIVE contains: ${GREEN}${TOTAL_FILES}${CYAN} files (${GREEN}${TOTAL_SIZE}${CYAN})${NC}"
 else
     echo -e "${YELLOW}⚠️  No uDRIVE manifest found (no uDRIVE data to restore)${NC}"
+fi
+
+# Check for uCloud (FaceCloud encrypted personal cloud) index/keyring
+UCLOUD_INDEX_FILE=$(find "${RESTORE_DIR}" -name "ucloud_index.json" | head -1)
+UCLOUD_KEYRING_FILE=$(find "${RESTORE_DIR}" -name "ucloud_keyring.json" | head -1)
+UCLOUD_ENTRIES=0
+if [[ -f "${UCLOUD_INDEX_FILE}" ]]; then
+    UCLOUD_ENTRIES=$(jq -r '.entries | length' "${UCLOUD_INDEX_FILE}" 2>/dev/null || echo "0")
+    echo -e "${GREEN}✅ uCloud (FaceCloud) index found${NC}"
+    echo -e "${CYAN}   ☁️  uCloud contains: ${GREEN}${UCLOUD_ENTRIES}${CYAN} entrée(s) chiffrée(s)${NC}"
+    if [[ ! -f "${UCLOUD_KEYRING_FILE}" ]]; then
+        echo -e "${YELLOW}   ⚠️  ucloud_keyring.json missing — entries will be unreadable after restore${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  No uCloud index found (no encrypted cloud data to restore)${NC}"
+fi
+
+# Check for Qdrant face-recognition catalog export
+QDRANT_FACES_FILE=$(find "${RESTORE_DIR}" -name "qdrant_faces.json" | head -1)
+QDRANT_COUNT=0
+if [[ -f "${QDRANT_FACES_FILE}" ]]; then
+    QDRANT_COUNT=$(jq 'length' "${QDRANT_FACES_FILE}" 2>/dev/null || echo "0")
+    echo -e "${GREEN}✅ Qdrant face catalog found${NC}"
+    echo -e "${CYAN}   🧑‍🤝‍🧑 Face catalog contains: ${GREEN}${QDRANT_COUNT}${CYAN} visage(s)${NC}"
+else
+    echo -e "${YELLOW}⚠️  No Qdrant face catalog found${NC}"
+fi
+
+# Check for Qdrant LifeOS personal memory export
+QDRANT_LIFEOS_FILE=$(find "${RESTORE_DIR}" -name "qdrant_lifeos.json" | head -1)
+QDRANT_LIFEOS_COUNT=0
+if [[ -f "${QDRANT_LIFEOS_FILE}" ]]; then
+    QDRANT_LIFEOS_COUNT=$(jq 'length' "${QDRANT_LIFEOS_FILE}" 2>/dev/null || echo "0")
+    echo -e "${GREEN}✅ Qdrant LifeOS memory found${NC}"
+    echo -e "${CYAN}   🧠 LifeOS memory contains: ${GREEN}${QDRANT_LIFEOS_COUNT}${CYAN} souvenir(s)${NC}"
+else
+    echo -e "${YELLOW}⚠️  No Qdrant LifeOS memory found${NC}"
 fi
 
 # Check for .next.disco (NEW format for restoration on new relay/captain)
@@ -468,7 +523,120 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
                     echo -e "${YELLOW}⚠️  jq not found, skipping uDRIVE file restoration${NC}"
                 fi
             fi
-            
+
+            # Restore uCloud (FaceCloud encrypted personal cloud) index/keyring.
+            # Only these two files are needed: the encrypted blobs themselves stay
+            # retrievable on IPFS by the CIDs already listed in index.json — nothing
+            # is re-uploaded. dav_token is deliberately NOT restored (it's tied to
+            # the OLD hex and the WebDAV password is only ever shown once) — the
+            # player must re-enroll via FaceCloud (POST /api/cloud/enroll) to get
+            # a fresh WebDAV password bound to their new identity.
+            if [[ -f "${UCLOUD_INDEX_FILE}" ]]; then
+                echo -e "${CYAN}   ☁️  Restoring uCloud (encrypted cloud) index/keyring...${NC}"
+                RESTORE_UCLOUD_DIR="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/.ucloud"
+                mkdir -p "${RESTORE_UCLOUD_DIR}"
+                chmod 700 "${RESTORE_UCLOUD_DIR}"
+                cp "${UCLOUD_INDEX_FILE}" "${RESTORE_UCLOUD_DIR}/index.json"
+                chmod 600 "${RESTORE_UCLOUD_DIR}/index.json"
+                if [[ -f "${UCLOUD_KEYRING_FILE}" ]]; then
+                    cp "${UCLOUD_KEYRING_FILE}" "${RESTORE_UCLOUD_DIR}/keyring.json"
+                    chmod 600 "${RESTORE_UCLOUD_DIR}/keyring.json"
+                    echo -e "${GREEN}   ✅ uCloud restored (${UCLOUD_ENTRIES} entrée(s)) — re-enroll via FaceCloud for a new WebDAV password${NC}"
+                else
+                    echo -e "${YELLOW}   ⚠️  uCloud index restored WITHOUT keyring — entries unreadable until the keyring is recovered${NC}"
+                fi
+            fi
+
+            # Restore Qdrant face-recognition catalog under a FRESH collection
+            # named after the NEW hex — the old collection (faces_<OLD_HEX>) is
+            # tied to the identity being replaced and stays orphaned there.
+            # Point ids/vectors/payloads are re-upserted as-is: recognized
+            # friends' pubkeys are independent of the owner's own hex, only the
+            # collection NAME needs to change.
+            if [[ -f "${QDRANT_FACES_FILE}" ]]; then
+                echo -e "${CYAN}   🧑‍🤝‍🧑 Restoring Qdrant face catalog...${NC}"
+                RESTORE_HEX_FILE="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/HEX"
+                if [[ -f "${RESTORE_HEX_FILE}" ]]; then
+                    QDRANT_RESTORE_HEX=$(cat "${RESTORE_HEX_FILE}")
+                    QDRANT_URL="http://localhost:6333"
+                    QDRANT_API_KEY=""
+                    [[ -s "${HOME}/.zen/ai-company/.env" ]] && QDRANT_API_KEY=$(grep '^QDRANT_API_KEY=' "${HOME}/.zen/ai-company/.env" | cut -d= -f2-)
+                    QDRANT_NEW_COLLECTION="faces_${QDRANT_RESTORE_HEX}"
+
+                    curl -s -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json" \
+                        -X PUT "${QDRANT_URL}/collections/${QDRANT_NEW_COLLECTION}" \
+                        -d '{"vectors":{"size":512,"distance":"Cosine"}}' >/dev/null 2>&1
+
+                    # --data @file (jamais -d "$body" en argument) : un corps de
+                    # plusieurs centaines de vecteurs dépasse ARG_MAX du shell
+                    # ("Liste d'arguments trop longue") — constaté en test réel
+                    # avec 77 points × 768 dims.
+                    QDRANT_UPSERT_FILE=$(mktemp)
+                    jq -c '{points: [.[] | {id, vector, payload}]}' "${QDRANT_FACES_FILE}" > "${QDRANT_UPSERT_FILE}" 2>/dev/null
+                    if [[ -s "${QDRANT_UPSERT_FILE}" ]]; then
+                        QDRANT_UPSERT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                            -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json" \
+                            -X PUT "${QDRANT_URL}/collections/${QDRANT_NEW_COLLECTION}/points?wait=true" \
+                            --data @"${QDRANT_UPSERT_FILE}" 2>/dev/null)
+                        rm -f "${QDRANT_UPSERT_FILE}"
+                        if [[ "${QDRANT_UPSERT_STATUS}" == "200" ]]; then
+                            echo -e "${GREEN}   ✅ Qdrant face catalog restored (${QDRANT_COUNT} visage(s)) under ${QDRANT_NEW_COLLECTION}${NC}"
+                        else
+                            echo -e "${YELLOW}   ⚠️  Qdrant upsert failed (HTTP ${QDRANT_UPSERT_STATUS})${NC}"
+                        fi
+                    else
+                        echo -e "${YELLOW}   ⚠️  Could not build Qdrant upsert payload${NC}"
+                    fi
+                else
+                    echo -e "${YELLOW}   ⚠️  New HEX not found, skipping Qdrant restoration${NC}"
+                fi
+            fi
+
+            # Restore Qdrant LifeOS personal memory under a FRESH collection
+            # named after the NEW hex16 — same principle as the face catalog
+            # above. Vector size is read from the backup itself (not
+            # hardcoded) since OLLAMA_EMBED_DIM can differ across stations.
+            if [[ -f "${QDRANT_LIFEOS_FILE}" ]]; then
+                echo -e "${CYAN}   🧠 Restoring Qdrant LifeOS memory...${NC}"
+                RESTORE_HEX_FILE="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/HEX"
+                if [[ -f "${RESTORE_HEX_FILE}" ]]; then
+                    LIFEOS_RESTORE_HEX=$(cat "${RESTORE_HEX_FILE}")
+                    LIFEOS_RESTORE_HEX16="${LIFEOS_RESTORE_HEX:0:16}"
+                    QDRANT_URL="http://localhost:6333"
+                    QDRANT_API_KEY=""
+                    [[ -s "${HOME}/.zen/ai-company/.env" ]] && QDRANT_API_KEY=$(grep '^QDRANT_API_KEY=' "${HOME}/.zen/ai-company/.env" | cut -d= -f2-)
+                    LIFEOS_NEW_COLLECTION="memory_${LIFEOS_RESTORE_HEX16}"
+                    LIFEOS_VECTOR_SIZE=$(jq '.[0].vector | length' "${QDRANT_LIFEOS_FILE}" 2>/dev/null)
+                    [[ -z "${LIFEOS_VECTOR_SIZE}" || "${LIFEOS_VECTOR_SIZE}" == "null" ]] && LIFEOS_VECTOR_SIZE=768
+
+                    curl -s -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json" \
+                        -X PUT "${QDRANT_URL}/collections/${LIFEOS_NEW_COLLECTION}" \
+                        -d "{\"vectors\":{\"size\":${LIFEOS_VECTOR_SIZE},\"distance\":\"Cosine\"}}" >/dev/null 2>&1
+
+                    # --data @file : voir le commentaire équivalent sur le
+                    # catalogue de visages ci-dessus (ARG_MAX shell dépassé
+                    # dès que le nombre de souvenirs × 768 dims grossit).
+                    LIFEOS_UPSERT_FILE=$(mktemp)
+                    jq -c '{points: [.[] | {id, vector, payload}]}' "${QDRANT_LIFEOS_FILE}" > "${LIFEOS_UPSERT_FILE}" 2>/dev/null
+                    if [[ -s "${LIFEOS_UPSERT_FILE}" ]]; then
+                        LIFEOS_UPSERT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                            -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json" \
+                            -X PUT "${QDRANT_URL}/collections/${LIFEOS_NEW_COLLECTION}/points?wait=true" \
+                            --data @"${LIFEOS_UPSERT_FILE}" 2>/dev/null)
+                        rm -f "${LIFEOS_UPSERT_FILE}"
+                        if [[ "${LIFEOS_UPSERT_STATUS}" == "200" ]]; then
+                            echo -e "${GREEN}   ✅ LifeOS memory restored (${QDRANT_LIFEOS_COUNT} souvenir(s)) under ${LIFEOS_NEW_COLLECTION}${NC}"
+                        else
+                            echo -e "${YELLOW}   ⚠️  LifeOS Qdrant upsert failed (HTTP ${LIFEOS_UPSERT_STATUS})${NC}"
+                        fi
+                    else
+                        echo -e "${YELLOW}   ⚠️  Could not build LifeOS Qdrant upsert payload${NC}"
+                    fi
+                else
+                    echo -e "${YELLOW}   ⚠️  New HEX not found, skipping LifeOS Qdrant restoration${NC}"
+                fi
+            fi
+
             # Restore ZEN Card using VISA.new.sh with SALT/PEPPER from secret.june
             if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
                 echo -e "${CYAN}   🎮 Recreating ZEN Card with original credentials...${NC}"
@@ -632,6 +800,18 @@ if [[ -f "${MANIFEST_FILE}" ]]; then
     echo -e "${BLUE}║${NC}  ${CYAN}uDRIVE status:${NC}            ${YELLOW}Manifest available for recreation${NC}        ${BLUE}║${NC}"
 fi
 
+if [[ -f "${UCLOUD_INDEX_FILE}" ]]; then
+    echo -e "${BLUE}║${NC}  ${CYAN}uCloud entries:${NC}            ${GREEN}${UCLOUD_ENTRIES}${NC}                                  ${BLUE}║${NC}"
+fi
+
+if [[ -f "${QDRANT_FACES_FILE}" ]]; then
+    echo -e "${BLUE}║${NC}  ${CYAN}Face catalog:${NC}              ${GREEN}${QDRANT_COUNT}${NC}                                  ${BLUE}║${NC}"
+fi
+
+if [[ -f "${QDRANT_LIFEOS_FILE}" ]]; then
+    echo -e "${BLUE}║${NC}  ${CYAN}LifeOS memory:${NC}             ${GREEN}${QDRANT_LIFEOS_COUNT}${NC}                                  ${BLUE}║${NC}"
+fi
+
 if [[ -f "${NEXT_DISCO_FILE}" ]]; then
     echo -e "${BLUE}║${NC}  ${CYAN}Next .disco:${NC}             ${GREEN}Available (NEW relay/captain ready)${NC}      ${BLUE}║${NC}"
 elif [[ -f "${OLD_DISCO_FILE}" ]]; then
@@ -653,6 +833,15 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
     echo -e "   ${CYAN}✅ NOSTR events imported successfully${NC}"
     if [[ -f "${MANIFEST_FILE}" ]]; then
         echo -e "   ${CYAN}✅ uDRIVE files restored from IPFS${NC}"
+    fi
+    if [[ -f "${UCLOUD_INDEX_FILE}" ]]; then
+        echo -e "   ${CYAN}✅ uCloud (${UCLOUD_ENTRIES} entrée(s)) restored — re-enroll via FaceCloud for a new WebDAV password${NC}"
+    fi
+    if [[ -f "${QDRANT_FACES_FILE}" ]]; then
+        echo -e "   ${CYAN}✅ Face catalog (${QDRANT_COUNT} visage(s)) restored under the new collection${NC}"
+    fi
+    if [[ -f "${QDRANT_LIFEOS_FILE}" ]]; then
+        echo -e "   ${CYAN}✅ LifeOS memory (${QDRANT_LIFEOS_COUNT} souvenir(s)) restored under the new collection${NC}"
     fi
     if [[ -f "${ZEN_SECRET_JUNE}" || -f "${ZEN_G1PUB}" ]]; then
         echo -e "   ${CYAN}✅ ZEN Card recreated with original credentials (capital owner history)${NC}"

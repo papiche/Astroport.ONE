@@ -36,6 +36,12 @@ import requests
 HOME_DIR = os.path.expanduser("~")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Modèle vision Ollama. minicpm-v4.6, pas llama3.2-vision:11b (architecture
+# "mllama" incompatible avec certains builds Ollama — constaté en prod,
+# 2026-09-20 : "unknown model architecture: 'mllama'" alors que le modèle
+# était bien tiré). minicpm-v4.6 est aussi ~5x plus léger (1.6 Go vs 7.8 Go).
+VISION_MODEL = "minicpm-v4.6:latest"
+
 # Type definitions with icons and categories
 INVENTORY_TYPES = {
     'plant': {
@@ -174,7 +180,7 @@ IMPORTANT: Return ONLY valid JSON, no other text."""
     try:
         log_message("Classifying image type with AI...")
         response = ollama.chat(
-            model="llama3.2-vision:11b",
+            model=VISION_MODEL,
             messages=[{
                 'role': 'user',
                 'content': classification_prompt,
@@ -275,7 +281,7 @@ IMPORTANT: Return ONLY valid JSON."""
     try:
         log_message(f"Identifying {item_type} with AI...")
         response = ollama.chat(
-            model="llama3.2-vision:11b",
+            model=VISION_MODEL,
             messages=[{
                 'role': 'user',
                 'content': identify_prompt,

@@ -94,7 +94,13 @@ else
     _basename=$(basename "$IMG_ARG")
     _fetched="$_tmp_dir/$_basename"
     _cid="${IMG_ARG#/ipfs/}"
-    if ! timeout 120 ipfs get "/ipfs/${_cid}" -o "$_fetched" 2>/dev/null; then
+    # `ipfs get` imprime "Saving file(s) to ..." sur STDOUT (pas stderr) — sans
+    # ce >/dev/null, cette ligne contaminait le JSON final que ce script
+    # renvoie sur stdout : json.loads() côté appelant échouait silencieusement
+    # dessus (except -> {}), donc `faces` arrivait vide malgré une détection
+    # réussie. Invisible en lecture manuelle du terminal, fatal dès que la
+    # sortie est parsée par du code — bug constaté en prod, 2026-09-20.
+    if ! timeout 120 ipfs get "/ipfs/${_cid}" -o "$_fetched" >/dev/null 2>&1; then
         echo "ERROR:faceid:ipfs_get_failed:${IMG_ARG}" >&2
         exit 1
     fi
@@ -102,7 +108,15 @@ else
     if [ -n "$DECRYPTION_KEY" ]; then
         ## Blob UENC chiffré (AES-256-GCM) — déchiffrement local uniquement,
         ## jamais republié ni conservé au-delà de ce process (trap EXIT).
-        _basename="${_basename%.uenc}"
+        ## Préfixe "decrypted_" OBLIGATOIRE : avec un CID nu (cas normal, pas
+        ## de nom de fichier réel), "${_basename%.uenc}" ne retire rien — sans
+        ## préfixe, _img retombait exactement sur _fetched. `>` tronque son
+        ## fichier de sortie AVANT que `<` ne lise quoi que ce soit : lire et
+        ## écrire le même fichier donnait donc un payload vide en entrée
+        ## ("Payload UENC trop court"), systématique avec un CID nu — bug
+        ## constaté en prod le 2026-09-20, jamais visible en test manuel avec
+        ## un vrai nom de fichier local.
+        _basename="decrypted_${_basename%.uenc}"
         _img="$_tmp_dir/$_basename"
         if ! python3 "$_UENC_CODEC" decrypt "$DECRYPTION_KEY" \
             < "$_fetched" > "$_img" 2>/tmp/faceid_decrypt_err.$$; then

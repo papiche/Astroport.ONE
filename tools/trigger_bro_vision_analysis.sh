@@ -20,13 +20,18 @@
 # Le Brain répond sur le canal `vision_analysis_result` vers `reply_node_hex`,
 # où IA/bro/bro_dm_daemon.sh::_handle_vision_analysis_result() prend le relais.
 #
-# Usage: trigger_bro_vision_analysis.sh <EMAIL> <OWNER_HEX> <PATH> <IPFS_LINK> [DECRYPTION_KEY_HEX]
+# Usage: trigger_bro_vision_analysis.sh <EMAIL> <OWNER_HEX> <PATH> <IPFS_LINK> [DECRYPTION_KEY_HEX] [TARGET_PUBKEY] [TARGET_NAME]
 #   EMAIL              MULTIPASS propriétaire du fichier
 #   OWNER_HEX          HEX de ce MULTIPASS (nomme la collection Qdrant faces_{owner_hex})
 #   PATH               chemin DAV, ex: /Photos/photo.jpg
 #   IPFS_LINK          CID du blob UENC chiffré (jamais un lien en clair)
 #   DECRYPTION_KEY_HEX clé AES-256 (64 hex chars) — optionnelle, mais requise
 #                      pour tout ipfs_link chiffré (toujours le cas depuis 2026-09-20)
+#   TARGET_PUBKEY      optionnel (64 hex) — enrôlement supervisé (FaceCloud
+#                      "Mon visage" / "Photos d'un ami") : satellite_face_matcher.py
+#                      cataloguera DIRECTEMENT sous cette identité au lieu
+#                      d'auto-détecter/créer un Inconnu_xxx
+#   TARGET_NAME        nom affiché associé (facultatif, ex: "Moi" ou le nom de l'ami)
 #
 # Best effort intégral : TOUT échec sort en 0 silencieusement. Ce script est
 # dans le chemin chaud du PUT — il ne doit jamais le faire échouer ni le
@@ -38,6 +43,8 @@ OWNER_HEX="$2"
 RELPATH="$3"
 IPFS_LINK="$4"
 DECRYPTION_KEY="$5"
+TARGET_PUBKEY="$6"
+TARGET_NAME="$7"
 
 [[ -z "$EMAIL" || -z "$OWNER_HEX" || -z "$RELPATH" || -z "$IPFS_LINK" ]] && exit 0
 [[ ${#OWNER_HEX} -ne 64 ]] && exit 0
@@ -65,8 +72,10 @@ TARGET_HEX=$(grep -oP '^CONNECTION_NODE_HEX=\K.*' "$STATUS_FILE" 2>/dev/null | t
 PAYLOAD=$(jq -n --arg email "$EMAIL" --arg owner_hex "$OWNER_HEX" \
     --arg path "$RELPATH" --arg ipfs_link "$IPFS_LINK" --arg reply_node_hex "$NODE_HEX_SELF" \
     --arg decryption_key "$DECRYPTION_KEY" \
+    --arg target_pubkey "$TARGET_PUBKEY" --arg target_name "$TARGET_NAME" \
     '{email:$email, owner_hex:$owner_hex, path:$path, ipfs_link:$ipfs_link, reply_node_hex:$reply_node_hex}
-     + (if ($decryption_key|length) == 64 then {decryption_key:$decryption_key} else {} end)' \
+     + (if ($decryption_key|length) == 64 then {decryption_key:$decryption_key} else {} end)
+     + (if ($target_pubkey|length) == 64 then {target_pubkey:$target_pubkey, target_name:$target_name} else {} end)' \
     2>/dev/null)
 [[ -z "$PAYLOAD" ]] && exit 0
 
