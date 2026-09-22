@@ -224,14 +224,6 @@ display_services_status() {
     else
         print_status "strfry" "INACTIVE" ""
     fi
-        
-        # G1Billet
-    local g1billet_active=$(jq -r '.services.g1billet.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
-    if [[ "$g1billet_active" == "true" ]]; then
-            print_status "G1Billet" "ACTIVE" ""
-        else
-            print_status "G1Billet" "INACTIVE" ""
-    fi
 }
 
 #######################################################################

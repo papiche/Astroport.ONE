@@ -784,7 +784,7 @@ while true; do
     fi
     
     # Check if cache is fresh (< 12h)
-    _svc_fallback="{\"ipfs\":{\"active\":true,\"peers_connected\":$(timeout 5 ipfs swarm peers 2>/dev/null | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"
+    _svc_fallback="{\"ipfs\":{\"active\":true,\"peers_connected\":$(timeout 5 ipfs swarm peers 2>/dev/null | wc -l)},\"astroport\":{\"active\":true}}"
     if [[ -s ${ANALYSIS_FILE} ]]; then
         # Vérifie la validité JSON avant toute utilisation
         if ! jq empty "${ANALYSIS_FILE}" 2>/dev/null; then

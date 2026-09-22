@@ -503,7 +503,15 @@ confirm_payment() {
     
     # Get source public key
     source_pubkey=$(grep "pub:" "$keyfile" | cut -d ' ' -f 2 2>/dev/null)
-    
+    # Conversion SS58 : le cache .COINS est indexé par G1PUBNOSTR (SS58),
+    # pas par le format V1 brut du fichier dunikey — même convention que
+    # VISA.new.sh (sans cette conversion, la recherche du cache échoue
+    # toujours en silence et retombe sur un solde "0" fictif ci-dessous).
+    if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
+        _source_ss58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$source_pubkey" 2>/dev/null)
+        [[ -n "$_source_ss58" ]] && source_pubkey="$_source_ss58"
+    fi
+
     # Get source balance from cache (much faster than G1check.sh)
     source_balance=$(cat ~/.zen/tmp/coucou/${source_pubkey}.COINS 2>/dev/null)
     if [[ -z "$source_balance" || "$source_balance" == "null" ]]; then

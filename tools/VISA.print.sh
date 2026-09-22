@@ -60,28 +60,16 @@ LP=$(ls /dev/usb/lp* | head -n 1 2>/dev/null)
 
 [[ ${PASS} == "" ]] && PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5) ## GENERATE 4 DIGIT PIN
 
-# USE G1BILLET GENERATOR
-[[ -s ~/.zen/G1BILLET/MAKE_G1BILLET.sh ]] \
-&& echo ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "${PSEUDO-xastro}" "$ASTRONAUTENS" "$PLAYER" \
-&& ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "${PSEUDO-xastro}" "$ASTRONAUTENS" "$PLAYER" \
-|| ( echo "MISSING G1BILLET ENGINE - ERROR - " && exit 1 )
-
-s=$(${MY_PATH}/diceware.sh 1 | xargs)
-p=$(${MY_PATH}/diceware.sh 1 | xargs)
 BILLETNAME=$(echo "$SALT" | sed 's/ /_/g')
 
-## GET IMAGE FROM G1BILLET ENGINE
-cp ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg ~/.zen/tmp/${MOATS}/${PASS}.jpg
-
-[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open ~/.zen/tmp/${MOATS}/${PASS}.jpg
-
-#~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open  ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.TW.png
-
-
-#~ [[ $LP ]] \
-#~ && brother_ql_create --model QL-700 --label-size 62 ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.TW.png > ~/.zen/tmp/${MOATS}/bill.bin 2>/dev/null \
-#~ && sudo brother_ql_print ~/.zen/tmp/${MOATS}/bill.bin $LP
-#~ #############
+## AstroID QR (SALT/PEPPER chiffré GPG, PIN=PASS) — remplace G1BILLET (fermé).
+## Compatible avec le décodeur existant upassport.sh (préfixe QR "~~~~~",
+## pipeline urldecode|tr '_' '+'|tr '-' '\n'|tr '~' '-') — ne pas modifier
+## l'un sans l'autre. PIN passé sur stdin, jamais en argv.
+echo "${PASS}" | python3 ~/.zen/UPassport/billet_astroid.py \
+    --salt "$SALT" --pepper "$PEPPER" --email "${PLAYER}" \
+    --out ~/.zen/tmp/${MOATS}/${BILLETNAME}.ZENCARD.png \
+|| ( echo "ASTROID GENERATION ERROR" && exit 1 )
 
 convert ~/.zen/game/players/${PLAYER}/ZENG1avatar.png -resize 300 ~/.zen/tmp/${MOATS}/QR.png
 convert ${MY_PATH}/../images/astroport.jpg  -resize 260 ~/.zen/tmp/${MOATS}/astroport.jpg
@@ -104,7 +92,7 @@ convert -gravity SouthEast -pointsize 16 -fill black -draw "text 10,10 \"$PEPPER
 && brother_ql_print ~/.zen/tmp/${MOATS}/toprint.bin $LP
 
 ## PRINT PGP AstroID
-convert ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.ZENCARD.png  -resize 580 ~/.zen/tmp/${MOATS}/ASTROPORT.png
+convert ~/.zen/tmp/${MOATS}/${BILLETNAME}.ZENCARD.png  -resize 580 ~/.zen/tmp/${MOATS}/ASTROPORT.png
 composite -compose Over -gravity Center -geometry +0+0 ~/.zen/tmp/${MOATS}/ASTROPORT.png ${MY_PATH}/../images/Brother_600x600.png ~/.zen/tmp/${MOATS}/AstroID.${PASS}.jpg
 
 

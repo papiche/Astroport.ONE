@@ -348,7 +348,7 @@ for fp in ${fplayers[@]}; do
         ORIGINH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | sha256sum | cut -d ' ' -f 1)
         ## CAN USE IPFSH=$(cat ~/.zen/tmp/${MOATS}/${FPLAYER}.json  | jq -r '.[].text' | ipfs add -q)
         ## TODO MICROLEDGER TIDDLER...
-        # we are monitoring email tiddler image change (G1BILLET background is made of).
+        # we are monitoring email tiddler image change (used as AstroID background).
         echo "ORIGINH: $ORIGINH"
     else
         ORIGINH="$INSIDEH"

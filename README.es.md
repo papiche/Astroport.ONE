@@ -181,7 +181,6 @@ http://localhost:12345   Mapa de la estación Astroport
 http://localhost:54321   UPassport (creación MULTIPASS, ZENCard)
 http://localhost:8080    Pasarela IPFS
 ws://localhost:7777      Relay NOSTR strfry (NIP-101)
-http://localhost:33101   G1Billet (impresión cripto)
 http://localhost:81      Admin Nginx Proxy Manager (NPM)
 http://localhost:8443    Configuración inicial NextCloud AIO (perfil nextcloud)
 http://localhost:11434   API Ollama (perfil ai-company)

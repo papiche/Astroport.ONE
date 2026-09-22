@@ -16,7 +16,7 @@ Licensed under AGPL-3.0. Author: Fred (support@qo-op.com).
 ./install.sh "" "" "" nextcloud       # Standard + NextCloud AIO (cloud privé 128Go)
 ./install.sh "" "" "" ai-company      # Standard + Stack IA (Ollama, Open WebUI, Qdrant)
 ./install.sh "" "" "" dev             # Standard + rnostr (relay NOSTR Rust)
-./start.sh                            # Start all services (ipfs, astroport, g1billet, upassport)
+./start.sh                            # Start all services (ipfs, astroport, upassport)
 ./stop.sh                             # Stop services
 ```
 
@@ -175,8 +175,7 @@ Le score est publié dans `12345.json` via `capacities.power_score` et `capaciti
 | 8080/4001/5001 | IPFS Gateway/Swarm/API | `ipfs.DOMAIN` |
 | 7777 | NOSTR Relay (strfry — actuel, rnostr prévu) | `relay.DOMAIN` |
 | 8888 | rnostr internal (metrics/admin, prévu) | localhost only |
-| 54321 | UPassport FastAPI | `u.DOMAIN` |
-| 33101 | G1Billet | `libra.DOMAIN` |
+| 54321 | UPassport FastAPI (billets Ğ1 : `/qr/billet`) | `u.DOMAIN` |
 | 80/443/81 | Nginx Proxy Manager (SSL) | — |
 | 8002/8443 | NextCloud AIO admin | `cloud.DOMAIN` |
 | 11434 | Ollama LLM (via tunnel ou local) | `ollama.DOMAIN` (dynamique) |
@@ -189,7 +188,6 @@ Le score est publié dans `12345.json` via `capacities.power_score` et `capaciti
 - `strfry` - NOSTR relay (port 7777 — binaire aussi utilisé pour DB locale : scan/import/delete)
 - `rnostr` - Futur relay NOSTR Rust (remplacera strfry sur port 7777, migration planifiée)
 - `ipfs` - IPFS daemon
-- `g1billet` - G1Billet service
 
 ### Docker Services (docker-compose)
 Réseau unique **`dragon-net`** — tous les services se joignent par nom de conteneur.

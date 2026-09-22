@@ -39,7 +39,6 @@ Station Astroport
 ├── strfry / rnostr      → relay NOSTR local (port 7777)
 ├── UPassport FastAPI    → API centrale (port 54321)
 ├── 12345.sh             → carte station (port 12345)
-├── G1Billet             → portefeuilles Ğ1 (port 33101)
 └── Stack IA (--profile ai)
     ├── Qdrant           → base vectorielle (port 6333)
     ├── Ollama           → LLM local (port 11434)

@@ -91,7 +91,7 @@ t+2m    ├─ NETTOYAGE ──────────────────�
         │  sudo systemctl stop astroport
         │
 t+5m    ├─ MISES À JOUR ──────────────────────────────────────────
-        │  git pull (G1BILLET, UPassport, NIP-101, UPlanet, Astroport)
+        │  git pull (UPassport, NIP-101, UPlanet, Astroport)
         │  install_gcli.sh
         │  yt-dlp -U
         │

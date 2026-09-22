@@ -548,7 +548,6 @@ myAPI="http://127.0.0.1:5001" ## IPFS API
 myDATA="https://data.gchange.fr" ## GCHANGE +
 myGCHANGE="https://www.gchange.fr"
 myCESIUM="https://g1.data.e-is.pro" ## CESIUM +
-myG1BILLET="http://127.0.0.1:33101"
 myHOST="$(myHostName)"
 
 myIPFS="http://ipfs.copylaradio.com" ## Used to create IPFS URL
@@ -570,7 +569,6 @@ fi
  && myAPI="https://ipfs.$(myHostName)/5001" \
  && myIPFS="https://ipfs.$(myDomainName)" \
  && myHOST="astroport.$(myHostName)" \
- && myG1BILLET="https://libra.${myDOMAIN}" \
  && myIPFSW="https://ipfs.${myDOMAIN}" \
  || true
 
@@ -580,7 +578,6 @@ fi
  && myAPI="http://$(zIp):5001" \
  && myIPFS="http://$(zIp):8080" \
  && myHOST="$(zIp)" \
- && myG1BILLET="http://$(zIp):33101" \
  && myIP="$(zIp)" \
  && myIPFSGW="$(zIp):8080" \
  || true

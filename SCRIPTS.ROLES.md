@@ -61,7 +61,7 @@ Le Capitaine est l'opérateur humain de la station.
     *   **Slots :** Calcule combien de nouveaux MULTIPASS (10Go) ou ZEN Cards (128Go) la station peut encore accueillir.
 *   **`20h12.process.sh` (Le Majordome de Maintenance) :**
     *   Tâche Cron quotidienne qui exécute la "Solar Calibration" (calcul de l'heure selon la position du soleil).
-    *   Met à jour tous les dépôts Git (Astroport, UPassport, G1Billet).
+    *   Met à jour tous les dépôts Git (Astroport, UPassport, NIP-101).
     *   Relance les tunnels de support P2P (Dragons).
 
 ---

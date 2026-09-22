@@ -9,7 +9,7 @@
 #
 # Fonctionnalités principales:
 # - Vérification et gestion du démon IPFS
-# - Mise à jour des dépôts Git (G1BILLET, UPassport, NIP-101, Astroport)
+# - Mise à jour des dépôts Git (UPassport, NIP-101, Astroport)
 # - Maintenance du réseau P2P et des connexions SSH (DRAGON WOT)
 # - Rafraîchissement des données UPlanet et Nostr
 # - Gestion des services système via systemd
@@ -368,11 +368,6 @@ find "$HOME/.zen/tmp/" -mindepth 1 -maxdepth 1 ! -name "swarm" ! -name "coucou" 
 [[ -d "$HOME/.zen/tmp.media" ]] && find "$HOME/.zen/tmp.media" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 
 ########################################################################
-## UPDATE G1BILLET code # 33101
-[[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] \
-&& cd ~/.zen/G1BILLET/ && git pull \
-&& rm -Rf ~/.zen/G1BILLET/tmp/* ## CLEAN TMP
-
 ## UPDATE UPassport # 54321 API
 [[ -s ~/.zen/UPassport/54321.py ]] \
 && cd ~/.zen/UPassport && git pull
@@ -743,7 +738,6 @@ if [[ -n "$ANALYSIS_JSON" ]]; then
     NEXTCLOUD_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.nextcloud.active' 2>/dev/null)
     STRFRY_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.strfry.active' 2>/dev/null)
     UPASSPORT_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.upassport.active' 2>/dev/null)
-    G1BILLET_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.g1billet.active' 2>/dev/null)
 
     echo "Capacités UPlanet détectées:"
     echo "  ZenCard Slots (128GB/slot): $ZENCARD_SLOTS"
@@ -756,7 +750,6 @@ if [[ -n "$ANALYSIS_JSON" ]]; then
     echo "  NextCloud: $NEXTCLOUD_ACTIVE"
     echo "  strfry: $STRFRY_ACTIVE"
     echo "  UPassport: $UPASSPORT_ACTIVE"
-    echo "  G1Billet: $G1BILLET_ACTIVE"
 
     # Sauvegarder l'analyse JSON dans le cache
     mkdir -p ~/.zen/tmp/$IPFSNODEID

@@ -304,7 +304,6 @@ http://localhost:12345   Astroport station map
 http://localhost:54321   UPassport (MULTIPASS creation, ZENCard)
 http://localhost:8080    IPFS Gateway
 ws://localhost:7777      NOSTR strfry relay (NIP-101)
-http://localhost:33101   G1Billet (service shut down TrocZen is the next G1BILLET)
 http://localhost:81      Nginx Proxy Manager admin (NPM)
 http://localhost:8443    NextCloud AIO setup (nextcloud profile)
 http://localhost:11434   Ollama API (ai-company profile)

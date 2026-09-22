@@ -114,8 +114,7 @@ The heartbox analysis system has been optimized to provide fast, consistent, and
     "astroport": { "active": true },
     "nextcloud": { "active": false, "container": null },
     "nostr_relay": { "active": true, "port": 7777 },
-    "uspot": { "active": false, "port": 54321 },
-    "g1billet": { "active": true }
+    "uspot": { "active": false, "port": 54321 }
   },
   "capacities": {
     "zencard_slots": 0,

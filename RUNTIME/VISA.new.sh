@@ -507,14 +507,6 @@ tiddlywiki  --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
     && cp -f ~/.zen/tmp/${MOATS}/tw.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
     || ( echo "Problem with TW - EXIT" && exit 1 )
 
-############################################################################ G1TW
-#### MAKE G1TW
-    [[ -s ~/.zen/G1BILLET/MAKE_G1BILLET.sh ]] && \
-    ~/.zen/G1BILLET/MAKE_G1BILLET.sh "$SALT" "$PEPPER" "___" "$G1PUB" "${PASS}" "${PSEUDO-xastro}" "$ASTRONAUTENS" "$PLAYER"
-#### MADE # BILLETNAME=$(echo "$SALT" | sed 's/ /_/g') ##
-# IMAGE ~/.zen/G1BILLET/tmp/g1billet/${PASS}/${BILLETNAME}.BILLET.jpg
-############################################################################
-
     ## MAKE IMAGE AVATAR WITH G1PUB QRCODE
     if [[ $(which amzqr) ]]; then
 

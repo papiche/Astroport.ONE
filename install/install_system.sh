@@ -56,11 +56,6 @@ for DESK in "${DESKTOPS[@]}"; do
     chmod +x "$DESK/rec.desktop"
     gio set "$DESK/rec.desktop" metadata::trusted true 2>/dev/null || true
 
-    # g1billet.desktop — Interface G1Billet (_USER_)
-    sed "s/_USER_/$USER/g" "${ASTRO}/g1billet.desktop" > "$DESK/g1billet.desktop"
-    chmod +x "$DESK/g1billet.desktop"
-    gio set "$DESK/g1billet.desktop" metadata::trusted true 2>/dev/null || true
-
     # astroport_toggle.desktop — Bascule ON/OFF (_ASTRO_PATH_)
     sed "s|_ASTRO_PATH_|$ASTRO|g" "${ASTRO}/astroport_toggle.desktop" > "$DESK/astroport_toggle.desktop"
     chmod +x "$DESK/astroport_toggle.desktop"

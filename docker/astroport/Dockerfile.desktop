@@ -85,7 +85,7 @@ RUN git clone --recurse-submodules --depth 1 \
 # 7777:  NOSTR Relay
 # 8080:  IPFS Gateway
 # 4001:  IPFS Swarm
-EXPOSE 6080 1234 12345 33101 54321 7777 8080 4001 5001
+EXPOSE 6080 1234 12345 54321 7777 8080 4001 5001
 
 ########################################################################
 ## VOLUMES (full home for desktop persistence)

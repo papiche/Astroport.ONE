@@ -1078,7 +1078,7 @@ echo "#############################################"
 LP=$(ls /dev/usb/lp* 2>/dev/null)
 if [[ ! -z $LP ]]; then
 echo "######### $LP PRINTER ##############"
-########### QRCODE : ZENCARD / G1BILLET : PRINTER ##############
+########### QRCODE : ZENCARD / AstroID : PRINTER ##############
     ## PRINT & FONTS
     install_pkg ttf-mscorefonts-installer
     install_pkg printer-driver-all
@@ -1119,14 +1119,6 @@ fi
 ## g1cli (gcli) — Duniter v2s CLI client (compiled from source, branche nostr)
 echo "######### g1cli Duniter v2 Client ##############"
 ~/.zen/Astroport.ONE/install/install_gcli.sh
-
-## G1BILLET -- needs reviewing --- code used for .print.sh scipt
-echo "######### G1BILLET ##############"
-echo "INSTALL G1BILLET : http://g1billet.localhost:33101"
-cd ~/.zen
-git clone https://github.com/papiche/G1BILLET.git
-# cd G1BILLET && ./setup_systemd.sh ## NETWORK SERVICE NOT USED
-cd -
 
 echo
 
@@ -1740,7 +1732,6 @@ echo "    Astroport  http://localhost:12345"
 echo "    UPassport  http://localhost:54321"
 echo "    IPFS       http://localhost:8080"
 echo "    NOSTR      ws://localhost:7777"
-echo "    G1Billet   http://localhost:33101"
 if [[ "${NEXTCLOUD_ACTIVE}" == "true" ]]; then
 echo "    NextCloud  http://127.0.0.1:8443  (admin initial)"
 echo "               https://cloud.${DOMAIN_DISPLAY}  (via NPM)"
@@ -2022,7 +2013,6 @@ if [[ "${_IPFS_TUNNEL_SSH:-false}" == "true" ]]; then
 else
     _svc_restart ipfs
 fi
-_svc_restart g1billet
 
 ## Mise à jour des images Docker actives (docker pull si running)
 if command -v docker >/dev/null 2>&1; then

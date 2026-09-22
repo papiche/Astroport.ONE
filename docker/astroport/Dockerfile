@@ -84,14 +84,13 @@ ENV PATH="/opt/flutter/bin:${PATH}"
 ########################################################################
 # 1234:  Twist BASH API (deprecated)
 # 12345: Station Map / UPlanet cartography
-# 33101: G1Billet
 # 54321: UPassport FastAPI
 # 7777:  NOSTR Relay (strfry)
 # 8080:  IPFS Gateway
 # 4001:  IPFS Swarm
 # 5001:  IPFS API
 # 45780-45782: Dynamic ports
-EXPOSE 1234 12345 33101 54321 7777 8080 4001 5001 45780 45781 45782
+EXPOSE 1234 12345 54321 7777 8080 4001 5001 45780 45781 45782
 
 ########################################################################
 ## STAGE: master (user setup)

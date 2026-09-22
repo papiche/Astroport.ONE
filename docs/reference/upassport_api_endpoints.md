@@ -169,7 +169,17 @@ Tous les routers sont montés à la racine (pas de préfixe path). Les routes so
 | `bgcolor` | string | `ffffff` | Couleur fond en RRGGBB (fallback qrencode uniquement) |
 | `format` | string | `png` | `png` → image directe · `json` → `{dataUrl, data, engine}` |
 
-> **Note :** pour les billets et cartes formatées (ticket, ZenCard, ZENCARD+@), utiliser **G1BILLET** (port 33101) : `http://localhost:33101/?montant=10&style=ZenCard`.
+> **Note :** pour un Ğ1Billet papier formaté (montant, clé G1 jetable, QR de vérification + QR secret), utiliser **`GET/POST /qr/billet`** — voir ci-dessous. Remplace l'ancien projet externe G1BILLET (fermé).
+
+### `GET/POST /qr/billet`
+
+Génère un Ğ1Billet papier imprimable (recto public / verso secret, découpe 150×70mm) à partir d'une clé G1/duniter JETABLE, jamais persistée sur disque. Interface : `UPlanet/earth/billet.html`.
+
+| Paramètre | Type | Défaut | Notes |
+|-----------|------|--------|-------|
+| `amount` | float | **requis** | Montant Ẑen annoncé sur le billet |
+| `mode` | string | `manual` | `manual` : aucun transfert · `auto` : débite immédiatement le MULTIPASS authentifié vers la clé générée |
+| `npub` | string | — | Requis en mode `auto` (npub/hex authentifié NIP-42) |
 
 ---
 

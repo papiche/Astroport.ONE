@@ -34,7 +34,6 @@
 #  │ 8080    │ tcp      │ IPFS Gateway (via NPM)                │
 #  │ 12345   │ tcp      │ Astroport API (via NPM)               │
 #  │ 54321   │ tcp      │ UPassport API (via NPM)               │
-#  │ 33101   │ tcp      │ G1BILLET (via NPM)                    │
 #  │ 81      │ tcp      │ NPM Admin UI (localhost)              │
 #  │ 1883    │ tcp      │ MQTT Mosquitto (localhost)            │
 #  │ 8111    │ tcp      │ Icecast2 Live Broadcasting (SoundSpot) │
@@ -190,7 +189,6 @@ fire_on() {
         "8080:IPFS Gateway (via NPM uniquement)" \
         "12345:Astroport API (via NPM uniquement)" \
         "54321:UPassport API (via NPM uniquement)" \
-        "33101:G1BILLET (via NPM uniquement)" \
         "81:NPM Admin UI (LAN autorisé, Internet bloqué)" \
         "1883:MQTT Mosquitto" \
         "4416:bgutil PO token provider (Docker)" \
@@ -249,7 +247,7 @@ fire_status() {
     sudo ufw status verbose
     echo ""
     echo "Ports d'écoute actifs :"
-    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4002|4003|5001|51820|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|33101|81|1883|9090|9615|9944|30333|8111|1704|1780) " \
+    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4002|4003|5001|51820|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|81|1883|9090|9615|9944|30333|8111|1704|1780) " \
         | awk '{print "  " $1 " " $4 " " $5}' | sort -t: -k2 -n
     echo "########################################################################"
 }

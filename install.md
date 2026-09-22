@@ -43,8 +43,6 @@ Les modules applicatifs de votre nœud communautaire.
 * **TiddlyWiki 5.2.3** : Wiki non-linéaire personnel, moteur des ZEN Cards et des widgets Astroport. Installé globalement via npm.  
   Commande : `tiddlywiki --version`
 
-* **G1BILLET** (~/.zen/G1BILLET/) : Système d'impression de billets Ğ1 compatibles QR code (intégration imprimante Brother). Interface : `http://localhost:33101`.
-
 * **g1cli / gcli** (`install/install_gcli.sh`) : Client CLI compilé pour Duniter v2s (ĞDev/ĞTest/Ğ1 Substrate), branche `nostr`. Permet des transactions en ligne de commande sur la blockchain Monnaie Libre.
 
 ## 🔗 5. Cryptographie & Économie Décentralisée (Python)
@@ -126,7 +124,6 @@ L'installateur propose 4 profils selon vos besoins :
 ├── Astroport.ONE/      ← Code source cloné (GitHub papiche/Astroport.ONE)
 ├── workspace/
 │   └── UPlanet/        ← Code UPlanet cloné (GitHub papiche/UPlanet)
-├── G1BILLET/           ← Service impression billets Ğ1
 ├── game/
 │   └── players/        ← Comptes Capitaines locaux
 │       └── .current/   ← Capitaine actif
@@ -183,7 +180,6 @@ docker compose -f ~/.zen/Astroport.ONE/docker-compose.yml logs -f
 | Nginx Proxy Manager | 81 | HTTP | Local (admin) |
 | Nginx Proxy Manager | 80/443 | HTTP/HTTPS | Externe |
 | TiddlyWiki | 8080+ | HTTP | Local |
-| G1BILLET | 33101 | HTTP | Local |
 | Prometheus | 9090 | HTTP | Local |
 | Node Exporter | 9100 | HTTP | Local |
 

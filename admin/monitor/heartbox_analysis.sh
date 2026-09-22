@@ -105,12 +105,6 @@ get_fast_service_status() {
         strfry_db_size=$(stat -c%s "$HOME/.zen/strfry/strfry-db/data.mdb" 2>/dev/null || echo "0")
     fi
 
-    # G1Billet - fast process check
-    local g1billet_active="false"
-    if pgrep -f "G1BILLETS" >/dev/null 2>&1; then
-        g1billet_active="true"
-    fi
-
     # Prometheus node_exporter - metrics endpoint :9100
     local node_exporter_active="false"
     if ss -tln 2>/dev/null | grep -q ":9100 "; then
@@ -383,9 +377,6 @@ get_fast_service_status() {
         "active": ${npm_active:-false},
         "ssl": ${npm_ssl:-false},
         "admin_port": 81
-    },
-    "g1billet": {
-        "active": ${g1billet_active:-false}
     },
     "node_exporter": {
         "active": ${node_exporter_active:-false},

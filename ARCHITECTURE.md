@@ -107,8 +107,7 @@ Astroport.ONE alimente l'écosystème **UPlanet** qui fonctionne sur deux niveau
 | **1234**             | Twist API          | Twist BASH API (deprecated)    | HTTP           |
 | **12345**            | Station Map        | Cartographie UPlanet           | HTTP           |
 | **45780-90**         | Twist API Response | Ports de réponse twist uniques | HTTP           |
-| **33101**            | G1Billet           | Service fabrication Ğ1 BILLETS | HTTP           |
-| **54321**            | UPassport          | UPassport 'FastApi' API        | HTTP           |
+| **54321**            | UPassport          | UPassport 'FastApi' API (billets Ğ1 : `/qr/billet`) | HTTP           |
 | **8080, 4001, 5001** | IPFS Gateway       | Accès stockage décentralisé    | HTTP           |
 | **7777**             | NOSTR Relay        | Réseau social décentralisé     | HTTP/WebSocket |
 | **80, 443, 81**      | Proxy SSL          | Nginx Proxy Manager (NPM)      | HTTPS          |
@@ -454,7 +453,7 @@ docker compose logs -f astroport
 
 Architecture Docker (3 containers frères sur réseau `astronet`) :
 
-* **astroport** : IPFS + API 12345 + NOSTR + UPassport + G1Billet
+* **astroport** : IPFS + API 12345 + NOSTR + UPassport
 * **npm** : Nginx Proxy Manager (SSL Let's Encrypt ou auto-signé)
 * **nextcloud** : NextCloud AIO (optionnel, `--profile full`)
 

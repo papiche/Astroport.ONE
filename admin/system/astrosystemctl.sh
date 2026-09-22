@@ -79,7 +79,7 @@ cmd_list() {
     printf "  %s\n" "$(printf '─%.0s' {1..42})"
 
     if [[ -s "$cache" ]]; then
-        # Services de premier niveau (ipfs, astroport, upassport, g1billet, npm…)
+        # Services de premier niveau (ipfs, astroport, upassport, npm…)
         while IFS= read -r line; do
             printf "  %s\n" "$line"
         done < <(jq -r '

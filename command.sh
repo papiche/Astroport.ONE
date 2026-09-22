@@ -159,7 +159,6 @@ check_services_status() {
     upassport_active=$(jq -r '.services.upassport.active // false' "$heartbox_cache" 2>/dev/null || echo false)
     nextcloud_active=$(jq -r '.services.nextcloud.active // false' "$heartbox_cache" 2>/dev/null || echo false)
     strfry_active=$(jq -r '.services.nostr_relay.active // false'  "$heartbox_cache" 2>/dev/null || echo false)
-    g1billet_active=$(jq -r '.services.g1billet.active // false'   "$heartbox_cache" 2>/dev/null || echo false)
 
     # Détails supplémentaires depuis le cache
     ipfs_peers=$(jq -r '.services.ipfs.peers_connected // 0'      "$heartbox_cache" 2>/dev/null || echo 0)
@@ -180,7 +179,6 @@ check_services_status() {
         "UPassport:$upassport_active"
         "NextCloud:$nextcloud_active"
         "strfry:$strfry_active"
-        "G1Billet:$g1billet_active"
     )
     
     # Retourner les statuts et la disponibilité de NextCloud
@@ -287,7 +285,7 @@ show_services_status() {
     echo -e "\033[0;36m  🔍 Vérification des services...\033[0m"
     # check_services_status() expose ses résultats via des variables globales :
     # ipfs_active, ipfs_peers, upassport_active, upassport_proc,
-    # strfry_active, strfry_proc, astroport_active, nextcloud_active, g1billet_active
+    # strfry_active, strfry_proc, astroport_active, nextcloud_active
     local services_info=$(check_services_status)
     local nextcloud_available=false
 
@@ -350,9 +348,6 @@ show_services_status() {
                 "strfry")
                     print_status "strfry" "ACTIVE" "(NOSTR relay :7777)${strfry_proc:+ - $strfry_proc}"
                     ;;
-                "G1Billet")
-                    print_status "G1Billet" "ACTIVE" "(Économie G1)"
-                    ;;
             esac
         else
             case "$service_name" in
@@ -375,9 +370,6 @@ show_services_status() {
                     ;;
                 "strfry")
                     print_status "strfry" "INACTIVE" "(NOSTR relay :7777)"
-                    ;;
-                "G1Billet")
-                    print_status "G1Billet" "INACTIVE" "(Économie G1)"
                     ;;
             esac
         fi
@@ -410,7 +402,7 @@ show_services_status() {
                         missing_services+=("strfry")
                     fi
                     ;;
-                "IPFS"|"Astroport"|"G1Billet")
+                "IPFS"|"Astroport")
                     missing_services+=("$service_name")
                     ;;
             esac
@@ -2057,7 +2049,6 @@ debug_detection() {
     echo "  Port 54321: $(netstat -tln 2>/dev/null | grep -c ":54321 ") port(s) ouvert(s)"
     echo "  Port 7777: $(netstat -tln 2>/dev/null | grep -c ":7777 ") port(s) ouvert(s)"
     echo "  Docker NextCloud: $(docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | wc -l) conteneur(s)"
-    echo "  G1Billet processus: $(pgrep -f "G1BILLETS" | wc -l) processus(s)"
     echo ""
     
     echo -e "${CYAN}Fichier 12345.json:${NC}"

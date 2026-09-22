@@ -1,7 +1,7 @@
 # Imprimer les QR codes MULTIPASS et ZenCards
 
 **Problème :** vous souhaitez donner à un utilisateur ses identifiants MULTIPASS ou ZenCard sous forme physique (QR code imprimable).
-**Solution :** utiliser G1BILLET (port 33101) pour les cartes formatées, ou le générateur QR générique d'UPassport (port 54321) pour encoder n'importe quelle donnée.
+**Solution :** utiliser `/qr/billet` (port 54321, UPassport) pour un Ğ1Billet papier formaté, ou le générateur QR générique d'UPassport (`/qr`, port 54321) pour encoder n'importe quelle donnée.
 
 ---
 
@@ -13,36 +13,27 @@
 
 ---
 
-## Option A — Via G1BILLET (port 33101) — cartes formatées
+## Option A — Via `/qr/billet` (port 54321) — Ğ1Billet papier formaté
 
-G1BILLET génère des billets et cartes physiques prêtes à imprimer avec QR code intégré.
+`/qr/billet` (UPassport) génère une page imprimable (recto public / verso secret,
+découpe 150×70mm) : montant, clé G1 jetable, QR de vérification et QR du secret
+SALT/PEPPER — remplace l'ancien projet externe G1BILLET (fermé). Interface :
+[`UPlanet/earth/billet.html`](../../../UPlanet/earth/billet.html).
 
-### 1. Génération via l'interface web
-
-```
-http://localhost:33101/?montant=10&style=ZenCard
-```
-
-### 2. Styles disponibles (paramètre `style`)
-
-| Valeur | Description |
-|--------|-------------|
-| `_` | 6 billets G1 anonymes (sans montant fixe) |
-| `ticket` (ou nom de dossier images) | Ticket papier simple |
-| `ZenCard` | Carte format bancaire recto/verso |
-| `email@example.com` | ZenCard liée à l'email (mode `ZENCARD+@`) |
+### 1. Génération
 
 ```bash
-# Carte ZenCard générique
-curl "http://localhost:33101/?montant=10&style=ZenCard"
+# Mode manuel (aucun transfert — le destinataire alimente lui-même la clé)
+curl "http://localhost:54321/qr/billet?amount=10&mode=manual" --output billet.html
 
-# ZENCARD+@ liée à un email (intègre l'identité MULTIPASS)
-curl "http://localhost:33101/?montant=0&style=user@example.com"
+# Mode automatique (débite immédiatement le MULTIPASS authentifié NIP-42)
+curl "http://localhost:54321/qr/billet?amount=10&mode=auto&npub=<hex_authentifié>" --output billet.html
 ```
 
-### 3. Imprimer
+### 2. Imprimer
 
-Ouvrez le PNG ou PDF généré et imprimez (format A6 ou carte bancaire selon le style).
+Ouvrez `billet.html` dans un navigateur : bouton « Imprimer le Recto » (public) et
+« Imprimer le Verso » (secret — à ne montrer qu'au bénéficiaire final).
 
 ---
 
@@ -110,7 +101,7 @@ qrencode -t PNG -o multipass_qr.png "$G1PUB"
 ## Résultat attendu
 
 Un fichier PNG contenant le QR code de la clé publique Ğ1 (MULTIPASS niveau 1).
-Pour les cartes complètes (recto/verso avec adresse NOSTR, domaine station, etc.), utiliser G1BILLET (Option A).
+Pour un Ğ1Billet papier complet (recto/verso, montant, secret imprimable), utiliser `/qr/billet` (Option A).
 
 ---
 
