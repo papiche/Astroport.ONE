@@ -1,0 +1,18 @@
+# A_boostrap_captains.hex
+# ------------------------------------------------------------------------------
+# Clés publiques NOSTR (HEX, une par ligne) des capitaines BOOTSTRAP — les stations
+# fondatrices, manuellement vérifiées, dont l'accord (via kind 3 / NIP-02 "follow")
+# vouche pour l'accès SSH des autres capitaines de la même UPlanet.
+#
+# Utilisé par RUNTIME/DRAGON_p2p_ssh.sh : une clé SSH publiée en kind 30850 n'est
+# ajoutée à authorized_keys QUE SI son capitaine émetteur figure ici, ou est suivi
+# (kind 3, tag "p") par un capitaine qui y figure.
+#
+# Fichier vide = aucune clé kind-30850 acceptée automatiquement (sûr par défaut).
+#
+# Correspond aux mêmes stations que A_boostrap_ssh.txt. Pour obtenir le HEX d'une
+# station : cat ~/.zen/tmp/$IPFSNODEID/HEX_CAPTAIN
+#       ou : cat ~/.zen/tmp/$IPFSNODEID/12345.json | jq -r .captainHEX
+#
+# Format : HEX_NOSTR # commentaire (station, capitaine)
+# ------------------------------------------------------------------------------

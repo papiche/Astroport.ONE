@@ -115,7 +115,7 @@ services:
     ports:
       - "80:80"                      # HTTP  (public — Let's Encrypt challenge)
       - "443:443"                    # HTTPS (public)
-      - "81:81"                     # Interface admin NPM (accessible depuis le LAN)
+      - "127.0.0.1:81:81"           # Interface admin NPM (loopback uniquement — SSH tunnel pour accès distant)
     volumes:
       - npm_data:/data
       - npm_letsencrypt:/etc/letsencrypt
