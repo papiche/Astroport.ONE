@@ -12,7 +12,9 @@ ExecStart=/usr/bin/powerjoular -f /var/lib/powerjoular/power_24h.csv -t
 # CSV is created with root umask (typically 644). If not readable by captain, 20h12 uses sudo to copy.
 Restart=always
 RestartSec=10
-StandardOutput=journal
+# stdout = 1 ligne/seconde (~86 000/jour) : c'était la 1re source du journal
+# systemd, en doublon du CSV. Seules les erreurs vont au journal.
+StandardOutput=null
 StandardError=journal
 SyslogIdentifier=powerjoular
 

@@ -45,6 +45,14 @@
 #  ai.${ASTRO_DOMAIN}         → open-webui:8080   (Chat IA membres)
 ########################################################################
 
+## Logs Docker (pilote json-file) : sans limite, chaque conteneur grossit
+## /var/lib/docker/containers/*/*-json.log indéfiniment. 3 × 10 Mo max.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
 
   ####################################################################
@@ -52,6 +60,7 @@ services:
   ####################################################################
 
   astroport:
+    logging: *default-logging
     build:
       context: ./astroport
       args:
@@ -105,6 +114,7 @@ services:
       retries: 3
 
   npm:
+    logging: *default-logging
     image: jc21/nginx-proxy-manager:2.13.6  # :latest casse l'API (500 "Internal Error")
                                              # depuis 2.13.7 — voir issue #5290
     container_name: ${COMPOSE_PROJECT_NAME:-astroport}-npm
@@ -138,6 +148,7 @@ services:
   ####################################################################
 
   nextcloud:
+    logging: *default-logging
     image: nextcloud/all-in-one:latest
     container_name: nextcloud-aio-mastercontainer
     restart: always
@@ -170,6 +181,7 @@ services:
   ####################################################################
 
   open-webui:
+    logging: *default-logging
     image: ghcr.io/open-webui/open-webui:main
     container_name: astroport-webui
     restart: unless-stopped
@@ -192,6 +204,7 @@ services:
     profiles: [ai, full]
 
   mirofish:
+    logging: *default-logging
     image: ghcr.io/666ghj/mirofish:latest
     container_name: astroport-mirofish
     restart: unless-stopped
@@ -221,6 +234,7 @@ services:
     profiles: [ai, full]
 
   qdrant:
+    logging: *default-logging
     image: qdrant/qdrant:latest
     container_name: astroport-qdrant
     restart: unless-stopped
@@ -239,6 +253,7 @@ services:
     profiles: [ai, full]
 
   vane:
+    logging: *default-logging
     image: ghcr.io/itzcrazzykns/vane:main
     container_name: astroport-vane
     restart: unless-stopped
@@ -265,6 +280,7 @@ services:
   ####################################################################
 
   rnostr:
+    logging: *default-logging
     image: ghcr.io/rnostr/rnostr:latest
     container_name: astroport-rnostr
     restart: unless-stopped
@@ -287,6 +303,7 @@ services:
   ####################################################################
 
   watchtower:
+    logging: *default-logging
     image: containrrr/watchtower:latest
     container_name: astroport-watchtower
     restart: unless-stopped

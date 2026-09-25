@@ -72,6 +72,24 @@ _CONST_ERR_LOG="$HOME/.zen/strfry/constellation-backfill.error.log"
 if [[ -f "$_CONST_ERR_LOG" ]] && [[ $(stat -c%s "$_CONST_ERR_LOG" 2>/dev/null || echo 0) -gt 2000000 ]]; then
     tail -n 3000 "$_CONST_ERR_LOG" > "${_CONST_ERR_LOG}.tmp" && mv "${_CONST_ERR_LOG}.tmp" "$_CONST_ERR_LOG"
 fi
+## Journaux persistants hors ~/.zen/tmp/ (jamais purgés par le nettoyage
+## quotidien), écrits en ajout pur sans plafond :
+##  - flashmem/*.log : uMARKET (aggregator/monitor/deploy), skill_conflicts
+##  - flashmem/bro_tool_requests.jsonl : corpus de mining d'arbor_self_improve.py
+##    (une entrée par demande BRO) — on garde les 5000 plus récentes
+##  - tmp/$IPFSNODEID/_timings : exclu de la purge et publié sur IPNS
+for _plog in "$HOME"/.zen/flashmem/*.log; do
+    [[ -f "$_plog" ]] && [[ $(stat -c%s "$_plog" 2>/dev/null || echo 0) -gt 2000000 ]] \
+        && tail -n 3000 "$_plog" > "${_plog}.tmp" && mv "${_plog}.tmp" "$_plog"
+done
+_TOOL_REQ="$HOME/.zen/flashmem/bro_tool_requests.jsonl"
+if [[ -f "$_TOOL_REQ" ]] && [[ $(wc -l < "$_TOOL_REQ") -gt 5000 ]]; then
+    tail -n 5000 "$_TOOL_REQ" > "${_TOOL_REQ}.tmp" && mv "${_TOOL_REQ}.tmp" "$_TOOL_REQ"
+fi
+_TIMINGS="$HOME/.zen/tmp/${IPFSNODEID}/_timings"
+if [[ -n "$IPFSNODEID" && -f "$_TIMINGS" ]] && [[ $(wc -l < "$_TIMINGS") -gt 1000 ]]; then
+    tail -n 1000 "$_TIMINGS" > "${_TIMINGS}.tmp" && mv "${_TIMINGS}.tmp" "$_TIMINGS"
+fi
 LOG_FILE="$LOG_DIR/20h12_$(date +%Y%m%d).log"
 
 ## Anti-doublon : le cron horaire fixe (heure solaire) ET le rattrapage @reboot
@@ -355,10 +373,10 @@ else:
 PYEOF
 
 echo "=== SYSTEM/INSTALL ERRORS ====================================" >> $LOG_FILE
-if [ -f "$HOME/.zen/install.errors.log" ]; then
-    find "$HOME/.zen/install.errors.log" -mtime +7 -delete
+if [ -f "$HOME/.zen/log/install.errors.log" ]; then
+    find "$HOME/.zen/log/install.errors.log" -mtime +7 -delete
 fi
-cat "$HOME/.zen/install.errors.log" 2>/dev/null >> $LOG_FILE
+cat "$HOME/.zen/log/install.errors.log" 2>/dev/null >> $LOG_FILE
 
 ########################################################################
 ## NETTOYAGE TMP : On garde les dossiers de cache vitaux !! 
@@ -821,6 +839,19 @@ if systemctl is-enabled powerjoular.service &>/dev/null; then
         fi
     else
         echo "✅ powerjoular.service actif" >> $LOG_FILE
+        ## Le CSV n'est vidé qu'au redémarrage du service (1 ligne/s, ~7 Mo/jour) :
+        ## sur une station à longue uptime il grossit sans fin. Le rapport ne lit
+        ## que les dernières 24h — on garde l'en-tête + 24h (86400 lignes) dès
+        ## qu'il dépasse 48h. Arrêt/relance autour : powerjoular garde le
+        ## fichier ouvert, le réécrire à chaud le corromprait.
+        _pj_lines=$(sudo wc -l < "$POWER_24H_CSV" 2>/dev/null || echo 0)
+        if [[ "$_pj_lines" -gt 172800 ]]; then
+            sudo systemctl stop powerjoular.service 2>/dev/null || true
+            sudo bash -c "{ head -n 1 '$POWER_24H_CSV'; tail -n 86400 '$POWER_24H_CSV'; } > '$POWER_24H_CSV.tmp' \
+                && mv -f '$POWER_24H_CSV.tmp' '$POWER_24H_CSV'" 2>/dev/null || true
+            sudo systemctl start powerjoular.service 2>/dev/null || true
+            echo "✂️ CSV powerjoular réduit à 24h (${_pj_lines} → 86401 lignes)" >> $LOG_FILE
+        fi
     fi
 fi
 
