@@ -355,7 +355,7 @@ fi
 
 echo ""
 echo -e "${BOLD}${PURPLE}══════════════════════════════════════════════════${NC}"
-echo -e "  ${DIM}Erreurs install : cat ~/.zen/install.errors.log${NC}"
+echo -e "  ${DIM}Erreurs install : cat ~/.zen/log/install.errors.log${NC}"
 echo -e "  ${DIM}Station :  ~/.zen/Astroport.ONE/station.sh${NC}"
 echo -e "  ${DIM}Test     : ~/.zen/Astroport.ONE/test.sh${NC}"
 echo -e "${BOLD}${PURPLE}══════════════════════════════════════════════════${NC}"
