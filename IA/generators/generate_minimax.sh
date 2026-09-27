@@ -22,8 +22,9 @@ ME="${0##*/}"
 
 usage() {
   cat >&2 <<EOF
-Usage: $ME [-i image] [-d secondes] [-r ratio] [-m megapixels] [-s steps] [-t timeout] <prompt> [udrive_path]
+Usage: $ME [-i image] [-u facteur] [-d secondes] [-r ratio] [-m megapixels] [-s steps] [-t timeout] <prompt> [udrive_path]
   -i  image de départ (image-to-video) ; sans -i : text-to-video
+  -u  upscale SeedVR2 3B (ex. 2 → 864x480 devient 1728x960) ; défaut : aucun
   -d  durée de la vidéo en secondes (défaut 5, plage entraînée ~5-15)
   -r  ratio : 1:1 2:3 3:2 3:4 4:3 9:16 16:9 21:9 (défaut 16:9)
   -m  mégapixels (défaut 0.4 → 864x480 en 16:9)
@@ -39,8 +40,10 @@ MEGAPIXELS=0.4
 STEPS=20
 MAX_WAIT=3600
 FIRST_FRAME=""
-while getopts "i:d:r:m:s:t:h" opt; do
+UPSCALE=""
+while getopts "i:u:d:r:m:s:t:h" opt; do
   case $opt in
+    u) UPSCALE="$OPTARG" ;;
     i) FIRST_FRAME="$OPTARG" ;;
     d) DURATION="$OPTARG" ;;
     r) RATIO="$OPTARG" ;;
@@ -135,6 +138,28 @@ update_workflow() {
      "$WORKFLOW_PATH" > "$TMP_WORKFLOW" || { echo "Erreur : jq a échoué (paramètre non numérique ?)" >&2; exit 1; }
 
   [ -n "$FIRST_FRAME" ] && add_first_frame
+  [ -n "$UPSCALE" ] && add_upscale
+}
+
+# Upscale SeedVR2 3B int8 (template ComfyUI utility_seedvr2_3b_int8_upscale_video) :
+# les images décodées passent par SeedVR2 avant CreateVideo, l'audio reste intact.
+# Modèles : https://huggingface.co/Comfy-Org/SeedVR2
+#   diffusion_models/seedvr2_3b_int8_convrot.safetensors
+#   vae/seedvr2_ema_vae_fp16.safetensors
+add_upscale() {
+  echo "Upscale SeedVR2 x${UPSCALE}" >&2
+  jq --argjson factor "$UPSCALE" --argjson seed "$((RANDOM * RANDOM))" \
+     '.["140"] = {"class_type": "UNETLoader", "inputs": {"unet_name": "seedvr2_3b_int8_convrot.safetensors", "weight_dtype": "default"}}
+      | .["141"] = {"class_type": "VAELoader", "inputs": {"vae_name": "seedvr2_ema_vae_fp16.safetensors"}}
+      | .["142"] = {"class_type": "ResizeImageMaskNode", "inputs": {"input": ["10", 0], "resize_type": "scale by multiplier", "resize_type.multiplier": $factor, "scale_method": "lanczos"}}
+      | .["143"] = {"class_type": "SeedVR2Preprocess", "inputs": {"resized_images": ["142", 0]}}
+      | .["144"] = {"class_type": "VAEEncodeTiled", "inputs": {"pixels": ["143", 0], "vae": ["141", 0], "tile_size": 512, "overlap": 128, "temporal_size": 64, "temporal_overlap": 8}}
+      | .["145"] = {"class_type": "SeedVR2Conditioning", "inputs": {"model": ["140", 0], "vae_conditioning": ["144", 0]}}
+      | .["146"] = {"class_type": "KSampler", "inputs": {"model": ["140", 0], "positive": ["145", 0], "negative": ["145", 1], "latent_image": ["144", 0], "seed": $seed, "steps": 1, "cfg": 1, "sampler_name": "euler", "scheduler": "simple", "denoise": 1}}
+      | .["147"] = {"class_type": "VAEDecodeTiled", "inputs": {"samples": ["146", 0], "vae": ["141", 0], "tile_size": 512, "overlap": 128, "temporal_size": 64, "temporal_overlap": 8}}
+      | .["148"] = {"class_type": "SeedVR2PostProcessing", "inputs": {"images": ["147", 0], "original_resized_images": ["142", 0], "color_correction_method": "lab"}}
+      | .["91"].inputs.images = ["148", 0]' \
+     "$TMP_WORKFLOW" > "$TMP_WORKFLOW.tmp" && mv "$TMP_WORKFLOW.tmp" "$TMP_WORKFLOW"
 }
 
 # Image-to-video : envoie l'image dans ComfyUI/input puis la branche sur first_frame
