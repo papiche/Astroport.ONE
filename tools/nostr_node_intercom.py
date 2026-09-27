@@ -37,6 +37,7 @@ import json
 import argparse
 import hashlib
 import hmac
+import socket
 import ssl
 import threading
 import time
@@ -44,6 +45,27 @@ import base64
 import os
 import struct
 import math
+
+
+# ── Résilience réseau : préférer IPv4 (contourne l'IPv6 « annoncé mais mort ») ──
+# Constaté en prod (2026-09-26, station nexus) : une route IPv6 par défaut existe
+# (via Router Advertisement) mais ne délivre AUCUN paquet vers relay.copylaradio.com
+# — ping6 timeout total, alors que l'IPv4 répond en ~20 ms. `curl` s'en sort via
+# Happy Eyeballs (essaie les deux familles, garde la première qui répond) ; le
+# module `websocket-client` ne le fait pas : il utilise l'ordre `getaddrinfo` par
+# défaut (IPv6 d'abord) et reste bloqué jusqu'au timeout — d'où l'échec silencieux
+# de `nostr_node_intercom.py send` («WARN: aucun OK reçu») qui empêche tout DM
+# inter-NODE (vision_analysis_job, comfyui_job, etc.) d'atteindre le relais.
+# Ce script est un process CLI de courte durée (un appel = un process) : ce
+# monkeypatch global est donc sans risque d'effet de bord sur d'autres services.
+_ORIG_GETADDRINFO = socket.getaddrinfo
+
+
+def _getaddrinfo_ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
+    return _ORIG_GETADDRINFO(host, port, socket.AF_INET, type, proto, flags)
+
+
+socket.getaddrinfo = _getaddrinfo_ipv4_only
 
 
 # ── Clés NOSTR ────────────────────────────────────────────────────────────────
