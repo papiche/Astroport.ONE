@@ -7,8 +7,8 @@
   "height": 720,
   "seed": 4004,
   "cast": {
-    "lea":   {"image": "/home/frd/.zen/tmp/scenes/cast/lea/portrait.png",   "voice": "/home/frd/.zen/tmp/scenes/cast/lea/voice.wav"},
-    "malik": {"image": "/home/frd/.zen/tmp/scenes/cast/malik/portrait.png", "voice": "/home/frd/.zen/tmp/scenes/cast/malik/voice.wav"}
+    "lea":   {"image": "/home/frd/.zen/workspace/scenes/cast/lea/portrait.png",   "voice": "/home/frd/.zen/workspace/scenes/cast/lea/voice.wav"},
+    "malik": {"image": "/home/frd/.zen/workspace/scenes/cast/malik/portrait.png", "voice": "/home/frd/.zen/workspace/scenes/cast/malik/voice.wav"}
   },
   "shots": [
     {
@@ -22,28 +22,28 @@
       "duration": 8
     },
     {
-      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/era1.png",
+      "screen": "/home/frd/.zen/workspace/scenes/episode04_src/era1.png",
       "motion": "zoom",
       "presenter": "malik",
       "prompt": "Malik says in French, nostalgic: \"Août 2024 : la première brique. Un passeport validé par une transaction en monnaie libre, et le nom MULTIPASS apparaît.\"",
       "duration": 9
     },
     {
-      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/era2.png",
+      "screen": "/home/frd/.zen/workspace/scenes/episode04_src/era2.png",
       "motion": "zoom",
       "presenter": "lea",
       "prompt": "Lea says in French, understanding: \"En 2025, l'identité passe sur NOSTR : un email, une position sur la carte, et on a son MULTIPASS.\"",
       "duration": 8
     },
     {
-      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/era3.png",
+      "screen": "/home/frd/.zen/workspace/scenes/episode04_src/era3.png",
       "motion": "zoom",
       "presenter": "malik",
       "prompt": "Malik says in French, excited: \"Puis l'automne 2025 : plus de quatre cents commits en trois mois ! La carte UMAP, la toile de confiance, les zen.\"",
       "duration": 9
     },
     {
-      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/era4.png",
+      "screen": "/home/frd/.zen/workspace/scenes/episode04_src/era4.png",
       "motion": "zoom",
       "presenter": "lea",
       "prompt": "Lea says in French, enthusiastic: \"Et 2026, c'est la coopérative : OpenCollective, la clé LOVE, le portefeuille Zelkova, le cloud chiffré.\"",
@@ -55,7 +55,7 @@
       "duration": 8
     },
     {
-      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/github_top.png",
+      "screen": "/home/frd/.zen/workspace/scenes/episode04_src/github_top.png",
       "presenter": "lea",
       "prompt": "Lea says in French, with a playful smile: \"Le code est là, sur GitHub. Et cette vidéo aussi a été fabriquée par une station Astroport.\"",
       "title": "Même ce film : généré par une station",

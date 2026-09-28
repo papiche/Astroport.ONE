@@ -3,7 +3,8 @@
 #### generate_scene.sh : storyboard JSON → vidéo multi-plans (MiniMax H3) assemblée en 720p
 #
 # Usage: generate_scene.sh [-w workdir] <storyboard.json> [udrive_path]
-#   -w  répertoire de travail ; relancer avec le même -w reprend la scène :
+#   -w  répertoire de travail (défaut ~/.zen/workspace/scenes/scene_*, hors de ~/.zen/tmp
+#       que le nettoyage d'Astroport vide) ; relancer avec le même -w reprend la scène :
 #       acteurs, plans et captures déjà rendus ne sont pas recalculés.
 # Sortie stdout : URL IPFS de la vidéo finale (ou chemin du fichier si IPFS échoue)
 # Codes de sortie : 0 ok, 1 erreur, 2 storyboard invalide, 3 ComfyUI non équipé, 4 timeout
@@ -133,7 +134,7 @@ case "$RATIO" in
   21:9) IMAGE_SIZE=1536x640 ;;  *)    IMAGE_SIZE=1024x1024 ;;
 esac
 
-WORK_DIR="${WORK_DIR:-$HOME/.zen/tmp/scenes/scene_$(date +%s)_$(openssl rand -hex 4)}"
+WORK_DIR="${WORK_DIR:-$HOME/.zen/workspace/scenes/scene_$(date +%s)_$(openssl rand -hex 4)}"
 mkdir -p "$WORK_DIR"
 echo "Scène : $NB_SHOTS plans | ${RATIO} @ ${MEGAPIXELS} MP | ${STEPS} steps | upscale ${UPSCALE} | style ${STYLE} | ${FINAL_W}x${FINAL_H} | seed ${BASE_SEED}" >&2
 echo "Répertoire de travail (reprise avec -w) : $WORK_DIR" >&2
