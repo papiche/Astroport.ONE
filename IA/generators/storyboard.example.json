@@ -1,0 +1,20 @@
+{
+  "ratio": "16:9",
+  "megapixels": 0.4,
+  "steps": 10,
+  "seed": 2026,
+  "shots": [
+    {
+      "image_prompt": "Cinematic photo, a friendly young woman presenter with long black hair and a white blouse, in a cozy living room at night, standing next to a small black home server box with a blue glowing ring on a wooden shelf, above it floats a holographic blue planet Earth covered by a fine glowing grid of square cells, warm lamp light mixed with cyan hologram glow, 35mm",
+      "prompt": "The young woman with long black hair and a white blouse looks at the camera and smiles, the holographic grid planet slowly rotates above the small home server. She says in French, warm and confident: 'Voici ma station Astroport, chez moi.' Soft electronic hum, gentle ambient music.",
+      "duration": 5
+    },
+    {
+      "continue": true,
+      "prompt": "The young woman with long black hair and a white blouse points at one glowing square cell on the holographic planet, which lights up brighter. She says in French: 'Chaque case de la planète est une UMAP, un morceau de territoire.' Soft electronic hum, gentle ambient music.",
+      "duration": 6
+    }
+  ],
+  "style": "vhs",
+  "height": 720
+}

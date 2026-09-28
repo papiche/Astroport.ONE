@@ -148,6 +148,13 @@ update_prompt() {
      '(.["4"].inputs.text) = $prompt | (.["1"].inputs.seed) = $seed' \
      "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
 
+  # Taille optionnelle (ex. IMAGE_SIZE=1344x768), node 3 = latent vide
+  if [[ "$IMAGE_SIZE" =~ ^([0-9]+)x([0-9]+)$ ]]; then
+    jq --argjson w "${BASH_REMATCH[1]}" --argjson h "${BASH_REMATCH[2]}" \
+       '.["3"].inputs.width = $w | .["3"].inputs.height = $h' \
+       "$TMP_WORKFLOW" > "$TMP_WORKFLOW.tmp" && mv "$TMP_WORKFLOW.tmp" "$TMP_WORKFLOW"
+  fi
+
   echo "Workflow customized with prompt and seed in: $TMP_WORKFLOW" >&2
   
   # Debug information: show the modified nodes for verification

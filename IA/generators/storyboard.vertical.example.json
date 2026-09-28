@@ -1,0 +1,15 @@
+{
+  "ratio": "9:16",
+  "megapixels": 0.4,
+  "steps": 10,
+  "seed": 916,
+  "shots": [
+    {
+      "image_prompt": "Vertical smartphone video frame, cinematic photo, a smiling young man with short curly hair and a green hoodie holds a small black home server box with a blue glowing ring in his hands, standing in a sunny village square, above the box floats a small holographic blue planet with a glowing grid of square cells, shallow depth of field, 35mm",
+      "prompt": "The young man with short curly hair and a green hoodie looks into the camera, raises the small glowing server box, and the holographic grid planet above it spins. He says in French, enthusiastic and friendly: 'Mon Astroport, c'est mon bout d'Internet libre.' Village ambience, birds, light upbeat music.",
+      "duration": 5
+    }
+  ],
+  "style": "vhs",
+  "height": 720
+}
