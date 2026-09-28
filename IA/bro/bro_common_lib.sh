@@ -69,7 +69,7 @@ bro_log() {
 #   déjà utilisé côté BRO/utilisateur par IA/observability.py::log_event
 #   (timestamp/action/success/latency_ms), pour permettre au niveau NODE un
 #   filtrage par champ structuré au lieu des greps fragiles sur du texte
-#   libre (ex: "youtube|yt-dlp" ou "tmdb|film|serie" dans log_file_watch.sh).
+#   libre (ex: "youtube|yt-dlp" ou "tmdb|film|serie" dans log_observation.sh, groupe media).
 #
 #   ACTION       libellé court de l'évènement (ex: "dispatch", "sync", "backup")
 #   SUCCESS      0/1/true/false — tout le reste vaut false

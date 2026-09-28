@@ -131,7 +131,7 @@ has_valid_did_subscription() {
 # protégés apparaissent — utilisée à la fois par l'agrégation en masse et par
 # le filet de sécurité de purge_author().
 is_protected_event() {
-    local kind="$1" dtag="$2" harmonic="$3" pk
+    local kind="$1" dtag="$2" harmonic="$3" is_g1billet="$4" expiration="$5" pk
     for pk in "${ALWAYS_PROTECTED_KINDS[@]}"; do
         [[ "$kind" == "$pk" ]] && return 0
     done
@@ -139,11 +139,33 @@ is_protected_event() {
         case "$dtag" in atom4love|zicmama_demo) return 0 ;; esac
         [[ "$harmonic" == "1" ]] && return 0
     fi
+    # Ğ1Billet (kind 0, tag t=g1billet) : la clé du billet n'est jamais un
+    # MULTIPASS/nœud/DID (jetable, dérivée du mnemonic papier) — sans cette
+    # exemption elle tomberait systématiquement en "❌ À PURGER" et serait
+    # supprimée dès le prochain passage quotidien (20h12/NODE.refresh.sh),
+    # bien avant l'échéance NIP-40 annoncée sur le billet imprimé (90 jours,
+    # cf. UPassport/routers/qr.py::_publish_billet_emission, tag toujours
+    # présent). Protégé SEULEMENT tant que non expiré — passé l'échéance, il
+    # redevient purgeable normalement, comme n'importe quel étranger.
+    if [[ "$kind" == "0" && "$is_g1billet" == "1" && "$expiration" =~ ^[0-9]+$ ]]; then
+        [[ "$expiration" -gt "$(date +%s)" ]] && return 0
+    fi
     return 1
 }
 
-# jq réutilisé pour extraire (kind, id, tag d, marqueur harmonique t) d'un event.
-JQ_EVENT_TAG_FIELDS='.kind, .id, ((.tags[]? | select(.[0]=="d") | .[1]) // ""), (if ([.tags[]? | select(.[0]=="t" and (.[1]=="zicmama_demo" or .[1]=="atom4love"))] | length) > 0 then "1" else "0" end)'
+# jq réutilisé pour extraire (kind, id, tag d, marqueur harmonique t, marqueur
+# g1billet, valeur du tag expiration) d'un event.
+#
+# IMPORTANT — séparateur \x1F (unit separator), PAS \t : bash `read` avec
+# IFS=$'\t' fusionne les tabulations consécutives (tab = caractère "espace" à
+# ses yeux, comme l'espace ou le retour à la ligne), donc un champ vide (dtag
+# quasi systématiquement, expiration pour un event non-billet) décale
+# silencieusement tous les champs suivants d'une position — corrompant
+# is_protected_event() sans erreur visible. \x1F n'est pas un caractère
+# "espace" pour bash : aucune fusion, champs vides correctement préservés.
+# Vérifié : `printf 'a\tb\t\tc\n' | IFS=$'\t' read -r a b c` donne c="" (bug),
+# la même donnée avec \x1F donne le bon résultat.
+JQ_EVENT_TAG_FIELDS='(.kind|tostring), .id, ((.tags[]? | select(.[0]=="d") | .[1]) // ""), (if ([.tags[]? | select(.[0]=="t" and (.[1]=="zicmama_demo" or .[1]=="atom4love"))] | length) > 0 then "1" else "0" end), (if ([.tags[]? | select(.[0]=="t" and .[1]=="g1billet")] | length) > 0 then "1" else "0" end), ((.tags[]? | select(.[0]=="expiration") | .[1]) // "")'
 
 # Suppression sûre : ne supprime QUE les événements non protégés de cet auteur,
 # par id explicite (jamais par kind entier — un même kind 30078 peut mélanger
@@ -160,11 +182,11 @@ purge_author() {
     # protéger par erreur suite à un aléa du scan groupé plutôt qu'à une
     # authentique absence d'événements purgeables.
     if [[ -z "$ids" && "$prot" -eq 0 ]]; then
-        local resync kind id dtag harmonic
-        resync=$(cd "$STRFRY_DIR" && ./strfry scan "{\"authors\":[\"$hex\"]}" 2>/dev/null | jq -r "[${JQ_EVENT_TAG_FIELDS}] | @tsv" 2>/dev/null)
-        while IFS=$'\t' read -r kind id dtag harmonic; do
+        local resync kind id dtag harmonic is_g1billet expiration
+        resync=$(cd "$STRFRY_DIR" && ./strfry scan "{\"authors\":[\"$hex\"]}" 2>/dev/null | jq -r "[${JQ_EVENT_TAG_FIELDS}] | join(\"\u001f\")" 2>/dev/null)
+        while IFS=$'\x1f' read -r kind id dtag harmonic is_g1billet expiration; do
             [[ -z "$id" ]] && continue
-            if is_protected_event "$kind" "$dtag" "$harmonic"; then
+            if is_protected_event "$kind" "$dtag" "$harmonic" "$is_g1billet" "$expiration"; then
                 prot=$((prot + 1))
             else
                 ids+="$id "
@@ -173,14 +195,14 @@ purge_author() {
     fi
 
     if [[ -z "$ids" ]]; then
-        echo "⏭️  $label ($hex) : uniquement des événements protégés (Ğ1-N²/harmoniques) — ignoré."
+        echo "⏭️  $label ($hex) : uniquement des événements protégés (Ğ1-N²/harmoniques/Ğ1Billet valide) — ignoré."
         return
     fi
 
     local ids_json
     ids_json=$(printf '%s\n' $ids | jq -R -s -c 'split("\n") | map(select(length>0))')
     cd "$STRFRY_DIR" && ./strfry delete --filter="{\"ids\": ${ids_json}}" 2>/dev/null
-    [[ "$prot" -gt 0 ]] && echo "   ℹ️  $prot événement(s) protégé(s) conservé(s) (Ğ1-N²/harmoniques)."
+    [[ "$prot" -gt 0 ]] && echo "   ℹ️  $prot événement(s) protégé(s) conservé(s) (Ğ1-N²/harmoniques/Ğ1Billet valide)."
 }
 
 # 1. Collecte des données — un nombre FIXE de scans strfry, jamais un par auteur
@@ -220,12 +242,12 @@ declare -A VOL_MAP AUTHOR_PURGEABLE_IDS AUTHOR_PROTECTED_COUNT
 if [[ "${#AUTHORS[@]}" -gt 0 ]]; then
     AUTHORS_JSON=$(printf '%s\n' "${AUTHORS[@]}" | jq -R -s -c 'split("\n") | map(select(length>0))')
     ./strfry scan "{\"authors\": ${AUTHORS_JSON}}" 2>/dev/null | \
-        jq -r "[.pubkey, ${JQ_EVENT_TAG_FIELDS}] | @tsv" > "$EVENTS_TSV" 2>/dev/null
+        jq -r "[.pubkey, ${JQ_EVENT_TAG_FIELDS}] | join(\"\u001f\")" > "$EVENTS_TSV" 2>/dev/null
 
-    while IFS=$'\t' read -r pk kind id dtag harmonic; do
+    while IFS=$'\x1f' read -r pk kind id dtag harmonic is_g1billet expiration; do
         [[ -z "$pk" ]] && continue
         VOL_MAP["$pk"]=$(( ${VOL_MAP[$pk]:-0} + 1 ))
-        if is_protected_event "$kind" "$dtag" "$harmonic"; then
+        if is_protected_event "$kind" "$dtag" "$harmonic" "$is_g1billet" "$expiration"; then
             AUTHOR_PROTECTED_COUNT["$pk"]=$(( ${AUTHOR_PROTECTED_COUNT[$pk]:-0} + 1 ))
         else
             AUTHOR_PURGEABLE_IDS["$pk"]+="$id "
@@ -343,6 +365,9 @@ case "$1" in
         echo "  kind 30078 avec tag d/t = atom4love ou zicmama_demo  (harmoniques ATOM4LOVE/ZICMAMA)"
         echo "  → les AUTRES événements kind 30078 (usage générique NIP-78 par d'autres clients"
         echo "    Nostr) restent purgeables normalement."
+        echo "  kind 0 avec tag t=g1billet, TANT QUE son tag expiration (NIP-40) n'est pas"
+        echo "    dépassé — profil auto-signé d'un Ğ1Billet papier (UPlanet/qr/billet)."
+        echo "    Redevient purgeable normalement une fois expiré."
         ;;
 
     *)

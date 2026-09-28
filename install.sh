@@ -978,7 +978,7 @@ fi
 echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
 ~/.astro/bin/pip install -U playwright 2>> "$_ERROR_LOG" \
     && echo "✅ playwright installé" \
-    || echo "⚠️  playwright install FAILED — voir ~/.zen/install.errors.log"
+    || echo "⚠️  playwright install FAILED — voir ~/.zen/log/install.errors.log"
 ## Installe le binaire Chromium de playwright (utilise le Chromium système si présent)
 ~/.astro/bin/python -m playwright install chromium 2>> "$_ERROR_LOG" \
     && echo "✅ playwright chromium prêt" \
@@ -990,13 +990,13 @@ echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
 ## playwright-stealth : contourne la détection d'automatisation (ex: scrapers/mastodon)
 ~/.astro/bin/pip install -U playwright-stealth 2>> "$_ERROR_LOG" \
     && echo "✅ playwright-stealth installé" \
-    || echo "⚠️  playwright-stealth install FAILED — voir ~/.zen/install.errors.log"
+    || echo "⚠️  playwright-stealth install FAILED — voir ~/.zen/log/install.errors.log"
 ## Client MCP (IA/mcp_client.py, ex: #opendata BRO) : venv ISOLÉ ~/.astro-mcp,
 ## jamais dans ~/.astro — mcp tire starlette au-delà de ce que fastapi==0.110.0
 ## (UPassport) tolère. Non-fatal : BRO dégrade silencieusement si absent.
 bash "${MY_PATH}/install/install_mcp_venv.sh" 2>> "$_ERROR_LOG" \
     && echo "✅ venv mcp (~/.astro-mcp) prêt — #opendata disponible dans BRO" \
-    || echo "⚠️  venv mcp install FAILED — #opendata restera indisponible (voir ~/.zen/install.errors.log)"
+    || echo "⚠️  venv mcp install FAILED — #opendata restera indisponible (voir ~/.zen/log/install.errors.log)"
 ## Garde-fou post-install : détecte un venv ~/.astro cassé (conflit de deps,
 ## UPassport qui n'importe plus) AVANT le prochain redémarrage du service,
 ## plutôt que de le découvrir en pleine nuit (incident du 2026-07-28).
@@ -1228,7 +1228,7 @@ case "${INSTALL_PROFILE}" in
     nextcloud)
         bash "$HOME/.zen/Astroport.ONE/install/install_nextcloud.sh" \
             && NEXTCLOUD_ACTIVE=true \
-            || echo "⚠️  NextCloud — erreur d'installation (voir ~/.zen/install.errors.log)"
+            || echo "⚠️  NextCloud — erreur d'installation (voir ~/.zen/log/install.errors.log)"
         ;;
     ai-company)
         echo "🧠 PROFIL ai-company — démarrage installation Stack IA..."
@@ -1783,7 +1783,7 @@ echo "       https://addons.mozilla.org/firefox/addon/open-with"
 echo "    2. Importez la configuration dans l'extension :"
 echo "       bash ~/.zen/open_with_yt-dlp.txt"
 echo
-echo "  ERREURS: ~/.zen/install.errors.log"
+echo "  ERREURS: ~/.zen/log/install.errors.log"
 echo "#############################################"
 echo
 [[ -t 0 ]] && read -r -p "  ↵  [Entrée pour voir la suite] " _

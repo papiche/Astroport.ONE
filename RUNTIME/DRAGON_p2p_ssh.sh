@@ -314,6 +314,61 @@ cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys 2
 ## Filtre --since 9j : seules les stations ayant diffusé récemment sont acceptées.
 ## Les clés orphelines (station silencieuse > 9j) ne sont plus ré-ajoutées — elles disparaissent
 ## naturellement au prochain cycle DRAGON (voir grep -v " uplanet:" ci-dessus).
+##
+## SÉCURITÉ — CONFIANCE DYNAMIQUE À 2 COUCHES (N²), ANCRÉE SUR LE SWARM RÉEL :
+## swarm_id = UPLANETG1PUB est public et forgeable par un simple event NOSTR, donc il ne
+## prouve rien seul. Deux garde-fous :
+##  1. Univers V : seuls comptent les capitaines dont la station est RÉELLEMENT découverte
+##     dans le swarm IPFS (captainHEX extrait des 12345.json reçus par IPNS dans
+##     ~/.zen/tmp/swarm/*/), déjà filtrés anti-Sybil par _12345.sh (is_astroport_node /
+##     _MySwarm.moats) — une fausse identité doit faire tourner un vrai nœud IPFS avec une
+##     chaîne Y-Level valide et être peerée par un vrai pair, pas juste signer un event.
+##  2. Confiance par vouchers, sur 2 sauts, sans aller plus loin (la confiance se dilue) :
+##       Hop 0 : A_boostrap_captains.hex (capitaines fondateurs, vérifiés manuellement)
+##       Hop 1 : capitaine ∈ V suivi (kind 3 / NIP-02) par un capitaine du Hop 0
+##       Hop 2 : capitaine ∈ V suivi par ≥ TRUST_MIN_VOUCHERS_HOP2 capitaines déjà admis
+##               (Hop 0 ou 1), ET qui les suit en retour à ≥ TRUST_MIN_RECIPROCITY_PCT %.
+##               Le quorum évite qu'un seul capitaine compromis/complice adoube un intrus ;
+##               la réciprocité filtre le follow à sens unique qui gonflerait la densité.
+## → Peupler ~/.zen/Astroport.ONE/A_boostrap_captains.hex (un HEX NOSTR par ligne, cf.
+##   captainHEX de chaque station de A_boostrap_ssh.txt) pour activer l'ajout automatique
+##   de nouveaux capitaines. Fichier vide = aucune clé kind-30850 acceptée (sûr par défaut).
+TRUST_MIN_VOUCHERS_HOP2=2
+TRUST_MIN_RECIPROCITY_PCT=50
+
+BOOTSTRAP_CAPTAINS_FILE="$HOME/.zen/Astroport.ONE/A_boostrap_captains.hex"
+BOOTSTRAP_CAPTAINS=()
+if [[ -s "$BOOTSTRAP_CAPTAINS_FILE" ]]; then
+    while IFS= read -r _bhex; do
+        _bhex="${_bhex%%#*}"; _bhex="${_bhex//[[:space:]]/}"
+        [[ -n "$_bhex" ]] && BOOTSTRAP_CAPTAINS+=("$_bhex")
+    done < "$BOOTSTRAP_CAPTAINS_FILE"
+fi
+
+# V : capitaines dont la station est effectivement déclarée dans le swarm (12345.json IPNS)
+declare -A V_SET
+while IFS= read -r _vhex; do
+    [[ -n "$_vhex" ]] && V_SET["$_vhex"]=1
+done < <(cat ~/.zen/tmp/swarm/*/12345.json ~/.zen/tmp/${IPFSNODEID}/12345.json 2>/dev/null \
+    | jq -r '.captainHEX // empty' 2>/dev/null)
+
+declare -A TRUSTED_SET
+for _b in "${BOOTSTRAP_CAPTAINS[@]}"; do TRUSTED_SET["$_b"]=1; done
+
+# Qui, parmi V, suit $1 (HEX) ?
+_followers_in_V() {
+    local _hex="$1" _f
+    "$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" \
+        --kind 3 --tag-p "$_hex" --limit 200 2>/dev/null | jq -r '.pubkey // empty' 2>/dev/null \
+        | while IFS= read -r _f; do [[ -n "${V_SET[$_f]:-}" ]] && echo "$_f"; done
+}
+# Liste des HEX que $1 suit (son propre kind 3)
+_following_of() {
+    "$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" \
+        --kind 3 --author "$1" --limit 1 2>/dev/null \
+        | jq -r '.tags[]? | select(.[0]=="p") | .[1]' 2>/dev/null
+}
+
 if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
     _9d_ago=$(( $(date +%s) - 9 * 86400 ))
     if [[ -z "${UPLANET_30850:-}" ]]; then
@@ -321,20 +376,78 @@ if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "$HOME/.zen/Astroport.ONE/tools/nostr_g
             --kind 30850 --limit 300 --since "$_9d_ago" 2>/dev/null)
     fi
     if [[ -n "$UPLANET_30850" ]]; then
-        echo "$UPLANET_30850" | jq -c --arg sid "$UPLANETG1PUB" --arg me "$IPFSNODEID" '
+        # Collecte des candidats uniques (hex + ssh_pub), restreints à l'univers V
+        CANDIDATES_HEX=()
+        CANDIDATES_SSH=()
+        while read -r ev; do
+            c_hex=$(echo "$ev" | jq -r '.pubkey // empty' 2>/dev/null)
+            c_ssh=$(echo "$ev" | jq -r '[.tags[]? | select(.[0]=="ssh_pub")] | .[0][1] // empty' 2>/dev/null)
+            [[ -z "$c_hex" || -z "$c_ssh" ]] && continue
+            echo "$c_ssh" | grep -q "ssh-ed25519" || continue
+            if [[ -z "${V_SET[$c_hex]:-}" ]]; then
+                echo "SKIP ${c_hex:0:8}... : station absente des 12345.json du swarm (hors V)"
+                continue
+            fi
+            CANDIDATES_HEX+=("$c_hex")
+            CANDIDATES_SSH+=("$c_ssh")
+        done < <(echo "$UPLANET_30850" | jq -c --arg sid "$UPLANETG1PUB" --arg me "$IPFSNODEID" '
             select(
                 ([(.tags[]? | select(.[0]=="swarm_id"))] | .[0][1]) == $sid
                 and ([(.tags[]? | select(.[0]=="station"))] | .[0][1]) != $me
-            )
-        ' 2>/dev/null | while read -r ev; do
-            ssh_pub=$(echo "$ev" | jq -r '[.tags[]? | select(.[0]=="ssh_pub")] | .[0][1] // empty' 2>/dev/null)
-            if [[ -n "$ssh_pub" ]] && echo "$ssh_pub" | grep -q "ssh-ed25519"; then
-                # Comment with uplanet id so these keys can be removed if station changes UPlanet (grep -v "uplanet:...")
-                ssh_line="${ssh_pub} uplanet:${UPLANETG1PUB:0:8}"
-                if ! grep -qF "$ssh_pub" ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null; then
-                    echo "Adding same-uplanet captain SSH key to authorized_keys (uplanet:${UPLANETG1PUB:0:8})"
-                    echo "$ssh_line" >> ~/.zen/tmp/${MOATS}/authorized_keys
+            )' 2>/dev/null)
+
+        TRUSTED_HEX=()
+        TRUSTED_SSH=()
+
+        # --- HOP 1 : vouché directement par un capitaine déjà admis (Hop 0) ---
+        for i in "${!CANDIDATES_HEX[@]}"; do
+            c_hex="${CANDIDATES_HEX[$i]}"
+            [[ -n "${TRUSTED_SET[$c_hex]:-}" ]] && continue
+            for _v in $(_followers_in_V "$c_hex"); do
+                if [[ -n "${TRUSTED_SET[$_v]:-}" ]]; then
+                    TRUSTED_SET["$c_hex"]=1
+                    TRUSTED_HEX+=("$c_hex"); TRUSTED_SSH+=("${CANDIDATES_SSH[$i]}")
+                    echo "HOP1 : ${c_hex:0:8}... vouché par ${_v:0:8}..."
+                    break
                 fi
+            done
+        done
+
+        # --- HOP 2 : quorum de vouchers déjà admis (Hop 0/1) + réciprocité ---
+        for i in "${!CANDIDATES_HEX[@]}"; do
+            c_hex="${CANDIDATES_HEX[$i]}"
+            [[ -n "${TRUSTED_SET[$c_hex]:-}" ]] && continue
+            vouchers=()
+            for _v in $(_followers_in_V "$c_hex"); do
+                [[ -n "${TRUSTED_SET[$_v]:-}" ]] && vouchers+=("$_v")
+            done
+            if [[ ${#vouchers[@]} -lt $TRUST_MIN_VOUCHERS_HOP2 ]]; then
+                echo "SKIP ${c_hex:0:8}... : ${#vouchers[@]} voucher(s) (quorum requis: ${TRUST_MIN_VOUCHERS_HOP2})"
+                continue
+            fi
+            following=$(_following_of "$c_hex")
+            reciprocal=0
+            for _v in "${vouchers[@]}"; do
+                echo "$following" | grep -qF "$_v" && ((reciprocal++))
+            done
+            pct=$(( 100 * reciprocal / ${#vouchers[@]} ))
+            if [[ $pct -ge $TRUST_MIN_RECIPROCITY_PCT ]]; then
+                TRUSTED_SET["$c_hex"]=1
+                TRUSTED_HEX+=("$c_hex"); TRUSTED_SSH+=("${CANDIDATES_SSH[$i]}")
+                echo "HOP2 : ${c_hex:0:8}... vouché par ${#vouchers[@]} capitaines, réciprocité ${pct}%"
+            else
+                echo "SKIP ${c_hex:0:8}... : ${#vouchers[@]} vouchers mais réciprocité ${pct}% (min ${TRUST_MIN_RECIPROCITY_PCT}%)"
+            fi
+        done
+
+        # --- Application ---
+        for i in "${!TRUSTED_HEX[@]}"; do
+            ssh_pub="${TRUSTED_SSH[$i]}"
+            # Comment with uplanet id so these keys can be removed if station changes UPlanet (grep -v "uplanet:...")
+            ssh_line="${ssh_pub} uplanet:${UPLANETG1PUB:0:8}"
+            if ! grep -qF "$ssh_pub" ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null; then
+                echo "Adding same-uplanet captain SSH key to authorized_keys (uplanet:${UPLANETG1PUB:0:8})"
+                echo "$ssh_line" >> ~/.zen/tmp/${MOATS}/authorized_keys
             fi
         done
     fi
@@ -449,14 +562,13 @@ if [[ \$? == 0 ]]; then
     # On bind sur localhost
     ipfs p2p forward "\${PROTO}" "/ip4/127.0.0.1/tcp/\$LPORT" "/p2p/\${NODE_ID}"
     # Bind Docker LAN
-    if [ -n "\${DOCKER_IP}" ]; then 
+    if [ -n "\${DOCKER_IP}" ]; then
         ipfs p2p forward "\${PROTO}" "/ip4/\${DOCKER_IP}/tcp/\$LPORT" "/p2p/\${NODE_ID}"
     fi
-    # + Bind sur toutes les adresses IP locales pour l'accès public (direct SoundSpot)
-    # et via proxy ssl Astroport.ONE/tools/firewall.sh et Nginx Proxy Manager 
-    for IP in \$(hostname -I); do
-        ipfs p2p forward "\${PROTO}" "/ip4/\${IP}/tcp/\$LPORT" "/p2p/\${NODE_ID}" 2>/dev/null || true
-    done
+    # Pas de bind sur les IP publiques/LAN : le tunnel P2P reste local à la machine
+    # (127.0.0.1 + passerelle Docker). Un service qui doit être exposé publiquement
+    # passe par Nginx Proxy Manager, pas par ce tunnel — évite de republier malgré soi
+    # le service d'un ami sur le LAN ou l'IP publique de la station qui ouvre le tunnel.
     [[ "${SLUG}" == "ssh" ]] && echo "ssh -X ${USER}@localhost -p \$LPORT"
     exit 0
 else

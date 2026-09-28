@@ -113,6 +113,7 @@ class MonitorScanner(BaseScanner):
 
     def _append_csv(self, row: dict):
         write_header = not self._csv_header_written
+        self._csv_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self._csv_path, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=list(row.keys()))
             if write_header:

@@ -2050,7 +2050,7 @@ sync_youtube_likes "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE"
 sync_exit_code=$?
 
 ## Évènement structuré niveau NODE (JSONL, additif à IA.log) — category=youtube
-## remplace pour ce cas précis le grep "youtube|yt-dlp" fragile de log_file_watch.sh.
+## remplace pour ce cas précis le grep "youtube|yt-dlp" fragile de log_observation.sh (groupe media).
 if command -v bro_log_event &>/dev/null; then
     [[ $sync_exit_code -eq 0 ]] && _yt_ok=1 || _yt_ok=0
     bro_log_event "sync_likes" "$_yt_ok" "youtube" "" "{\"player\":\"${PLAYER}\",\"exit_code\":${sync_exit_code}}"

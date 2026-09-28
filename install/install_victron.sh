@@ -71,6 +71,26 @@ fi
 ########################################################################
 CSV_DIR="$HOME/.zen/game/victron"
 mkdir -p "$CSV_DIR"
+NEW_CSV="${CSV_DIR}/readings.csv"
+
+########################################################################
+# 4bis. Migration depuis une installation antérieure à la convention
+#    ~/.zen/game/victron/ (ex: ancien --csv sous ~/.zen/tmp/victron/, un
+#    répertoire qui peut disparaître entre deux exécutions et faisait
+#    planter en boucle victron_monitor.py). On récupère l'historique CSV
+#    déjà collecté plutôt que de le laisser orphelin sur l'ancien chemin.
+########################################################################
+if [[ -f /etc/systemd/system/victron-mppt-monitor.service ]]; then
+    OLD_CSV="$(grep -oP '(?<=--csv )\S+' /etc/systemd/system/victron-mppt-monitor.service 2>/dev/null || true)"
+    if [[ -n "$OLD_CSV" && "$OLD_CSV" != "$NEW_CSV" && -s "$OLD_CSV" ]]; then
+        echo "[install_victron][$(timestamp)] Migration du CSV existant: ${OLD_CSV} -> ${NEW_CSV}" >&2
+        if [[ -s "$NEW_CSV" ]]; then
+            tail -n +2 "$OLD_CSV" >> "$NEW_CSV"   # append (sans ré-écrire l'en-tête)
+        else
+            cp "$OLD_CSV" "$NEW_CSV"
+        fi
+    fi
+fi
 
 echo "[install_victron][$(timestamp)] Installing systemd service..." >&2
 cat << EOF | sudo tee /etc/systemd/system/victron-mppt-monitor.service > /dev/null
@@ -83,7 +103,7 @@ Requires=bluetooth.target
 Type=simple
 User=$USER
 WorkingDirectory=${VICTRON_DIR}
-ExecStart=$HOME/.astro/bin/python3 ${VICTRON_DIR}/victron_monitor.py monitor --config ${DEVICES_JSON} --csv ${CSV_DIR}/readings.csv
+ExecStart=$HOME/.astro/bin/python3 ${VICTRON_DIR}/victron_monitor.py monitor --config ${DEVICES_JSON} --csv ${NEW_CSV}
 Restart=on-failure
 RestartSec=10
 
@@ -96,7 +116,7 @@ sudo systemctl enable victron-mppt-monitor.service
 sudo systemctl restart victron-mppt-monitor.service 2>/dev/null || sudo systemctl start victron-mppt-monitor.service
 
 if systemctl is-active --quiet victron-mppt-monitor.service; then
-    echo "[install_victron][$(timestamp)] ✅ victron-mppt-monitor.service actif (CSV: ${CSV_DIR}/readings.csv)" >&2
+    echo "[install_victron][$(timestamp)] ✅ victron-mppt-monitor.service actif (CSV: ${NEW_CSV})" >&2
 else
     echo "[install_victron][$(timestamp)] ⚠️  Le service n'a pas démarré — vérifiez : journalctl -u victron-mppt-monitor -f" >&2
 fi

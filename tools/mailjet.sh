@@ -65,6 +65,22 @@ OPTIONS
         L'aperçu envoyé au canal NOSTR DM devient un texte générique plutôt
         qu'un extrait du contenu réel — le secret ne quitte jamais l'email.
 
+    --attach FILE
+        Joint FILE à l'email (API Mailjet v3.1, champ "Attachments", encodé
+        en Base64). Répétable pour joindre plusieurs fichiers (ex: aperçu
+        photo d'une invitation FaceCloud). Exemple à un seul fichier :
+        joindre un .ics pour que le client mail du destinataire propose
+        "Ajouter à l'agenda".
+
+    --attach-name NAME
+        Nom de fichier affiché pour la pièce jointe. Ignoré s'il y a
+        plusieurs --attach (le nom est alors le basename de chaque fichier).
+
+    --attach-type TYPE
+        Type MIME de la pièce jointe. Ignoré s'il y a plusieurs --attach (le
+        type est alors déduit de l'extension : .ics, .jpg/.jpeg, .png, .webp,
+        sinon application/octet-stream).
+
     --help, -h
         Affiche cette aide et quitte (sans écrire dans mailjet.log).
 
@@ -107,6 +123,10 @@ EXEMPLES
     # Envoi immédiat sans expiration
     $ME --expire 0s user@example.com multipass.html 'MULTIPASS[Ẑ]'
 
+    # Invitation calendrier avec pièce jointe .ics
+    $ME --channel calendar --expire 7d --attach /tmp/event.ics --attach-name evenement.ics \\
+        friend@example.com /tmp/invite.html 'Semis de saison — 12 mars'
+
 FICHIERS
     ~/.zen/MJ_APIKEY          Credentials Mailjet legacy
                               (MJ_APIKEY_PUBLIC, MJ_APIKEY_PRIVATE, SENDER_EMAIL)
@@ -137,6 +157,9 @@ EPHEMERAL_DURATION=""
 TEMPLATE_SRC=""
 MAIL_CHANNEL=""
 NO_IPFS_LINK=0
+ATTACH_FILES=()
+ATTACH_NAME=""
+ATTACH_TYPE=""
 while [[ $# -gt 0 ]]; do
     case $1 in
         --expire)
@@ -154,6 +177,18 @@ while [[ $# -gt 0 ]]; do
         --no-ipfs-link)
             NO_IPFS_LINK=1
             shift
+            ;;
+        --attach)
+            ATTACH_FILES+=("$2")
+            shift 2
+            ;;
+        --attach-name)
+            ATTACH_NAME="$2"
+            shift 2
+            ;;
+        --attach-type)
+            ATTACH_TYPE="$2"
+            shift 2
             ;;
         --help|-h)
             exec "$0" --help
@@ -484,6 +519,46 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
         PLAIN_TEXT="Voir le message sur le réseau IPFS : ${myLIBRA}/ipfs/${EMAILZ}\n\nMessage de ${UPLANET}"
     fi
 
+    ## ── Pièces jointes optionnelles (ex: .ics pour "Ajouter à l'agenda", ────
+    ## photos jointes à une invitation FaceCloud). --attach est répétable ;
+    ## --attach-name/--attach-type ne s'appliquent que s'il y a UNE seule
+    ## pièce jointe (sans quoi le nom/type est auto-déduit par fichier).
+    ATTACHMENTS_JSON="[]"
+    if [[ ${#ATTACH_FILES[@]} -gt 0 ]]; then
+        _single=0
+        [[ ${#ATTACH_FILES[@]} -eq 1 ]] && _single=1
+        for _af in "${ATTACH_FILES[@]}"; do
+            if [[ ! -s "$_af" ]]; then
+                echo "⚠️ --attach ${_af} : fichier introuvable ou vide, ignoré" >&2
+                continue
+            fi
+            if [[ "$_single" == "1" && -n "$ATTACH_NAME" ]]; then
+                _attach_filename="$ATTACH_NAME"
+            else
+                _attach_filename=$(basename "$_af")
+            fi
+            if [[ "$_single" == "1" && -n "$ATTACH_TYPE" ]]; then
+                _attach_ctype="$ATTACH_TYPE"
+            else
+                case "$_attach_filename" in
+                    *.ics)          _attach_ctype="text/calendar" ;;
+                    *.jpg|*.jpeg)   _attach_ctype="image/jpeg" ;;
+                    *.png)          _attach_ctype="image/png" ;;
+                    *.webp)         _attach_ctype="image/webp" ;;
+                    *)              _attach_ctype="application/octet-stream" ;;
+                esac
+            fi
+            _attach_b64=$(base64 -w0 "$_af" 2>/dev/null || base64 "$_af" | tr -d '\n')
+            _attach_entry=$(jq -n \
+                --arg ct "$_attach_ctype" \
+                --arg fn "$_attach_filename" \
+                --arg b64 "$_attach_b64" \
+                '{"ContentType":$ct,"Filename":$fn,"Base64Content":$b64}')
+            ATTACHMENTS_JSON=$(jq -c -n --argjson arr "$ATTACHMENTS_JSON" --argjson e "$_attach_entry" '$arr + [$e]')
+            echo "📎 Pièce jointe: ${_attach_filename} (${_attach_ctype})"
+        done
+    fi
+
     CONTENT_SIZE=${#RAW_CONTENT}
     if [[ $CONTENT_SIZE -gt 1000000 ]]; then # Limite à 1 Mo pour l'inline
         if [[ "$NO_IPFS_LINK" == "1" ]]; then
@@ -507,9 +582,10 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
         --arg subject "$SUBJECT" \
         --rawfile text_part "$_mj_tmp_text" \
         --rawfile html_part "$_mj_tmp_html" \
+        --argjson attachments "$ATTACHMENTS_JSON" \
         '{
             "Messages": [
-                {
+                ({
                     "From": {
                         "Email": $sender_email,
                         "Name": "UPlanet Keeper"
@@ -529,7 +605,7 @@ if [[ "$_email_active" == "true" && -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRI
                     "Subject": $subject,
                     "TextPart": $text_part,
                     "HTMLPart": $html_part
-                }
+                } + (if ($attachments | length) > 0 then {"Attachments": $attachments} else {} end))
             ]
         }')
 
