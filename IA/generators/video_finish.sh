@@ -2,18 +2,22 @@
 # Dependencies : ffmpeg
 #### video_finish.sh : mise à l'échelle 720p (ou autre) + style VHS optionnel
 #
-# Usage: video_finish.sh [-v] [-H hauteur] <entrée.mp4> <sortie.mp4>
+# Usage: video_finish.sh [-v] [-H hauteur | -s LxH] <entrée.mp4> <sortie.mp4>
 #   -v  style lecteur VHS : bavure et décalage chroma, flou horizontal, grain,
 #       lignes de balayage, vignettage, couleurs délavées, son filtré.
 #       Masque bien les défauts d'une vidéo calculée en basse résolution.
 #   -H  petit côté de la sortie en pixels (défaut 720 : 1280x720 ou 720x1280)
+#   -s  taille exacte (ex. 1280x720) : recadrage centré si le ratio diffère.
+#       Sortie toujours en 24 i/s, AAC 48 kHz stéréo (plans concaténables).
 
 VHS=0
 SHORT_SIDE=720
-while getopts "vH:h" opt; do
+SIZE=""
+while getopts "vH:s:h" opt; do
   case $opt in
     v) VHS=1 ;;
     H) SHORT_SIDE="$OPTARG" ;;
+    s) SIZE="$OPTARG" ;;
     *) sed -n '5,9p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 1 ;;
   esac
 done
@@ -27,6 +31,10 @@ fi
 
 # Petit côté à SHORT_SIDE, fonctionne en paysage comme en portrait (smartphone)
 scale="scale='if(gt(iw,ih),-2,${SHORT_SIDE})':'if(gt(iw,ih),${SHORT_SIDE},-2)':flags=lanczos"
+if [[ "$SIZE" =~ ^([0-9]+)x([0-9]+)$ ]]; then
+  w=${BASH_REMATCH[1]} h=${BASH_REMATCH[2]}
+  scale="scale=${w}:${h}:force_original_aspect_ratio=increase:flags=lanczos,crop=${w}:${h},setsar=1"
+fi
 
 if [ "$VHS" = 1 ]; then
   vf="${scale},format=yuv420p"
@@ -43,7 +51,7 @@ else
   af="anull"
 fi
 
-ffmpeg -v error -y -i "$IN" -vf "$vf" -af "$af" \
-       -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p -c:a aac -b:a 160k \
+ffmpeg -v error -y -i "$IN" -vf "${vf},fps=24" -af "$af" \
+       -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p -c:a aac -b:a 160k -ar 48000 -ac 2 \
        -movflags +faststart "$OUT" || exit 1
 echo "$OUT"

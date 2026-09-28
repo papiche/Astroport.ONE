@@ -25,6 +25,9 @@ usage() {
 Usage: $ME [-i image] [-u facteur] [-d secondes] [-r ratio] [-m megapixels] [-s steps] [-S seed] [-o fichier.mp4] [-t timeout] [-Q attente] <prompt> [udrive_path]
   Réglage rapide (RTX 3090) : -m 0.4 -s 10 → 5 s en ~5 min, puis video_finish.sh -v pour 720p/VHS
   -i  image de départ (image-to-video) ; sans -i : text-to-video
+  -R  image de référence (répétable, 9 max) : mode ref2va, visage/décor repris ;
+      le prompt la cite par <Picture 1>, <Picture 2>... Incompatible avec -i
+  -A  audio de référence (répétable, 3 max), ex. voix d'un acteur : <Audio 1>...
   -u  upscale SeedVR2 3B, lent (ex. 2 : 864x480 → 1728x960, OOM au-delà de ~3 s) ; défaut : aucun
   -d  durée de la vidéo en secondes (défaut 5, plage entraînée ~5-15)
   -r  ratio : 1:1 2:3 3:2 3:4 4:3 9:16 16:9 21:9 (défaut 16:9)
@@ -49,9 +52,13 @@ MAX_QUEUE_WAIT=14400
 OUTPUT_FILE=""
 FIRST_FRAME=""
 UPSCALE=""
-while getopts "i:u:d:r:m:s:S:o:t:Q:h" opt; do
+REF_IMAGES=()
+REF_AUDIOS=()
+while getopts "i:u:d:r:m:s:S:o:t:Q:R:A:h" opt; do
   case $opt in
     u) UPSCALE="$OPTARG" ;;
+    R) REF_IMAGES+=("$OPTARG") ;;
+    A) REF_AUDIOS+=("$OPTARG") ;;
     i) FIRST_FRAME="$OPTARG" ;;
     d) DURATION="$OPTARG" ;;
     r) RATIO="$OPTARG" ;;
@@ -67,6 +74,13 @@ done
 shift $((OPTIND - 1))
 
 [ -z "$1" ] && usage
+if [ -n "$FIRST_FRAME" ] && [ $(( ${#REF_IMAGES[@]} + ${#REF_AUDIOS[@]} )) -gt 0 ]; then
+  echo "Erreur : -i (image de départ) et -R/-A (références ref2va) sont exclusifs" >&2
+  exit 1
+fi
+for f in "${REF_IMAGES[@]}" "${REF_AUDIOS[@]}"; do
+  [ -f "$f" ] || { echo "Référence introuvable : $f" >&2; exit 1; }
+done
 [ -z "$SEED" ] && SEED=$((RANDOM * RANDOM * RANDOM))
 if [ -n "$FIRST_FRAME" ] && [ ! -f "$FIRST_FRAME" ]; then
   echo "Image introuvable : $FIRST_FRAME" >&2
@@ -141,7 +155,11 @@ preflight_check() {
   unets=$(curl -s -m 20 "$COMFYUI_URL/object_info/UNETLoader" | jq -r '.UNETLoader.input.required.unet_name[0][]?' 2>/dev/null)
   clips=$(curl -s -m 20 "$COMFYUI_URL/object_info/CLIPLoader" | jq -r '.CLIPLoader.input.required.clip_name[0][]?' 2>/dev/null)
   vaes=$(curl -s -m 20 "$COMFYUI_URL/object_info/VAELoader" | jq -r '.VAELoader.input.required.vae_name[0][]?' 2>/dev/null)
-  grep -qx "minimax_h3_fl2va_pruned_int8_convrot.safetensors" <<< "$unets" || missing+=" minimax_h3_fl2va_pruned_int8_convrot"
+  if [ $(( ${#REF_IMAGES[@]} + ${#REF_AUDIOS[@]} )) -gt 0 ]; then
+    grep -qx "minimax_h3_ref2va_pruned_int8_convrot.safetensors" <<< "$unets" || missing+=" minimax_h3_ref2va_pruned_int8_convrot"
+  else
+    grep -qx "minimax_h3_fl2va_pruned_int8_convrot.safetensors" <<< "$unets" || missing+=" minimax_h3_fl2va_pruned_int8_convrot"
+  fi
   grep -qx "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors" <<< "$clips" || missing+=" qwen3vl_32b_minimax_h3_nvfp4_awq"
   grep -qx "minimax_h3_video_vae_fp16.safetensors" <<< "$vaes" || missing+=" minimax_h3_video_vae_fp16"
   grep -qx "minimax_h3_audio_vae_fp32.safetensors" <<< "$vaes" || missing+=" minimax_h3_audio_vae_fp32"
@@ -174,7 +192,47 @@ update_workflow() {
      "$WORKFLOW_PATH" > "$TMP_WORKFLOW" || { echo "Erreur : jq a échoué (paramètre non numérique ?)" >&2; exit 1; }
 
   [ -n "$FIRST_FRAME" ] && add_first_frame
+  [ $(( ${#REF_IMAGES[@]} + ${#REF_AUDIOS[@]} )) -gt 0 ] && add_references
   [ -n "$UPSCALE" ] && add_upscale
+}
+
+# $1 fichier local → nom du fichier dans ComfyUI/input
+upload_input() {
+  curl -s -F "image=@$1" -F "overwrite=true" "$COMFYUI_URL/upload/image" | jq -r '.name // empty'
+}
+
+# ref2va (template ComfyUI video_minimax_h3_r2v) : modèle ref2va et node
+# MiniMaxH3ReferenceToVideo à la place de MiniMaxH3ImageToVideo (mêmes sorties),
+# scheduler beta conseillé par le template pour les prompts à références.
+add_references() {
+  echo "Références ref2va : ${#REF_IMAGES[@]} image(s), ${#REF_AUDIOS[@]} audio(s)" >&2
+  local refs='{}' k=0 name
+  for f in "${REF_IMAGES[@]}"; do
+    name=$(upload_input "$f")
+    [ -z "$name" ] && { echo "Erreur : upload de $f échoué" >&2; exit 1; }
+    refs=$(jq --arg n "$name" --argjson k $k \
+      '.["\(170 + $k)"] = {"class_type": "LoadImage", "inputs": {"image": $n}}
+       | .["104"].inputs["ref_images.ref_image_\($k)"] = ["\(170 + $k)", 0]' <<< "$refs")
+    k=$((k + 1))
+  done
+  k=0
+  for f in "${REF_AUDIOS[@]}"; do
+    name=$(upload_input "$f")
+    [ -z "$name" ] && { echo "Erreur : upload de $f échoué" >&2; exit 1; }
+    refs=$(jq --arg n "$name" --argjson k $k \
+      '.["\(180 + $k)"] = {"class_type": "LoadAudio", "inputs": {"audio": $n}}
+       | .["104"].inputs["ref_audios.ref_audio_\($k)"] = ["\(180 + $k)", 0]' <<< "$refs")
+    k=$((k + 1))
+  done
+  jq --argjson refs "$refs" \
+     '.["6"].inputs.unet_name = "minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+      | .["9"].inputs.scheduler = "beta"
+      | .["104"] = {"class_type": "MiniMaxH3ReferenceToVideo", "_meta": {"title": "MiniMax H3 Reference to Video"},
+                    "inputs": ({"clip": ["13", 0], "vae": ["11", 0], "audio_vae": ["24", 0],
+                               "prompt": .["104"].inputs.prompt, "width": ["115", 0], "height": ["115", 1],
+                               "length": ["107", 1], "ref_image_size": "match"} + ($refs["104"].inputs // {}))}
+      | . + ($refs | del(.["104"]))' \
+     "$TMP_WORKFLOW" > "$TMP_WORKFLOW.tmp" && mv "$TMP_WORKFLOW.tmp" "$TMP_WORKFLOW"
 }
 
 # Upscale SeedVR2 3B int8 (template ComfyUI utility_seedvr2_3b_int8_upscale_video) :
@@ -351,6 +409,8 @@ get_video_result() {
 check_comfyui_port || exit 1
 preflight_check
 update_workflow
+# DRY_RUN=1 : affiche le workflow API sans l'envoyer (validation)
+[ -n "$DRY_RUN" ] && { jq . "$TMP_WORKFLOW"; exit 0; }
 send_workflow
 RESULT=$?
 

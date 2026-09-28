@@ -1,0 +1,110 @@
+{
+  "name": "Épisode 1 — Mon MULTIPASS (UPlanet / Astroport.ONE)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "style": "clean",
+  "height": 720,
+  "seed": 1001,
+  "cast": {
+    "lea": {
+      "image_prompt": "Photo of Lea, a 29-year-old French graphic designer with short wavy chestnut hair, round tortoiseshell glasses, light freckles, a mustard yellow knit sweater, warm curious smile",
+      "voice_line": "Bonjour, je m'appelle Léa. Je voulais comprendre à qui appartiennent vraiment les machines d'Internet."
+    },
+    "malik": {
+      "image_prompt": "Photo of Malik, a 45-year-old man with short dark curly hair, a salt-and-pepper beard, kind brown eyes, a navy blue work shirt with rolled sleeves, calm friendly expression",
+      "voice_line": "Salut, moi c'est Malik. Dans mon salon, un petit ordinateur fait tourner Internet pour tout le village."
+    }
+  },
+  "shots": [
+    {
+      "cast": [
+        "lea"
+      ],
+      "prompt": "Close-up of Lea sitting at her kitchen table in soft morning light, a laptop open in front of her. She looks up at the camera, a little puzzled, and says in French at a natural pace: \"Mes photos, mes messages, mon identité... tout dort chez les géants du web. Et si Internet nous appartenait ?\" Quiet kitchen ambience, a coffee cup set down.",
+      "duration": 8
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Medium close-up of Malik in his cozy village living room, standing next to a small black home server box with a blue glowing ring on a wooden shelf. He rests a hand on the box and says to the camera in French, calm and friendly: \"Ce petit ordinateur, c'est une station Astroport. Elle est hébergée chez moi, et ses parts appartiennent aux gens du coin.\" Soft room ambience.",
+      "duration": 8
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Close-up of Malik in the same living room, he smiles and explains with small hand gestures, in French: \"L'Armateur, qui a financé la machine, reçoit chaque semaine sa participation en zen. Moi, le Capitaine, je l'entretiens, et je reçois le double.\" Soft room ambience.",
+      "duration": 10
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/g1.html",
+      "presenter": "lea",
+      "prompt": "Lea says in French, enthusiastic: \"D'abord, je choisis ma station, mon Home, sur la carte de la constellation.\"",
+      "title": "1. Choisir sa station",
+      "duration": 7
+    },
+    {
+      "screen": "http://127.0.0.1:54321/g1",
+      "motion": "zoom",
+      "presenter": "lea",
+      "prompt": "Lea says in French, clearly: \"Ensuite, je m'inscris avec le même email que sur OpenCollective Monnaie Libre, et je place mon domicile sur la carte.\"",
+      "title": "2. S'inscrire (même email qu'OpenCollective)",
+      "duration": 9
+    },
+    {
+      "cast": [
+        "lea"
+      ],
+      "prompt": "Close-up of Lea in her kitchen looking at her smartphone; a notification chimes and she smiles broadly, then looks at the camera and says in French, delighted: \"Et voilà mon MULTIPASS : une identité NOSTR, un portefeuille June, et dix gigas de uDRIVE, chez nous.\" A soft notification chime.",
+      "duration": 9
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Close-up of Malik in his living room, warm smile, he points toward the camera and says in French: \"Et quand tu contribues sur OpenCollective, tes zen arrivent directement sur ton MULTIPASS.\" Soft room ambience.",
+      "duration": 8
+    },
+    {
+      "cast": [
+        "lea"
+      ],
+      "prompt": "Outdoor medium close-up in a sunny village square with old stone houses and a small fountain, warm afternoon light. Lea smiles, spreads her arms toward the village and says to the camera in French, joyful: \"Internet, version village !\" Village ambience, birds, light cheerful music.",
+      "duration": 5
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Outdoor medium close-up in the same sunny village square with old stone houses and a small fountain, warm afternoon light. Malik laughs warmly, opens his hand toward the camera in a welcoming gesture and says in French: \"Bienvenue à bord !\" Village ambience, birds, light cheerful music.",
+      "duration": 5
+    },
+    {
+      "card": {
+        "title": "Créez votre MULTIPASS",
+        "subtitle": "Devenez copropriétaires des machines qui font Internet",
+        "links": [
+          {
+            "label": "Choisir sa station",
+            "url": "https://ipfs.copylaradio.com/ipns/copylaradio.com/g1.html"
+          },
+          {
+            "label": "S'inscrire",
+            "url": "https://u.copylaradio.com/g1"
+          },
+          {
+            "label": "Contribuer (même email)",
+            "url": "https://opencollective.com/monnaie-libre"
+          },
+          {
+            "label": "Le code",
+            "url": "https://github.com/papiche/Astroport.ONE"
+          }
+        ]
+      },
+      "duration": 8
+    }
+  ]
+}
