@@ -1,0 +1,78 @@
+{
+  "name": "Épisode 4 — La genèse du code (UPassport, 2024-2026)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "style": "clean",
+  "height": 720,
+  "seed": 4004,
+  "cast": {
+    "lea":   {"image": "/home/frd/.zen/tmp/scenes/cast/lea/portrait.png",   "voice": "/home/frd/.zen/tmp/scenes/cast/lea/voice.wav"},
+    "malik": {"image": "/home/frd/.zen/tmp/scenes/cast/malik/portrait.png", "voice": "/home/frd/.zen/tmp/scenes/cast/malik/voice.wav"}
+  },
+  "shots": [
+    {
+      "cast": ["lea"],
+      "prompt": "Close-up of Lea sitting at her kitchen table in the evening, her laptop open showing lines of code, warm lamp light. She looks up at the camera, intrigued, and says in French: \"Tout ça, quelqu'un l'a bien écrit. Comment c'est né ?\" Quiet evening ambience.",
+      "duration": 7
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Medium close-up of Malik in his cozy village living room next to the small black home server box with a blue glowing ring, he leans forward like a storyteller and says in French, warm: \"Plus de mille commits en deux ans, écrits en commun, sous licence libre. Je te raconte.\" Soft room ambience.",
+      "duration": 8
+    },
+    {
+      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/era1.png",
+      "motion": "zoom",
+      "presenter": "malik",
+      "prompt": "Malik says in French, nostalgic: \"Août 2024 : la première brique. Un passeport validé par une transaction en monnaie libre, et le nom MULTIPASS apparaît.\"",
+      "duration": 9
+    },
+    {
+      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/era2.png",
+      "motion": "zoom",
+      "presenter": "lea",
+      "prompt": "Lea says in French, understanding: \"En 2025, l'identité passe sur NOSTR : un email, une position sur la carte, et on a son MULTIPASS.\"",
+      "duration": 8
+    },
+    {
+      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/era3.png",
+      "motion": "zoom",
+      "presenter": "malik",
+      "prompt": "Malik says in French, excited: \"Puis l'automne 2025 : plus de quatre cents commits en trois mois ! La carte UMAP, la toile de confiance, les zen.\"",
+      "duration": 9
+    },
+    {
+      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/era4.png",
+      "motion": "zoom",
+      "presenter": "lea",
+      "prompt": "Lea says in French, enthusiastic: \"Et 2026, c'est la coopérative : OpenCollective, la clé LOVE, le portefeuille Zelkova, le cloud chiffré.\"",
+      "duration": 9
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik in his living room, he opens his hands in a generous gesture and says in French: \"Chaque ligne est publique. Tout le monde peut la lire, la corriger, et monter sa propre station.\" Soft room ambience.",
+      "duration": 8
+    },
+    {
+      "screen": "/home/frd/.zen/tmp/scenes/episode04_src/github_top.png",
+      "presenter": "lea",
+      "prompt": "Lea says in French, with a playful smile: \"Le code est là, sur GitHub. Et cette vidéo aussi a été fabriquée par une station Astroport.\"",
+      "title": "Même ce film : généré par une station",
+      "duration": 8
+    },
+    {
+      "card": {
+        "title": "Lire, corriger, contribuer",
+        "subtitle": "Le code d'Internet, version commun",
+        "links": [
+          {"label": "Astroport.ONE", "url": "https://github.com/papiche/Astroport.ONE"},
+          {"label": "UPassport", "url": "https://github.com/papiche/UPassport"},
+          {"label": "UPlanet (earth)", "url": "https://github.com/papiche/UPlanet"},
+          {"label": "Soutenir", "url": "https://opencollective.com/monnaie-libre"}
+        ]
+      },
+      "duration": 8
+    }
+  ]
+}

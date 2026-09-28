@@ -40,10 +40,13 @@
 #              allongée si la phrase ne tient pas, et MiniMax reçoit « no speech ».
 #   title      texte incrusté (bas de l'image) pendant tout le plan, après le style.
 #   motion     plan "screen" : "scroll" (défaut si la page dépasse l'écran) | "zoom"
+#   screen_js  plan "screen" : JavaScript (chaîne ou liste) exécuté avant la capture,
+#              ex. cliquer un onglet : "document.querySelector('#tab').click()"
 # Paramètres globaux, tous optionnels (défauts = priorité à la vitesse sur RTX 3090,
 # ~5 min par plan de 5 s) :
 #   ratio      "16:9" | "9:16" (vertical smartphone, Reels/Shorts) | "4:3" | "1:1"...
-#   megapixels 0.4 (864x480 en 16:9), 0.25 ≈ 360p ; steps 10
+#   megapixels 0.4 (864x480 en 16:9), 0.25 ≈ 360p ; steps 10 ;
+#   ref_steps  steps des plans avec acteur (ref2va), défaut 20 : en dessous, artefacts
 #   height     petit côté de la vidéo finale, défaut 720 (1280x720 / 720x1280)
 #   style      "clean" (défaut) ou "vhs" (plans IA seulement : écrans et cartons restent nets)
 #   upscale    facteur SeedVR2 (lent) ; défaut 1 = aucun. OOM au-delà de ~3 s à 0.4 MP.
@@ -99,6 +102,8 @@ fi
 RATIO=$(jq -r '.ratio // "16:9"' "$STORYBOARD")
 MEGAPIXELS=$(jq -r '.megapixels // 0.4' "$STORYBOARD")
 STEPS=$(jq -r '.steps // 10' "$STORYBOARD")
+# ref2va (acteurs) : sous ~20 steps, dérive en dessin, dominante verte ou pseudo-texte
+REF_STEPS=$(jq -r '.ref_steps // 20' "$STORYBOARD")
 UPSCALE=$(jq -r '.upscale // 1' "$STORYBOARD")
 STYLE=$(jq -r '.style // "clean"' "$STORYBOARD")
 FINAL_HEIGHT=$(jq -r '.height // 720' "$STORYBOARD")
@@ -208,7 +213,8 @@ done
 # $1 JSON array de noms → arguments -R/-A et préambule du prompt (variables globales)
 cast_refs() {
   REF_ARGS=()
-  REF_INTRO=""
+  # ref2va dérive parfois vers l'illustration ou une dominante de couleur : on l'ancre
+  REF_INTRO="Photorealistic live-action video footage with natural colors and lighting, not an illustration, not a cartoon, not a poster. "
   local k=1 name
   for name in $(jq -r '.[]' <<< "$1"); do
     REF_ARGS+=(-R "$WORK_DIR/cast/$name/portrait.png" -A "$WORK_DIR/cast/$name/voice.wav")
@@ -311,7 +317,9 @@ for ((i = 0; i < NB_SHOTS; i++)); do
     png="$WORK_DIR/screen_${n}.png"
     if [ ! -s "$png" ]; then
       if [[ "$src" == *://* ]]; then
-        "$ASTRO_PY" "$MY_PATH/lib/capture_page.py" "$src" "$png" "$FINAL_W" "$FINAL_H" --full --wait 6000 \
+        js_args=()
+        while IFS= read -r code; do js_args+=(--js "$code"); done < <(jq -r '.screen_js // empty | if type == "array" then .[] else . end' <<< "$shot")
+        "$ASTRO_PY" "$MY_PATH/lib/capture_page.py" "$src" "$png" "$FINAL_W" "$FINAL_H" --full --wait 6000 "${js_args[@]}" \
           || { echo "Erreur : capture de $src échouée" >&2; exit 1; }
       else
         cp "$src" "$png" || exit 1
@@ -322,7 +330,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
       talk="$WORK_DIR/talk_${n}.mp4"
       if [ ! -s "$talk" ]; then
         cast_refs "[\"$presenter\"]"
-        render -o "$talk" "${REF_ARGS[@]}" -r 1:1 -m 0.2 -d "$duration" -s "$STEPS" -S "$seed" \
+        render -o "$talk" "${REF_ARGS[@]}" -r 1:1 -m 0.2 -d "$duration" -s "$REF_STEPS" -S "$seed" \
           "${REF_INTRO}Close-up head-and-shoulders shot of ${presenter^} facing the camera against a plain softly lit neutral studio background, talking naturally with small gestures. $prompt"
       fi
       duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$talk")
@@ -353,7 +361,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
 
   if jq -e '.cast' <<< "$shot" > /dev/null; then
     cast_refs "$(jq -c '.cast' <<< "$shot")"
-    args+=("${REF_ARGS[@]}")
+    args+=("${REF_ARGS[@]}" -s "$REF_STEPS")
     prompt="${REF_INTRO}${prompt}"
   elif jq -e '.continue == true' <<< "$shot" > /dev/null; then
     args+=(-i "$WORK_DIR/last_$(printf "%02d" $((i - 1))).png")

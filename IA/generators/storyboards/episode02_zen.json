@@ -1,0 +1,89 @@
+{
+  "name": "Épisode 2 — Des Ẑen pour ma contribution (UPlanet / Astroport.ONE)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "style": "clean",
+  "height": 720,
+  "seed": 2002,
+  "cast": {
+    "lea":   {"image": "/home/frd/.zen/tmp/scenes/cast/lea/portrait.png",   "voice": "/home/frd/.zen/tmp/scenes/cast/lea/voice.wav"},
+    "malik": {"image": "/home/frd/.zen/tmp/scenes/cast/malik/portrait.png", "voice": "/home/frd/.zen/tmp/scenes/cast/malik/voice.wav"}
+  },
+  "shots": [
+    {
+      "cast": ["lea"],
+      "prompt": "Close-up of Lea sitting at her kitchen table in soft morning light, her laptop open, a cup of coffee nearby. She turns to the camera with a curious look and says in French at a natural pace: \"Mon MULTIPASS, je l'ai. Mais la machine, et ceux qui la font tourner, on les paie comment ?\" Quiet kitchen ambience.",
+      "duration": 8
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Medium close-up of Malik in his cozy village living room next to a small black home server box with a blue glowing ring on a wooden shelf. He raises one finger and says to the camera in French, calm and friendly: \"Deux façons. Tu peux être locataire : tu recharges ton MULTIPASS en zen, et ton espace se paie chaque semaine.\" Soft room ambience.",
+      "duration": 9
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik in the same living room, he raises two fingers and smiles, saying in French: \"Ou tu deviens sociétaire : tu achètes une part de la machine, et tes ZEN arrivent sur ta ZEN Card.\" Soft room ambience.",
+      "title": "Ẑen → MULTIPASS (usage)   ·   ẐEN → ZEN Card (parts)",
+      "duration": 9
+    },
+    {
+      "screen": "/home/frd/.zen/tmp/scenes/episode02_src/opencollective.png",
+      "presenter": "lea",
+      "prompt": "Lea says in French, clearly: \"Je contribue sur OpenCollective Monnaie Libre, avec le même email que mon MULTIPASS.\"",
+      "title": "Contribuer sur OpenCollective",
+      "duration": 7
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/zencard.html",
+      "presenter": "malik",
+      "prompt": "Malik says in French, reassuring: \"Chaque mois, UPlanet relève les contributions et verse les zen automatiquement.\"",
+      "title": "Versement automatique",
+      "duration": 7
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/economy.html",
+      "motion": "zoom",
+      "presenter": "malik",
+      "prompt": "Malik says in French, with a proud smile: \"Le capital des sociétaires est partagé en trois : la trésorerie, la recherche, et les biens communs, comme les forêts-jardins.\"",
+      "title": "La règle des 3 × 1/3",
+      "duration": 9
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik in his living room, sitting on the arm of a sofa, relaxed, he explains in French: \"L'Armateur reçoit sa participation chaque semaine, le Capitaine le double. Et chaque station fixe ses propres tarifs.\" Soft room ambience.",
+      "duration": 9
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik at a small wooden desk in his living room, holding a paper electricity bill and pointing at it, he says in French: \"Sur facture d'électricité ou de box internet, Armateur et Capitaine peuvent convertir un tiers de leurs zen en euros.\" Soft room ambience, paper rustling.",
+      "title": "1/3 convertible en € sur facture",
+      "duration": 10
+    },
+    {
+      "screen": "https://z.astroport.one",
+      "presenter": "lea",
+      "prompt": "Lea says in French, delighted: \"Mes zen, je les retrouve dans Zelkova, le portefeuille de la constellation.\"",
+      "title": "Ẑelkova — z.astroport.one",
+      "duration": 7
+    },
+    {
+      "cast": ["lea"],
+      "prompt": "Outdoor medium close-up in a sunny village square with old stone houses and a small fountain, warm afternoon light. Lea smiles at the camera and says in French, confident: \"Ici, chaque zen fait tourner une machine qui nous appartient.\" Village ambience, birds, light cheerful music.",
+      "duration": 6
+    },
+    {
+      "card": {
+        "title": "Contribuer, recevoir, co-posséder",
+        "subtitle": "Même email sur OpenCollective et sur votre MULTIPASS",
+        "links": [
+          {"label": "Contribuer", "url": "https://opencollective.com/monnaie-libre"},
+          {"label": "Ẑelkova (wallet)", "url": "https://z.astroport.one"},
+          {"label": "L'économie en direct", "url": "https://ipfs.copylaradio.com/ipns/copylaradio.com/economy.html"},
+          {"label": "Créer son MULTIPASS", "url": "https://u.copylaradio.com/g1"}
+        ]
+      },
+      "duration": 8
+    }
+  ]
+}
