@@ -123,6 +123,23 @@
         .pbar-fill.yellow { background: linear-gradient(90deg, #f1c40f, #f39c12); }
         .pbar-fill.red    { background: linear-gradient(90deg, #e74c3c, #c0392b); }
 
+        /* Solar (Victron) duration selector + chart */
+        .dur-row { display: flex; gap: 6px; margin: 10px 0 6px; flex-wrap: wrap; }
+        .dur-btn {
+            padding: 3px 11px; border-radius: 5px; font-size: 0.72rem;
+            background: var(--bg3); border: 1px solid var(--border); color: var(--text2);
+            cursor: pointer;
+        }
+        .dur-btn:hover { border-color: var(--accent3); }
+        .dur-btn.active { border-color: var(--accent3); color: var(--accent3); background: rgba(243,156,18,.12); }
+        .chart-wrap svg { width: 100%; height: auto; display: block; }
+        .chart-bar { transition: opacity .15s; }
+        .chart-bar:hover { opacity: .7; }
+        .chart-grid { stroke: var(--border); stroke-width: 1; }
+        .chart-label { font-family: monospace; font-size: 9px; fill: var(--text3); }
+        .hist-note { font-size: 0.75rem; color: var(--text3); margin-top: 6px; }
+        .hist-summary { font-size: 0.78rem; color: var(--text2); margin-top: 4px; }
+
         /* Footer */
         .footer { text-align: center; padding: 1.5rem 0; font-size: 0.75rem; color: var(--text3); }
         .footer a { color: var(--accent); }
@@ -227,6 +244,28 @@
         <div class="card">
             <div class="card-title"><span class="dot" style="background:#3498db"></span>🔗 Liens rapides</div>
             <div id="d-links" class="chips"></div>
+        </div>
+
+        <!-- Solaire (Victron MPPT) — masquée si le module n'est pas installé -->
+        <div class="card" id="card-solar" style="display:none;grid-column:1/-1;">
+            <div class="card-title"><span class="dot" style="background:#f39c12"></span>🔆 Solaire (Victron MPPT)</div>
+            <div class="stat-row" style="margin-bottom:0;">
+                <div class="stat-box"><div class="sv" id="sol-power">—</div><div class="sk">instant (W)</div></div>
+                <div class="stat-box"><div class="sv" id="sol-today">—</div><div class="sk">jour (Wh)</div></div>
+                <div class="stat-box"><div class="sv" id="sol-month">—</div><div class="sk">mois</div></div>
+                <div class="stat-box"><div class="sv" id="sol-total">—</div><div class="sk">total</div></div>
+                <div class="stat-box"><div class="sv" id="sol-battery">—</div><div class="sk">batterie (V)</div></div>
+                <div class="stat-box"><span id="sol-state" class="badge badge-grey">—</span><div class="sk" style="margin-top:6px">état charge</div></div>
+            </div>
+            <div class="dur-row">
+                <button class="dur-btn" data-dur="7" onclick="setSolarDuration(7, this)">7 jours</button>
+                <button class="dur-btn active" data-dur="30" onclick="setSolarDuration(30, this)">30 jours</button>
+                <button class="dur-btn" data-dur="90" onclick="setSolarDuration(90, this)">90 jours</button>
+                <button class="dur-btn" data-dur="all" onclick="setSolarDuration('all', this)">Tout</button>
+            </div>
+            <div class="chart-wrap" id="sol-chart"></div>
+            <div class="hist-note" id="sol-hist-status"></div>
+            <div class="hist-summary" id="sol-hist-summary"></div>
         </div>
 
         <!-- Capacités -->
@@ -394,6 +433,152 @@ async function renderWallets(d, apiBase) {
     }
 }
 
+// ─── Solaire (Victron MPPT) ─────────────────────────────────────────────────────
+
+function chargeBadgeClass(state) {
+    const map = {
+        bulk: 'badge-blue', absorption: 'badge-yellow', float: 'badge-green',
+        equalize: 'badge-purple', off: 'badge-grey', error: 'badge-red',
+    };
+    return map[state] || 'badge-grey';
+}
+
+let solarHistoryDays = null;   // Map(date -> {yield_wh, avg_w, samples}) | Map vide si indisponible
+let solarHistorySince = null;
+let solarDuration = 30;        // nombre de jours, ou 'all'
+
+function renderSolar(d) {
+    const solar = d.solar;
+    const card = document.getElementById('card-solar');
+    if (!card) return;
+    if (!solar || !solar.available) { card.style.display = 'none'; return; }
+    card.style.display = '';
+
+    setText('sol-power',   (solar.power_w   ?? 0).toFixed(0) + ' W');
+    setText('sol-today',   (solar.today_wh  ?? 0).toFixed(0) + ' Wh');
+    setText('sol-month',   ((solar.month_wh ?? 0) / 1000).toFixed(2) + ' kWh');
+    setText('sol-total',   ((solar.total_wh ?? 0) / 1000).toFixed(2) + ' kWh');
+    setText('sol-battery', (solar.battery_v ?? 0).toFixed(2) + ' V');
+
+    const stateEl = document.getElementById('sol-state');
+    if (stateEl) {
+        stateEl.className = 'badge ' + chargeBadgeClass(solar.charge_state);
+        stateEl.textContent = solar.charge_state || 'unknown';
+    }
+
+    if (solarHistoryDays === null) loadSolarHistory(); // une seule fois
+}
+
+// Lit l'historique complet (~/.zen/game/victron/victron_history.json) via le
+// même mécanisme que UPlanet/earth/victron.html pour les autres stations :
+// un pointeur CID léger publié quotidiennement, jamais le fichier lui-même
+// republié sous ~/.zen/tmp/$IPFSNODEID/ (cf. tools/victron/victron_stats.sh
+// publish-cid). Ici la station est la nôtre : même origine, pas de gateway
+// distante à dériver.
+async function loadSolarHistory() {
+    const statusEl = document.getElementById('sol-hist-status');
+    if (statusEl) statusEl.textContent = '⏳ Chargement de l\'historique publié…';
+    try {
+        const pointerUrl = getNodeBaseUrl() + '/VICTRON/victron_history.json.ipfs';
+        const cidResp = await fetch(pointerUrl, { cache: 'no-cache' });
+        if (!cidResp.ok) throw new Error('pointeur indisponible');
+        const cid = (await cidResp.text()).trim();
+        if (!cid) throw new Error('CID vide');
+
+        const dataResp = await fetch(window.location.origin + '/ipfs/' + cid, { cache: 'no-cache' });
+        if (!dataResp.ok) throw new Error('contenu indisponible');
+        const json = await dataResp.json();
+
+        solarHistoryDays = new Map(Object.entries(json.days || {}));
+        solarHistorySince = json.since || null;
+    } catch (e) {
+        solarHistoryDays = new Map(); // connu comme vide : ne pas réessayer en boucle
+        if (statusEl) statusEl.textContent = "⚠️ Historique pas encore publié (module récemment installé, ou publish-cid pas encore exécuté par le cron nocturne).";
+        return;
+    }
+    if (statusEl) statusEl.textContent = '';
+    renderSolarChart();
+}
+
+function lastNDates(n) {
+    const out = [];
+    const today = new Date();
+    for (let i = n - 1; i >= 0; i--) {
+        const dd = new Date(today);
+        dd.setDate(today.getDate() - i);
+        out.push(dd.toISOString().slice(0, 10));
+    }
+    return out;
+}
+
+function datesSince(sinceIso) {
+    if (!sinceIso) return lastNDates(30);
+    const start = new Date(sinceIso);
+    const days = Math.max(1, Math.round((Date.now() - start.getTime()) / 86400000) + 1);
+    return lastNDates(days);
+}
+
+function fmtDateLabel(iso) { return iso.slice(5).replace('-', '/'); } // MM/JJ
+
+function buildSolarChartSVG(dates, days) {
+    const w = 640, h = 170, padL = 36, padB = 18, padT = 8, padR = 6;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const values = dates.map(dt => (days.get(dt)?.yield_wh) || 0);
+    const max = Math.max(...values, 1);
+    const barGap = dates.length > 60 ? 0.5 : 2;
+    const barW = Math.max(0.5, plotW / dates.length - barGap);
+
+    let bars = '';
+    dates.forEach((dt, i) => {
+        const v = values[i];
+        const barH = Math.max(0, (v / max) * plotH);
+        const x = padL + i * (plotW / dates.length);
+        const y = padT + plotH - barH;
+        bars += `<rect class="chart-bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="1" fill="var(--accent3)"><title>${dt} : ${v.toFixed(0)} Wh</title></rect>`;
+    });
+
+    let grid = '';
+    for (let g = 0; g <= 2; g++) {
+        const gy = padT + (plotH / 2) * g;
+        grid += `<line class="chart-grid" x1="${padL}" y1="${gy.toFixed(1)}" x2="${w - padR}" y2="${gy.toFixed(1)}"/>`;
+        grid += `<text class="chart-label" x="2" y="${(gy + 3).toFixed(1)}">${Math.round(max * (1 - g / 2))}</text>`;
+    }
+
+    let labels = '';
+    const step = Math.max(1, Math.ceil(dates.length / 8));
+    dates.forEach((dt, i) => {
+        if (i % step !== 0) return;
+        const x = padL + i * (plotW / dates.length);
+        labels += `<text class="chart-label" x="${x.toFixed(1)}" y="${h - 4}">${fmtDateLabel(dt)}</text>`;
+    });
+
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet">${grid}${bars}${labels}</svg>`;
+}
+
+function renderSolarChart() {
+    const chartEl = document.getElementById('sol-chart');
+    const sumEl = document.getElementById('sol-hist-summary');
+    if (!chartEl || !solarHistoryDays) return;
+    if (solarHistoryDays.size === 0) { chartEl.innerHTML = ''; if (sumEl) sumEl.innerHTML = ''; return; }
+
+    const dates = solarDuration === 'all' ? datesSince(solarHistorySince) : lastNDates(solarDuration);
+    const totalPeriod = dates.reduce((s, dt) => s + ((solarHistoryDays.get(dt)?.yield_wh) || 0), 0);
+    const daysWithData = dates.filter(dt => solarHistoryDays.has(dt)).length;
+
+    chartEl.innerHTML = buildSolarChartSVG(dates, solarHistoryDays);
+    if (sumEl) {
+        sumEl.textContent = `${(totalPeriod / 1000).toFixed(2)} kWh sur la période · ${daysWithData}/${dates.length} jours suivis` +
+            (solarHistorySince ? ` · depuis ${solarHistorySince}` : '');
+    }
+}
+
+function setSolarDuration(value, btn) {
+    solarDuration = value;
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderSolarChart();
+}
+
 // ─── Main render ──────────────────────────────────────────────────────────────
 
 function render(d, apiBase) {
@@ -464,6 +649,9 @@ function render(d, apiBase) {
     setText('cap-zc',   cap.zencard_slots    ?? '—');
     setText('cap-nostr',cap.nostr_slots      ?? '—');
     setText('cap-disk', cap.available_space_gb != null ? cap.available_space_gb + ' Go' : '—');
+
+    // Solaire (Victron MPPT), si le module est installé
+    renderSolar(d);
 
     // Links
     renderLinks(d, apiBase);
