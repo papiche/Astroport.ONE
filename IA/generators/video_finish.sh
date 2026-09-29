@@ -13,6 +13,10 @@
 VHS=0
 SHORT_SIDE=720
 SIZE=""
+# ffmpeg du système : il a tous les filtres utilisés, drawtext compris
+# (le build de /usr/local/bin n'a pas drawtext) ; repli sur celui du PATH
+FFMPEG=/usr/bin/ffmpeg FFPROBE=/usr/bin/ffprobe
+[ -x "$FFMPEG" ] || { FFMPEG=ffmpeg; FFPROBE=ffprobe; }
 while getopts "vH:s:h" opt; do
   case $opt in
     v) VHS=1 ;;
@@ -51,7 +55,7 @@ else
   af="anull"
 fi
 
-ffmpeg -v error -y -i "$IN" -vf "${vf},fps=24" -af "$af" \
+"$FFMPEG" -v error -y -i "$IN" -vf "${vf},fps=24" -af "$af" \
        -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p -c:a aac -b:a 160k -ar 48000 -ac 2 \
        -movflags +faststart "$OUT" || exit 1
 echo "$OUT"

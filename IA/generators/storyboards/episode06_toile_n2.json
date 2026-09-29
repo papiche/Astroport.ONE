@@ -1,0 +1,88 @@
+{
+  "name": "Épisode 6 — La toile de confiance N² (UPlanet / Astroport.ONE, G1FabLab)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "ref_steps": 20,
+  "style": "clean",
+  "height": 720,
+  "seed": 6006,
+  "cast": {
+    "lea":   {"image": "/home/frd/.zen/workspace/scenes/cast/lea/portrait.png",   "voice": "/home/frd/.zen/workspace/scenes/cast/lea/voice.wav"},
+    "malik": {"image": "/home/frd/.zen/workspace/scenes/cast/malik/portrait.png", "voice": "/home/frd/.zen/workspace/scenes/cast/malik/voice.wav"}
+  },
+  "shots": [
+    {
+      "cast": ["lea"],
+      "prompt": "Close-up of Lea on her sofa in the evening, a warm lamp behind her, scrolling on her phone with a doubtful look. She looks up at the camera and says in French: \"Sur les réseaux, je ne sais jamais à qui je parle. Faux comptes, algorithmes... Qui croire ?\" Quiet evening ambience.",
+      "duration": 8
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Medium close-up of Malik in his cozy village living room, a small computer on the shelf behind him, daylight from a window. He smiles and says in French, calm: \"En monnaie libre, des humains qui se connaissent se certifient entre eux. C'est la toile de confiance June.\" Soft room ambience.",
+      "title": "La toile de confiance Ğ1",
+      "duration": 9
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik in the same living room, he draws a small circle then a bigger circle in the air with his hand and explains in French: \"UPlanet prolonge cette confiance. Tes amis, c'est N1. Les amis de tes amis, c'est N au carré.\" Soft room ambience.",
+      "title": "N1 : mes amis   ·   N² : les amis de mes amis",
+      "duration": 9
+    },
+    {
+      "screen": "/home/frd/.zen/workspace/scenes/episode06_src/n2.png",
+      "motion": "zoom",
+      "presenter": "lea",
+      "prompt": "Lea says in French, surprised: \"Vingt-deux amis directs, et déjà plus de quatre cents amis d'amis dans l'essaim !\"",
+      "duration": 7
+    },
+    {
+      "cast": ["lea"],
+      "prompt": "Close-up of Lea at her kitchen table in soft morning light, a cup of coffee nearby, she nods, convinced, and says in French: \"Les amis de mes amis peuvent écrire sur notre relais. Les inconnus, non. Pas de spam, pas de faux comptes.\" Quiet kitchen ambience.",
+      "duration": 9
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik sitting on the arm of a sofa in his living room, relaxed, he explains in French: \"Et chaque station se synchronise chaque jour avec ses voisines de confiance. Une constellation d'amis, pas une plateforme.\" Soft room ambience.",
+      "title": "La synchronisation N² de la constellation",
+      "duration": 9
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/opensource.html",
+      "presenter": "malik",
+      "prompt": "Malik says in French, proud: \"Tout ce que le G1FabLab invente est publié sous licence libre : le code, les plans, les recettes. Personne ne peut le breveter.\"",
+      "title": "La charte open source",
+      "duration": 9
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik in his living room next to the small computer on the shelf, he rests a hand on it and says in French: \"Avec une ZEN Card, rattachée à une identité certifiée June, tu deviens copropriétaire de ce bien commun.\" Soft room ambience.",
+      "title": "ẐEN : la copropriété du commun",
+      "duration": 9
+    },
+    {
+      "cast": ["lea"],
+      "prompt": "Outdoor medium close-up of Lea sitting on a wooden bench in a sunny village garden with flowers, warm afternoon light. She smiles and says in French: \"Et avec mon MULTIPASS, j'y accède en zen, comme usagère.\" Birdsong, light breeze.",
+      "title": "Ẑen : l'usage du commun",
+      "duration": 7
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Outdoor medium close-up of Malik in a sunny village square with old stone houses and a small fountain, warm afternoon light. He smiles warmly and says in French: \"La confiance se prolonge de proche en proche. C'est ça, un commun.\" Village ambience, birds, soft music.",
+      "duration": 7
+    },
+    {
+      "card": {
+        "title": "La confiance, de proche en proche",
+        "subtitle": "Identités certifiées Ğ1 · amis d'amis N² · commun ẐEN",
+        "links": [
+          {"label": "La monnaie libre", "url": "https://monnaie-libre.fr"},
+          {"label": "La charte open source", "url": "https://u.copylaradio.com/earth/opensource.html"},
+          {"label": "Mon MULTIPASS", "url": "https://u.copylaradio.com/g1"},
+          {"label": "Le relais N² (NIP-101)", "url": "https://github.com/papiche/NIP-101"}
+        ]
+      },
+      "duration": 8
+    }
+  ]
+}

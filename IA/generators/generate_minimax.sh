@@ -19,6 +19,10 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+# ffmpeg du système : il a tous les filtres utilisés, drawtext compris
+# (le build de /usr/local/bin n'a pas drawtext) ; repli sur celui du PATH
+FFMPEG=/usr/bin/ffmpeg FFPROBE=/usr/bin/ffprobe
+[ -x "$FFMPEG" ] || { FFMPEG=ffmpeg; FFPROBE=ffprobe; }
 
 usage() {
   cat >&2 <<EOF
@@ -263,7 +267,7 @@ add_first_frame() {
   echo "Upload de l'image de départ : $FIRST_FRAME" >&2
   local rw=${RATIO%:*} rh=${RATIO#*:}
   local cropped="$TMP_DIR/first_frame_${UNIQUE_ID}.png"
-  ffmpeg -v error -y -i "$FIRST_FRAME" -frames:v 1 \
+  "$FFMPEG" -v error -y -i "$FIRST_FRAME" -frames:v 1 \
          -vf "crop='min(iw,ih*${rw}/${rh})':'min(ih,iw*${rh}/${rw})'" "$cropped" \
     || { echo "Erreur : recadrage de l'image de départ échoué" >&2; exit 1; }
   local image_name

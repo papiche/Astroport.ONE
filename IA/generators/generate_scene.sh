@@ -66,6 +66,10 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+# ffmpeg du système : il a tous les filtres utilisés, drawtext compris
+# (le build de /usr/local/bin n'a pas drawtext) ; repli sur celui du PATH
+FFMPEG=/usr/bin/ffmpeg FFPROBE=/usr/bin/ffprobe
+[ -x "$FFMPEG" ] || { FFMPEG=ffmpeg; FFPROBE=ffprobe; }
 
 usage() {
   sed -n '5,9p' "$0" | sed 's/^# \{0,1\}//' >&2
@@ -140,6 +144,7 @@ WORK_DIR="${WORK_DIR:-$HOME/.zen/workspace/scenes/scene_$(date +%s)_$(openssl ra
 mkdir -p "$WORK_DIR"
 echo "Scène : $NB_SHOTS plans | ${RATIO} @ ${MEGAPIXELS} MP | ${STEPS} steps | upscale ${UPSCALE} | style ${STYLE} | ${FINAL_W}x${FINAL_H} | seed ${BASE_SEED}" >&2
 echo "Répertoire de travail (reprise avec -w) : $WORK_DIR" >&2
+SCENE_START=$(date +%s)
 
 # Voix-off : Orpheus TTS local ou via la constellation (orpheus.me.sh ouvre le tunnel P2P)
 if jq -e 'any(.shots[]; .voiceover)' "$STORYBOARD" > /dev/null; then
@@ -210,14 +215,14 @@ for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
 
   if [ ! -s "$cdir/voice.wav" ]; then
     if jq -e '.voice' <<< "$actor" > /dev/null; then
-      ffmpeg -v error -y -i "$(jq -r '.voice' <<< "$actor")" -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
+      "$FFMPEG" -v error -y -i "$(jq -r '.voice' <<< "$actor")" -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
     else
       echo "Acteur $name : voix de référence (MiniMax)" >&2
       line=$(jq -r '.voice_line' <<< "$actor")
       speech_render "$cdir/voice_src.mp4" "$BASE_SEED" \
         "Close-up: the person looks at the camera and speaks in French in a natural, calm voice, at a relaxed pace: \"$line\" Quiet room, no music, no background noise." \
         -i "$cdir/portrait.png" -r 1:1 -m 0.25 -d 8 -s "$STEPS"
-      ffmpeg -v error -y -i "$cdir/voice_src.mp4" -vn -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
+      "$FFMPEG" -v error -y -i "$cdir/voice_src.mp4" -vn -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
     fi
   fi
 done
@@ -241,10 +246,10 @@ cast_refs() {
 # $1 png, $2 durée, $3 motion, $4 sortie : plan net à la taille finale, sans IA
 screen_clip() {
   local img_h
-  img_h=$(ffprobe -v error -show_entries stream=height -of csv=p=0 "$1")
+  img_h=$("$FFPROBE" -v error -show_entries stream=height -of csv=p=0 "$1")
   local motion="$3"
   local img_w
-  img_w=$(ffprobe -v error -show_entries stream=width -of csv=p=0 "$1")
+  img_w=$("$FFPROBE" -v error -show_entries stream=width -of csv=p=0 "$1")
   local scaled_h=$(( img_h * FINAL_W / img_w ))
   [ -z "$motion" ] && { [ "$scaled_h" -gt $(( FINAL_H * 115 / 100 )) ] && motion=scroll || motion=zoom; }
   local vf
@@ -255,7 +260,7 @@ screen_clip() {
     vf="scale=$((FINAL_W * 2)):$((FINAL_H * 2)):force_original_aspect_ratio=increase,crop=$((FINAL_W * 2)):$((FINAL_H * 2)):0:0"
     vf+=",zoompan=z='1+0.08*on/($2*24)':x='iw/2-(iw/zoom/2)':y='ih/3-(ih/zoom/3)':d=1:s=${FINAL_W}x${FINAL_H}:fps=24"
   fi
-  ffmpeg -v error -y -loop 1 -framerate 24 -i "$1" -f lavfi -i anullsrc=r=48000:cl=stereo -t "$2" \
+  "$FFMPEG" -v error -y -loop 1 -framerate 24 -i "$1" -f lavfi -i anullsrc=r=48000:cl=stereo -t "$2" \
          -vf "${vf},format=yuv420p,setsar=1" -c:v libx264 -preset fast -crf 18 -c:a aac -ar 48000 -ac 2 -shortest "$4"
 }
 
@@ -265,7 +270,7 @@ pip_compose() {
   local short=$(( FINAL_W < FINAL_H ? FINAL_W : FINAL_H ))
   local p=$(( short * 36 / 100 / 2 * 2 )) m=$(( short / 30 ))
   local ring=$(( p + 8 ))
-  ffmpeg -v error -y -i "$1" -i "$2" -filter_complex \
+  "$FFMPEG" -v error -y -i "$1" -i "$2" -filter_complex \
     "[1:v]scale=${p}:${p},format=yuva420p,geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)':a='if(lt(hypot(X-W/2,Y-H/2),W/2-1),255,0)'[face];
      color=c=white:s=${ring}x${ring},format=yuva420p,geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)':a='if(lt(hypot(X-W/2,Y-H/2),W/2-1),230,0)'[disc];
      [0:v][disc]overlay=W-w-${m}:H-h-${m}:shortest=1[bg];[bg][face]overlay=W-w-$((m + 4)):H-h-$((m + 4)):shortest=1[v]" \
@@ -346,7 +351,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
           "${REF_INTRO}Close-up head-and-shoulders shot of ${presenter^} facing the camera against a plain softly lit neutral studio background, talking naturally with small gestures. $prompt" \
           "${REF_ARGS[@]}" -r 1:1 -m 0.2 -d "$duration" -s "$REF_STEPS"
       fi
-      duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$talk")
+      duration=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$talk")
       screen_clip "$png" "$duration" "$(jq -r '.motion // empty' <<< "$shot")" "$WORK_DIR/screenclip_${n}.mp4" || exit 1
       pip_compose "$WORK_DIR/screenclip_${n}.mp4" "$talk" "$shot_file" || exit 1
     else
@@ -363,7 +368,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
       echo "Plan $n : voix-off ($VOICE)" >&2
       tts "$voiceover" "$vo_file" || { rm -f "$vo_file"; echo "Erreur : voix-off du plan $n échouée" >&2; exit 1; }
     fi
-    vo_len=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$vo_file")
+    vo_len=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$vo_file")
     # Voix décalée de 0,4 s, 0,4 s de marge en fin de plan
     duration=$(awk -v d="$duration" -v v="$vo_len" 'BEGIN { need = int(v + 0.8 + 0.999); print (need > d ? need : d) }')
     prompt="$prompt Audio: ambient sound effects and soft background music only, no speech, no voices, no singing."
@@ -394,15 +399,12 @@ for ((i = 0; i < NB_SHOTS; i++)); do
   speech_render "$shot_file" "$seed" "$prompt" "${args[@]}"
 
   # Dernière image, point de départ d'un éventuel plan "continue" suivant
-  ffmpeg -v error -y -sseof -0.1 -i "$shot_file" -update 1 -frames:v 1 "$WORK_DIR/last_${n}.png"
+  "$FFMPEG" -v error -y -sseof -0.1 -i "$shot_file" -update 1 -frames:v 1 "$WORK_DIR/last_${n}.png"
 done
 
 ########################################################################
 # Finition plan par plan (voix-off, taille exacte, style, titre), puis assemblage
 ########################################################################
-FFMPEG_TEXT=/usr/bin/ffmpeg
-"$FFMPEG_TEXT" -hide_banner -h filter=drawtext 2>&1 | grep -q '^Filter drawtext' || FFMPEG_TEXT=ffmpeg
-
 list="$WORK_DIR/concat.txt"
 : > "$list"
 for ((i = 0; i < NB_SHOTS; i++)); do
@@ -412,7 +414,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
   part="$WORK_DIR/part_${n}.mp4"
 
   if [ -s "$WORK_DIR/vo_${n}.wav" ]; then
-    ffmpeg -v error -y -i "$src" -i "$WORK_DIR/vo_${n}.wav" -filter_complex \
+    "$FFMPEG" -v error -y -i "$src" -i "$WORK_DIR/vo_${n}.wav" -filter_complex \
       "[0:a]volume=0.35[a0];[1:a]adelay=400:all=1,volume=1.4[a1];[a0][a1]amix=inputs=2:duration=first:normalize=0[a]" \
       -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -ar 48000 "$WORK_DIR/mix_${n}.mp4" || exit 1
     src="$WORK_DIR/mix_${n}.mp4"
@@ -424,7 +426,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
   fi
   "$MY_PATH/video_finish.sh" "${finish_args[@]}" "$src" "$part" > /dev/null || exit 1
 
-  # Titre incrusté après le style pour rester net (drawtext : ffmpeg du système)
+  # Titre incrusté après le style pour rester net
   title=$(jq -r '.title // empty' <<< "$shot")
   if [ -n "$title" ]; then
     printf '%s' "$title" > "$WORK_DIR/title_${n}.txt"
@@ -432,7 +434,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
     # En haut de l'image quand un présentateur est incrusté en bas à droite
     title_y="h*0.8-text_h/2"
     jq -e '.presenter' <<< "$shot" > /dev/null && title_y="h*0.07"
-    "$FFMPEG_TEXT" -v error -y -i "$part" \
+    "$FFMPEG" -v error -y -i "$part" \
       -vf "drawtext=fontfile='${TITLE_FONT}':textfile='$WORK_DIR/title_${n}.txt':fontsize='min(h/16,w*1.4/${nchars})':fontcolor=white:borderw=3:bordercolor=black@0.7:x=(w-text_w)/2:y=${title_y}:enable='gte(t,0.5)':alpha='min(1,(t-0.5)/0.6)'" \
       -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p -c:a copy "$part.titled.mp4" \
       && mv "$part.titled.mp4" "$part" \
@@ -447,13 +449,19 @@ else
   final="$WORK_DIR/scene.mp4"
 fi
 # Plans finis à l'identique (taille, 24 i/s, AAC 48 kHz) → copie ; réencodage en secours
-if ! ffmpeg -v error -y -f concat -safe 0 -i "$list" -c copy -movflags +faststart "$final"; then
+if ! "$FFMPEG" -v error -y -f concat -safe 0 -i "$list" -c copy -movflags +faststart "$final"; then
   echo "Concaténation directe impossible, réencodage..." >&2
-  ffmpeg -v error -y -f concat -safe 0 -i "$list" -c:v libx264 -crf 20 -preset fast -c:a aac -b:a 192k \
+  "$FFMPEG" -v error -y -f concat -safe 0 -i "$list" -c:v libx264 -crf 20 -preset fast -c:a aac -b:a 192k \
          -movflags +faststart "$final" || exit 1
 fi
-total=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$final")
+total=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$final")
 echo "Scène assemblée : $final (${total%.*} s)" >&2
+
+# Énergie de ce rendu (CPU + GPU) d'après le relevé 24/7 de PowerJoular, si présent
+if [ -r "${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}" ] \
+   && python3 "$MY_PATH/lib/energy_window.py" "$SCENE_START" "$(date +%s)" --json > "$WORK_DIR/energy.json" 2>/dev/null; then
+  echo "Énergie du rendu : $(python3 "$MY_PATH/lib/energy_window.py" "$SCENE_START" "$(date +%s)")" >&2
+fi
 
 ipfs_hash=$(ipfs add -wq "$final" 2>/dev/null | tail -n 1)
 if [ -n "$ipfs_hash" ]; then

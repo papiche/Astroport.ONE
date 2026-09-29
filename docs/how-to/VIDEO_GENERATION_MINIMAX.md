@@ -42,10 +42,14 @@ Constellation ».
 
 ### Outils
 
-- `ffmpeg` : celui de `/usr/local/bin` sert aux montages ; celui du système
-  (`/usr/bin/ffmpeg`) est utilisé pour les titres car il a le filtre `drawtext`.
+- `ffmpeg` du système (`/usr/bin/ffmpeg`, 6.1) : les scripts l'utilisent pour tout,
+  car il a tous les filtres nécessaires, `drawtext` compris (le build de
+  `/usr/local/bin` n'a pas `drawtext`) ; repli sur le `ffmpeg` du PATH.
 - `qrencode`, `jq`, `ipfs`.
 - Playwright + Chromium dans `~/.astro` (captures d'écran).
+- Facultatif : PowerJoular en service 24/7 (`powerjoular.service`, voir
+  [POWER_MONITORING.md](POWER_MONITORING.md)) : l'énergie de chaque rendu est alors
+  affichée à la fin et écrite dans `<workdir>/energy.json`.
 - Facultatif : Orpheus TTS (`IA/services/orpheus.me.sh`, local ou via la
   constellation) pour les plans en voix-off.
 
@@ -203,6 +207,7 @@ ffmpeg concat ─► titres (drawtext) ─► ipfs add ─► URL
 | `lib/capture_page.py` | Capture Playwright (`--full`, `--wait`, `--js`) |
 | `lib/git_timeline.py` | Frise HTML commits/mois + jalons |
 | `lib/pronounce.py`, `lib/prononciation_fr.json` | Orthographe phonétique des répliques + consigne de diction |
+| `lib/energy_window.py` | Énergie CPU + GPU entre deux instants, d'après le CSV 24/7 de PowerJoular |
 | `lib/comfyui_recovery.sh` | Diagnostic OOM, retry après libération VRAM (local uniquement) |
 | `storyboards/*.json` | Épisodes 1-5, spot Constellation |
 
@@ -274,6 +279,10 @@ no speech, no voices, no singing.`
 | Incrustation présentateur 8 s (1:1, 0,2 MP, 20 steps) | ~4-5 min |
 | Écran, carton, finition, assemblage | quelques secondes |
 | Épisode de 10-11 plans | 45 à 80 min |
+
+Énergie mesurée (PowerJoular, CPU + GPU, sans RAM, disques ni alimentation) :
+épisode 5 (11 plans, 94 s) = **513 Wh en 78 min** (GPU 413 Wh, CPU 100 Wh, moyenne
+402 W, pic 447 W). La station consomme ~70-125 W au repos.
 
 ### Pistes écartées
 
