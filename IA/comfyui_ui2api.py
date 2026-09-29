@@ -48,6 +48,24 @@ def _object_info(url: str, class_type: str) -> dict:
     return info
 
 
+def _consume_dynamic(spec, prefix: str, value, values, inputs: dict) -> None:
+    """Menu dynamique (COMFY_DYNAMICCOMBO_V3) : l'UI range juste après sa valeur
+    les sous-widgets de l'option choisie ; l'API les attend en « nom.sous_nom »
+    (récursif : format → format.codec → format.codec.encoding)."""
+    if not (isinstance(spec, list) and spec and spec[0] == "COMFY_DYNAMICCOMBO_V3"):
+        return
+    option = next((o for o in spec[1].get("options", []) if o.get("key") == value), None)
+    if not option:
+        return
+    sub = {**option.get("inputs", {}).get("required", {}), **option.get("inputs", {}).get("optional", {})}
+    for sub_name, sub_spec in sub.items():
+        sub_value = next(values, None)
+        if sub_value is None:
+            return
+        inputs[f"{prefix}.{sub_name}"] = sub_value
+        _consume_dynamic(sub_spec, f"{prefix}.{sub_name}", sub_value, values, inputs)
+
+
 def ui_to_api(workflow: dict, url: str) -> dict:
     """Convertit un workflow format UI en format API."""
     if "nodes" not in workflow:
@@ -70,23 +88,39 @@ def ui_to_api(workflow: dict, url: str) -> dict:
 
         # 1) entrées reliées à un autre node
         linked_names = []
+        # widgets convertis en entrée : l'UI actuelle garde leur valeur dans widgets_values
+        linked_widgets = set()
         for inp in node.get("inputs") or []:
             link_id = inp.get("link")
             if link_id is not None and link_id in links:
                 origin_id, origin_slot = links[link_id]
                 inputs[inp["name"]] = [str(origin_id), origin_slot]
                 linked_names.append(inp["name"])
+                if inp.get("widget"):
+                    linked_widgets.add(inp["name"])
 
         # 2) widgets : positionnels côté UI, il faut leurs vrais noms côté API
         widgets = node.get("widgets_values") or []
-        if widgets:
+        if isinstance(widgets, list) and widgets:
             info = _object_info(url, class_type)
             order = info.get("input_order", {}).get("required", []) \
                 + info.get("input_order", {}).get("optional", [])
-            # Les entrées déjà pourvues par un lien ne consomment pas de widget.
-            widget_names = [n for n in order if n not in linked_names]
-            for name, value in zip(widget_names, widgets):
-                inputs[name] = value
+            specs = {**info.get("input", {}).get("optional", {}), **info.get("input", {}).get("required", {})}
+            # Une entrée reliée ne consomme de widget que si l'UI l'a gardé (clé "widget")
+            widget_names = [n for n in order if n not in linked_names or n in linked_widgets]
+            values = iter(widgets)
+            for name in widget_names:
+                value = next(values, None)
+                if value is None and name not in inputs:
+                    break
+                if name not in linked_names:
+                    inputs[name] = value
+                spec = specs.get(name)
+                _consume_dynamic(spec, name, value, values, inputs)
+                # seed / noise_seed : l'UI range ensuite « fixed » / « randomize »
+                if isinstance(spec, list) and len(spec) > 1 and isinstance(spec[1], dict) \
+                        and spec[1].get("control_after_generate"):
+                    next(values, None)
 
         api[node_id] = {"class_type": class_type, "inputs": inputs}
 

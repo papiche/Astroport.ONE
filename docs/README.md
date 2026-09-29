@@ -56,6 +56,7 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 | [KNOWLEDGE\_EMBEDDINGS.md](how-to/KNOWLEDGE_EMBEDDINGS.md)                  | Mémoire vectorielle des connaissances WoTx2 (.md/.pdf depuis Kind 30504, uDRIVE, Nextcloud)     |
 | [GRIMOIRE\_LIVE.md](how-to/GRIMOIRE_LIVE.md)                                | Vidéo WoTx2 : génération automatique + live streaming (vdo.ninja, NIP-53)                       |
 | [VIDEO\_GENERATION\_MINIMAX.md](how-to/VIDEO_GENERATION_MINIMAX.md)        | Vidéos explicatives IA : acteurs, écrans, storyboard JSON → `generate_scene.sh` (MiniMax H3)    |
+| [IMAGE\_TO\_3D\_SCENE.md](how-to/IMAGE_TO_3D_SCENE.md)                      | Photo → scène 3D GLB pour Blender : objets séparés (SAM3 + MoGe + Pixal3D), `generate_3dscene.sh` |
 | [config\_wireguard\_vpn.md](how-to/config_wireguard_vpn.md)                 | Configurer WireGuard pour la communication inter-stations                                       |
 | [print\_multipass\_cards.md](how-to/print_multipass_cards.md)               | Générer et imprimer les QR codes MULTIPASS et ZenCards                                          |
 | [publish\_nostrtube\_video.md](how-to/publish_nostrtube_video.md)           | Publier une vidéo sur NostrTube (IPFS + kind 21)                                                |
