@@ -18,8 +18,15 @@ UDRIVE_PATH="$2"
 . "${HOME}/.zen/Astroport.ONE/tools/my.sh"
 . "${MY_PATH}/lib/comfyui_recovery.sh"
 
-# Escape double quotes and backslashes in the prompt
-PROMPT=$(echo "$1" | sed 's/"/\\"/g')
+# Prompt = style ; tout ce qui suit "#parole" = paroles (jq --arg gère l'échappement)
+PROMPT="$1"
+LYRICS=""
+if [[ "$PROMPT" == *"#parole"* ]]; then
+  LYRICS="${PROMPT#*#parole}"
+  PROMPT="${PROMPT%%#parole*}"
+  LYRICS="$(echo "$LYRICS" | sed 's/^[[:space:]]*//')"
+  PROMPT="$(echo "$PROMPT" | sed 's/[[:space:]]*$//')"
+fi
 
 # Generate a random seed
 generate_random_seed() {
@@ -55,8 +62,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Chemin vers le fichier JSON du workflow
-WORKFLOW_FILE="${MY_PATH}/workflow/audio_ace_step_1_t2m.json"
+# Workflow : YuE2 (chant, offload auto pour les cartes modestes) ; ACE-Step en repli
+YUE2_WORKFLOW="${MY_PATH}/workflow/YuE2/yue2_song_api.json"
+ACE_WORKFLOW="${MY_PATH}/workflow/audio_ace_step_1_t2m.json"
+# Durée max (s) de la chanson YuE2 : plafond, le modèle s'arrête souvent avant
+YUE2_MAX_SECONDS="${YUE2_MAX_SECONDS:-90}"
+# Attente max (s) : YuE2 est plus lent qu'ACE-Step (1er run = téléchargement des poids)
+MAX_WAIT="${MAX_WAIT:-900}"
 
 # Adresse de l'API ComfyUI
 COMFYUI_URL="http://127.0.0.1:8188"
@@ -77,41 +89,38 @@ check_comfyui_port() {
   fi
 }
 
-# Fonction pour mettre à jour le prompt et le seed dans le workflow JSON
-update_prompt() {
-  echo "Chargement du workflow JSON : ${WORKFLOW_FILE}" >&2
+# Le node YuE2 est-il installé sur ce ComfyUI ?
+has_yue2() {
+  curl -s -m 5 "$COMFYUI_URL/object_info/YuE2GenerateSong" | jq -e '.YuE2GenerateSong' >/dev/null 2>&1
+}
 
-  # Generate a new random seed
-  local new_seed=$(generate_random_seed)
+# Fonction pour mettre à jour le prompt, les paroles et le seed dans le workflow JSON
+update_prompt() {
+  local new_seed
+  new_seed=$(generate_random_seed)
   echo "Using random seed: $new_seed" >&2
 
-  # Extract lyrics if present in the prompt
-  local lyrics=""
-  if [[ "$PROMPT" =~ \#parole[[:space:]]+(.*) ]]; then
-    lyrics="${BASH_REMATCH[1]}"
-    # Remove the #parole part from the prompt
-    PROMPT=$(echo "$PROMPT" | sed 's/#parole.*$//')
-  fi
-
-  # Create a modified JSON with the prompt, lyrics and seed replaced
-  if [ -n "$lyrics" ]; then
-    jq --arg prompt "$PROMPT" --arg lyrics "$lyrics" --argjson seed "$new_seed" \
-      '(.["14"].inputs.tags) = $prompt | (.["14"].inputs.lyrics) = $lyrics | (.["3"].inputs.seed) = $seed' \
+  if has_yue2; then
+    WORKFLOW_FILE="$YUE2_WORKFLOW"
+    SAVE_NODE="3"
+    # YuE2 veut des marqueurs de section sur une ligne seule ; sans paroles = instrumental
+    local lyr="$LYRICS"
+    if [ -n "$lyr" ] && ! echo "$lyr" | grep -q '^\['; then
+      lyr="[Verse]"$'\n'"$lyr"
+    fi
+    echo "Workflow YuE2 : ${WORKFLOW_FILE} (max ${YUE2_MAX_SECONDS}s)" >&2
+    jq --arg style "$PROMPT" --arg lyrics "$lyr" --argjson seed "$new_seed" --argjson maxs "$YUE2_MAX_SECONDS" \
+      '.["2"].inputs.style = $style | .["2"].inputs.lyrics = $lyrics | .["2"].inputs.seed = $seed | .["1"].inputs.max_seconds = $maxs' \
       "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
   else
-    jq --arg prompt "$PROMPT" --argjson seed "$new_seed" \
-      '(.["14"].inputs.tags) = $prompt | (.["14"].inputs.lyrics) = "" | (.["3"].inputs.seed) = $seed' \
+    echo "YuE2 absent, repli sur ACE-Step" >&2
+    WORKFLOW_FILE="$ACE_WORKFLOW"
+    SAVE_NODE="19"
+    jq --arg prompt "$PROMPT" --arg lyrics "$LYRICS" --argjson seed "$new_seed" \
+      '(.["14"].inputs.tags) = $prompt | (.["14"].inputs.lyrics) = $lyrics | (.["3"].inputs.seed) = $seed' \
       "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
   fi
-
-  echo "Prompt, lyrics and seed updated in temporary JSON file $TMP_WORKFLOW" >&2
-  
-  # Debug - show content of modified nodes
-  echo "Modified nodes content:" >&2
-  jq '.["14"].inputs, .["3"].inputs' "$TMP_WORKFLOW" >&2
-
-  # Return lyrics for later use
-  echo "$lyrics"
+  [ -s "$TMP_WORKFLOW" ] || { echo "Erreur : workflow JSON invalide" >&2; exit 1; }
 }
 
 # Fonction pour envoyer le workflow à l'API ComfyUI
@@ -167,7 +176,7 @@ send_workflow() {
 monitor_progress() {
   local prompt_id="$1"
   local history_url="$COMFYUI_URL/history"
-  local max_attempts=60  # 1 minute maximum d'attente
+  local max_attempts=$MAX_WAIT
   local attempts=0
   local start_time=$(date +%s)
 
@@ -189,7 +198,7 @@ monitor_progress() {
     # Check if prompt_id exists in history
     if echo "$history_response" | jq -e --arg id "$prompt_id" '.[$id]' > /dev/null 2>&1; then
       echo "Audio trouvé dans l'historique de ComfyUI!" >&2
-      get_audio_result "$prompt_id" "$elapsed_time" "$lyrics"
+      get_audio_result "$prompt_id" "$elapsed_time" "$LYRICS"
       return $?
     fi
     
@@ -238,9 +247,9 @@ get_audio_result() {
   echo "Structure complète des sorties :" >&2
   echo "$prompt_data" | jq '.outputs' >&2
   
-  # Find the SaveAudio node (should be node 19)
+  # Noeud SaveAudio (3 pour YuE2, 19 pour ACE-Step)
   local save_node_outputs
-  save_node_outputs=$(echo "$prompt_data" | jq '.outputs."19".audio')
+  save_node_outputs=$(echo "$prompt_data" | jq --arg n "$SAVE_NODE" '.outputs[$n].audio')
   
   if [ -z "$save_node_outputs" ] || [ "$save_node_outputs" = "null" ]; then
     if comfyui_should_retry_after_oom "$prompt_data"; then
@@ -250,7 +259,7 @@ get_audio_result() {
     fi
     echo "Erreur: Sorties du nœud SaveAudio introuvables" >&2
     echo "Contenu du prompt_data pour debug:" >&2
-    echo "$prompt_data" | jq '.outputs."19"' >&2
+    echo "$prompt_data" | jq --arg n "$SAVE_NODE" '.outputs[$n]' >&2
     return 1
   fi
   
@@ -267,13 +276,9 @@ get_audio_result() {
 
   echo "Nom du fichier audio : $audio_filename" >&2
   
-  # Build proper URL
+  # URL via l'endpoint /view de ComfyUI (gère les sous-dossiers, ex. audio/YuE2)
   local audio_url
-  if [ -z "$audio_subfolder" ] || [ "$audio_subfolder" = "null" ] || [ "$audio_subfolder" = "" ]; then
-    audio_url="$COMFYUI_URL/output/audio/$audio_filename"
-  else
-    audio_url="$COMFYUI_URL/output/$audio_subfolder/$audio_filename"
-  fi
+  audio_url="$COMFYUI_URL/view?filename=$(printf '%s' "$audio_filename" | jq -sRr @uri)&subfolder=$(printf '%s' "${audio_subfolder#null}" | jq -sRr @uri)&type=output"
   
   echo "URL de l'audio : $audio_url" >&2
 
@@ -386,8 +391,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Update the workflow with the user's prompt and get lyrics
-lyrics=$(update_prompt)
+# Update the workflow with the user's prompt, lyrics and seed
+update_prompt
 
 # Send the workflow to ComfyUI for processing
 send_workflow 

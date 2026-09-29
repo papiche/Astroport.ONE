@@ -1,0 +1,28 @@
+{
+  "1": {
+    "class_type": "YuE2Options",
+    "inputs": {
+      "cot": "full",
+      "keep_model_loaded": false,
+      "max_seconds": 90,
+      "offload": "auto"
+    }
+  },
+  "2": {
+    "class_type": "YuE2GenerateSong",
+    "inputs": {
+      "options": ["1", 0],
+      "style": "",
+      "lyrics": "",
+      "seed": 0
+    }
+  },
+  "3": {
+    "class_type": "SaveAudioAdvanced",
+    "inputs": {
+      "audio": ["2", 0],
+      "filename_prefix": "audio/YuE2",
+      "format": "flac"
+    }
+  }
+}
