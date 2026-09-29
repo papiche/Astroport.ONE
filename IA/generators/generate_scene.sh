@@ -278,6 +278,7 @@ pip_compose() {
 }
 
 # $1 JSON {title, subtitle?, links:[{label,url}]}, $2 png : carton HTML → capture
+# (police du titre réduite pour tenir dans la largeur)
 card_image() {
   local html="${2%.png}.html"
   {
@@ -290,7 +291,7 @@ card_image() {
       .q{background:#fff;color:#111;border-radius:14px;padding:%spx;width:%spx;text-align:center}
       .q svg{width:100%%;height:auto;display:block}
       .l{font-weight:bold;font-size:%spx;margin-top:.4em}.u{font-size:%spx;word-break:break-all;opacity:.7}
-      </style></head><body>' "$FINAL_W" "$FINAL_H" $((FINAL_H / 12)) $((FINAL_H / 28)) $((FINAL_H / 30)) $((FINAL_H / 60)) \
+      </style></head><body>' "$FINAL_W" "$FINAL_H" "$(jq -r --argjson w "$FINAL_W" --argjson h "$FINAL_H" '(.title // "" | length) as $n | [($h / 12), ($w * 1.2 / ([$n, 1] | max))] | min | floor' <<< "$1")" $((FINAL_H / 28)) $((FINAL_H / 30)) $((FINAL_H / 60)) \
       $(( (FINAL_W < FINAL_H ? FINAL_W * 38 / 100 : FINAL_H * 30 / 100) )) $((FINAL_H / 42)) $((FINAL_H / 62))
     printf '<h1>%s</h1>' "$(jq -r '.title // ""' <<< "$1" | sed 's/&/\&amp;/g;s/</\&lt;/g')"
     printf '<h2>%s</h2><div class="grid">' "$(jq -r '.subtitle // ""' <<< "$1" | sed 's/&/\&amp;/g;s/</\&lt;/g')"
