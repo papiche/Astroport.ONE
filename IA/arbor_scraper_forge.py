@@ -335,7 +335,9 @@ def _run_pytest_scraper_in_worktree(worktree_path, test_file_abs, extra_pythonpa
     - Filesystem hôte reste en lecture seule (--ro-bind)
     - cookie_file_path monté en lecture seule (répertoire parent seulement)
     - prlimit mémoire + nproc maintenus si disponibles
-    - /etc/resolv.conf et /etc/ssl montés en lecture seule (nécessaires pour HTTPS)"""
+    - /etc/resolv.conf et /etc/ssl montés en lecture seule (nécessaires pour HTTPS)
+    - Cache navigateurs Playwright (~/.cache/ms-playwright ou $PLAYWRIGHT_BROWSERS_PATH)
+      monté en lecture seule (requis par sync_playwright().chromium.launch())"""
     if not _bwrap_available():
         return False, (
             "bwrap introuvable — bubblewrap requis pour exécuter le code généré "
@@ -344,6 +346,12 @@ def _run_pytest_scraper_in_worktree(worktree_path, test_file_abs, extra_pythonpa
     python_bin = sys.executable
     venv_root = os.path.expanduser("~/.astro")
     bwrap_venv_args = ["--ro-bind-try", venv_root, venv_root] if os.path.exists(venv_root) else []
+
+    # Binaires Chromium/Firefox téléchargés par `playwright install` — sans ce
+    # montage, tout scraper utilisant sync_playwright() échoue en sandbox avec
+    # "Executable doesn't exist at ~/.cache/ms-playwright/...".
+    playwright_cache = os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or os.path.expanduser("~/.cache/ms-playwright")
+    bwrap_pw_args = ["--ro-bind-try", playwright_cache, playwright_cache] if os.path.exists(playwright_cache) else []
 
     # Cookie file : monter le répertoire parent en lecture seule
     cookie_args = []
@@ -355,6 +363,8 @@ def _run_pytest_scraper_in_worktree(worktree_path, test_file_abs, extra_pythonpa
         "PYTHONPATH": extra_pythonpath,
         "PATH": os.path.dirname(python_bin) + ":/usr/bin:/bin",
     }
+    if os.environ.get("PLAYWRIGHT_BROWSERS_PATH"):
+        env["PLAYWRIGHT_BROWSERS_PATH"] = os.environ["PLAYWRIGHT_BROWSERS_PATH"]
     cmd = [
         "bwrap",
         # Pas de --unshare-net : scrapers testés contre le site réel
@@ -368,6 +378,7 @@ def _run_pytest_scraper_in_worktree(worktree_path, test_file_abs, extra_pythonpa
         "--ro-bind-try", "/etc/nsswitch.conf", "/etc/nsswitch.conf",
         "--ro-bind-try", "/etc/hosts", "/etc/hosts",
         *bwrap_venv_args,
+        *bwrap_pw_args,
         *cookie_args,
         "--tmpfs", "/tmp",
         "--bind", worktree_path, worktree_path,

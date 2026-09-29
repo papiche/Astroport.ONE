@@ -5,11 +5,14 @@ Output: combined text for Ollama context (inspired by openclaw link-understandin
 Usage: bro_url_content.py "message with https://example.com and text"
    or: echo "message" | bro_url_content.py
 """
+import ipaddress
 import re
+import socket
 import sys
 import urllib.request
 import urllib.error
 from html.parser import HTMLParser
+from urllib.parse import urlsplit
 
 DEFAULT_TIMEOUT = 15
 MAX_URLS = 5
@@ -24,6 +27,26 @@ def strip_markdown_links(text: str) -> str:
     return MARKDOWN_LINK_RE.sub(" ", text or "")
 
 
+def _is_private_url(raw: str) -> bool:
+    """True si l'URL résout vers une IP non-publique (SSRF vers le réseau
+    interne de la station : Docker bridge, Qdrant, Ollama, metadata cloud...).
+    Un simple filtre sur les chaînes "127.0.0.1"/"localhost" est contournable
+    (172.17.0.1, 169.254.169.254, [::1], notation octale/hex) — on résout
+    donc réellement le host et on vérifie la plage IP."""
+    host = urlsplit(raw).hostname
+    if not host:
+        return True
+    try:
+        addrs = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return True
+    for family, _, _, _, sockaddr in addrs:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+            return True
+    return False
+
+
 def extract_urls(message: str, max_urls: int = MAX_URLS) -> list[str]:
     if not (message or message.strip()):
         return []
@@ -32,12 +55,11 @@ def extract_urls(message: str, max_urls: int = MAX_URLS) -> list[str]:
     out = []
     for m in BARE_LINK_RE.finditer(sanitized):
         raw = m.group(0).strip()
-        # Skip localhost
-        if "127.0.0.1" in raw or "localhost" in raw.lower():
-            continue
         if raw in seen:
             continue
         seen.add(raw)
+        if _is_private_url(raw):
+            continue
         out.append(raw)
         if len(out) >= max_urls:
             break

@@ -192,10 +192,12 @@ fi
 ##    plausibles, et on journalise le JSON brut si aucune ne matche.
 _history=$(curl -s "$_COMFYUI_URL/history/${_prompt_id}" 2>/dev/null)
 _faces_json=$(jq -r --arg id "$_prompt_id" '
-    .[$id].outputs // {} | to_entries[] | .value
-    | (.text? // .string? // empty)
-    | if type == "array" then .[0] else . end
-' <<< "$_history" 2>/dev/null | head -1)
+    [ .[$id].outputs // {} | to_entries[] | .value
+      | (.text? // .string? // empty)
+      | if type == "array" then .[0] else . end
+      | select(. != null and . != "")
+    ] | first // empty
+' <<< "$_history" 2>/dev/null)
 
 if [ -z "$_faces_json" ] || [ "$_faces_json" = "null" ]; then
     # .outputs vide ne dit rien sur LA cause — .status (messages d'exécution,

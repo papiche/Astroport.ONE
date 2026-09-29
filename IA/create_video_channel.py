@@ -366,7 +366,7 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     
     # Priorité 2: Fallback - Parser le contenu si les tags sont vides
     if not title or not uploader:
-        title_match = re.search(r'🎬 Nouvelle vidéo téléchargée: ([^par]+) par ([^\n]+)', content)
+        title_match = re.search(r'🎬 Nouvelle vidéo téléchargée:\s*(.+?)\s+par\s+([^\n]+)', content)
         if title_match:
             if not title:
                 title = title_match.group(1).strip()

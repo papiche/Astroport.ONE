@@ -150,7 +150,7 @@ def ensure_ollama_connection(output_json=False):
         print("Ollama port not open. Attempting to establish tunnel via ollama.me.sh...")
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    ollama_script = os.path.join(script_dir, "ollama.me.sh")
+    ollama_script = os.path.join(script_dir, "services", "ollama.me.sh")
     
     if not os.path.exists(ollama_script):
         if not output_json:
