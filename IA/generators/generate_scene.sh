@@ -48,6 +48,8 @@
 #   ratio      "16:9" | "9:16" (vertical smartphone, Reels/Shorts) | "4:3" | "1:1"...
 #   megapixels 0.4 (864x480 en 16:9), 0.25 ≈ 360p ; steps 10 ;
 #   ref_steps  steps des plans avec acteur (ref2va), défaut 20 : en dessous, artefacts
+#   Les répliques passent par lib/prononciation_fr.json (orthographe phonétique des
+#   sigles : MULTIPASS, NOSTR, UMAP…) : y ajouter tout mot mal prononcé.
 #   height     petit côté de la vidéo finale, défaut 720 (1280x720 / 720x1280)
 #   style      "clean" (défaut) ou "vhs" (plans IA seulement : écrans et cartons restent nets)
 #   upscale    facteur SeedVR2 (lent) ; défaut 1 = aucun. OOM au-delà de ~3 s à 0.4 MP.
@@ -180,6 +182,14 @@ render() {
   fi
 }
 
+# $1 sortie, $2 seed, $3 prompt, $@ autres arguments de generate_minimax.sh :
+# les répliques entre guillemets passent en orthographe phonétique (lib/pronounce.py)
+speech_render() {
+  local out="$1" seed="$2" prompt="$3"
+  shift 3
+  render -o "$out" "$@" -S "$seed" "$("$HOME/comfyui_env/bin/python" "$MY_PATH/lib/pronounce.py" "$prompt")"
+}
+
 ########################################################################
 # Acteurs : portrait neutre + voix de référence, préparés une fois
 ########################################################################
@@ -204,8 +214,9 @@ for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
     else
       echo "Acteur $name : voix de référence (MiniMax)" >&2
       line=$(jq -r '.voice_line' <<< "$actor")
-      render -o "$cdir/voice_src.mp4" -i "$cdir/portrait.png" -r 1:1 -m 0.25 -d 8 -s "$STEPS" -S "$BASE_SEED" \
-        "Close-up: the person looks at the camera and speaks in French in a natural, calm voice, at a relaxed pace: \"$line\" Quiet room, no music, no background noise."
+      speech_render "$cdir/voice_src.mp4" "$BASE_SEED" \
+        "Close-up: the person looks at the camera and speaks in French in a natural, calm voice, at a relaxed pace: \"$line\" Quiet room, no music, no background noise." \
+        -i "$cdir/portrait.png" -r 1:1 -m 0.25 -d 8 -s "$STEPS"
       ffmpeg -v error -y -i "$cdir/voice_src.mp4" -vn -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
     fi
   fi
@@ -331,8 +342,9 @@ for ((i = 0; i < NB_SHOTS; i++)); do
       talk="$WORK_DIR/talk_${n}.mp4"
       if [ ! -s "$talk" ]; then
         cast_refs "[\"$presenter\"]"
-        render -o "$talk" "${REF_ARGS[@]}" -r 1:1 -m 0.2 -d "$duration" -s "$REF_STEPS" -S "$seed" \
-          "${REF_INTRO}Close-up head-and-shoulders shot of ${presenter^} facing the camera against a plain softly lit neutral studio background, talking naturally with small gestures. $prompt"
+        speech_render "$talk" "$seed" \
+          "${REF_INTRO}Close-up head-and-shoulders shot of ${presenter^} facing the camera against a plain softly lit neutral studio background, talking naturally with small gestures. $prompt" \
+          "${REF_ARGS[@]}" -r 1:1 -m 0.2 -d "$duration" -s "$REF_STEPS"
       fi
       duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$talk")
       screen_clip "$png" "$duration" "$(jq -r '.motion // empty' <<< "$shot")" "$WORK_DIR/screenclip_${n}.mp4" || exit 1
@@ -357,7 +369,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
     prompt="$prompt Audio: ambient sound effects and soft background music only, no speech, no voices, no singing."
   fi
 
-  args=(-o "$shot_file" -d "$duration" -r "$RATIO" -m "$MEGAPIXELS" -s "$STEPS" -S "$seed")
+  args=(-d "$duration" -r "$RATIO" -m "$MEGAPIXELS" -s "$STEPS")
   [ "$UPSCALE" != "1" ] && [ "$UPSCALE" != "0" ] && args+=(-u "$UPSCALE")
 
   if jq -e '.cast' <<< "$shot" > /dev/null; then
@@ -379,7 +391,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
   fi
 
   echo "=== Plan $((i + 1))/$NB_SHOTS (${duration}s) ===" >&2
-  render "${args[@]}" "$prompt"
+  speech_render "$shot_file" "$seed" "$prompt" "${args[@]}"
 
   # Dernière image, point de départ d'un éventuel plan "continue" suivant
   ffmpeg -v error -y -sseof -0.1 -i "$shot_file" -update 1 -frames:v 1 "$WORK_DIR/last_${n}.png"
