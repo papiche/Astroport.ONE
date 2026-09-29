@@ -8,6 +8,10 @@ Type=simple
 # PowerJoular requires root for RAPL access on Linux 5.10+
 ExecStartPre=/bin/mkdir -p /var/lib/powerjoular
 ExecStartPre=/bin/chown root:root /var/lib/powerjoular
+# Rotation : à chaque démarrage, garder l'en-tête + les dernières 24h (86400 lignes).
+# 20h12.process.sh la déclenche par « sudo systemctl restart » (seule commande sudo
+# autorisée sans mot de passe) quand le CSV dépasse 48h.
+ExecStartPre=/bin/sh -c 'C=/var/lib/powerjoular/power_24h.csv; if [ -f "$$C" ]; then { head -n 1 "$$C"; tail -n 86400 "$$C"; } > "$$C.tmp" && mv -f "$$C.tmp" "$$C"; fi'
 ExecStart=/usr/bin/powerjoular -f /var/lib/powerjoular/power_24h.csv -t
 # CSV is created with root umask (typically 644). If not readable by captain, 20h12 uses sudo to copy.
 Restart=always

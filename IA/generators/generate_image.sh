@@ -102,11 +102,18 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Chemin vers le fichier JSON du workflow
-WORKFLOW_FILE="${MY_PATH}/workflow/FluxImage.json"
-
 # Adresse de l'API ComfyUI
 COMFYUI_URL="http://127.0.0.1:8188"
+
+# Chemin vers le fichier JSON du workflow
+# Z-Image Turbo int8 (6B, 8 steps, int8 natif sur RTX 30xx) si le ComfyUI
+# utilisé a le modèle, sinon Flux.1 schnell (nœuds swarm pas encore à jour).
+# Les deux workflows partagent les IDs : 4 = prompt, 1 = KSampler, 7 = SaveImage.
+WORKFLOW_FILE="${MY_PATH}/workflow/FluxImage.json"
+if curl -s -m 10 "$COMFYUI_URL/object_info/UNETLoader" 2>/dev/null \
+   | grep -q '"z_image_turbo_int8_convrot.safetensors"'; then
+    WORKFLOW_FILE="${MY_PATH}/workflow/ZImageTurbo.json"
+fi
 
 # Extraction de l'adresse IP et du port depuis l'URL
 COMFYUI_HOST=$(echo "$COMFYUI_URL" | sed 's#http://##' | cut -d':' -f1)
@@ -140,6 +147,13 @@ update_prompt() {
   jq --arg prompt "$PROMPT" --argjson seed "$new_seed" \
      '(.["4"].inputs.text) = $prompt | (.["1"].inputs.seed) = $seed' \
      "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
+
+  # Taille optionnelle (ex. IMAGE_SIZE=1344x768), node 3 = latent vide
+  if [[ "$IMAGE_SIZE" =~ ^([0-9]+)x([0-9]+)$ ]]; then
+    jq --argjson w "${BASH_REMATCH[1]}" --argjson h "${BASH_REMATCH[2]}" \
+       '.["3"].inputs.width = $w | .["3"].inputs.height = $h' \
+       "$TMP_WORKFLOW" > "$TMP_WORKFLOW.tmp" && mv "$TMP_WORKFLOW.tmp" "$TMP_WORKFLOW"
+  fi
 
   echo "Workflow customized with prompt and seed in: $TMP_WORKFLOW" >&2
   

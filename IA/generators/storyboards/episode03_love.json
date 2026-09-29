@@ -1,0 +1,132 @@
+{
+  "name": "Épisode 3 — Ma clé LOVE (ATOM4LOVE, UPlanet / Astroport.ONE)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "style": "clean",
+  "height": 720,
+  "seed": 3003,
+  "cast": {
+    "lea": {
+      "image": "/home/frd/.zen/workspace/scenes/cast/lea/portrait.png",
+      "voice": "/home/frd/.zen/workspace/scenes/cast/lea/voice.wav"
+    },
+    "malik": {
+      "image": "/home/frd/.zen/workspace/scenes/cast/malik/portrait.png",
+      "voice": "/home/frd/.zen/workspace/scenes/cast/malik/voice.wav"
+    }
+  },
+  "shots": [
+    {
+      "cast": [
+        "lea"
+      ],
+      "prompt": "Close-up of Lea on a sofa in the evening, a warm lamp behind her, her phone in her hand. She looks up at the camera, thoughtful, and says in French at a natural pace: \"Mon MULTIPASS, c'est mon identité. Mais pour faire des rencontres, j'aimerais rester discrète.\" Quiet evening ambience.",
+      "duration": 8
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Medium close-up of Malik in his cozy village living room next to the small black home server box with a blue glowing ring. He smiles knowingly and says in French: \"Alors crée ta clé LOVE : une deuxième identité, séparée. Elle sert aux rencontres, jamais à l'argent.\" Soft room ambience.",
+      "duration": 9
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/atomic.html",
+      "screen_js": "document.querySelector('[data-bs-target=\"#tab-aide\"]').click()",
+      "motion": "zoom",
+      "presenter": "lea",
+      "prompt": "Lea says in French, amused and curious: \"Tout est vibration ! Ce n'est pas de l'astrologie : c'est un calcul, publié sur NOSTR.\"",
+      "title": "ATOM4LOVE — Tout est vibration",
+      "duration": 8,
+      "seed": 3777
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/atomic.html",
+      "screen_js": [
+        "const d=document.getElementById('birth-date'); d.value='1994-06-21'; d.dispatchEvent(new Event('change')); d.dispatchEvent(new Event('input'))",
+        "_wzGoTo(2)"
+      ],
+      "motion": "zoom",
+      "presenter": "lea",
+      "prompt": "Lea says in French, clearly: \"Il me faut d'abord mon MULTIPASS. Puis j'indique ma date, mon heure et mon lieu de naissance.\"",
+      "title": "Étape « Quand & Où »",
+      "duration": 8
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/atomic.html",
+      "screen_js": [
+        "const d=document.getElementById('birth-date'); d.value='1994-06-21'; d.dispatchEvent(new Event('change')); d.dispatchEvent(new Event('input'))",
+        "_wzGoTo(3)"
+      ],
+      "motion": "zoom",
+      "presenter": "malik",
+      "prompt": "Malik says in French, explaining calmly: \"Avec ton poids de naissance et ta polarité, la station calcule ta fréquence : oméga bio.\"",
+      "title": "« Le Vaisseau » : ωbio",
+      "duration": 8
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/atomic.html",
+      "screen_js": [
+        "const d=document.getElementById('birth-date'); d.value='1994-06-21'; d.dispatchEvent(new Event('change')); d.dispatchEvent(new Event('input'))",
+        "_wzGoTo(4)"
+      ],
+      "motion": "zoom",
+      "presenter": "lea",
+      "prompt": "Lea says in French, delighted: \"Et voici ma Singularité, avec mon Kin Maya.\"",
+      "title": "Singularité & Kin Maya",
+      "duration": 6
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Close-up of Malik in his living room, relaxed, he taps his temple with a smile and says in French: \"Les mêmes données redonnent toujours la même clé, sur n'importe quelle station. Rien à retenir.\" Soft room ambience.",
+      "duration": 8
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/atomic.html",
+      "screen_js": "document.querySelector('[data-bs-target=\"#tab-match\"]').click()",
+      "motion": "zoom",
+      "presenter": "lea",
+      "prompt": "Lea says in French, fascinated: \"Entre deux personnes, on mesure la cohérence : de la friction créatrice jusqu'à la singularité.\"",
+      "title": "Résonance : le taux de cohérence",
+      "duration": 8
+    },
+    {
+      "cast": [
+        "lea"
+      ],
+      "prompt": "Outdoor medium close-up of Lea sitting on a wooden bench in a sunny village garden with flowers, warm afternoon light. She looks at the camera, serene, and says in French: \"Mon email reste chiffré, et mon profil discret, tant que l'intérêt n'est pas réciproque.\" Birdsong, light breeze.",
+      "duration": 8
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Outdoor medium close-up of Malik in a sunny village square with old stone houses and a small fountain, warm afternoon light. He smiles warmly and says in French: \"Et la vraie confiance, elle naît de la rencontre. Ici, au village.\" Village ambience, birds, soft music.",
+      "duration": 7
+    },
+    {
+      "card": {
+        "title": "Créez votre clé LOVE",
+        "subtitle": "Une identité de rencontre, séparée de votre MULTIPASS",
+        "links": [
+          {
+            "label": "ATOM4LOVE",
+            "url": "https://ipfs.copylaradio.com/ipns/copylaradio.com/atomic.html"
+          },
+          {
+            "label": "D'abord : mon MULTIPASS",
+            "url": "https://u.copylaradio.com/g1"
+          },
+          {
+            "label": "Le protocole",
+            "url": "https://github.com/papiche/Astroport.ONE/blob/master/docs/explanation/ATOM4LOVE_PROTOCOL.md"
+          }
+        ]
+      },
+      "duration": 8
+    }
+  ]
+}

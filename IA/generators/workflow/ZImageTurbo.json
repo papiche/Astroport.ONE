@@ -1,0 +1,23 @@
+{
+  "1": {"class_type": "KSampler", "_meta": {"title": "KSampler"},
+        "inputs": {"seed": 1, "steps": 8, "cfg": 1, "sampler_name": "res_multistep", "scheduler": "simple", "denoise": 1,
+                   "model": ["11", 0], "positive": ["4", 0], "negative": ["5", 0], "latent_image": ["3", 0]}},
+  "2": {"class_type": "UNETLoader", "_meta": {"title": "Load Diffusion Model"},
+        "inputs": {"unet_name": "z_image_turbo_int8_convrot.safetensors", "weight_dtype": "default"}},
+  "11": {"class_type": "ModelSamplingAuraFlow", "_meta": {"title": "ModelSamplingAuraFlow"},
+         "inputs": {"shift": 3, "model": ["2", 0]}},
+  "8": {"class_type": "CLIPLoader", "_meta": {"title": "Load CLIP"},
+        "inputs": {"clip_name": "qwen_3_4b_fp8_mixed.safetensors", "type": "lumina2", "device": "default"}},
+  "9": {"class_type": "VAELoader", "_meta": {"title": "Load VAE"},
+        "inputs": {"vae_name": "ae.safetensors"}},
+  "3": {"class_type": "EmptySD3LatentImage", "_meta": {"title": "EmptySD3LatentImage"},
+        "inputs": {"width": 1024, "height": 768, "batch_size": 1}},
+  "4": {"class_type": "CLIPTextEncode", "_meta": {"title": "CLIP Text Encode (Prompt)"},
+        "inputs": {"text": "_PROMPT_", "clip": ["8", 0]}},
+  "5": {"class_type": "ConditioningZeroOut", "_meta": {"title": "ConditioningZeroOut"},
+        "inputs": {"conditioning": ["4", 0]}},
+  "6": {"class_type": "VAEDecode", "_meta": {"title": "VAE Decode"},
+        "inputs": {"samples": ["1", 0], "vae": ["9", 0]}},
+  "7": {"class_type": "SaveImage", "_meta": {"title": "Save Image"},
+        "inputs": {"filename_prefix": "ComfyUI", "images": ["6", 0]}}
+}

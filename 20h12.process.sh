@@ -821,14 +821,7 @@ rm -f "$POWER_REPORT_HTML"
 ## WATCHDOG powerjoular.service — relance si inactif, réinitialise le CSV si stale
 if systemctl is-enabled powerjoular.service &>/dev/null; then
     if ! systemctl is-active --quiet powerjoular.service; then
-        echo "⚡ powerjoular.service inactif — réinitialisation CSV + relance..." >> $LOG_FILE
-        # Vider le CSV stale avant redémarrage (powerjoular append, pas écrase)
-        if sudo test -f "$POWER_24H_CSV" 2>/dev/null; then
-            sudo systemctl stop powerjoular.service 2>/dev/null || true
-            sudo truncate -s 0 "$POWER_24H_CSV" 2>/dev/null \
-                || sudo bash -c "> '$POWER_24H_CSV'" 2>/dev/null || true
-            echo "🗑️ CSV réinitialisé : $POWER_24H_CSV" >> $LOG_FILE
-        fi
+        echo "⚡ powerjoular.service inactif — relance (le service réduit son CSV aux dernières 24h au démarrage)..." >> $LOG_FILE
         if sudo systemctl start powerjoular.service 2>&1 | tee -a $LOG_FILE; then
             sleep 5
             if systemctl is-active --quiet powerjoular.service; then
@@ -839,18 +832,19 @@ if systemctl is-enabled powerjoular.service &>/dev/null; then
         fi
     else
         echo "✅ powerjoular.service actif" >> $LOG_FILE
-        ## Le CSV n'est vidé qu'au redémarrage du service (1 ligne/s, ~7 Mo/jour) :
-        ## sur une station à longue uptime il grossit sans fin. Le rapport ne lit
-        ## que les dernières 24h — on garde l'en-tête + 24h (86400 lignes) dès
-        ## qu'il dépasse 48h. Arrêt/relance autour : powerjoular garde le
-        ## fichier ouvert, le réécrire à chaud le corromprait.
-        _pj_lines=$(sudo wc -l < "$POWER_24H_CSV" 2>/dev/null || echo 0)
+        ## 1 ligne/s (~7 Mo/jour) : sur une station à longue uptime le CSV grossit
+        ## sans fin. Le service le réduit à l'en-tête + 24h à chaque démarrage
+        ## (ExecStartPre, en root) ; on le redémarre dès qu'il dépasse 48h.
+        ## Seul « sudo systemctl » est autorisé sans mot de passe en cron :
+        ## le CSV (644) est compté sans sudo.
+        _pj_lines=$(wc -l < "$POWER_24H_CSV" 2>/dev/null || echo 0)
         if [[ "$_pj_lines" -gt 172800 ]]; then
-            sudo systemctl stop powerjoular.service 2>/dev/null || true
-            sudo bash -c "{ head -n 1 '$POWER_24H_CSV'; tail -n 86400 '$POWER_24H_CSV'; } > '$POWER_24H_CSV.tmp' \
-                && mv -f '$POWER_24H_CSV.tmp' '$POWER_24H_CSV'" 2>/dev/null || true
-            sudo systemctl start powerjoular.service 2>/dev/null || true
-            echo "✂️ CSV powerjoular réduit à 24h (${_pj_lines} → 86401 lignes)" >> $LOG_FILE
+            if sudo -n systemctl restart powerjoular.service 2>/dev/null; then
+                sleep 5
+                echo "✂️ CSV powerjoular : ${_pj_lines} → $(wc -l < "$POWER_24H_CSV" 2>/dev/null) lignes" >> $LOG_FILE
+            else
+                echo "⚠️ CSV powerjoular (${_pj_lines} lignes) non réduit : redémarrage du service refusé" >> $LOG_FILE
+            fi
         fi
     fi
 fi

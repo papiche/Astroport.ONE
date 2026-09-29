@@ -1,0 +1,89 @@
+{
+  "name": "Épisode 5 — Monter sa constellation (UPlanet / Astroport.ONE)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "ref_steps": 20,
+  "style": "clean",
+  "height": 720,
+  "seed": 5005,
+  "cast": {
+    "lea":   {"image": "/home/frd/.zen/workspace/scenes/cast/lea/portrait.png",   "voice": "/home/frd/.zen/workspace/scenes/cast/lea/voice.wav"},
+    "malik": {"image": "/home/frd/.zen/workspace/scenes/cast/malik/portrait.png", "voice": "/home/frd/.zen/workspace/scenes/cast/malik/voice.wav"}
+  },
+  "shots": [
+    {
+      "cast": ["lea"],
+      "prompt": "Outdoor medium close-up in a sunny village square with old stone houses and a small fountain, warm afternoon light. Lea turns to the camera with an enthusiastic idea and says in French: \"Et si on montait notre propre constellation, entre amis, ici au village ?\" Village ambience, birds.",
+      "duration": 7
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Medium close-up of Malik in his cozy village living room, a small computer on the shelf behind him, daylight from a window. He counts on his fingers and says in French, calm and friendly: \"Il suffit d'une machine chez l'habitant : un Raspberry Pi, un vieux PC, ou un PC de joueur avec une carte graphique.\" Soft room ambience.",
+      "duration": 9
+    },
+    {
+      "screen": "/home/frd/.zen/workspace/scenes/episode05_src/reseau.png",
+      "presenter": "malik",
+      "prompt": "Malik says in French, thoughtful: \"Une station seule, c'est un abri. Reliée aux autres, en constellation, elle devient une économie qui s'autofinance.\"",
+      "title": "Le Réseau",
+      "duration": 9
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/g1.html",
+      "presenter": "lea",
+      "prompt": "Lea says in French, curious: \"Les stations se découvrent entre elles, et chacun choisit celle qui l'héberge.\"",
+      "title": "La carte de l'essaim",
+      "duration": 8
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik in his living room, a small computer with a glowing light on the shelf behind him. He gestures toward it and says in French: \"L'IA, les voix, le calcul : une station avec une carte graphique les offre à toute la constellation, en pair à pair.\" Soft room ambience, quiet fan hum.",
+      "duration": 10
+    },
+    {
+      "screen": "/home/frd/.zen/workspace/scenes/episode05_src/umap.png",
+      "motion": "zoom",
+      "presenter": "lea",
+      "prompt": "Lea says in French, pointing: \"Chaque case de la carte, une UMAP, garde les messages et les infos du quartier.\"",
+      "title": "UMAP : l'info locale",
+      "duration": 8
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik sitting on the arm of a sofa in his living room, relaxed, he explains in French: \"Avec N², les amis de tes amis peuvent écrire sur le relais : la confiance se propage, pas les spams.\" Soft room ambience.",
+      "title": "N² : les amis de mes amis",
+      "duration": 9
+    },
+    {
+      "screen": "/home/frd/.zen/workspace/scenes/episode05_src/constellation.png",
+      "presenter": "malik",
+      "prompt": "Malik says in French, practical: \"Le simulateur vérifie que ta constellation tient : les loyers d'un côté, l'Armateur et le Capitaine de l'autre.\"",
+      "title": "Simuler sa constellation",
+      "duration": 9
+    },
+    {
+      "cast": ["lea"],
+      "prompt": "Outdoor medium close-up of Lea sitting on a wooden bench in a sunny village garden with flowers, warm afternoon light. She looks at the camera, convinced, and says in French: \"Nos données chez nous, nos services entre nous, et l'argent qui reste ici.\" Birdsong, light breeze.",
+      "duration": 8
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Outdoor medium close-up of Malik in the sunny village square with old stone houses and a small fountain, warm afternoon light. He smiles broadly and says in French: \"Une machine, un Capitaine, quelques amis. Et c'est parti !\" Village ambience, birds, light cheerful music.",
+      "duration": 6
+    },
+    {
+      "card": {
+        "title": "Montez votre constellation",
+        "subtitle": "Une machine chez l'habitant, un Capitaine, quelques amis",
+        "links": [
+          {"label": "Le réseau", "url": "https://ipfs.copylaradio.com/ipns/copylaradio.com/reseau.html"},
+          {"label": "Simuler", "url": "https://ipfs.copylaradio.com/ipns/copylaradio.com/economy.Constellation.html"},
+          {"label": "Station PC + GPU", "url": "https://github.com/papiche/Astroport.ONE/blob/master/docs/tutorials/PC_GAMER_HUB_GUIDE.md"},
+          {"label": "Soutenir", "url": "https://opencollective.com/monnaie-libre"}
+        ]
+      },
+      "duration": 8
+    }
+  ]
+}

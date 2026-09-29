@@ -41,7 +41,13 @@ comfyui_diagnose_error() {
 # (fichier écrit par IA/services/comfyui.me.sh lors de la connexion)
 _comfyui_is_local() {
   local status_file="$HOME/.zen/tmp/comfyui_connection.status"
-  [[ -f "$status_file" ]] || return 1
+  if [[ ! -f "$status_file" ]]; then
+    # comfyui.me.sh pas lancé : local si le port 8188 n'est pas un tunnel ssh/ipfs
+    local listener
+    listener=$(ss -ltnpH 'sport = :8188' 2>/dev/null | grep -o 'users:(("[^"]*' | head -n 1)
+    [[ -n "$listener" && "$listener" != *ssh* && "$listener" != *ipfs* ]]
+    return
+  fi
   local conn_type
   conn_type=$(grep '^CONNECTION_TYPE=' "$status_file" | cut -d= -f2)
   [[ "$conn_type" == "LOCAL" ]]
