@@ -877,6 +877,11 @@ if [[ -f "${MY_PATH}/admin/monitor/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV
         if [[ -f "$POWER_REPORT_HTML" ]]; then
             echo "✅ Power consumption report generated: $POWER_REPORT_HTML" >> $LOG_FILE
         fi
+        # Publie le CID de l'historique persistant (power_history.json déjà mis à
+        # jour par record_daily_history plus haut, dans report-from-24h) — même
+        # mécanisme que victron_stats.sh publish-cid : status.html lit ce pointeur
+        # pour tracer un historique multi-jours de consommation.
+        "${MY_PATH}/admin/monitor/power_monitor.sh" publish-cid 2>&1 | tee -a $LOG_FILE || true
         # Trim 24/7 CSV to last 24h only to avoid filling disk
         echo "🗜️ Trimming 24/7 power CSV to last 24h..." >> $LOG_FILE
         "${MY_PATH}/admin/monitor/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV" 2>&1 | tee -a $LOG_FILE || true

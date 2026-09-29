@@ -47,6 +47,19 @@ POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
 # à IPFSNODEID) pour calculer un ratio compute/watt fiable (PAF Armateur)
 POWER_HISTORY_FILE="${POWER_HISTORY_FILE:-$HOME/.zen/game/power_history.json}"
 
+# IPFSNODEID (même convention de cache que tools/victron/victron_stats.sh,
+# sans sourcer tools/my.sh en entier) : seulement nécessaire pour le chemin
+# par défaut du fichier pointeur CID (.ipfs), publié sous ~/.zen/tmp/$IPFSNODEID/.
+if [[ -z "${IPFSNODEID:-}" ]]; then
+    _IPFSID_CACHE="$HOME/.zen/tmp/ipfsnodeid.cache"
+    if [[ -s "$_IPFSID_CACHE" ]]; then
+        IPFSNODEID=$(cat "$_IPFSID_CACHE")
+    else
+        IPFSNODEID=$(jq -r '.Identity.PeerID // empty' "$HOME/.ipfs/config" 2>/dev/null)
+    fi
+fi
+POWER_CID_POINTER="${POWER_CID_POINTER:-$HOME/.zen/tmp/${IPFSNODEID}/POWERJOULAR/power_history.json.ipfs}"
+
 # Helper function to derive PID file from CSV file
 get_pid_file() {
     local csv_file="$1"
@@ -480,6 +493,48 @@ power_stats() {
     ' "$history_file" 2>/dev/null || echo "$empty"
 }
 
+# Épingle l'historique complet sur IPFS et écrit son CID dans un petit fichier
+# pointeur — celui-ci (quelques octets) est ce qu'on place sous
+# ~/.zen/tmp/$IPFSNODEID/, jamais le fichier qui grossit lui-même (cf. note
+# "poids de la balise IPNS" dans tools/victron/victron_stats.sh, même
+# principe). Permet à status.html de tracer un historique multi-jours de
+# consommation sans dupliquer power_history.json dans la balise IPNS.
+publish_cid() {
+    local history_file="${1:-$POWER_HISTORY_FILE}"
+    local pointer_file="${2:-$POWER_CID_POINTER}"
+
+    if [[ ! -s "$history_file" ]]; then
+        log_error "publish_cid: historique introuvable ou vide: $history_file"
+        return 1
+    fi
+    if ! command -v ipfs >/dev/null 2>&1; then
+        log_error "publish_cid: commande ipfs introuvable"
+        return 1
+    fi
+
+    local old_cid=""
+    [[ -s "$pointer_file" ]] && old_cid=$(cat "$pointer_file")
+
+    local cid
+    cid=$(timeout 30s ipfs add -q "$history_file" 2>/dev/null | tail -1) || true
+    if [[ -z "$cid" ]]; then
+        log_error "publish_cid: échec de l'ajout IPFS"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$pointer_file")"
+    echo -n "$cid" > "$pointer_file"
+    log_info "Historique de consommation épinglé : $cid → $pointer_file"
+
+    if [[ -n "$old_cid" && "$old_cid" != "$cid" ]]; then
+        if ipfs pin rm "$old_cid" >/dev/null 2>&1; then
+            log_info "Ancien CID désépinglé : $old_cid"
+        else
+            log_error "publish_cid: désépinglage de $old_cid échoué (non bloquant)"
+        fi
+    fi
+}
+
 # Generate report from 24/7 CSV (last 24h only). Uses POWER_24H_CSV.
 report_from_24h() {
     local output_html="$1"
@@ -609,6 +664,10 @@ main() {
             shift
             power_stats "$@"
             ;;
+        publish-cid)
+            shift
+            publish_cid "$@"
+            ;;
         help|--help|-h)
             cat << EOF
 Power Monitor - Generic power consumption monitoring wrapper
@@ -648,6 +707,11 @@ Commands:
   power-stats [history_file]
     Print JSON {since, today_kwh, month_kwh, total_kwh, avg_w_recent, days_recorded}
     aggregated from the persistent daily history.
+
+  publish-cid [history_file] [pointer_file]
+    Pin the full daily history on IPFS and write its CID to a lightweight
+    pointer file published under \$IPFSNODEID (default: \$POWER_CID_POINTER).
+    Called by 20h12.process.sh after record-daily-history.
 
 Examples:
   # Start monitoring with default paths

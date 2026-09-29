@@ -268,6 +268,26 @@
             <div class="hist-summary" id="sol-hist-summary"></div>
         </div>
 
+        <!-- Consommation (PowerJoular) — masquée si le service n'est pas installé -->
+        <div class="card" id="card-energy" style="display:none;grid-column:1/-1;">
+            <div class="card-title"><span class="dot" style="background:#3498db"></span>⚡ Consommation (PowerJoular)</div>
+            <div class="stat-row" style="margin-bottom:0;">
+                <div class="stat-box"><div class="sv" id="pow-avg">—</div><div class="sk">moy. 30j (W)</div></div>
+                <div class="stat-box"><div class="sv" id="pow-today">—</div><div class="sk">jour</div></div>
+                <div class="stat-box"><div class="sv" id="pow-month">—</div><div class="sk">mois</div></div>
+                <div class="stat-box"><div class="sv" id="pow-total">—</div><div class="sk">total</div></div>
+            </div>
+            <div class="dur-row">
+                <button class="dur-btn" data-dur="7" onclick="setEnergyDuration(7, this)">7 jours</button>
+                <button class="dur-btn active" data-dur="30" onclick="setEnergyDuration(30, this)">30 jours</button>
+                <button class="dur-btn" data-dur="90" onclick="setEnergyDuration(90, this)">90 jours</button>
+                <button class="dur-btn" data-dur="all" onclick="setEnergyDuration('all', this)">Tout</button>
+            </div>
+            <div class="chart-wrap" id="pow-chart"></div>
+            <div class="hist-note" id="pow-hist-status"></div>
+            <div class="hist-summary" id="pow-hist-summary"></div>
+        </div>
+
         <!-- Capacités -->
         <div class="card">
             <div class="card-title"><span class="dot" style="background:#27ae60"></span>📊 Capacités</div>
@@ -433,7 +453,13 @@ async function renderWallets(d, apiBase) {
     }
 }
 
-// ─── Solaire (Victron MPPT) ─────────────────────────────────────────────────────
+// ─── Solaire (Victron MPPT) + Consommation (PowerJoular) ───────────────────────
+// Deux cartes jumelles, même mécanisme : instantané/agrégats via 12345.json
+// (d.solar / d.energy), historique multi-jours via un pointeur CID publié
+// quotidiennement (jamais le fichier qui grossit lui-même republié sous
+// ~/.zen/tmp/$IPFSNODEID/ — cf. tools/victron/victron_stats.sh et
+// admin/monitor/power_monitor.sh, tous deux `publish-cid`). Ici la station
+// est la nôtre : même origine, pas de gateway distante à dériver.
 
 function chargeBadgeClass(state) {
     const map = {
@@ -442,6 +468,88 @@ function chargeBadgeClass(state) {
     };
     return map[state] || 'badge-grey';
 }
+
+function lastNDates(n) {
+    const out = [];
+    const today = new Date();
+    for (let i = n - 1; i >= 0; i--) {
+        const dd = new Date(today);
+        dd.setDate(today.getDate() - i);
+        out.push(dd.toISOString().slice(0, 10));
+    }
+    return out;
+}
+
+function datesSince(sinceIso) {
+    if (!sinceIso) return lastNDates(30);
+    const start = new Date(sinceIso);
+    const days = Math.max(1, Math.round((Date.now() - start.getTime()) / 86400000) + 1);
+    return lastNDates(days);
+}
+
+function fmtDateLabel(iso) { return iso.slice(5).replace('-', '/'); } // MM/JJ
+
+// Pointeur CID (même origine que status.html) → contenu → Map(date -> entrée du jour)
+async function fetchHistoryDays(pointerPath) {
+    const pointerUrl = getNodeBaseUrl() + pointerPath;
+    const cidResp = await fetch(pointerUrl, { cache: 'no-cache' });
+    if (!cidResp.ok) throw new Error('pointeur indisponible');
+    const cid = (await cidResp.text()).trim();
+    if (!cid) throw new Error('CID vide');
+
+    const dataResp = await fetch(window.location.origin + '/ipfs/' + cid, { cache: 'no-cache' });
+    if (!dataResp.ok) throw new Error('contenu indisponible');
+    const json = await dataResp.json();
+    return { days: new Map(Object.entries(json.days || {})), since: json.since || null };
+}
+
+// Graphique en barres générique — `opts.color` (var CSS), `opts.tooltip(date,v)`,
+// `opts.axisFmt(v)` pour l'échelle Y (Wh entiers pour le solaire, kWh à 1
+// décimale pour la consommation).
+function buildBarChartSVG(dates, values, opts) {
+    const w = 640, h = 170, padL = 36, padB = 18, padT = 8, padR = 6;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const max = Math.max(...values, 1e-9);
+    const barGap = dates.length > 60 ? 0.5 : 2;
+    const barW = Math.max(0.5, plotW / dates.length - barGap);
+
+    let bars = '';
+    dates.forEach((dt, i) => {
+        const v = values[i];
+        const barH = Math.max(0, (v / max) * plotH);
+        const x = padL + i * (plotW / dates.length);
+        const y = padT + plotH - barH;
+        bars += `<rect class="chart-bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="1" fill="${opts.color}"><title>${opts.tooltip(dt, v)}</title></rect>`;
+    });
+
+    let grid = '';
+    for (let g = 0; g <= 2; g++) {
+        const gy = padT + (plotH / 2) * g;
+        grid += `<line class="chart-grid" x1="${padL}" y1="${gy.toFixed(1)}" x2="${w - padR}" y2="${gy.toFixed(1)}"/>`;
+        grid += `<text class="chart-label" x="2" y="${(gy + 3).toFixed(1)}">${opts.axisFmt(max * (1 - g / 2))}</text>`;
+    }
+
+    let labels = '';
+    const step = Math.max(1, Math.ceil(dates.length / 8));
+    dates.forEach((dt, i) => {
+        if (i % step !== 0) return;
+        const x = padL + i * (plotW / dates.length);
+        labels += `<text class="chart-label" x="${x.toFixed(1)}" y="${h - 4}">${fmtDateLabel(dt)}</text>`;
+    });
+
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet">${grid}${bars}${labels}</svg>`;
+}
+
+// N'agit que sur les boutons du même groupe (évite qu'un clic dans une carte
+// désactive par erreur le bouton actif de l'autre carte).
+function activateDurButton(btn) {
+    if (!btn) return;
+    const row = btn.closest('.dur-row');
+    if (row) row.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+// --- Solaire ---
 
 let solarHistoryDays = null;   // Map(date -> {yield_wh, avg_w, samples}) | Map vide si indisponible
 let solarHistorySince = null;
@@ -469,28 +577,13 @@ function renderSolar(d) {
     if (solarHistoryDays === null) loadSolarHistory(); // une seule fois
 }
 
-// Lit l'historique complet (~/.zen/game/victron/victron_history.json) via le
-// même mécanisme que UPlanet/earth/victron.html pour les autres stations :
-// un pointeur CID léger publié quotidiennement, jamais le fichier lui-même
-// republié sous ~/.zen/tmp/$IPFSNODEID/ (cf. tools/victron/victron_stats.sh
-// publish-cid). Ici la station est la nôtre : même origine, pas de gateway
-// distante à dériver.
 async function loadSolarHistory() {
     const statusEl = document.getElementById('sol-hist-status');
     if (statusEl) statusEl.textContent = '⏳ Chargement de l\'historique publié…';
     try {
-        const pointerUrl = getNodeBaseUrl() + '/VICTRON/victron_history.json.ipfs';
-        const cidResp = await fetch(pointerUrl, { cache: 'no-cache' });
-        if (!cidResp.ok) throw new Error('pointeur indisponible');
-        const cid = (await cidResp.text()).trim();
-        if (!cid) throw new Error('CID vide');
-
-        const dataResp = await fetch(window.location.origin + '/ipfs/' + cid, { cache: 'no-cache' });
-        if (!dataResp.ok) throw new Error('contenu indisponible');
-        const json = await dataResp.json();
-
-        solarHistoryDays = new Map(Object.entries(json.days || {}));
-        solarHistorySince = json.since || null;
+        const r = await fetchHistoryDays('/VICTRON/victron_history.json.ipfs');
+        solarHistoryDays = r.days;
+        solarHistorySince = r.since;
     } catch (e) {
         solarHistoryDays = new Map(); // connu comme vide : ne pas réessayer en boucle
         if (statusEl) statusEl.textContent = "⚠️ Historique pas encore publié (module récemment installé, ou publish-cid pas encore exécuté par le cron nocturne).";
@@ -500,61 +593,6 @@ async function loadSolarHistory() {
     renderSolarChart();
 }
 
-function lastNDates(n) {
-    const out = [];
-    const today = new Date();
-    for (let i = n - 1; i >= 0; i--) {
-        const dd = new Date(today);
-        dd.setDate(today.getDate() - i);
-        out.push(dd.toISOString().slice(0, 10));
-    }
-    return out;
-}
-
-function datesSince(sinceIso) {
-    if (!sinceIso) return lastNDates(30);
-    const start = new Date(sinceIso);
-    const days = Math.max(1, Math.round((Date.now() - start.getTime()) / 86400000) + 1);
-    return lastNDates(days);
-}
-
-function fmtDateLabel(iso) { return iso.slice(5).replace('-', '/'); } // MM/JJ
-
-function buildSolarChartSVG(dates, days) {
-    const w = 640, h = 170, padL = 36, padB = 18, padT = 8, padR = 6;
-    const plotW = w - padL - padR, plotH = h - padT - padB;
-    const values = dates.map(dt => (days.get(dt)?.yield_wh) || 0);
-    const max = Math.max(...values, 1);
-    const barGap = dates.length > 60 ? 0.5 : 2;
-    const barW = Math.max(0.5, plotW / dates.length - barGap);
-
-    let bars = '';
-    dates.forEach((dt, i) => {
-        const v = values[i];
-        const barH = Math.max(0, (v / max) * plotH);
-        const x = padL + i * (plotW / dates.length);
-        const y = padT + plotH - barH;
-        bars += `<rect class="chart-bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="1" fill="var(--accent3)"><title>${dt} : ${v.toFixed(0)} Wh</title></rect>`;
-    });
-
-    let grid = '';
-    for (let g = 0; g <= 2; g++) {
-        const gy = padT + (plotH / 2) * g;
-        grid += `<line class="chart-grid" x1="${padL}" y1="${gy.toFixed(1)}" x2="${w - padR}" y2="${gy.toFixed(1)}"/>`;
-        grid += `<text class="chart-label" x="2" y="${(gy + 3).toFixed(1)}">${Math.round(max * (1 - g / 2))}</text>`;
-    }
-
-    let labels = '';
-    const step = Math.max(1, Math.ceil(dates.length / 8));
-    dates.forEach((dt, i) => {
-        if (i % step !== 0) return;
-        const x = padL + i * (plotW / dates.length);
-        labels += `<text class="chart-label" x="${x.toFixed(1)}" y="${h - 4}">${fmtDateLabel(dt)}</text>`;
-    });
-
-    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet">${grid}${bars}${labels}</svg>`;
-}
-
 function renderSolarChart() {
     const chartEl = document.getElementById('sol-chart');
     const sumEl = document.getElementById('sol-hist-summary');
@@ -562,10 +600,15 @@ function renderSolarChart() {
     if (solarHistoryDays.size === 0) { chartEl.innerHTML = ''; if (sumEl) sumEl.innerHTML = ''; return; }
 
     const dates = solarDuration === 'all' ? datesSince(solarHistorySince) : lastNDates(solarDuration);
-    const totalPeriod = dates.reduce((s, dt) => s + ((solarHistoryDays.get(dt)?.yield_wh) || 0), 0);
+    const values = dates.map(dt => (solarHistoryDays.get(dt)?.yield_wh) || 0);
+    const totalPeriod = values.reduce((s, v) => s + v, 0);
     const daysWithData = dates.filter(dt => solarHistoryDays.has(dt)).length;
 
-    chartEl.innerHTML = buildSolarChartSVG(dates, solarHistoryDays);
+    chartEl.innerHTML = buildBarChartSVG(dates, values, {
+        color: 'var(--accent3)',
+        tooltip: (dt, v) => `${dt} : ${v.toFixed(0)} Wh`,
+        axisFmt: v => Math.round(v).toString(),
+    });
     if (sumEl) {
         sumEl.textContent = `${(totalPeriod / 1000).toFixed(2)} kWh sur la période · ${daysWithData}/${dates.length} jours suivis` +
             (solarHistorySince ? ` · depuis ${solarHistorySince}` : '');
@@ -574,9 +617,73 @@ function renderSolarChart() {
 
 function setSolarDuration(value, btn) {
     solarDuration = value;
-    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+    activateDurButton(btn);
     renderSolarChart();
+}
+
+// --- Consommation (PowerJoular) ---
+
+let energyHistoryDays = null;  // Map(date -> {avg_w, kwh, hours, samples}) | Map vide si indisponible
+let energyHistorySince = null;
+let energyDuration = 30;       // nombre de jours, ou 'all'
+
+function renderEnergy(d) {
+    const energy = d.energy;
+    const card = document.getElementById('card-energy');
+    if (!card) return;
+    if (!energy || !energy.available) { card.style.display = 'none'; return; }
+    card.style.display = '';
+
+    setText('pow-avg',   (energy.avg_w_recent ?? 0).toFixed(1) + ' W');
+    setText('pow-today', (energy.today_kwh    ?? 0).toFixed(2) + ' kWh');
+    setText('pow-month', (energy.month_kwh    ?? 0).toFixed(2) + ' kWh');
+    setText('pow-total', (energy.total_kwh    ?? 0).toFixed(2) + ' kWh');
+
+    if (energyHistoryDays === null) loadEnergyHistory(); // une seule fois
+}
+
+async function loadEnergyHistory() {
+    const statusEl = document.getElementById('pow-hist-status');
+    if (statusEl) statusEl.textContent = '⏳ Chargement de l\'historique publié…';
+    try {
+        const r = await fetchHistoryDays('/POWERJOULAR/power_history.json.ipfs');
+        energyHistoryDays = r.days;
+        energyHistorySince = r.since;
+    } catch (e) {
+        energyHistoryDays = new Map();
+        if (statusEl) statusEl.textContent = "⚠️ Historique pas encore publié (service récemment installé, ou publish-cid pas encore exécuté par le cron nocturne).";
+        return;
+    }
+    if (statusEl) statusEl.textContent = '';
+    renderEnergyChart();
+}
+
+function renderEnergyChart() {
+    const chartEl = document.getElementById('pow-chart');
+    const sumEl = document.getElementById('pow-hist-summary');
+    if (!chartEl || !energyHistoryDays) return;
+    if (energyHistoryDays.size === 0) { chartEl.innerHTML = ''; if (sumEl) sumEl.innerHTML = ''; return; }
+
+    const dates = energyDuration === 'all' ? datesSince(energyHistorySince) : lastNDates(energyDuration);
+    const values = dates.map(dt => (energyHistoryDays.get(dt)?.kwh) || 0);
+    const totalPeriod = values.reduce((s, v) => s + v, 0);
+    const daysWithData = dates.filter(dt => energyHistoryDays.has(dt)).length;
+
+    chartEl.innerHTML = buildBarChartSVG(dates, values, {
+        color: 'var(--accent)',
+        tooltip: (dt, v) => `${dt} : ${v.toFixed(2)} kWh`,
+        axisFmt: v => v.toFixed(1),
+    });
+    if (sumEl) {
+        sumEl.textContent = `${totalPeriod.toFixed(2)} kWh sur la période · ${daysWithData}/${dates.length} jours suivis` +
+            (energyHistorySince ? ` · depuis ${energyHistorySince}` : '');
+    }
+}
+
+function setEnergyDuration(value, btn) {
+    energyDuration = value;
+    activateDurButton(btn);
+    renderEnergyChart();
 }
 
 // ─── Main render ──────────────────────────────────────────────────────────────
@@ -650,8 +757,9 @@ function render(d, apiBase) {
     setText('cap-nostr',cap.nostr_slots      ?? '—');
     setText('cap-disk', cap.available_space_gb != null ? cap.available_space_gb + ' Go' : '—');
 
-    // Solaire (Victron MPPT), si le module est installé
+    // Solaire (Victron MPPT) / Consommation (PowerJoular), si installés
     renderSolar(d);
+    renderEnergy(d);
 
     // Links
     renderLinks(d, apiBase);

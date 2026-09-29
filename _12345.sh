@@ -848,6 +848,28 @@ while true; do
         [[ -z "${SOLAR}" ]] && SOLAR='{"available":false}'
     fi
 
+    ## ENERGY (PowerJoular) — mêmes agrégats jour/mois/total/moy.30j que ceux
+    ## déjà collectés par RUNTIME/ECONOMY.broadcast.sh (hardware.energy, kind
+    ## 30850) : ici on les expose aussi dans le 12345.json statique pour
+    ## status.html. Historique multi-jours lu via le CID publié par
+    ## power_monitor.sh publish-cid (cf. 20h12.process.sh), jamais dupliqué ici.
+    _POWER_MONITOR_SH="${MY_PATH}/admin/monitor/power_monitor.sh"
+    ENERGY='{"available":false}'
+    if [[ -x "${_POWER_MONITOR_SH}" ]] && systemctl is-enabled powerjoular.service &>/dev/null; then
+        ENERGY=$("${_POWER_MONITOR_SH}" power-stats 2>/dev/null | jq -c '. + {available:true}' 2>/dev/null)
+        [[ -z "${ENERGY}" ]] && ENERGY='{"available":false}'
+    fi
+
+    ## Élargit la clé de cache d'écriture (NODE_STATE, définie plus haut) aux
+    ## blocs recalculés à chaque cycle mais absents de cette clé (capacités
+    ## matérielles, services, solaire, consommation) : sans ça, une station
+    ## "stable" (IP et finances inchangées, cas courant) ne réécrirait jamais
+    ## le 12345.json statique publié (celui que lit status.html) même quand
+    ## heartbox_analysis (cache 12h) ou les lectures Victron/PowerJoular
+    ## produisent une nouvelle valeur — seul le flux HTTP CGI live (port 12345,
+    ## toujours réécrit plus bas) resterait à jour, pas la balise IPNS.
+    NODE_STATE="${NODE_STATE}|$(printf '%s' "${CAPACITIES}${SERVICES}${SOLAR}${ENERGY}" | md5sum | cut -d' ' -f1)"
+
 NODE12345="{
     \"version\" : \"12345.0.2\",
     \"created\" : \"${MOATS}\",
@@ -899,6 +921,7 @@ NODE12345="{
     \"capacities\" : ${CAPACITIES},
     \"services\" : ${SERVICES},
     \"solar\" : ${SOLAR},
+    \"energy\" : ${ENERGY},
     \"economy\" : {
         \"multipass_count\" : ${MULTIPASS_COUNT:-0},
         \"zencard_count\" : ${ZENCARD_COUNT:-0},
