@@ -131,13 +131,17 @@ solar_stats() {
     fi
 
     local live='{"power_w":0,"battery_v":0,"charge_state":"unknown"}'
-    if [[ -s "$csv_file" ]]; then
-        live=$(python3 - "$csv_file" << 'PYEOF'
+    # N'ouvre jamais le CSV en entier ici : cette fonction est aussi appelée
+    # toutes les 5 min par _12345.sh (snapshot NODE12345.solar), alors que le
+    # fichier grossit en continu (une ligne par annonce BLE reçue) — seule la
+    # dernière ligne nous intéresse pour l'instantané.
+    if [[ -s "$csv_file" && $(wc -l < "$csv_file") -ge 2 ]]; then
+        # python3 -c (pas de heredoc) : le script vient de argv, pas de stdin,
+        # qui reste donc disponible pour le pipe head+tail ci-dessus.
+        live=$({ head -n 1 "$csv_file"; tail -n 1 "$csv_file"; } | python3 -c '
 import csv, sys, json
-last = None
-with open(sys.argv[1], newline="") as f:
-    for row in csv.DictReader(f):
-        last = row
+rows = list(csv.DictReader(sys.stdin))
+last = rows[-1] if rows else None
 
 def num(row, key):
     try:
@@ -153,8 +157,7 @@ if last:
     }))
 else:
     print(json.dumps({"power_w": 0, "battery_v": 0, "charge_state": "unknown"}))
-PYEOF
-        ) || live='{"power_w":0,"battery_v":0,"charge_state":"unknown"}'
+') || live='{"power_w":0,"battery_v":0,"charge_state":"unknown"}'
     fi
 
     jq -c -n --argjson agg "$agg" --argjson live "$live" '$agg + $live' 2>/dev/null \

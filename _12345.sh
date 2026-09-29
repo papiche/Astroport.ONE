@@ -837,6 +837,17 @@ while true; do
     _STATION_BOOTS=$(cat "$_BOOTS_CACHE" 2>/dev/null || echo "[]")
     [[ -z "${_STATION_BOOTS}" ]] && _STATION_BOOTS="[]"
 
+    ## SOLAR (Victron MPPT) — snapshot léger uniquement (dernière lecture CSV +
+    ## agrégats jour/mois/total). L'historique multi-jours n'est PAS dupliqué
+    ## ici : status.html le lit directement depuis le CID publié par
+    ## victron_stats.sh publish-cid (cf. tools/victron/README.md).
+    _VICTRON_STATS_SH="${MY_PATH}/tools/victron/victron_stats.sh"
+    SOLAR='{"available":false}'
+    if [[ -x "${_VICTRON_STATS_SH}" ]] && systemctl is-enabled victron-mppt-monitor.service &>/dev/null; then
+        SOLAR=$("${_VICTRON_STATS_SH}" solar-stats 2>/dev/null | jq -c '. + {available:true}' 2>/dev/null)
+        [[ -z "${SOLAR}" ]] && SOLAR='{"available":false}'
+    fi
+
 NODE12345="{
     \"version\" : \"12345.0.2\",
     \"created\" : \"${MOATS}\",
@@ -887,6 +898,7 @@ NODE12345="{
     \"dragon_services\" : \"$(find "$HOME/.zen/tmp/${IPFSNODEID}" -name "x_*.sh" -printf "%f\n" 2>/dev/null | sed 's/^x_//;s/\.sh//' | paste -sd',' -)\",
     \"capacities\" : ${CAPACITIES},
     \"services\" : ${SERVICES},
+    \"solar\" : ${SOLAR},
     \"economy\" : {
         \"multipass_count\" : ${MULTIPASS_COUNT:-0},
         \"zencard_count\" : ${ZENCARD_COUNT:-0},
