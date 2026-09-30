@@ -315,15 +315,21 @@ cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys 2
 ## Les clés orphelines (station silencieuse > 9j) ne sont plus ré-ajoutées — elles disparaissent
 ## naturellement au prochain cycle DRAGON (voir grep -v " uplanet:" ci-dessus).
 ##
-## SÉCURITÉ — CONFIANCE DYNAMIQUE À 2 COUCHES (N²), ANCRÉE SUR LE SWARM RÉEL :
+## SÉCURITÉ — CONFIANCE DYNAMIQUE À 2 GARDE-FOUS TECHNIQUES + WOT, ANCRÉE SUR LE SWARM RÉEL :
 ## swarm_id = UPLANETG1PUB est public et forgeable par un simple event NOSTR, donc il ne
-## prouve rien seul. Deux garde-fous :
+## prouve rien seul. Plusieurs garde-fous :
 ##  1. Univers V : seuls comptent les capitaines dont la station est RÉELLEMENT découverte
 ##     dans le swarm IPFS (captainHEX extrait des 12345.json reçus par IPNS dans
 ##     ~/.zen/tmp/swarm/*/), déjà filtrés anti-Sybil par _12345.sh (is_astroport_node /
 ##     _MySwarm.moats) — une fausse identité doit faire tourner un vrai nœud IPFS avec une
 ##     chaîne Y-Level valide et être peerée par un vrai pair, pas juste signer un event.
-##  2. Confiance par vouchers, sur 2 sauts, sans aller plus loin (la confiance se dilue) :
+##  2. Y-Level cryptographique : le ssh_pub annoncé dans le tag doit dériver (via
+##     ssh_to_g1ipfs.py, même chaîne SSH→G1→IPFS que DRAGON_p2p_ssh.sh applique à sa propre
+##     clé plus haut) vers l'IPFSNODEID du tag "station" du même event. Sans ça, un
+##     capitaine légitime (même vouché Hop1/Hop2) pourrait publier n'importe quelle clé SSH
+##     tierce et la faire accepter par simple confiance sociale — le WoT filtre QUI a le
+##     droit d'être vouché, pas SI la clé annoncée lui appartient réellement.
+##  3. Confiance par vouchers, sur 2 sauts, sans aller plus loin (la confiance se dilue) :
 ##       Hop 0 : A_boostrap_captains.hex (capitaines fondateurs, vérifiés manuellement)
 ##       Hop 1 : capitaine ∈ V suivi (kind 3 / NIP-02) par un capitaine du Hop 0
 ##       Hop 2 : capitaine ∈ V suivi par ≥ TRUST_MIN_VOUCHERS_HOP2 capitaines déjà admis
@@ -376,18 +382,28 @@ if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "$HOME/.zen/Astroport.ONE/tools/nostr_g
             --kind 30850 --limit 300 --since "$_9d_ago" 2>/dev/null)
     fi
     if [[ -n "$UPLANET_30850" ]]; then
-        # Collecte des candidats uniques (hex + ssh_pub), restreints à l'univers V
+        # Collecte des candidats uniques (hex + ssh_pub), restreints à l'univers V,
+        # puis filtrés par Y-Level (ssh_pub ↔ station) et ping IPFS (station vivante)
         CANDIDATES_HEX=()
         CANDIDATES_SSH=()
         while read -r ev; do
             c_hex=$(echo "$ev" | jq -r '.pubkey // empty' 2>/dev/null)
             c_ssh=$(echo "$ev" | jq -r '[.tags[]? | select(.[0]=="ssh_pub")] | .[0][1] // empty' 2>/dev/null)
-            [[ -z "$c_hex" || -z "$c_ssh" ]] && continue
+            c_station=$(echo "$ev" | jq -r '[.tags[]? | select(.[0]=="station")] | .[0][1] // empty' 2>/dev/null)
+            [[ -z "$c_hex" || -z "$c_ssh" || -z "$c_station" ]] && continue
             echo "$c_ssh" | grep -q "ssh-ed25519" || continue
             if [[ -z "${V_SET[$c_hex]:-}" ]]; then
                 echo "SKIP ${c_hex:0:8}... : station absente des 12345.json du swarm (hors V)"
                 continue
             fi
+
+            # GARDE-FOU Y-LEVEL : le ssh_pub doit dériver vers l'IPFSNODEID annoncé (station)
+            c_yipns=$("$HOME/.zen/Astroport.ONE/tools/ssh_to_g1ipfs.py" "$c_ssh" 2>/dev/null)
+            if [[ -z "$c_yipns" || "$c_yipns" != "$c_station" ]]; then
+                echo "SKIP ${c_hex:0:8}... : ssh_pub hors Y-Level (dérive vers ${c_yipns:-?} != station ${c_station:0:8}...)"
+                continue
+            fi
+
             CANDIDATES_HEX+=("$c_hex")
             CANDIDATES_SSH+=("$c_ssh")
         done < <(echo "$UPLANET_30850" | jq -c --arg sid "$UPLANETG1PUB" --arg me "$IPFSNODEID" '
