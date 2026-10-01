@@ -2,10 +2,12 @@
 # Dependencies : jq ffmpeg ffprobe ipfs qrencode (+ playwright dans ~/.astro pour screen/card)
 #### generate_scene.sh : storyboard JSON → vidéo multi-plans (MiniMax H3) assemblée en 720p
 #
-# Usage: generate_scene.sh [-w workdir] <storyboard.json> [udrive_path]
+# Usage: generate_scene.sh [-w workdir] [-c] <storyboard.json> [udrive_path]
 #   -w  répertoire de travail (défaut ~/.zen/workspace/scenes/scene_*, hors de ~/.zen/tmp
 #       que le nettoyage d'Astroport vide) ; relancer avec le même -w reprend la scène :
 #       acteurs, plans et captures déjà rendus ne sont pas recalculés.
+#   -c  mode acteurs seuls : prépare/rafraîchit .cast (banque de personnages) sans
+#       rendre aucun plan ; <storyboard.json> n'a alors pas besoin de .shots.
 # Sortie stdout : URL IPFS de la vidéo finale (ou chemin du fichier si IPFS échoue)
 # Codes de sortie : 0 ok, 1 erreur, 2 storyboard invalide, 3 ComfyUI non équipé, 4 timeout
 #
@@ -34,6 +36,12 @@
 # portrait). Dans un plan "cast", le script ajoute en tête du prompt la phrase qui lie
 # chaque nom à <Picture k>/<Audio k> : écrire ensuite le prompt avec les noms.
 # N'utiliser le visage ou la voix d'une personne réelle qu'avec son consentement.
+#
+# Banque de personnages (~/.zen/workspace/characters/<nom>/, hors ~/.zen/tmp : jamais
+# purgée) : portrait.png et voice.wav sont enregistrés là après une première génération,
+# et repris tels quels par tout storyboard suivant qui déclare le même nom — même un
+# simple "nom": {} suffit alors (pas besoin de redonner image_prompt/voice_line).
+# "refresh": true dans l'entrée .cast force une régénération et remplace la banque.
 #
 # Champs de plan optionnels :
 #   voiceover  narration (texte FR) lue par Orpheus TTS (voix globale "voice" :
@@ -77,9 +85,11 @@ usage() {
 }
 
 WORK_DIR=""
-while getopts "w:h" opt; do
+CAST_ONLY=0
+while getopts "w:ch" opt; do
   case $opt in
     w) WORK_DIR="$OPTARG" ;;
+    c) CAST_ONLY=1 ;;
     *) usage ;;
   esac
 done
@@ -91,19 +101,26 @@ UDRIVE_PATH="$2"
 
 . "${HOME}/.zen/Astroport.ONE/tools/my.sh"
 
-if ! jq -e '.shots | type == "array" and length > 0
-            and all(.[]; (.prompt | type) == "string" or (.screen and (.presenter | not)) or .card)' "$STORYBOARD" > /dev/null 2>&1; then
-  echo "Erreur : storyboard invalide (chaque plan : .prompt, ou .screen sans présentateur, ou .card)" >&2
-  exit 2
-fi
-if jq -e '.shots[0].continue == true' "$STORYBOARD" > /dev/null; then
-  echo "Erreur : le premier plan ne peut pas être \"continue\"" >&2
-  exit 2
-fi
-missing_cast=$(jq -r '(.cast // {}) as $c | [.shots[] | ((.cast // []) + [.presenter // empty])[] | select($c[.] | not)] | unique | join(" ")' "$STORYBOARD")
-if [ -n "$missing_cast" ]; then
-  echo "Erreur : acteur(s) absent(s) de .cast : $missing_cast" >&2
-  exit 2
+if [ "$CAST_ONLY" -eq 1 ]; then
+  if ! jq -e '.cast | type == "object" and length > 0' "$STORYBOARD" > /dev/null 2>&1; then
+    echo "Erreur : -c nécessite un storyboard avec .cast non vide (.shots n'est pas requis)" >&2
+    exit 2
+  fi
+else
+  if ! jq -e '.shots | type == "array" and length > 0
+              and all(.[]; (.prompt | type) == "string" or (.screen and (.presenter | not)) or .card)' "$STORYBOARD" > /dev/null 2>&1; then
+    echo "Erreur : storyboard invalide (chaque plan : .prompt, ou .screen sans présentateur, ou .card)" >&2
+    exit 2
+  fi
+  if jq -e '.shots[0].continue == true' "$STORYBOARD" > /dev/null; then
+    echo "Erreur : le premier plan ne peut pas être \"continue\"" >&2
+    exit 2
+  fi
+  missing_cast=$(jq -r '(.cast // {}) as $c | [.shots[] | ((.cast // []) + [.presenter // empty])[] | select($c[.] | not)] | unique | join(" ")' "$STORYBOARD")
+  if [ -n "$missing_cast" ]; then
+    echo "Erreur : acteur(s) absent(s) de .cast : $missing_cast" >&2
+    exit 2
+  fi
 fi
 
 RATIO=$(jq -r '.ratio // "16:9"' "$STORYBOARD")
@@ -120,7 +137,7 @@ TITLE_FONT=$(fc-match -f '%{file}' 'DejaVu Sans:bold' 2>/dev/null)
 ASTRO_PY="$HOME/.astro/bin/python"
 BASE_SEED=$(jq -r '.seed // empty' "$STORYBOARD")
 [ -z "$BASE_SEED" ] && BASE_SEED=$((RANDOM * RANDOM))
-NB_SHOTS=$(jq '.shots | length' "$STORYBOARD")
+NB_SHOTS=$(jq '(.shots // []) | length' "$STORYBOARD")
 
 # Taille exacte de la vidéo finale : petit côté = height, grand côté au ratio (pair)
 rw=${RATIO%:*} rh=${RATIO#*:}
@@ -147,7 +164,7 @@ echo "Répertoire de travail (reprise avec -w) : $WORK_DIR" >&2
 SCENE_START=$(date +%s)
 
 # Voix-off : Orpheus TTS local ou via la constellation (orpheus.me.sh ouvre le tunnel P2P)
-if jq -e 'any(.shots[]; .voiceover)' "$STORYBOARD" > /dev/null; then
+if jq -e 'any((.shots // [])[]; .voiceover)' "$STORYBOARD" > /dev/null; then
   "$MY_PATH/../services/orpheus.me.sh" > /dev/null 2>&1
   if ! curl -s -o /dev/null -m 10 "http://localhost:5005/docs"; then
     echo "Erreur : Orpheus TTS injoignable (IA/services/orpheus.me.sh)" >&2
@@ -192,40 +209,77 @@ render() {
 speech_render() {
   local out="$1" seed="$2" prompt="$3"
   shift 3
-  render -o "$out" "$@" -S "$seed" "$("$HOME/comfyui_env/bin/python" "$MY_PATH/lib/pronounce.py" "$prompt")"
+  render -o "$out" "$@" -S "$seed" "$(python3 "$MY_PATH/lib/pronounce.py" "$prompt")"
 }
 
 ########################################################################
 # Acteurs : portrait neutre + voix de référence, préparés une fois
 ########################################################################
+CAST_BANK="$HOME/.zen/workspace/characters"
+
 for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
   cdir="$WORK_DIR/cast/$name"
-  mkdir -p "$cdir"
+  bdir="$CAST_BANK/$name"
+  mkdir -p "$cdir" "$bdir"
   actor=$(jq -c --arg n "$name" '.cast[$n]' "$STORYBOARD")
+  refresh=$(jq -r '.refresh // false' <<< "$actor")
+
+  # Personnage déjà créé pour une scène précédente : mêmes visage et voix, repris
+  # depuis la banque persistante (hors ~/.zen/tmp, jamais purgée par Astroport)
+  if [ "$refresh" != "true" ]; then
+    if [ -s "$bdir/portrait.png" ] && [ ! -s "$cdir/portrait.png" ]; then
+      cp "$bdir/portrait.png" "$cdir/portrait.png"
+      echo "Acteur $name : portrait repris de la banque ($bdir)" >&2
+    fi
+    if [ -s "$bdir/voice.wav" ] && [ ! -s "$cdir/voice.wav" ]; then
+      cp "$bdir/voice.wav" "$cdir/voice.wav"
+      echo "Acteur $name : voix reprise de la banque ($bdir)" >&2
+    fi
+  fi
 
   if [ ! -s "$cdir/portrait.png" ]; then
     if jq -e '.image' <<< "$actor" > /dev/null; then
       cp "$(jq -r '.image' <<< "$actor")" "$cdir/portrait.png" || exit 1
-    else
+    elif jq -e '.image_prompt' <<< "$actor" > /dev/null; then
       echo "Acteur $name : portrait (Z-Image)" >&2
       gen_image "$(jq -r '.image_prompt' <<< "$actor"), head and shoulders portrait, plain neutral light grey studio background, soft even lighting, looking at the camera" \
         1024x1024 "$cdir/portrait.png" || { echo "Erreur : portrait de $name échoué" >&2; exit 1; }
+    else
+      echo "Erreur : acteur $name absent de la banque ($bdir) et sans .image/.image_prompt dans le storyboard" >&2
+      exit 2
     fi
   fi
 
   if [ ! -s "$cdir/voice.wav" ]; then
     if jq -e '.voice' <<< "$actor" > /dev/null; then
       "$FFMPEG" -v error -y -i "$(jq -r '.voice' <<< "$actor")" -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
-    else
+    elif jq -e '.voice_line' <<< "$actor" > /dev/null; then
       echo "Acteur $name : voix de référence (MiniMax)" >&2
       line=$(jq -r '.voice_line' <<< "$actor")
       speech_render "$cdir/voice_src.mp4" "$BASE_SEED" \
         "Close-up: the person looks at the camera and speaks in French in a natural, calm voice, at a relaxed pace: \"$line\" Quiet room, no music, no background noise." \
         -i "$cdir/portrait.png" -r 1:1 -m 0.25 -d 8 -s "$STEPS"
       "$FFMPEG" -v error -y -i "$cdir/voice_src.mp4" -vn -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
+    else
+      echo "Erreur : acteur $name absent de la banque ($bdir) et sans .voice/.voice_line dans le storyboard" >&2
+      exit 2
     fi
   fi
+
+  # Alimente la banque pour les prochains storyboards (portrait et voix définitifs)
+  cp "$cdir/portrait.png" "$bdir/portrait.png"
+  cp "$cdir/voice.wav" "$bdir/voice.wav"
+  # Mémorise la définition d'origine, sauf reprise pure d'un personnage déjà en banque
+  if jq -e '.image_prompt or .image or .voice_line or .voice' <<< "$actor" > /dev/null 2>&1; then
+    jq -c 'del(.refresh)' <<< "$actor" > "$bdir/character.json" 2>/dev/null || true
+  fi
 done
+
+if [ "$CAST_ONLY" -eq 1 ]; then
+  echo "Personnage(s) prêt(s) dans la banque ($CAST_BANK) :" >&2
+  jq -r '.cast // {} | keys[]' "$STORYBOARD" | sed 's/^/  - /' >&2
+  exit 0
+fi
 
 # $1 JSON array de noms → arguments -R/-A et préambule du prompt (variables globales)
 cast_refs() {

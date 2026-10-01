@@ -1,0 +1,81 @@
+{
+  "name": "LES FURTIFS — Preuve de concept IA (pitch, généré avec generate_scene.sh)",
+  "ratio": "16:9",
+  "megapixels": 0.4,
+  "steps": 10,
+  "style": "vhs",
+  "height": 720,
+  "voice": "amelie",
+  "seed": 1984,
+  "cast": {
+    "iris": {
+      "image_prompt": "Photo of Iris, a 34-year-old French film director, shoulder-length dark hair, sharp attentive dark eyes, black turtleneck sweater, standing in a dim editing room lit by monitor glow",
+      "voice_line": "Bonjour, je suis Iris. Je veux adapter Les Furtifs avec l'intelligence artificielle de notre station."
+    }
+  },
+  "shots": [
+    {
+      "cast": ["iris"],
+      "prompt": "Close-up of Iris in her dim editing room, monitors glowing behind her, she looks straight at the camera, calm and determined, and says in French at a natural pace: \"Les Furtifs raconte une France quadrillée par la surveillance, où des créatures insaisissables se dérobent au regard. Voici comment notre station peut en tourner le teaser.\" Quiet room hum.",
+      "title": "LES FURTIFS — un pitch, une preuve de concept",
+      "duration": 10
+    },
+    {
+      "image_prompt": "Wide cinematic shot of a hyper-controlled sponsored city street at night, corporate holographic logos floating between buildings, surveillance drones hovering low, crowds moving under cold blue and magenta neon light, dystopian near-future atmosphere, anamorphic lens flare, cinematic photography",
+      "prompt": "Slow forward tracking shot down the neon sponsored street, holographic corporate logos flicker and drift between the buildings, surveillance drones sweep their lights over the crowd below. Tense, cold atmosphere. Audio: distant synthetic city hum, drone rotors, muffled announcements, no speech.",
+      "title": "Concept visuel : une ville sous contrôle total",
+      "duration": 6
+    },
+    {
+      "continue": true,
+      "prompt": "In the same crowded corridor, a faint shimmering translucent silhouette darts between the pedestrians, barely visible, its outline blurring and dissolving the instant anyone turns to look at it directly. Audio: a soft glassy shimmer sound, city ambience continues, no speech.",
+      "title": "Un furtif : insaisissable dès qu'on le nomme",
+      "duration": 6
+    },
+    {
+      "cast": ["iris"],
+      "prompt": "Medium close-up of Iris in her editing room, she gestures toward a monitor beside her and says in French, precise and enthusiastic: \"Chaque plan est généré par une intelligence artificielle vidéo locale, à partir d'un simple texte : décor, action, dialogue.\" Quiet room hum.",
+      "duration": 8
+    },
+    {
+      "screen": "https://github.com/papiche/Astroport.ONE/blob/master/IA/generators/generate_scene.sh",
+      "presenter": "iris",
+      "prompt": "Iris says in French, clear and calm: \"Le scénario tient dans un seul fichier : les acteurs de synthèse, leur voix, et le texte de chaque plan.\"",
+      "title": "Le scénario : un fichier JSON, pas un plateau",
+      "motion": "scroll",
+      "duration": 9
+    },
+    {
+      "image_prompt": "Moody blue-lit control room filled with dozens of glowing surveillance monitors, a lone man in a worn coat stands facing the wall of screens, shoulders tense, searching each feed intently, cold cyan light on his face, cinematic photography, shallow depth of field",
+      "prompt": "Slow push-in on the man scanning the wall of monitors, his eyes darting from screen to screen, jaw tightening. Cold cyan light flickers across his face. Audio: layered electronic surveillance chatter, distant sirens, no speech.",
+      "voiceover": "Un père. Une fille disparue. Une ville qui écoute tout, sauf l'essentiel.",
+      "duration": 8
+    },
+    {
+      "cast": ["iris"],
+      "prompt": "Close-up of Iris in her editing room, she leans slightly toward the camera and says in French, warm but firm: \"Ce teaser n'est qu'une preuve : quelques heures de calcul, une station, aucune équipe de tournage. Il nous reste à obtenir les droits d'Alain Damasio et des éditions La Volte pour aller plus loin.\" Quiet room hum.",
+      "duration": 11
+    },
+    {
+      "card": {
+        "title": "LES FURTIFS — Preuve de concept IA",
+        "subtitle": "Teaser généré par Astroport.ONE — droits d'adaptation non acquis",
+        "links": [
+          {
+            "label": "Le code du projet",
+            "url": "https://github.com/papiche/Astroport.ONE"
+          },
+          {
+            "label": "Le générateur de scène",
+            "url": "https://github.com/papiche/Astroport.ONE/blob/master/IA/generators/generate_scene.sh"
+          },
+          {
+            "label": "Nous contacter",
+            "url": "mailto:support@qo-op.com"
+          }
+        ]
+      },
+      "duration": 9
+    }
+  ]
+}

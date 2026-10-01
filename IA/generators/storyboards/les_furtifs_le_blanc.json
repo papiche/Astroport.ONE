@@ -1,0 +1,102 @@
+{
+  "name": "LES FURTIFS — Le Blanc et la Forêt (Court-métrage)",
+  "ratio": "16:9",
+  "megapixels": 0.4,
+  "steps": 10,
+  "ref_steps": 20,
+  "style": "clean",
+  "height": 720,
+  "voice": "pierre",
+  "seed": 202610,
+  "cast": {
+    "lorca": {
+      "image_prompt": "Photo of Lorca, a 43-year-old French former sociologist turned stealth tracker, lean weathered round face with hollow cheeks, intense dark brown eyes, buzz cut dark hair, rugged five o'clock shadow, wearing a dark technical military tracking jacket with high collar, neutral expression, plain neutral light grey studio background, soft even cinematic lighting, shot on 35mm lens",
+      "voice_line": "Je m'appelle Lorca Varèse. Je cherche ma fille Tishka depuis deux ans, et elle est vivante."
+    },
+    "sahar": {
+      "image_prompt": "Photo of Sahar, a 36-year-old French woman of Mediterranean descent, elegant posture, short rebellious strawberry-blonde wavy hair, striking hazel-green sea-foam eyes, refined sharp facial features, wearing an earthy terracotta raspberry knit sweater with a loose safran scarf, neutral calm expression, plain neutral light grey studio background, soft side rim lighting, 50mm portrait",
+      "voice_line": "Je suis Sahar, proferrante d'école libre. J'ai cru au vide, mais le vide n'est qu'un trou."
+    },
+    "saskia": {
+      "image_prompt": "Photo of Saskia, a 28-year-old French female bioacoustician with an athletic slender frame, sharp angular face, keen hazel eyes, wearing a slouchy purple knit beanie covering her ears completely, textured beige angora woolen sweater, slim copper olifant horn strap across chest, attentive intelligent gaze, plain neutral light grey studio background, 35mm lens",
+      "voice_line": "Je suis Saskia. L'oreille est le sens de la métamorphose. Le son ne meurt jamais."
+    },
+    "aguero": {
+      "image_prompt": "Photo of Hernán, a 39-year-old Argentine tracker with a muscular stocky build, messy black hair sticking up, sun-tanned skin, intense light hazel-green eyes, charismatic rugged stubble, wearing a worn sleeveless dark utility vest, energetic expression, plain neutral light grey studio background, dramatic soft key light, 50mm lens",
+      "voice_line": "Moi c'est Agüero. On ne chasse pas un furtif gringo, c'est lui qui vient à toi."
+    }
+  },
+  "shots": [
+    {
+      "image_prompt": "Cinematic wide interior shot of a perfectly featureless sterile white cube room, six meters wide, seamless white walls, ceiling and floor glowing with uniform soft light, no furniture, absolute void, subtle chalk grid marks on the floor, 35mm lens, high key lighting",
+      "prompt": "Extreme wide shot: inside a giant sterile empty white cube, a lone man stands motionless against the glowing white wall. Camera slowly glides forward into the void. Cold, tense silence. Sound: faint low-frequency ultrasonic hum, deep breath, dry shoe squeak on concrete.",
+      "voiceover": "Soixante-dix-neuf semaines d'entraînement pour se retrouver seul, nu, dans un cube blanc de six mètres d'arête.",
+      "title": "Chapitre 1 — L'épreuve du Cube",
+      "duration": 7
+    },
+    {
+      "cast": ["lorca"],
+      "prompt": "Close-up of Lorca inside the glowing white room, his back against the white wall, eyes alert and darting, sweat on his brow. He looks intensely into the empty air, speaking in a firm whisper in French: \"Il est dedans. Je sais qu'il est là.\" Sound: subtle high-pitched whistling air artifact, fast heartbeat.",
+      "duration": 6
+    },
+    {
+      "image_prompt": "Cinematic macro shot of an empty corner of a white room, sudden translucent refractive distortion shimmering in the air like hot air over asphalt, delicate organic textures of feathers and liquid porcelain appearing and disappearing in milliseconds, anamorphic depth of field",
+      "prompt": "Macro high-speed camera shot: the empty corner suddenly ripples like liquid glass. A fleeting, hyper-fast organic silhouette made of shifting feathers, translucent bone and mirrored scales flickers in the blind spot, avoiding the camera's gaze. Sound: crystalline chime, scratching claw on concrete, rapid fluttering flap.",
+      "title": "Le Furtif : ce qui s'échappe au regard",
+      "duration": 5
+    },
+    {
+      "image_prompt": "High angle establishing shot of a futuristic privatized European metropolis at twilight, illuminated by floating orange advertising clouds, corporate holograms over wide sterile avenues, surveillance drones patrolling between gleaming corporate towers, cyberpunk realism, 24mm",
+      "prompt": "Slow aerial drone drift over the privatized city of Orange. Floating luminous advertising clouds cast warm amber glows on silent pedestrians wearing glowing finger rings. Cold police drones hum overhead. Sound: distant urban soundscape, synthetic voice ads, muffled drone propellers.",
+      "voiceover": "Dans la ville privatisée, chaque pas est profilé, chaque émotion mesurée. Tout est tracé. Sauf eux.",
+      "title": "La Cité libérée — Orange, 2041",
+      "duration": 7
+    },
+    {
+      "cast": ["saskia"],
+      "prompt": "Medium close-up of Saskia in a dim workshop filled with antique acoustic horns, copper coils and spectrogram screens. She adjusts her purple beanie, raises her eyes to the camera and says in French, passionate: \"La vue est le sens de la guerre et de la mort. Pour les furtifs, la vérité est dans l'oreille.\" Sound: soft acoustic horn resonance, warm tape hiss.",
+      "title": "La voie sonore",
+      "duration": 8
+    },
+    {
+      "image_prompt": "Cinematic close-up of an ancient limestone cave wall in the Sainte-Baume forest, lit by glowing candles, an intricate hand-carved calligraphic glyph engraved deep into the rock forming multiple looping waves and the letters 'tà ?', tactile organic stone texture, 50mm macro",
+      "prompt": "Slow sliding macro shot along the wet carved rock wall: glowing candle flames illuminate a mysterious cursive glyph with three radiating concentric ripples around the letters 'tà ?'. Fine water droplets glisten in the stone groove. Sound: gentle cave water drips, distant faint woodwind melody.",
+      "voiceover": "Un glyphe gravé à même la matière. Pas une écriture d'adulte. L'alphabet d'une enfant de six ans.",
+      "duration": 8
+    },
+    {
+      "cast": ["sahar"],
+      "prompt": "Close-up of Sahar sitting under a pine tree at twilight, the wind catching her short strawberry-blonde hair, tears shining on her eyelashes, her hand touching a woolen blanket. She looks into the camera with heartbroken conviction, speaking in French: \"Elle n'est pas morte. Tishka m'appelle. Je l'entends à travers la sève et le vent.\" Sound: night breeze through pines, distant owl hoot.",
+      "duration": 8
+    },
+    {
+      "image_prompt": "Cinematic night shot on a wild rocky mountain plateau in Provence under a starry moonless sky, wind-swept lavender bushes, two parents sitting in a sleeping bag in the dark, a tiny warm ethereal glowing shadow of a small girl with soft fur and avian wings cuddles between them, rim lit by starlight, Kodak 500T look",
+      "prompt": "Gentle slow push-in: in the moonless darkness of the plateau, two parents hug each other inside their blankets. Between their chests, a delicate hybrid child with warm shifting fawn fur and soft feathery arm-wings curls up, purring softly. Sound: tender childlike giggle, deep rhythmic purring, rustling dry grass.",
+      "voiceover": "Ni disparue, ni tuée. Métamorphosée. Elle est devenue le vivant qui refuse la cage.",
+      "title": "Moustiers — La rencontre dans le noir",
+      "duration": 9
+    },
+    {
+      "cast": ["aguero"],
+      "prompt": "Medium shot of Agüero on a rocky cliff overlooking the sea, wind whipping his hair, holding a jet-pack frame, a fierce triumphant smile on his face. He points forward and shouts in French with energy: \"La meute est prête ! On ne défend que ce qu'on a libéré ensemble !\" Sound: ocean surf roaring below, wind gusts.",
+      "duration": 6
+    },
+    {
+      "card": {
+        "title": "LES FURTIFS",
+        "subtitle": "D'après le roman d'Alain Damasio (Éditions La Volte) — Pilote expérimental généré par Astroport.ONE",
+        "links": [
+          {
+            "label": "Lire le livre (La Volte)",
+            "url": "https://lavolte.net/livres/les-furtifs/"
+          },
+          {
+            "label": "Générateur Open Source",
+            "url": "https://github.com/papiche/Astroport.ONE"
+          }
+        ]
+      },
+      "duration": 8
+    }
+  ]
+}
