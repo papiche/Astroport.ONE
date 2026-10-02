@@ -208,46 +208,12 @@ if [ -z "$_faces_json" ] || [ "$_faces_json" = "null" ]; then
     exit 1
 fi
 
-## 8.5. Zéro visage détecté → enchaîner sur la reconnaissance objet/lieu
-##      (IA/inventory_recognition.py, déjà en place : classification Ollama
-##      Vision multi-type plante/insecte/animal/objet/lieu, délégation
-##      PlantNet pour les plantes) — sur le MÊME fichier déjà déchiffré en
-##      local ($_img), jamais ré-uploadé nulle part. Le verrou GPU (fd 9) est
-##      toujours tenu à ce stade : Ollama et ComfyUI ne se disputent donc
-##      jamais le GPU en même temps.
-##      Pas de GPS réel disponible ici (le Brain ne voit jamais de métadonnées
-##      de localisation) — 0.0/0.0 en placeholder, la vraie géoloc EXIF est
-##      extraite côté Satellite au moment du PUT (cloud_storage.py), pas ici.
-_scene_json=""
-_face_count=$(jq '[.. | .faces? // empty | .[]?] | length' <<< "$_faces_json" 2>/dev/null)
-if [ "${_face_count:-0}" -eq 0 ] 2>/dev/null; then
-    _INVENTORY="$MY_PATH/../inventory_recognition.py"
-    if [ -s "$_INVENTORY" ]; then
-        _scene_raw=$(python3 "$_INVENTORY" "$_img" 0.0 0.0 --json 2>>"$HOME/.zen/tmp/faceid_scene.log")
-        _scene_json=$(jq -c '{
-            type:        (.classification.type // "object"),
-            category:    (.identification.category // .classification.category // null),
-            name:        (.identification.name // null),
-            description: (.identification.description // .classification.description // null),
-            confidence:  (.classification.confidence // null),
-            tags:        (.tags // [])
-        }' <<< "$_scene_raw" 2>/dev/null)
-        if [ -n "$_scene_json" ] && [ "$_scene_json" != "null" ]; then
-            _log_scene_type=$(jq -r '.type' <<< "$_scene_json" 2>/dev/null)
-            echo "INFO:faceid:scene_analysis:${_log_scene_type:-?}" >&2
-        else
-            _scene_json=""
-        fi
-    fi
-fi
-
-## 9. Sortie — fusionne faces + scene_analysis (si présent) dans un seul JSON
-if [ -n "$_scene_json" ]; then
-    _final_json=$(jq -c --argjson scene "$_scene_json" '. + {scene_analysis: $scene}' <<< "$_faces_json" 2>/dev/null)
-    [ -z "$_final_json" ] && _final_json="$_faces_json"
-else
-    _final_json="$_faces_json"
-fi
+## 9. Sortie — .ucloud est réservé aux images de visages (depuis 2026-10-02) :
+##    zéro visage détecté n'enchaîne plus sur IA/inventory_recognition.py (la
+##    photo sera supprimée côté Satellite, cf. satellite_face_matcher.py
+##    ::_delete_ucloud_entry) — pas la peine de dépenser du GPU Ollama pour
+##    une analyse de scène qui ne sera jamais conservée.
+_final_json="$_faces_json"
 echo "$_final_json"
 if [ -n "$OUT_JSON" ]; then
     echo "$_final_json" > "$OUT_JSON"

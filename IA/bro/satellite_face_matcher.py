@@ -354,49 +354,54 @@ def _tag_ucloud_index(email: str, path: str, names: list) -> None:
     _log(f"index.json tagué {names} sur {path} ({email})")
 
 
-def _tag_ucloud_scene(email: str, path: str, scene: dict) -> None:
-    """Enregistre le résultat de reconnaissance objet/lieu/scène (Ollama
-    vision, IA/inventory_recognition.py, chaîné par faceid.sh §8.5 quand
-    AUCUN visage n'est détecté sur la photo) dans l'entrée `path` de
-    index.json — champ dédié `scene`, distinct de `tags` (réservé aux noms
-    d'amis à qui la photo a été partagée) pour ne jamais confondre les deux
-    catégories côté UI (cf. UPlanet/earth/cloud.html, section « Objets &
-    lieux détectés »)."""
+def _delete_ucloud_entry(email: str, path: str) -> bool:
+    """Retire `path` de index.json (+ sa clé de keyring.json si plus aucune
+    autre entrée ne référence le même CID) — appelé quand AUCUN visage n'est
+    détecté sur la photo : .ucloud est réservé aux images de visages, le
+    reste n'est pas conservé (ni scène, ni inventaire objets/lieux, cf.
+    UPlanet/earth/ucloud.html). Même motif que
+    UPassport/services/cloud_storage.py::remove_subtree()/prune_keyring()
+    (pas d'import cross-projet, juste la même convention de fichier/verrou).
+    Le blob IPFS lui-même n'est pas dépin — c'est la clé de déchiffrement
+    qu'on détruit, comme pour un DELETE DAV classique."""
     with _ucloud_lock(email):
         index_file = _ucloud_dir(email) / "index.json"
+        keyring_file = _ucloud_dir(email) / "keyring.json"
         try:
             idx = json.loads(index_file.read_text())
         except Exception as exc:
             _log(f"WARN: index.json illisible pour {email} : {exc}")
-            return
+            return False
 
-        entry = idx.get("entries", {}).get(path)
+        entry = idx.get("entries", {}).pop(path, None)
         if entry is None:
-            _log(f"WARN: entrée {path} absente de index.json — scène non appliquée")
-            return
+            _log(f"WARN: entrée {path} absente de index.json — rien à supprimer")
+            return False
 
-        entry["scene"] = {
-            "type": scene.get("type"),
-            "category": scene.get("category"),
-            "name": scene.get("name"),
-            "description": scene.get("description"),
-            "confidence": scene.get("confidence"),
-            "tags": [t for t in (scene.get("tags") or [])
-                     if t and t not in ("UPlanet", "inventory")],
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-        }
-
-        tmp = index_file.with_name(f".{index_file.name}.tmp.{os.getpid()}")
         try:
-            tmp.write_text(json.dumps(idx, ensure_ascii=False, indent=2))
-            os.chmod(tmp, 0o600)
-            os.replace(tmp, index_file)
+            keyring = json.loads(keyring_file.read_text())
+        except Exception:
+            keyring = {}
+        live_cids = {e.get("cid") for e in idx.get("entries", {}).values()
+                     if isinstance(e, dict) and e.get("cid")}
+        keyring = {cid: v for cid, v in keyring.items() if cid in live_cids}
+
+        tmp_idx = index_file.with_name(f".{index_file.name}.tmp.{os.getpid()}")
+        tmp_kr = keyring_file.with_name(f".{keyring_file.name}.tmp.{os.getpid()}")
+        try:
+            tmp_idx.write_text(json.dumps(idx, ensure_ascii=False, indent=2))
+            os.chmod(tmp_idx, 0o600)
+            tmp_kr.write_text(json.dumps(keyring, ensure_ascii=False, indent=2))
+            os.chmod(tmp_kr, 0o600)
+            os.replace(tmp_idx, index_file)
             os.chmod(index_file, 0o600)
+            os.replace(tmp_kr, keyring_file)
+            os.chmod(keyring_file, 0o600)
         except Exception as exc:
-            _log(f"WARN: écriture index.json (scène) : {exc}")
-            return
-    _log(f"index.json — scène enregistrée sur {path} "
-         f"({scene.get('type')}/{scene.get('category')})")
+            _log(f"WARN: écriture index/keyring (suppression) : {exc}")
+            return False
+    _log(f"index.json — {path} supprimé (aucun visage détecté, non conservé)")
+    return True
 
 
 def _share_photo(email: str, owner_hex: str, path: str, ipfs_link: str,
@@ -509,25 +514,11 @@ def main() -> int:
 
     faces = result.get("faces") or []
     if not faces:
-        scene = result.get("scene_analysis")
-        # confidence == 0.0 = échec total de classification (ex. modèle Ollama
-        # indisponible) — inventory_recognition.py renvoie alors un item factice
-        # ({"name": "Erreur d'identification", ...}) qu'il ne faut PAS taguer
-        # comme s'il s'agissait d'une vraie identification (constaté en prod,
-        # 2026-09-20 : "unknown model architecture: 'mllama'").
-        if isinstance(scene, dict) and (scene.get("confidence") or 0) > 0:
-            # Aucun visage : le Brain a enchaîné sur inventory_recognition.py
-            # (faceid.sh §8.5) — on enregistre l'identification dans un champ
-            # dédié (voir _tag_ucloud_scene), consultable via
-            # GET /mailjet/inventory (UPlanet/earth/cloud.html).
-            _tag_ucloud_scene(email, path, scene)
-            _log(f"aucun visage sur {path} — scène : "
-                 f"{scene.get('type')}/{scene.get('category')} ({scene.get('name') or '?'})")
-        elif isinstance(scene, dict):
-            _log(f"aucun visage sur {path} — analyse de scène échouée "
-                 f"(confidence=0) : {scene.get('description', '')[:150]}")
-        else:
-            _log(f"aucun visage détecté sur {path}, pas d'analyse de scène disponible")
+        # .ucloud est réservé aux images de visages (depuis 2026-10-02) : sans
+        # visage détecté, ni analyse de scène/inventaire ni conservation —
+        # l'entrée (et sa clé de déchiffrement) est retirée immédiatement.
+        _delete_ucloud_entry(email, path)
+        _log(f"aucun visage détecté sur {path} — supprimé")
         return 0
 
     try:

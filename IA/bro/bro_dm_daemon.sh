@@ -1279,9 +1279,9 @@ out = {
     'status':    sys.argv[6],
     'faces':     faces,
 }
-# scene_analysis (faceid.sh §8.5, présent seulement si 0 visage détecté).
-if isinstance(parsed, dict) and isinstance(parsed.get('scene_analysis'), dict):
-    out['scene_analysis'] = parsed['scene_analysis']
+# .ucloud est réservé aux images de visages (depuis 2026-10-02) : faceid.sh
+# ne produit plus de scene_analysis quand 0 visage est détecté — la photo est
+# supprimée côté Satellite (satellite_face_matcher.py::_delete_ucloud_entry).
 
 # Enrôlement supervisé (FaceCloud) : simple relais Satellite→Brain→Satellite,
 # le Brain n'en a rien fait — satellite_face_matcher.py les lit ici pour

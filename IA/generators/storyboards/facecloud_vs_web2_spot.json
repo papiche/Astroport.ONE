@@ -1,0 +1,69 @@
+{
+  "name": "FaceCloud — La reconnaissance faciale qui vous appartient (spot court)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "style": "clean",
+  "height": 720,
+  "seed": 9009,
+  "cast": {
+    "lea": {},
+    "malik": {}
+  },
+  "shots": [
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik at home, looking thoughtfully at his phone, then up at the camera, slightly worried. He says in French: \"Google sait déjà reconnaître le visage de ma fille sur mes photos. Mais ce catalogue... il appartient à qui, au juste ?\" Quiet room ambience.",
+      "duration": 8
+    },
+    {
+      "cast": ["lea"],
+      "prompt": "Close-up of Lea in her kitchen, calm and confident smile. She says in French: \"Chez moi, ce catalogue de visages ne quitte jamais ma propre station. FaceCloud, c'est la reconnaissance faciale... mais chez vous.\" Quiet kitchen ambience.",
+      "duration": 9
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/ucloud.html",
+      "presenter": "lea",
+      "motion": "scroll",
+      "title": "Activer son cloud chiffré",
+      "prompt": "Lea says in French, enthusiastic: \"J'active mon cloud chiffré en un clic, et j'y dépose mes photos. Chaque fichier est chiffré avant même de partir.\"",
+      "duration": 8
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik, eyebrows raised, convinced. He says in French: \"Et la photo n'est envoyée que si mon ami et moi, on se suit mutuellement sur NOSTR. Pas de case à cocher.\" Quiet room ambience.",
+      "duration": 9
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/ucloud.html",
+      "screen_js": "document.getElementById('btn-faces-view-toggle').click()",
+      "presenter": "lea",
+      "motion": "zoom",
+      "title": "Parcourir ses visages en nébuleuse",
+      "prompt": "Lea says in French: \"Une nébuleuse de vignettes, pour reconnaître d'un coup d'œil qui est qui, sans jamais l'exposer en clair à personne d'autre.\"",
+      "duration": 8
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik, reassured expression. He says in French: \"Et si aucun visage n'est détecté sur une photo, elle est supprimée aussitôt. Rien d'inutile n'est jamais gardé.\" Quiet room ambience.",
+      "duration": 8
+    },
+    {
+      "cast": ["lea"],
+      "prompt": "Close-up of Lea, looking straight at the camera, warm smile, soft music starting. She says in French: \"Chez Google, ce catalogue leur appartient. Chez nous, il est à vous. Ça, c'est la souveraineté numérique.\" Gentle music swells softly.",
+      "duration": 8
+    },
+    {
+      "card": {
+        "title": "FaceCloud — la reconnaissance faciale qui vous appartient",
+        "subtitle": "Souveraineté numérique, pas surveillance",
+        "links": [
+          { "label": "Essayer FaceCloud", "url": "https://u.copylaradio.com/earth/ucloud.html" },
+          { "label": "Le code", "url": "https://github.com/papiche/Astroport.ONE" },
+          { "label": "Soutenir le projet", "url": "https://opencollective.com/monnaie-libre" }
+        ]
+      },
+      "duration": 8
+    }
+  ]
+}

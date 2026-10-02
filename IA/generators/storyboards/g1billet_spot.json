@@ -1,0 +1,69 @@
+{
+  "name": "Ğ1Billet — Le cash qui se protège tout seul (spot court)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "style": "clean",
+  "height": 720,
+  "seed": 7007,
+  "cast": {
+    "lea": {},
+    "malik": {}
+  },
+  "shots": [
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik in his cozy village living room, holding up a freshly printed paper Ğ1Billet, looking at it with a slightly worried frown, then at the camera. He says in French, concerned: \"On m'a dit qu'une simple photo d'un billet papier suffisait à vider tout le compte.\" Quiet room ambience.",
+      "duration": 7
+    },
+    {
+      "cast": ["lea"],
+      "prompt": "Close-up of Lea in her kitchen, holding her own printed Ğ1Billet, she smiles reassuringly at the camera and says in French, calm and confident: \"Pas avec le Ğ1Billet. Son secret est coupé en trois morceaux : une photo seule ne permet jamais de le dépenser.\" Quiet kitchen ambience.",
+      "duration": 8
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/billet.html",
+      "presenter": "le",
+      "motion": "zoom",
+      "title": "1. Créer son Ğ1Billet",
+      "prompt": "Lea says in French, enthusiastic: \"Je me connecte avec mon MULTIPASS, et je génère ma planche de billets en un clic.\"",
+      "duration": 7
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Close-up of Malik's hands folding and taping the narrow printed strip on the left edge of a Ğ1Billet, then holding up the finished bill showing two QR codes side by side. He says in French, clear: \"Un QR visible pour vérifier le solde... et une bande scellée qu'on replie et qu'on scotche. Aucune des deux ne suffit seule.\" Soft paper-folding sound, quiet room.",
+      "duration": 9
+    },
+    {
+      "cast": ["lea"],
+      "prompt": "Outdoor medium close-up in a sunny village square with old stone houses, warm afternoon light. Lea hands her printed Ğ1Billet toward an out-of-frame neighbor's hand, smiles at the camera and says in French, joyful: \"Je le donne à qui je veux, en main propre, comme n'importe quel billet.\" Village ambience, birds.",
+      "duration": 6
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/billet_redeem.html",
+      "presenter": "malik",
+      "motion": "scroll",
+      "title": "2. Encaisser son Ğ1Billet",
+      "prompt": "Malik says in French, confident: \"Pour encaisser, je scanne les deux parts du billet, et je vérifie le solde en direct, avant de recevoir les fonds.\"",
+      "duration": 9
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Medium close-up of Malik in his living room, warm confident smile, he looks straight at the camera and says in French: \"Voler une photo ne sert à rien. Le Ğ1Billet protège vraiment ceux qui se le passent de la main à la main.\" Soft room ambience, gentle music starts.",
+      "duration": 9
+    },
+    {
+      "card": {
+        "title": "Imprimez votre Ğ1Billet",
+        "subtitle": "Un cash numérique qui protège ses porteurs",
+        "links": [
+          { "label": "Créer un billet", "url": "https://u.copylaradio.com/earth/billet.html" },
+          { "label": "Encaisser un billet", "url": "https://u.copylaradio.com/earth/billet_redeem.html" },
+          { "label": "Le code", "url": "https://github.com/papiche/Astroport.ONE" },
+          { "label": "Soutenir le projet", "url": "https://opencollective.com/monnaie-libre" }
+        ]
+      },
+      "duration": 8
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "name": "Civilisation Ẑen — Bien Commun, pas monnaie dette (spot manifeste)",
+  "ratio": "9:16",
+  "megapixels": 0.3,
+  "steps": 10,
+  "style": "clean",
+  "height": 720,
+  "voice": "amelie",
+  "seed": 8008,
+  "cast": {
+    "lea": {
+      "image_prompt": "Photo of Lea, a 29-year-old French graphic designer with short wavy chestnut hair, round tortoiseshell glasses, light freckles, a mustard yellow knit sweater, warm curious smile",
+      "voice_line": "Bonjour, je m'appelle Léa. Je voulais comprendre à qui appartiennent vraiment les machines d'Internet."
+    },
+    "malik": {
+      "image_prompt": "Photo of Malik, a 45-year-old man with short dark curly hair, a salt-and-pepper beard, kind brown eyes, a navy blue work shirt with rolled sleeves, calm friendly expression",
+      "voice_line": "Salut, moi c'est Malik. Dans mon salon, un petit ordinateur fait tourner Internet pour tout le village."
+    }
+  },
+  "shots": [
+    {
+      "image_prompt": "Vertical smartphone video frame, cold cinematic photo of a crowded anonymous city subway platform at night framed tall and narrow, commuters in the foreground staring down at glowing phone screens, a stock ticker display overhead flashing red and green numbers, harsh blue-white fluorescent light, nobody making eye contact, documentary photography, shallow depth of field",
+      "prompt": "Slow static shot holding on the crowded platform, phone screens glow on blank faces, the stock ticker numbers flicker faster, nobody looks up. Cold, isolating atmosphere. Sound: distant train rumble, muffled station announcer, no speech.",
+      "voiceover": "Une monnaie dette ne regarde personne. Elle circule, elle spécule, elle s'évade — sans jamais rien devoir à personne.",
+      "duration": 8
+    },
+    {
+      "image_prompt": "Vertical smartphone video frame, extreme close-up of a pale hand tapping an anonymous bank card against a cold metal payment terminal, blue LED blinking, blurred indifferent crowd passing behind, harsh artificial light, shallow depth of field, documentary photography",
+      "prompt": "Static extreme close-up, the card taps the terminal, the blue LED blinks once, the hand withdraws immediately without pause, the crowd behind keeps moving, no one slows down. Cold, transactional. Sound: a short electronic beep, ambient crowd murmur, no speech.",
+      "voiceover": "Un tiers lointain décide, prélève, efface. Entre toi et moi, plus rien ne circule que le chiffre.",
+      "duration": 7
+    },
+    {
+      "image_prompt": "Vertical smartphone video frame, low angle warm golden-hour photo of a lively village square market framed tall, neighbors in the foreground greeting each other face to face with warm smiles and handshakes, wooden stalls with fresh produce, above them a faint holographic translucent blue grid of glowing square cells rises toward the sky like a gentle constellation, solarpunk warmth, cinematic photography",
+      "prompt": "Smooth slow push-in over the sunlit village market, neighbors clasp hands and smile at each other, the faint holographic grid of glowing cells pulses gently overhead and rises out of frame like a living constellation connecting them. Warm, communal, alive. Sound: market chatter, birdsong, warm acoustic guitar beginning.",
+      "voiceover": "Ici, la valeur ne s'évade pas : elle se tisse. De visage en visage, de confiance en confiance.",
+      "duration": 8
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Vertical smartphone video frame, medium shot of Malik in the sunlit village square market, he places a hand warmly on the shoulder of someone just out of frame, looking at the camera with quiet pride, a printed Ğ1Billet held out in his other hand. He says in French, warm: \"Je te certifie, Léa. Ce billet porte notre confiance, pas un chiffre anonyme.\" Market ambience, warm guitar continues.",
+      "duration": 7
+    },
+    {
+      "image": "/home/fred/.zen/workspace/scenes/assets/g1billet_real.png",
+      "prompt": "Vertical smartphone video frame, slow steady close-up push-in on the real printed Ğ1Billet held flat in two open hands at chest height, filmed from slightly above so the whole wide bill fits across the vertical frame, the camera drifts gently across the amount, the balance QR and the P1 QR. Warm natural light, shallow depth of field. Sound: soft paper rustle, warm guitar continues, no speech.",
+      "duration": 4
+    },
+    {
+      "cast": ["lea"],
+      "prompt": "Vertical smartphone video frame, medium close-up of Lea in the same village square, visibly moved, she takes the printed Ğ1Billet in both hands and looks at the camera, smiling warmly. She says in French, touched: \"Un bien commun, ça ne s'achète pas. Ça se reçoit, et ça se rend.\" Market ambience, warm guitar swells gently.",
+      "duration": 7
+    },
+    {
+      "image_prompt": "Vertical smartphone video frame, low angle photo looking up from the same warm village square at golden hour, three translucent holographic streams of glowing light rise upward and branch out from the ground toward a floating communal treasury chest, a floating workshop full of tools, and a floating lush shared garden suspended in the sky above, solarpunk utopia, soft volumetric light, cinematic photography",
+      "prompt": "Slow upward tilt, three soft glowing streams of light rise from the village square and branch into the sky toward the floating chest, workshop and garden above, each receiving an equal share. Gentle, harmonious, abundant. Sound: warm swelling music, distant village life.",
+      "voiceover": "Un tiers pour le commun. Un tiers pour inventer demain. Un tiers pour ce qui reste. Rien ne part. Tout circule.",
+      "duration": 9
+    },
+    {
+      "image_prompt": "Vertical smartphone video frame, low angle twilight photo looking up at the village, warm lights glowing in windows stacked above, a translucent holographic grid of glowing cells visible overhead connecting every house like a gentle starlit web, residents of all ages gathered below looking up together, blue hour, solarpunk renaissance, cinematic photography",
+      "prompt": "Slow ascending tilt at blue hour, the glowing web overhead connects every lit window rising above, the gathered residents below look up together in quiet wonder. Grand, warm, communal. Sound: swelling warm acoustic and orchestral music, soft distant voices.",
+      "voiceover": "Nous ne spéculons pas sur l'humain. Nous le certifions. Bienvenue dans la civilisation Ẑen.",
+      "title": "UPLANET — Une civilisation Ẑen, pas une fausse démocratie",
+      "duration": 8
+    },
+    {
+      "card": {
+        "title": "Rejoignez la toile de confiance",
+        "subtitle": "Ẑen : un bien commun géré ensemble, pas une monnaie dette",
+        "links": [
+          { "label": "Choisir sa station MULTIPASS", "url": "https://ipfs.copylaradio.com/ipns/copylaradio.com/g1.html" },
+          { "label": "Notre Charte Open Source", "url": "https://ipfs.copylaradio.com/ipns/copylaradio.com/opensource.html" }        ]
+      },
+      "duration": 9
+    }
+  ]
+}
