@@ -3,7 +3,7 @@
 #### generate_scene.sh : storyboard JSON → vidéo multi-plans (MiniMax H3) assemblée en 720p
 #
 # Usage: generate_scene.sh [-w workdir] [-c] <storyboard.json> [udrive_path]
-#   -w  répertoire de travail (défaut ~/.zen/workspace/scenes/scene_*, hors de ~/.zen/tmp
+#   -w  répertoire de travail (défaut $SCENES_DIR/scene_*  (~/.zen/workspace/scenes), hors de ~/.zen/tmp
 #       que le nettoyage d'Astroport vide) ; relancer avec le même -w reprend la scène :
 #       acteurs, plans et captures déjà rendus ne sont pas recalculés.
 #   -c  mode acteurs seuls : prépare/rafraîchit .cast (banque de personnages) sans
@@ -16,7 +16,8 @@
 #   "ratio": "16:9", "megapixels": 0.4, "steps": 10, "style": "vhs", "height": 720, "seed": 42,
 #   "cast": {
 #     "lea": {"image_prompt": "portrait…",  "voice_line": "phrase FR de ~8 s"},
-#     "malik": {"image": "/portrait.png", "voice": "/voix_10s.wav"}
+#     "malik": {"image": "/portrait.png", "voice": "/voix_10s.wav"},
+#     "ana":   {"image_prompt": "…", "voice_design": "warm low-pitched woman in her 50s, slow", "voice_line": "…"}
 #   },
 #   "shots": [
 #     {"image_prompt": "...", "prompt": "...", "duration": 5},  image générée (generate_image.sh) puis animée
@@ -32,8 +33,9 @@
 #   ]
 # }
 # Acteurs ("cast", ref2va) : portrait sur fond neutre (fourni ou généré par Z-Image)
-# et voix de référence (fournie, ou créée par MiniMax en faisant dire "voice_line" au
-# portrait). Dans un plan "cast", le script ajoute en tête du prompt la phrase qui lie
+# et voix de référence : fournie ("voice"), inventée par Qwen3-TTS VoiceDesign d'après
+# "voice_design" (description du timbre, âge, ton : une voix distincte par acteur), ou à
+# défaut créée par MiniMax en faisant dire "voice_line" au portrait. Dans un plan "cast", le script ajoute en tête du prompt la phrase qui lie
 # chaque nom à <Picture k>/<Audio k> : écrire ensuite le prompt avec les noms.
 # N'utiliser le visage ou la voix d'une personne réelle qu'avec son consentement.
 #
@@ -74,10 +76,8 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-# ffmpeg du système : il a tous les filtres utilisés, drawtext compris
-# (le build de /usr/local/bin n'a pas drawtext) ; repli sur celui du PATH
-FFMPEG=/usr/bin/ffmpeg FFPROBE=/usr/bin/ffprobe
-[ -x "$FFMPEG" ] || { FFMPEG=ffmpeg; FFPROBE=ffprobe; }
+# FFMPEG (avec drawtext), COMFY_PY, ASTRO_PY, SCENES_DIR : voir lib/env.sh
+. "$MY_PATH/lib/env.sh"
 
 usage() {
   sed -n '5,9p' "$0" | sed 's/^# \{0,1\}//' >&2
@@ -123,6 +123,23 @@ else
   fi
 fi
 
+# Chemins du storyboard portables : $HOME, ${HOME} et $SCENES_DIR sont résolus ici
+mkdir -p "$SCENES_DIR"
+RESOLVED=$(mktemp "${TMPDIR:-/tmp}/storyboard_XXXXXX.json")
+FINISHED_OK=0
+# Sortie : le suivi de progression passe en "failed" si le script s'arrête avant la fin
+cleanup() {
+  local rc=$?
+  rm -f "$RESOLVED"
+  if [ "$FINISHED_OK" != 1 ] && [ -n "$PROGRESS" ] && [ -d "$WORK_DIR" ]; then
+    progress failed -1 "arrêt (code $rc)"
+  fi
+}
+trap cleanup EXIT
+jq --arg h "$HOME" --arg s "$SCENES_DIR" \
+   'walk(if type == "string" then gsub("\\$\\{?SCENES_DIR\\}?"; $s) | gsub("\\$\\{?HOME\\}?"; $h) else . end)' \
+   "$STORYBOARD" > "$RESOLVED" && STORYBOARD="$RESOLVED"
+
 RATIO=$(jq -r '.ratio // "16:9"' "$STORYBOARD")
 MEGAPIXELS=$(jq -r '.megapixels // 0.4' "$STORYBOARD")
 STEPS=$(jq -r '.steps // 10' "$STORYBOARD")
@@ -134,7 +151,6 @@ FINAL_HEIGHT=$(jq -r '.height // 720' "$STORYBOARD")
 VOICE=$(jq -r '.voice // "amelie"' "$STORYBOARD")
 TTS_URL="http://localhost:5005/v1/audio/speech"
 TITLE_FONT=$(fc-match -f '%{file}' 'DejaVu Sans:bold' 2>/dev/null)
-ASTRO_PY="$HOME/.astro/bin/python"
 BASE_SEED=$(jq -r '.seed // empty' "$STORYBOARD")
 [ -z "$BASE_SEED" ] && BASE_SEED=$((RANDOM * RANDOM))
 NB_SHOTS=$(jq '(.shots // []) | length' "$STORYBOARD")
@@ -157,14 +173,41 @@ case "$RATIO" in
   21:9) IMAGE_SIZE=1536x640 ;;  *)    IMAGE_SIZE=1024x1024 ;;
 esac
 
-WORK_DIR="${WORK_DIR:-$HOME/.zen/workspace/scenes/scene_$(date +%s)_$(openssl rand -hex 4)}"
+WORK_DIR="${WORK_DIR:-$SCENES_DIR/scene_$(date +%s)_$(openssl rand -hex 4)}"
 mkdir -p "$WORK_DIR"
+# Graine tirée au sort : mémorisée dans le répertoire de travail, sinon chaque reprise
+# changerait la signature de tous les plans et rien ne serait réutilisé
+if ! jq -e '.seed' "$STORYBOARD" > /dev/null; then
+  if [ -s "$WORK_DIR/.seed" ]; then BASE_SEED=$(cat "$WORK_DIR/.seed"); else echo "$BASE_SEED" > "$WORK_DIR/.seed"; fi
+fi
 echo "Scène : $NB_SHOTS plans | ${RATIO} @ ${MEGAPIXELS} MP | ${STEPS} steps | upscale ${UPSCALE} | style ${STYLE} | ${FINAL_W}x${FINAL_H} | seed ${BASE_SEED}" >&2
 echo "Répertoire de travail (reprise avec -w) : $WORK_DIR" >&2
 SCENE_START=$(date +%s)
 
-# Voix-off : Orpheus TTS local ou via la constellation (orpheus.me.sh ouvre le tunnel P2P)
-if jq -e 'any((.shots // [])[]; .voiceover)' "$STORYBOARD" > /dev/null; then
+# Suivi de progression (lu par l'interface UPlanet/earth/story.html via UPassport) :
+# $WORK_DIR/progress.json = {stage, shot, shots, message, started, updated, done:[indices rendus]}
+# stages : prepare cast voiceover shot finish assemble done failed
+PROGRESS="$WORK_DIR/progress.json"
+progress() {  # $1 stage, $2 index du plan (-1 si sans objet), $3 message
+  local done_list="" k
+  for ((k = 0; k < NB_SHOTS; k++)); do
+    [ -s "$WORK_DIR/shot_$(printf "%02d" "$k").mp4" ] && done_list+="$k,"
+  done
+  jq -n --arg st "$1" --argjson i "${2:--1}" --argjson n "$NB_SHOTS" --arg m "$3" \
+        --argjson t0 "$SCENE_START" --argjson now "$(date +%s)" --argjson d "[${done_list%,}]" \
+        '{stage: $st, shot: $i, shots: $n, message: $m, started: $t0, updated: $now, done: $d}' \
+    > "$PROGRESS.tmp" 2>/dev/null && mv "$PROGRESS.tmp" "$PROGRESS"
+}
+progress prepare -1 "préparation"
+
+# Voix-off : Qwen3-TTS si le storyboard décrit un "narrator" et que le venv existe (voix
+# constante, prononciation du lexique), sinon Orpheus TTS local ou via la constellation
+NARRATOR_DESIGN=$(jq -r '.narrator.voice_design // empty' "$STORYBOARD")
+NARRATOR_QWEN=0
+[ -n "$NARRATOR_DESIGN" ] && [ -n "$QWEN3TTS_PY" ] && NARRATOR_QWEN=1
+[ -n "$NARRATOR_DESIGN" ] && [ "$NARRATOR_QWEN" = 0 ] \
+  && echo "Attention : narrator ignoré (install/install_qwen3_tts.sh non lancé), repli Orpheus" >&2
+if [ "$NARRATOR_QWEN" = 0 ] && jq -e 'any((.shots // [])[]; .voiceover)' "$STORYBOARD" > /dev/null; then
   "$MY_PATH/../services/orpheus.me.sh" > /dev/null 2>&1
   if ! curl -s -o /dev/null -m 10 "http://localhost:5005/docs"; then
     echo "Erreur : Orpheus TTS injoignable (IA/services/orpheus.me.sh)" >&2
@@ -175,7 +218,7 @@ fi
 # $1 texte, $2 fichier wav
 tts() {
   local code
-  code=$(jq -n --arg t "$1" --arg v "$VOICE" '{model: "orpheus", input: $t, voice: $v, response_format: "wav", speed: 1.0}' \
+  code=$(jq -n --arg t "$("$COMFY_PY" "$MY_PATH/lib/pronounce.py" --text "$1")" --arg v "$VOICE" '{model: "orpheus", input: $t, voice: $v, response_format: "wav", speed: 1.0}' \
          | curl -s -m 300 -o "$2" -w "%{http_code}" -H "Content-Type: application/json" --data-binary @- "$TTS_URL")
   [ "$code" = "200" ] && [ -s "$2" ]
 }
@@ -215,23 +258,62 @@ speech_render() {
 ########################################################################
 # Acteurs : portrait neutre + voix de référence, préparés une fois
 ########################################################################
-CAST_BANK="$HOME/.zen/workspace/characters"
+# Signatures : un acteur ou un plan modifié depuis le dernier rendu est recalculé, les autres sont
+# réutilisés (le répertoire -w sert de cache entre les versions d'une même scène)
+sig_of() { sha256sum | cut -c1-16; }
+declare -A STALE_ACTOR
+GLOBAL_SIG=$(printf '%s|' "$RATIO" "$MEGAPIXELS" "$STEPS" "$REF_STEPS" "$UPSCALE" "$STYLE" "$FINAL_HEIGHT" "$BASE_SEED" "$VOICE" \
+             "$(jq -c '.narrator // {}' "$STORYBOARD")" | sig_of)
+for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
+  cdir="$WORK_DIR/cast/$name"
+  csig=$(jq -c --arg n "$name" '.cast[$n]' "$STORYBOARD" | sig_of)
+  if [ -d "$cdir" ] && [ "$(cat "$cdir/.sig" 2>/dev/null)" != "$csig" ]; then
+    echo "Acteur $name modifié : portrait et voix refaits" >&2
+    rm -rf "$cdir"
+    STALE_ACTOR[$name]=1  # la banque de personnages ne doit pas ramener l'ancien visage
+  fi
+  mkdir -p "$cdir"; echo "$csig" > "$cdir/.sig"
+done
+prev_stale=0
+for ((i = 0; i < NB_SHOTS; i++)); do
+  n=$(printf "%02d" "$i")
+  ssig=$( { jq -c ".shots[$i]" "$STORYBOARD"; echo "$GLOBAL_SIG"
+            for c in $(jq -r "(.shots[$i].cast // []) + [.shots[$i].presenter // empty] | .[]" "$STORYBOARD"); do cat "$WORK_DIR/cast/$c/.sig"; done
+          } | sig_of)
+  if [ -f "$WORK_DIR/shot_$n.sig" ] && { [ "$(cat "$WORK_DIR/shot_$n.sig")" != "$ssig" ] \
+       || { [ "$prev_stale" = 1 ] && jq -e ".shots[$i].continue == true" "$STORYBOARD" > /dev/null; }; }; then
+    echo "Plan $n modifié : recalculé" >&2
+    rm -f "$WORK_DIR"/{shot,talk,screenclip,mix,part,vo,image,last,card,screen}_"$n".* "$WORK_DIR/title_$n.txt"
+    prev_stale=1
+  else
+    prev_stale=0
+  fi
+  echo "$ssig" > "$WORK_DIR/shot_$n.sig"
+done
+
+# CAST_BANK modifiable : les rendus du Studio vidéo IA (UPassport) utilisent une banque par rendu, pour ne pas
+# écraser vos propres personnages par ceux d'un paquet partagé qui porte le même nom
+CAST_BANK="${CAST_BANK:-$HOME/.zen/workspace/characters}"
 
 for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
   cdir="$WORK_DIR/cast/$name"
   bdir="$CAST_BANK/$name"
+  progress cast -1 "acteur $name"
   mkdir -p "$cdir" "$bdir"
   actor=$(jq -c --arg n "$name" '.cast[$n]' "$STORYBOARD")
   refresh=$(jq -r '.refresh // false' <<< "$actor")
+  [ -n "${STALE_ACTOR[$name]}" ] && refresh=true
+  # Graine propre à chaque acteur : avec la graine de la scène pour tous, les voix se ressemblaient
+  actor_seed=$(jq -r --argjson s "$(( BASE_SEED + $(printf '%s' "$name" | cksum | cut -d' ' -f1) % 100000 ))" '.seed // $s' <<< "$actor")
 
   # Personnage déjà créé pour une scène précédente : mêmes visage et voix, repris
   # depuis la banque persistante (hors ~/.zen/tmp, jamais purgée par Astroport)
   if [ "$refresh" != "true" ]; then
-    if [ -s "$bdir/portrait.png" ] && [ ! -s "$cdir/portrait.png" ]; then
+    if [ -s "$bdir/portrait.png" ] && [ ! -s "$cdir/portrait.png" ] && ! jq -e '.image' <<< "$actor" > /dev/null; then
       cp "$bdir/portrait.png" "$cdir/portrait.png"
       echo "Acteur $name : portrait repris de la banque ($bdir)" >&2
     fi
-    if [ -s "$bdir/voice.wav" ] && [ ! -s "$cdir/voice.wav" ]; then
+    if [ -s "$bdir/voice.wav" ] && [ ! -s "$cdir/voice.wav" ] && ! jq -e '.voice' <<< "$actor" > /dev/null; then
       cp "$bdir/voice.wav" "$cdir/voice.wav"
       echo "Acteur $name : voix reprise de la banque ($bdir)" >&2
     fi
@@ -253,10 +335,23 @@ for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
   if [ ! -s "$cdir/voice.wav" ]; then
     if jq -e '.voice' <<< "$actor" > /dev/null; then
       "$FFMPEG" -v error -y -i "$(jq -r '.voice' <<< "$actor")" -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
+    elif jq -e '.voice_design' <<< "$actor" > /dev/null && [ -n "$QWEN3TTS_PY" ]; then
+      # Voix inventée par Qwen3-TTS VoiceDesign d'après la description : une voix distincte par acteur
+      echo "Acteur $name : voix de référence (Qwen3-TTS VoiceDesign)" >&2
+      # ~4 Go de VRAM : on libère Ollama et ComfyUI (même GPU) comme le fait lib/comfyui_recovery.sh
+      bash "$MY_PATH/../services/ollama.me.sh" FREE > /dev/null 2>&1
+      curl -s -m 10 -X POST "http://127.0.0.1:8188/free" -H "Content-Type: application/json" \
+           -d '{"unload_models": true, "free_memory": true}' > /dev/null 2>&1
+      "$QWEN3TTS_PY" "$MY_PATH/generate_voice.py" -o "$cdir/voice_src.wav" -S "$actor_seed" \
+        "$(jq -r '.voice_design' <<< "$actor")" "$(jq -r '.voice_line' <<< "$actor")" > /dev/null \
+        && "$FFMPEG" -v error -y -i "$cdir/voice_src.wav" -ac 1 -ar 48000 "$cdir/voice.wav" \
+        || { rm -f "$cdir/voice.wav"; echo "Erreur : voix Qwen3-TTS de $name échouée" >&2; exit 1; }
     elif jq -e '.voice_line' <<< "$actor" > /dev/null; then
+      jq -e '.voice_design' <<< "$actor" > /dev/null \
+        && echo "Attention : voice_design ignoré (install/install_qwen3_tts.sh non lancé), repli MiniMax" >&2
       echo "Acteur $name : voix de référence (MiniMax)" >&2
       line=$(jq -r '.voice_line' <<< "$actor")
-      speech_render "$cdir/voice_src.mp4" "$BASE_SEED" \
+      speech_render "$cdir/voice_src.mp4" "$actor_seed" \
         "Close-up: the person looks at the camera and speaks in French in a natural, calm voice, at a relaxed pace: \"$line\" Quiet room, no music, no background noise." \
         -i "$cdir/portrait.png" -r 1:1 -m 0.25 -d 8 -s "$STEPS"
       "$FFMPEG" -v error -y -i "$cdir/voice_src.mp4" -vn -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
@@ -278,6 +373,8 @@ done
 if [ "$CAST_ONLY" -eq 1 ]; then
   echo "Personnage(s) prêt(s) dans la banque ($CAST_BANK) :" >&2
   jq -r '.cast // {} | keys[]' "$STORYBOARD" | sed 's/^/  - /' >&2
+  FINISHED_OK=1
+  progress done -1 "terminé"
   exit 0
 fi
 
@@ -293,6 +390,34 @@ cast_refs() {
     k=$((k + 1))
   done
 }
+
+########################################################################
+# Voix-off Qwen3-TTS : toutes les lignes en un seul passage (un chargement de modèle),
+# voix du narrateur conçue une fois puis clonée pour chaque plan
+########################################################################
+if [ "$NARRATOR_QWEN" = 1 ]; then
+  vo_lines="$WORK_DIR/vo_lines.json"
+  # une ligne par plan à voix-off ; celles déjà synthétisées sont ignorées (reprise)
+  todo="[]"
+  for ((i = 0; i < NB_SHOTS; i++)); do
+    text=$(jq -r ".shots[$i].voiceover // empty" "$STORYBOARD")
+    out="$WORK_DIR/vo_$(printf "%02d" "$i").wav"
+    [ -n "$text" ] && [ ! -s "$out" ] \
+      && todo=$(jq -c --arg t "$text" --arg o "$out" '. + [{text: $t, out: $o}]' <<< "$todo")
+  done
+  if [ "$todo" != "[]" ]; then
+    progress voiceover -1 "voix-off ($(jq 'length' <<< "$todo") ligne(s))"
+    echo "Voix-off : $(jq 'length' <<< "$todo") ligne(s) (Qwen3-TTS)" >&2
+    printf '%s' "$todo" > "$vo_lines"
+    bash "$MY_PATH/../services/ollama.me.sh" FREE > /dev/null 2>&1
+    curl -s -m 10 -X POST "http://127.0.0.1:8188/free" -H "Content-Type: application/json" \
+         -d '{"unload_models": true, "free_memory": true}' > /dev/null 2>&1
+    narr_ref=$(jq -r '.narrator.ref // empty' "$STORYBOARD")
+    "$QWEN3TTS_PY" "$MY_PATH/generate_voice.py" --narrate "$vo_lines" -S "$BASE_SEED" \
+      --ref "${narr_ref:-$WORK_DIR/narrator.wav}" --design "$NARRATOR_DESIGN" > /dev/null \
+      || { echo "Erreur : voix-off Qwen3-TTS échouée" >&2; exit 1; }
+  fi
+fi
 
 ########################################################################
 # Plans
@@ -373,6 +498,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
     echo "Plan $n déjà rendu, ignoré" >&2
     continue
   fi
+  progress shot "$i" "plan $((i + 1))/$NB_SHOTS"
 
   # ---- Carton final ----
   if jq -e '.card' <<< "$shot" > /dev/null; then
@@ -460,6 +586,7 @@ done
 ########################################################################
 # Finition plan par plan (voix-off, taille exacte, style, titre), puis assemblage
 ########################################################################
+progress finish -1 "finition des plans"
 list="$WORK_DIR/concat.txt"
 : > "$list"
 for ((i = 0; i < NB_SHOTS; i++)); do
@@ -470,7 +597,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
 
   if [ -s "$WORK_DIR/vo_${n}.wav" ]; then
     "$FFMPEG" -v error -y -i "$src" -i "$WORK_DIR/vo_${n}.wav" -filter_complex \
-      "[0:a]volume=0.35[a0];[1:a]adelay=400:all=1,volume=1.4[a1];[a0][a1]amix=inputs=2:duration=first:normalize=0[a]" \
+      "[0:a]volume=0.6[a0];[1:a]aresample=48000,adelay=400:all=1,loudnorm=I=-16:TP=-1.5:LRA=7,asplit=2[vo][sc];[a0][sc]sidechaincompress=threshold=0.03:ratio=10:attack=15:release=350:makeup=1[duck];[duck][vo]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[a]" \
       -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -ar 48000 "$WORK_DIR/mix_${n}.mp4" || exit 1
     src="$WORK_DIR/mix_${n}.mp4"
   fi
@@ -498,6 +625,7 @@ for ((i = 0; i < NB_SHOTS; i++)); do
   echo "file '$part'" >> "$list"
 done
 
+progress assemble -1 "assemblage"
 if [ -n "$UDRIVE_PATH" ] && [ -d "$UDRIVE_PATH" ]; then
   final="$UDRIVE_PATH/scene_$(date +%s).mp4"
 else
@@ -518,6 +646,10 @@ if [ -r "${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}" ] \
   echo "Énergie du rendu : $(python3 "$MY_PATH/lib/energy_window.py" "$SCENE_START" "$(date +%s)")" >&2
 fi
 
+FINISHED_OK=1
+progress done -1 "terminé"
+# STORY_NO_IPFS=1 : rendu d'un paquet privé, la vidéo ne part pas sur IPFS (UPassport la sert elle-même)
+if [ -n "$STORY_NO_IPFS" ]; then echo "$final"; exit 0; fi
 ipfs_hash=$(ipfs add -wq "$final" 2>/dev/null | tail -n 1)
 if [ -n "$ipfs_hash" ]; then
   echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$final")"

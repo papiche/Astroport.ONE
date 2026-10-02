@@ -41,7 +41,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "Variables d'environnement supportées :"
     echo "  CAPTAIN_EMAIL, NODE_DOMAIN, CAPTAIN_EMAIL_DOMAIN, INSTALL_PROFILE"
     echo "  INSTALL_OLLAMA=yes|no    → Ollama (si GPU détecté)"
-    echo "  INSTALL_COMFYUI=yes|no   → ComfyUI Docker (si GPU détecté)"
+    echo "  INSTALL_COMFYUI=yes|no   → ComfyUI (si GPU détecté ; COMFYUI_VIDEO_MODELS=yes pour les modèles vidéo)"
     echo "  INSTALL_AI_SERVICES      → Liste des services IA à installer (ex: open-webui,qdrant) (si profil ai-company)"
     echo ""
     echo "Options supplémentaires :"

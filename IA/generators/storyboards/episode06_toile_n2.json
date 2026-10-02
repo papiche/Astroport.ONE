@@ -8,8 +8,8 @@
   "height": 720,
   "seed": 6006,
   "cast": {
-    "lea":   {"image": "/home/frd/.zen/workspace/scenes/cast/lea/portrait.png",   "voice": "/home/frd/.zen/workspace/scenes/cast/lea/voice.wav"},
-    "malik": {"image": "/home/frd/.zen/workspace/scenes/cast/malik/portrait.png", "voice": "/home/frd/.zen/workspace/scenes/cast/malik/voice.wav"}
+    "lea":   {"image": "$SCENES_DIR/cast/lea/portrait.png",   "voice": "$SCENES_DIR/cast/lea/voice.wav"},
+    "malik": {"image": "$SCENES_DIR/cast/malik/portrait.png", "voice": "$SCENES_DIR/cast/malik/voice.wav"}
   },
   "shots": [
     {
@@ -30,7 +30,7 @@
       "duration": 9
     },
     {
-      "screen": "/home/frd/.zen/workspace/scenes/episode06_src/n2.png",
+      "screen": "$SCENES_DIR/episode06_src/n2.png",
       "motion": "zoom",
       "presenter": "lea",
       "prompt": "Lea says in French, surprised: \"Vingt-deux amis directs, et déjà plus de quatre cents amis d'amis dans l'essaim !\"",

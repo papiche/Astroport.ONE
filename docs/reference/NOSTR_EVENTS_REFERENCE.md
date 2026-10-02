@@ -56,6 +56,7 @@ Les événements NOSTR sont la **source de vérité** pour tout le système UPla
 | **30505** | Object / Resource    | **WoTx2**        | Objet physique ou logique (crafting) — état courant (replaceable)                                 | NIP-101   |
 | **30506** | Dossier de médiation | **Justice**      | Cas de friction entre 2 MULTIPASS — état courant (replaceable)                                    | NIP-101   |
 | **30508** | Match vibratoire     | **ATOM4LOVE**    | Rencontre physique — cohérence k entre deux porteurs (produit par cabine-33 via BLE/WiFi)         | NIP-101   |
+| **30510** | Personnage / scène vidéo IA | **Studio vidéo IA** | Paquet chiffré (AES-256-GCM, méthode uCloud) sur IPFS : tags `d`, `title`, `t`=character\|scene, `t`=coop, `x`, `r`=ipfs://CID. **Jamais de clé dans l'événement** : `t=coop` → clé dérivée de `$UPLANETNAME` (tous les Capitaines lisent), sinon clé envoyée par NIP-17. Contenu : `history` (anciens CID), `renders` (vidéos par version). Replaceable (`tools/story_asset.py`) | Astroport |
 | **1500**  | Craft Execution Log  | **WoTx2**        | Log session de craft : durée réelle, opérateurs, consommations                                    | NIP-101   |
 | **1505**  | Object Transaction   | **WoTx2**        | Delta qty/durability sur un Kind 30505 (journal append-only)                                      | NIP-101   |
 | **1506**  | Acte de médiation    | **Justice**      | Vote/escalade/résolution sur un dossier 30506 (journal append-only)                               | NIP-101   |

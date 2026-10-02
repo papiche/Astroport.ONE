@@ -8,8 +8,8 @@
   "height": 720,
   "seed": 5005,
   "cast": {
-    "lea":   {"image": "/home/frd/.zen/workspace/scenes/cast/lea/portrait.png",   "voice": "/home/frd/.zen/workspace/scenes/cast/lea/voice.wav"},
-    "malik": {"image": "/home/frd/.zen/workspace/scenes/cast/malik/portrait.png", "voice": "/home/frd/.zen/workspace/scenes/cast/malik/voice.wav"}
+    "lea":   {"image": "$SCENES_DIR/cast/lea/portrait.png",   "voice": "$SCENES_DIR/cast/lea/voice.wav"},
+    "malik": {"image": "$SCENES_DIR/cast/malik/portrait.png", "voice": "$SCENES_DIR/cast/malik/voice.wav"}
   },
   "shots": [
     {
@@ -23,7 +23,7 @@
       "duration": 9
     },
     {
-      "screen": "/home/frd/.zen/workspace/scenes/episode05_src/reseau.png",
+      "screen": "$SCENES_DIR/episode05_src/reseau.png",
       "presenter": "malik",
       "prompt": "Malik says in French, thoughtful: \"Une station seule, c'est un abri. Reliée aux autres, en constellation, elle devient une économie qui s'autofinance.\"",
       "title": "Le Réseau",
@@ -42,7 +42,7 @@
       "duration": 10
     },
     {
-      "screen": "/home/frd/.zen/workspace/scenes/episode05_src/umap.png",
+      "screen": "$SCENES_DIR/episode05_src/umap.png",
       "motion": "zoom",
       "presenter": "lea",
       "prompt": "Lea says in French, pointing: \"Chaque case de la carte, une UMAP, garde les messages et les infos du quartier.\"",
@@ -56,7 +56,7 @@
       "duration": 9
     },
     {
-      "screen": "/home/frd/.zen/workspace/scenes/episode05_src/constellation.png",
+      "screen": "$SCENES_DIR/episode05_src/constellation.png",
       "presenter": "malik",
       "prompt": "Malik says in French, practical: \"Le simulateur vérifie que ta constellation tient : les loyers d'un côté, l'Armateur et le Capitaine de l'autre.\"",
       "title": "Simuler sa constellation",

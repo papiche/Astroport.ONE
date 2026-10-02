@@ -11,6 +11,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
+. "$MY_PATH/lib/env.sh"   # COMFY_PY, SCENES_DIR
 
 IMAGE="$1"
 OBJECTS="$2"
@@ -22,11 +23,11 @@ fi
 
 . "${HOME}/.zen/Astroport.ONE/tools/my.sh"
 
-WORK_DIR="$HOME/.zen/workspace/scenes3d/$(basename "${IMAGE%.*}")_$(date +%s)"
+WORK_DIR="${SCENES_DIR%/*}/scenes3d/$(basename "${IMAGE%.*}")_$(date +%s)"
 args=("$IMAGE" --workdir "$WORK_DIR")
 [ -n "$OBJECTS" ] && args+=(--objects "$OBJECTS")
 
-"$HOME/comfyui_env/bin/python" "$MY_PATH/image_to_3dscene.py" "${args[@]}" > /dev/null || exit 1
+"$COMFY_PY" "$MY_PATH/image_to_3dscene.py" "${args[@]}" > /dev/null || exit 1
 
 if [ -n "$UDRIVE_PATH" ] && [ -d "$UDRIVE_PATH" ]; then
   cp "$WORK_DIR/scene.glb" "$UDRIVE_PATH/$(basename "${IMAGE%.*}")_scene.glb"

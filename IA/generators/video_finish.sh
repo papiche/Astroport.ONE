@@ -13,10 +13,7 @@
 VHS=0
 SHORT_SIDE=720
 SIZE=""
-# ffmpeg du système : il a tous les filtres utilisés, drawtext compris
-# (le build de /usr/local/bin n'a pas drawtext) ; repli sur celui du PATH
-FFMPEG=/usr/bin/ffmpeg FFPROBE=/usr/bin/ffprobe
-[ -x "$FFMPEG" ] || { FFMPEG=ffmpeg; FFPROBE=ffprobe; }
+. "$(dirname "$(readlink -f "$0")")/lib/env.sh"   # FFMPEG / FFPROBE (avec drawtext)
 while getopts "vH:s:h" opt; do
   case $opt in
     v) VHS=1 ;;

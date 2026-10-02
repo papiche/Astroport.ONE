@@ -13,6 +13,14 @@ Constellation ».
 
 ## Prérequis
 
+### Installation automatique
+
+`install.sh` (INSTALL_COMFYUI=yes) appelle `install/install_comfyui_video.sh`, relançable seul :
+paquets (ffmpeg, jq, qrencode), Playwright, trimesh, pack KJNodes, MultiGPU désactivé,
+`--highvram` retiré du service, puis modèles avec `COMFYUI_VIDEO_MODELS=yes` (~60 Go).
+Chemins surchargeables : `COMFY_PY`, `ASTRO_PY`, `COMFYUI_DIR`, `SCENES_DIR`, `FFMPEG`
+(voir `IA/generators/lib/env.sh`). Dans un storyboard, écrire `$SCENES_DIR/...` ou `$HOME/...`.
+
 ### Matériel
 
 - GPU NVIDIA 24 Go (mesures faites sur RTX 3090), 64 Go de RAM, ~80 Go de disque
@@ -80,6 +88,21 @@ de voix (`voice_line`). Au premier rendu, `generate_scene.sh` :
    even lighting, looking at the camera` ;
 2. fait dire `voice_line` au portrait par MiniMax (i2v, 1:1, 0,25 MP, 8 s), puis
    extrait la piste audio en `voice.wav` (mono, 48 kHz).
+
+**Voix distinctes.** Sans précision, la voix de référence venait de MiniMax avec la même
+graine pour tous : les acteurs finissaient avec des voix voisines. Ajouter `voice_design`
+(description du timbre, de l'âge, du ton, en anglais) pour que Qwen3-TTS VoiceDesign invente
+la voix ; elle dit `voice_line` en français et sert de `<Audio k>` à ref2va. Mesuré :
+« young woman, bright » ≈ 296 Hz, « deep man in his 50s » ≈ 102 Hz. Installation :
+`install/install_qwen3_tts.sh` (venv `~/qwen3tts_env`, séparé car `qwen-tts` impose
+`transformers==4.57.3`). Sans ce venv, repli sur MiniMax, avec une graine propre à chaque
+acteur. Une `voice.wav` déjà présente dans `cast/<nom>/` n'est pas régénérée : la supprimer.
+
+```json
+"cast": {"ana": {"image_prompt": "woman in her 50s, grey hair…",
+                 "voice_design": "Warm low-pitched woman in her 50s, slow and calm",
+                 "voice_line": "Bonjour, je m'appelle Ana et je vous présente la station."}}
+```
 
 Pour réutiliser les acteurs dans d'autres épisodes, copier le dossier
 `cast/<nom>/` (portrait.png + voice.wav) dans un emplacement durable. Les épisodes
@@ -167,6 +190,46 @@ Défauts rencontrés et remèdes :
 | Mots mal prononcés (NOSTR → « nocester », uDRIVE, UMAP…) | sigles lus « à l'aveugle » | ajouter le mot à `lib/prononciation_fr.json` |
 | Titre qui chevauche l'incrustation | — | automatique : titre en haut sur les plans `presenter` |
 
+### 6 bis. Studio vidéo IA : partager, modifier, générer (Kind 30510)
+
+Page `UPlanet/earth/story.html` (menu « Studio vidéo IA ») ou, en ligne de commande, `tools/story_asset.py`.
+
+**Paquets.** Un personnage (`cast/<nom>/` : portrait, voix, fiche) ou une scène (storyboard + images + casting) est
+un tar.gz chiffré en AES-256-GCM (méthode uCloud), ajouté à IPFS, annoncé par un événement public **Kind 30510**
+(titre, CID, historique, rendus). Jamais de clé dans l'événement. Signature : MULTIPASS du Capitaine.
+
+| Portée | Clé | Qui lit | Comment |
+|---|---|---|---|
+| `private` | aléatoire par version, keyring local 0600 | vos amis | clé envoyée par message fichier NIP-17 (`--share`) |
+| `coop` | `sha256("uplanet-story-assets:v1:" + $UPLANETNAME)`, comme `cooperative_config.sh` | **tous les Capitaines** de la coopérative | rien à échanger ; propagé par la synchro constellation (kind 30510 dans `backfill_constellation.sh`) |
+
+Chaque Capitaine modifie ses propres paquets ; pour changer celui d'un autre : **copier** (`fork`) dans sa bibliothèque.
+Les stations qui consultent un paquet coopératif l'épinglent : la coopérative le conserve.
+
+**Versions.** Chaque enregistrement crée un nouveau paquet (nouveau CID) sous le même d-tag : l'événement garde la
+liste `history` et les anciens CID restent épinglés. On peut rouvrir n'importe quelle version, voir ses rendus, ou la
+**restaurer** (nouvelle version identique ; l'historique n'est jamais réécrit).
+
+**Générer.** Bouton « Générer » : un job détaché lance `generate_scene.sh` (scène) ou `generate_character.sh`
+(portrait Z-Image + voix Qwen3-TTS). Un seul job à la fois (une carte graphique), les autres attendent. Le suivi
+vient de `progress.json` (étapes, plan en cours, plans terminés) : chaque plan terminé se regarde et s'écoute dans sa
+vignette avant la fin. Le répertoire de travail sert de cache entre versions : un plan ou un acteur inchangé n'est pas
+recalculé (signature de leur contenu). Les rendus sont archivés par version ; pour une scène coopérative, la vidéo est
+ajoutée à IPFS et annoncée dans `renders` (les autres Capitaines la voient et l'entendent) ; un rendu privé ne quitte
+pas la station (`STORY_NO_IPFS`).
+
+```bash
+tools/story_asset.py create scene "Visite du village" --scope coop
+tools/story_asset.py update <cid> --set storyboard.json=sb.json --description "plan 2 réécrit"
+tools/story_asset.py versions <cid> ; tools/story_asset.py restore <ancien_cid>
+tools/story_asset.py fork <cid_d_un_autre_capitaine> --name "Ma version"
+tools/story_asset.py publish scene "Épisode 6" storyboard.json --video scene.mp4 --share <hex_ami>   # privé
+tools/story_asset.py import <cid> --key <hex> --sha256 <hex>      # côté ami, valeurs du DM
+```
+
+API (UPassport, NIP-98, Capitaine) : `/api/story/*`, voir `UPassport/CLAUDE.md`. Le visage et la voix d'une personne
+réelle ne se partagent qu'avec son consentement. Les rendus d'une scène coopérative sont publics (IPFS).
+
 ### 7. Publier
 
 La vidéo finale est ajoutée à IPFS par le script (`ipfs add -wq`). Pour la
@@ -204,12 +267,13 @@ ffmpeg concat ─► titres (drawtext) ─► ipfs add ─► URL
 | `video_finish.sh` | `-s LxH` taille exacte, `-v` style VHS ; 24 i/s, AAC 48 kHz stéréo |
 | `workflow/video_minimax_h3_t2v_api.json` | Template ComfyUI `video_minimax_h3_t2v` au format API (subgraph aplati) + `VRAM_Debug` |
 | `workflow/ZImageTurbo.json` | Workflow Z-Image (mêmes IDs de nodes que `FluxImage.json`) |
+| `lib/env.sh` | Chemins des outils (ffmpeg, pythons, ComfyUI, scènes), surchargeables |
 | `lib/capture_page.py` | Capture Playwright (`--full`, `--wait`, `--js`) |
 | `lib/git_timeline.py` | Frise HTML commits/mois + jalons |
 | `lib/pronounce.py`, `lib/prononciation_fr.json` | Orthographe phonétique des répliques + consigne de diction |
 | `lib/energy_window.py` | Énergie CPU + GPU entre deux instants, d'après le CSV 24/7 de PowerJoular |
 | `lib/comfyui_recovery.sh` | Diagnostic OOM, retry après libération VRAM (local uniquement) |
-| `storyboards/*.json` | Épisodes 1-5, spot Constellation |
+| `storyboards/*.json` | Épisodes 1-6 |
 
 Codes de sortie communs : `0` ok, `1` erreur, `2` storyboard invalide,
 `3` ComfyUI non équipé (contrôle `/object_info` avant envoi), `4` timeout.

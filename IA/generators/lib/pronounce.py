@@ -6,6 +6,7 @@ ajoute une consigne de diction si le prompt contient une réplique.
 
 Usage : pronounce.py "<prompt>"   (le prompt corrigé sort sur stdout)
         pronounce.py --lines "<prompt>"   (répliques d'origine, une par ligne)
+        pronounce.py --text "<texte>"     (texte entier en orthographe phonétique, pour les TTS)
 """
 
 import json
@@ -31,6 +32,9 @@ def respell(line):
 def main():
     if sys.argv[1] == "--lines":
         print("\n".join(QUOTE.findall(sys.argv[2])))
+        return
+    if sys.argv[1] == "--text":
+        print(respell(sys.argv[2]))
         return
     prompt = sys.argv[1]
     if not QUOTE.search(prompt):

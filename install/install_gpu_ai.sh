@@ -4,11 +4,12 @@
 #
 # Paramètres de référence sagittarius :
 #   Ollama  : User=ollama, OLLAMA_HOST=0.0.0.0, FLASH_ATTENTION=1, NUM_PARALLEL=2
-#   ComfyUI : ~/comfyui_env/ + ~/workspace/ComfyUI/ --highvram --listen 0.0.0.0
+#   ComfyUI : ~/comfyui_env/ + ~/workspace/ComfyUI/ --normalvram --listen 0.0.0.0
 #
 # Variables d'entrée (mode silencieux) :
 #   INSTALL_OLLAMA=yes|no|ask   (défaut: ask)
 #   INSTALL_COMFYUI=yes|no|ask  (défaut: ask)
+#   COMFYUI_VIDEO_MODELS=yes|no (modèles MiniMax H3, ~60 Go ; voir install_comfyui_video.sh)
 #
 # License: AGPL-3.0
 ################################################################################
@@ -110,8 +111,8 @@ _ask_yes() {
 }
 
 ## ── Sélectionner le flag VRAM pour ComfyUI ────────────────────────────────────
-if   [[ $GPU_VRAM -ge 8 ]]; then COMFYUI_VRAM_FLAG="--highvram"
-elif [[ $GPU_VRAM -ge 4 ]]; then COMFYUI_VRAM_FLAG="--normalvram"
+## --highvram exclu : MiniMax H3 (IA/generators) ne libère plus la VRAM en HIGH_VRAM → OOM
+if   [[ $GPU_VRAM -ge 4 ]]; then COMFYUI_VRAM_FLAG="--normalvram"
 elif [[ $GPU_VRAM -gt 0 ]]; then COMFYUI_VRAM_FLAG="--lowvram"
 else                              COMFYUI_VRAM_FLAG="--cpu"
 fi
@@ -267,6 +268,13 @@ EOF
             echo "  ⚠️  ComfyUI non actif — vérifiez :"
             echo "       sudo journalctl -u comfyui -n 30"
         fi
+
+        ## Prérequis des générateurs vidéo (KJNodes, playwright, trimesh, modèles MiniMax…)
+        [[ "$COMFYUI_INSTALLED" == "true" ]] && \
+            "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/install_comfyui_video.sh"
+        ## Voix des acteurs (Qwen3-TTS VoiceDesign, venv séparé ~/qwen3tts_env)
+        [[ "$COMFYUI_INSTALLED" == "true" ]] && \
+            "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/install_qwen3_tts.sh"
 
         echo ""
         echo "  ℹ️  Pour télécharger un checkpoint Stable Diffusion :"

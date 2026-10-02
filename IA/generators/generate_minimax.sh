@@ -19,10 +19,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-# ffmpeg du système : il a tous les filtres utilisés, drawtext compris
-# (le build de /usr/local/bin n'a pas drawtext) ; repli sur celui du PATH
-FFMPEG=/usr/bin/ffmpeg FFPROBE=/usr/bin/ffprobe
-[ -x "$FFMPEG" ] || { FFMPEG=ffmpeg; FFPROBE=ffprobe; }
+. "$(dirname "$(readlink -f "$0")")/lib/env.sh"   # FFMPEG / FFPROBE (avec drawtext)
 
 usage() {
   cat >&2 <<EOF
