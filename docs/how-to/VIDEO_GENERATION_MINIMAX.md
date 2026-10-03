@@ -140,7 +140,27 @@ entière) ou un PNG déjà préparé.
 
 ### 4. Écrire le storyboard JSON
 
-Exemples complets dans `IA/generators/storyboards/`. Squelette (`lea` déjà dans
+**Avec l'aide d'une IA.** `generate_storyboard.sh` pose une série de questions (sujet, nombre
+de plans, format, style, personnages à réutiliser ou à créer, voix-off, carton final) et
+rédige le storyboard via Ollama — local ou essaim, moteur choisi interactivement parmi les
+modèles installés (`question.py`, même moteur que BRO ; compte utilisé pour la trace
+`~/.zen/tmp/IA.log` : le Capitaine de la station). Jusqu'à 3 tentatives si le JSON renvoyé
+ne respecte pas le schéma (mêmes règles que la validation de `generate_scene.sh`). Les
+personnages déjà connus (banque CLI ou bibliothèque du Studio web, via la même résolution
+qu'au §6 bis) sont décrits à l'IA pour qu'elle les réutilise sans en réinventer l'apparence.
+
+```bash
+cd ~/.zen/Astroport.ONE/IA/generators
+./generate_storyboard.sh                      # choix du moteur interactif
+./generate_storyboard.sh -m gemma3:latest -o storyboards/essai.json
+```
+
+Propose ensuite de lancer `generate_scene.sh` directement. Le JSON produit reste un point de
+départ : le relire et le corriger à la main avant un rendu long reste plus sûr qu'une confiance
+aveugle dans la sortie du modèle (un modèle peut par exemple ajouter un carton ou un lien non
+demandé — demandez-lui explicitement de ne pas le faire si vous ne voulez aucun carton).
+
+**À la main.** Exemples complets dans `IA/generators/storyboards/`. Squelette (`lea` déjà dans
 `$CAST_BANK` — un rendu précédent, ou la bibliothèque du Studio web — sinon
 `{"image_prompt": "…", "voice_design": "…", "voice_line": "…"}` ou
 `{"image": "/chemin.png", "voice": "/chemin.wav"}`) :
@@ -382,6 +402,7 @@ ffmpeg concat ─► titres (drawtext) ─► ipfs add ─► URL
 | Fichier | Rôle |
 |---|---|
 | `generate_scene.sh` | Storyboard → vidéo : acteurs, plans IA/écran/carton, finition par plan, assemblage, IPFS |
+| `generate_storyboard.sh` | Assistant interactif (questions + Ollama via `../question.py`) → `storyboard.json`, avec validation/retry |
 | `generate_minimax.sh` | Un plan MiniMax H3 : t2v, i2v (`-i`), références ref2va (`-R` image, `-A` audio), `-o` fichier, `-S` seed, `-u` SeedVR2, `DRY_RUN=1` |
 | `generate_image.sh` | Image Z-Image Turbo int8 (repli Flux schnell si le modèle manque), taille via `IMAGE_SIZE=LxH` |
 | `video_finish.sh` | `-s LxH` taille exacte, `-v` style VHS ; 24 i/s, AAC 48 kHz stéréo |

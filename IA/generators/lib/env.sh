@@ -9,6 +9,8 @@
 #   ASTRO_PY          python du venv Astroport (~/.astro) avec playwright, repli python3
 #   COMFYUI_DIR       dépôt ComfyUI (~/workspace/ComfyUI)
 #   SCENES_DIR        acteurs et rendus (~/.zen/workspace/scenes)
+#   CAST_BANK         banque de personnages CLI, en clair (~/.zen/workspace/characters) ;
+#                     le Studio web (services/story_render.py) la surcharge par rendu
 
 _pick_ffmpeg() {
   local d
@@ -29,6 +31,7 @@ COMFY_PY="${COMFY_PY:-$(_pick_python "$HOME/comfyui_env/bin/python")}"
 ASTRO_PY="${ASTRO_PY:-$(_pick_python "$HOME/.astro/bin/python")}"
 COMFYUI_DIR="${COMFYUI_DIR:-$HOME/workspace/ComfyUI}"
 SCENES_DIR="${SCENES_DIR:-$HOME/.zen/workspace/scenes}"
+CAST_BANK="${CAST_BANK:-$HOME/.zen/workspace/characters}"
 #   QWEN3TTS_PY       python du venv Qwen3-TTS (~/qwen3tts_env, install/install_qwen3_tts.sh) ;
 #                     vide si absent : generate_scene.sh retombe sur MiniMax pour les voix
 [ -z "$QWEN3TTS_PY" ] && [ -x "$HOME/qwen3tts_env/bin/python" ] && QWEN3TTS_PY="$HOME/qwen3tts_env/bin/python"

@@ -83,7 +83,11 @@ ME="${0##*/}"
 . "$MY_PATH/lib/env.sh"
 
 usage() {
-  sed -n '5,9p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '5,13p' "$0" | sed 's/^# \{0,1\}//' >&2
+  echo >&2
+  echo "Pas de storyboard sous la main ? generate_storyboard.sh pose quelques questions et en" >&2
+  echo "rédige un avec l'aide d'une IA (Ollama, moteur au choix) :" >&2
+  echo "  $MY_PATH/generate_storyboard.sh" >&2
   exit 2
 }
 
@@ -311,9 +315,9 @@ for ((i = 0; i < NB_SHOTS; i++)); do
   echo "$ssig" > "$WORK_DIR/shot_$n.sig"
 done
 
-# CAST_BANK modifiable : les rendus du Studio vidéo IA (UPassport) utilisent une banque par rendu, pour ne pas
-# écraser vos propres personnages par ceux d'un paquet partagé qui porte le même nom
-CAST_BANK="${CAST_BANK:-$HOME/.zen/workspace/characters}"
+# CAST_BANK (voir lib/env.sh) modifiable : les rendus du Studio vidéo IA (UPassport) utilisent
+# une banque par rendu, pour ne pas écraser vos propres personnages par ceux d'un paquet
+# partagé qui porte le même nom
 
 for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
   cdir="$WORK_DIR/cast/$name"
