@@ -27,6 +27,11 @@ Commandes (python3 story_asset.py CMD -h) :
   update REF --set CHEMIN=FICHIER --delete CHEMIN      nouvelle version
   versions REF · restore REF · fork REF [--name N]
   list [--coop] · get REF · share REF AMI · import CID --key HEX
+  export REF -o FICHIER.tar.gz                         sauvegarde/transfert manuel (tar.gz EN CLAIR)
+  importpkg FICHIER.tar.gz [--scope] [--name]           installe un paquet exporté dans la bibliothèque
+  delete REF                                            retire un paquet (toute sa lignée) de la bibliothèque locale
+  resolve-character NOM --dest DOSSIER                  pont CLI/Web : installe un personnage de la bibliothèque
+  rebuild [--force]                                     reconstruit le trousseau depuis NOSTR (secours $SCENES_DIR supprimé)
 
 Contenu d'un paquet : manifest.json + fichiers relatifs à $SCENES_DIR (~/.zen/workspace/scenes).
 N'utiliser le visage ou la voix d'une personne réelle qu'avec son consentement.
@@ -57,7 +62,13 @@ from uenc_codec import decrypt_aes256gcm, encrypt_aes256gcm  # noqa: E402
 
 KIND = 30510
 SCENES = pathlib.Path(os.environ.get("SCENES_DIR", os.path.expanduser("~/.zen/workspace/scenes")))
-LIBRARY = SCENES / "library"
+# INDÉPENDANT de SCENES_DIR : un rendu du Studio web (services/story_render.py::_launch) surcharge
+# SCENES_DIR pour isoler le bac à sable du paquet en cours (résolution des chemins $SCENES_DIR/...
+# À L'INTÉRIEUR d'un storyboard), mais le trousseau (quels paquets sont « à moi », avec quelle clé)
+# est une ressource globale de la station — jamais propre à un rendu. Sans ce découplage, tout appel
+# à story_asset.py lancé en sous-processus d'un rendu (ex. generate_scene.sh → resolve-character)
+# verrait une bibliothèque vide, le dossier isolé n'ayant pas de library/keyring.json.
+LIBRARY = pathlib.Path(os.environ.get("STORY_LIBRARY_DIR", os.path.expanduser("~/.zen/workspace/scenes/library")))
 KEYRING = LIBRARY / "keyring.json"
 RENDERS = LIBRARY / "renders.json"
 RELAY = os.environ.get("NOSTR_RELAY_WS", "ws://127.0.0.1:7777")
@@ -360,9 +371,125 @@ def seal(manifest, files, scope="private", dry_run=False, previous=None, origin=
         k[cid] = entry
         save_keyring(k)
     announce(entry, dry_run=dry_run)
+    if scope == "private" and not dry_run:
+        _backup_key_by_dm(entry)
     print(f"✅ {scope} {typ} « {name} » v{entry['version']} → Kind {KIND} d={entry['d']} event_id={entry['event_id']}\n"
           f"   CID {cid} ({len(blob) // 1024} Ko chiffrés)", file=sys.stderr)
     return entry
+
+
+def _backup_key_by_dm(entry):
+    """Sauvegarde best-effort de la clé AES d'une version PRIVATE par DM NOSTR « à soi-même »
+    (kind 4, même mécanisme que `bro.nostr.send_dm_to_owner`) : seul moyen de redéchiffrer ce
+    paquet si `library/keyring.json` est perdu (ex. suppression de $SCENES_DIR) — le relais
+    garde le DM, déchiffrable avec le seul MULTIPASS du Capitaine (donc hors de $SCENES_DIR).
+    Échec silencieux (relais injoignable) : n'empêche jamais la publication elle-même."""
+    hexpub = captain_hex()
+    if not hexpub:
+        return
+    # Préfixe non-JSON : nostr_node_intercom.py decrypt traite tout contenu qui PARSE comme
+    # JSON comme une « enveloppe » {channel,payload} (repli "plain" sinon) — un payload JSON
+    # brut s'y ferait vider (payload devient {} faute de clé "payload" dans nos propres
+    # données). Le marqueur fait échouer volontairement ce json.loads côté decrypt.
+    payload = "STORY_KEY_BACKUP:" + json.dumps({"story_key_backup": 1, "cid": entry["cid"], "d": entry["d"],
+                                                "type": entry["type"], "name": entry["name"], "key_hex": entry["key_hex"]},
+                                               ensure_ascii=False)
+    try:
+        subprocess.run([sys.executable, str(TOOLS / "nostr_send_secure_dm.py"), "--nsec-stdin", hexpub, payload, RELAY,
+                        "--extra-tags", json.dumps([["t", "story-key-backup"]])],
+                       input=captain_secret() + "\n", text=True, capture_output=True, timeout=30)
+    except Exception:
+        pass
+
+
+def _fetch_private_key_backups():
+    """Sauvegardes de clé envoyées par `_backup_key_by_dm` (kind 4, self-DM), déchiffrées —
+    {cid: key_hex}. Échec gracieux (liste vide) si le relais ou le déchiffrement est indisponible."""
+    hexpub = captain_hex()
+    if not hexpub:
+        return {}
+    p = subprocess.run([str(TOOLS / "nostr_get_events.sh"), "--kind", "4", "--author", hexpub,
+                        "--tag-p", hexpub, "--tag-t", "story-key-backup", "--limit", "1000"],
+                       capture_output=True, text=True, timeout=60)
+    nsec = captain_secret()
+    out = {}
+    for line in p.stdout.splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if ev.get("kind") != 4:
+            continue
+        dp = subprocess.run([sys.executable, str(TOOLS / "nostr_node_intercom.py"), "decrypt"],
+                            input=json.dumps(ev), capture_output=True, text=True, timeout=15,
+                            env={**os.environ, "NOSTR_NSEC": nsec})
+        if dp.returncode != 0 or not dp.stdout.strip():
+            continue
+        try:
+            text = json.loads(dp.stdout).get("payload", {}).get("text") or ""
+            backup = json.loads(text[len("STORY_KEY_BACKUP:"):]) if text.startswith("STORY_KEY_BACKUP:") else None
+        except ValueError:
+            continue
+        if backup and backup.get("story_key_backup") and backup.get("cid") and backup.get("key_hex"):
+            out[backup["cid"]] = backup["key_hex"]
+    return out
+
+
+def rebuild(force=False):
+    """Reconstruit `library/keyring.json` depuis le relais NOSTR (mes propres Kind 30510) et
+    les sauvegardes de clé privée (self-DM) — pour quand $SCENES_DIR a été supprimé. Les
+    paquets `coop` sont TOUJOURS entièrement récupérables (clé dérivée de $UPLANETNAME, jamais
+    stockée nulle part) ; un paquet `private` ne l'est que si sa clé a été sauvegardée par DM
+    (voir `_backup_key_by_dm`, actif depuis l'ajout de cette fonction) — sinon il reste listé
+    (titre, type, historique) mais non déchiffrable ici. Ne fait rien sur un trousseau déjà
+    rempli, sauf `--force` (évite d'écraser par mégarde un trousseau sain)."""
+    if not force and load_keyring():
+        die("library/keyring.json existe déjà et n'est pas vide : --force pour écraser quand même")
+    me = captain_hex()
+    if not me:
+        die("MULTIPASS du Capitaine introuvable : impossible de savoir qui je suis")
+    events = relay_events(author=me, limit=1000)
+    latest = {}
+    for ev in events:
+        d = _tag(ev, "d")
+        if d and (d not in latest or ev["created_at"] > latest[d]["created_at"]):
+            latest[d] = ev
+    key_backups = _fetch_private_key_backups()
+    k, lineages, found, recovered = {}, 0, 0, 0
+    for ev in latest.values():
+        try:
+            c = json.loads(ev["content"])
+        except ValueError:
+            continue
+        cid = c.get("cid")
+        if not cid:
+            continue
+        lineages += 1
+        scope = c.get("scope", "private")
+        chain = [{"cid": cid, "version": c.get("version", 1), "created": ev["created_at"], "x_hash": _tag(ev, "x")}] \
+                + list(c.get("history", []))
+        for i, v in enumerate(chain):
+            found += 1
+            entry = {"cid": v["cid"], "scope": scope, "type": c.get("type"), "name": c.get("title"),
+                     "x_hash": v.get("x_hash"), "size": int(_tag(ev, "size") or 0) if i == 0 else 0,
+                     "created": v.get("created", ev["created_at"]), "event_id": ev["id"] if i == 0 else None,
+                     "d": _tag(ev, "d"), "shared_with": [],
+                     "description": c.get("description", "") if i == 0 else "",
+                     "summary": (c.get("summary", {}) if i == 0 else {}), "nfiles": c.get("files", 0),
+                     "version": v.get("version", 1)}
+            if i + 1 < len(chain):
+                entry["previous"] = chain[i + 1]["cid"]
+            if i > 0:
+                entry["superseded_by"] = chain[i - 1]["cid"]
+            if scope == "coop":
+                recovered += 1
+            elif v["cid"] in key_backups:
+                entry["key_hex"] = key_backups[v["cid"]]
+                recovered += 1
+            k[v["cid"]] = entry
+    with keyring_lock():
+        save_keyring(k)
+    return {"lineages": lineages, "versions": found, "recovered": recovered, "unrecoverable": found - recovered}
 
 
 def share(nsec, entry, friends):
@@ -573,6 +700,75 @@ def fork(ref, name=None, scope="private", dry_run=False):
     return seal(manifest, sorted(files.items()), scope=scope, dry_run=dry_run, origin=origin)
 
 
+def delete(ref):
+    """Retire un paquet (toute sa lignée de versions) de la bibliothèque LOCALE et demande sa
+    suppression (NIP-09, kind 5) pour son événement courant. Les blobs IPFS restent épinglés
+    (comme pour toute ancienne version : rien n'est jamais réécrit) ; un paquet coop peut
+    rester visible chez d'autres Capitaines tant qu'ils n'ont pas fait de même."""
+    e = find_entry(ref)
+    if e.get("foreign"):
+        die("paquet d'un autre Capitaine : on ne peut retirer que les siens")
+    cur = latest_of(e)
+    if cur.get("event_id"):
+        subprocess.run([sys.executable, str(TOOLS / "nostr_node_intercom.py"), "publish", "--nsec-stdin",
+                        "--kind", "5", "--tags", json.dumps([["e", cur["event_id"]]]),
+                        "--content", "", "--relays", RELAY],
+                       input=captain_secret() + "\n", text=True, capture_output=True, timeout=30)
+    chain_cids = [cur["cid"]] + [h["cid"] for h in history_for(cur)]
+    with keyring_lock():
+        k = load_keyring()
+        for cid in chain_cids:
+            k.pop(cid, None)
+        save_keyring(k)
+    return {"removed": chain_cids, "name": cur.get("name"), "type": cur.get("type")}
+
+
+def export_bytes(ref):
+    """Tar.gz EN CLAIR (manifest + fichiers) d'un paquet : portable, hors chiffrement/IPFS/NOSTR
+    de cette station — pour sauvegarde locale ou transfert manuel vers une autre machine."""
+    _e, manifest, files = open_bundle(ref)
+    return build_tar(manifest, sorted(files.items()))
+
+
+def _unique_name(typ, name):
+    """Évite qu'un import retombe sur le même d-tag (typ-slug(nom)) qu'un asset déjà en
+    bibliothèque : un Kind 30510 est remplaçable par (pubkey, kind, d) — une collision
+    écraserait l'annonce de l'autre asset sans toucher à son contenu chiffré."""
+    k = load_keyring()
+    taken = {e["name"] for e in k.values() if not e.get("superseded_by") and e.get("type") == typ}
+    if name not in taken:
+        return name
+    i = 2
+    while f"{name} ({i})" in taken:
+        i += 1
+    return f"{name} ({i})"
+
+
+def import_file(blob, scope="private", name=None, description=None, dry_run=False):
+    """Installe un paquet exporté (tar.gz EN CLAIR, cf. export_bytes) comme nouvel asset de
+    CETTE bibliothèque : nouvelle clé, nouveau CID, nouvelle lignée (comme `fork`, mais depuis
+    un fichier local plutôt qu'une référence déjà présente sur ce swarm)."""
+    try:
+        with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tar:
+            if "manifest.json" not in tar.getnames():
+                die("paquet invalide : manifest.json absent")
+            manifest = json.loads(tar.extractfile("manifest.json").read())
+            files = {m.name: tar.extractfile(m).read() for m in tar.getmembers() if m.isfile() and m.name != "manifest.json"}
+    except tarfile.TarError as exc:
+        die(f"paquet illisible (tar.gz invalide) : {exc}")
+    if manifest.get("type") not in ("character", "scene"):
+        die("type de paquet inconnu : " + str(manifest.get("type")))
+    old_name = manifest["name"]
+    new_name = _unique_name(manifest["type"], (name or old_name).strip() or old_name)
+    if manifest["type"] == "character" and new_name != old_name:
+        files = {re.sub(r"^cast/" + re.escape(old_name) + "/", f"cast/{new_name}/", p): v for p, v in files.items()}
+    manifest = dict(manifest, name=new_name, imported=int(time.time()))
+    if description is not None:
+        manifest["description"] = description
+    manifest["files"] = sorted(files)
+    return seal(manifest, sorted(files.items()), scope=scope, dry_run=dry_run)
+
+
 STARTER_SCENE = {
     "ratio": "16:9", "style": "clean", "height": 720, "cast": {},
     "shots": [{"prompt": "A calm establishing shot of a sunny village square, gentle ambient music.", "duration": 5}],
@@ -618,6 +814,28 @@ def add_render(version_cid, record):
         idx = renders_index()
         idx.setdefault(version_cid, []).append(record)
         _save(RENDERS, idx)
+
+
+def resolve_character(name, dest_dir):
+    """Pont CLI ↔ Studio web : cherche un personnage nommé ainsi dans la bibliothèque (le
+    mien, sinon celui d'un Capitaine de la coopérative) et installe portrait/voix/fiche dans
+    dest_dir — un personnage créé d'un côté (web ou `generate_character.sh` publié) devient
+    utilisable de l'autre (CLI, `generate_scene.sh`) sans rien exporter/réimporter à la main.
+    True si trouvé et installé, False sinon (non fatal : l'appelant garde son propre message
+    d'erreur si le personnage reste introuvable)."""
+    match = next((a for a in list_assets() if a["type"] == "character" and a["name"].lower() == name.lower()), None)
+    if not match:
+        return False
+    _e, _m, files = open_bundle(match["cid"])
+    dest = pathlib.Path(dest_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+    prefix = f"cast/{match['name']}/"
+    n = 0
+    for p, data in files.items():
+        if p.startswith(prefix):
+            (dest / pathlib.Path(p).name).write_bytes(data)
+            n += 1
+    return n > 0
 
 
 # ═══ Import d'un paquet reçu par DM ═════════════════════════════════════════
@@ -734,6 +952,17 @@ def cmd_import(a):
     print(f"✅ {manifest.get('type')} « {manifest.get('name')} » installé dans {SCENES} ({n} fichier(s))", file=sys.stderr)
 
 
+def cmd_export(a):
+    blob = export_bytes(a.ref)
+    pathlib.Path(a.out).write_bytes(blob)
+    print(f"✅ exporté : {a.out} ({len(blob) // 1024} Ko, en clair)", file=sys.stderr)
+
+
+def cmd_importpkg(a):
+    entry = import_file(pathlib.Path(a.file).read_bytes(), a.scope, a.name, a.description, a.dry_run)
+    print(entry["event_id"])
+
+
 def cmd_list(a):
     for e in list_assets():
         if a.coop and e["scope"] != "coop":
@@ -806,6 +1035,27 @@ def main():
     pf.add_argument("--scope", choices=SCOPES, default="private")
     pf.add_argument("--dry-run", action="store_true")
     pf.set_defaults(fn=lambda a: print(fork(a.ref, a.name, a.scope, a.dry_run)["cid"]))
+    pdel = sub.add_parser("delete", help="retire un paquet (toute sa lignée) de la bibliothèque locale")
+    pdel.add_argument("ref")
+    pdel.set_defaults(fn=lambda a: print(json.dumps(delete(a.ref), ensure_ascii=False)))
+    prc = sub.add_parser("resolve-character", help="installe un personnage de la bibliothèque dans un dossier — pont CLI/Web")
+    prc.add_argument("name")
+    prc.add_argument("--dest", required=True)
+    prc.set_defaults(fn=lambda a: sys.exit(0 if resolve_character(a.name, a.dest) else 1))
+    prb = sub.add_parser("rebuild", help="reconstruit library/keyring.json depuis NOSTR (coop entier ; private si sauvegardé par DM à soi-même)")
+    prb.add_argument("--force", action="store_true", help="écrase un trousseau déjà non vide")
+    prb.set_defaults(fn=lambda a: print(json.dumps(rebuild(a.force), ensure_ascii=False)))
+    pe = sub.add_parser("export", help="tar.gz EN CLAIR d'un paquet (sauvegarde / transfert manuel hors IPFS/NOSTR)")
+    pe.add_argument("ref")
+    pe.add_argument("-o", "--out", required=True)
+    pe.set_defaults(fn=cmd_export)
+    pk = sub.add_parser("importpkg", help="installe un paquet exporté (tar.gz) comme nouvel asset de CETTE bibliothèque")
+    pk.add_argument("file")
+    pk.add_argument("--scope", choices=SCOPES, default="private")
+    pk.add_argument("--name")
+    pk.add_argument("--description")
+    pk.add_argument("--dry-run", action="store_true")
+    pk.set_defaults(fn=cmd_importpkg)
     a = p.parse_args()
     if a.cmd == "publish" and a.type == "scene" and not a.source:
         p.error("scene demande STORYBOARD.json")

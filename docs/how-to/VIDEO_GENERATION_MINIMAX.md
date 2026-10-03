@@ -104,10 +104,19 @@ acteur. Une `voice.wav` déjà présente dans `cast/<nom>/` n'est pas régénér
                  "voice_line": "Bonjour, je m'appelle Ana et je vous présente la station."}}
 ```
 
-Pour réutiliser les acteurs dans d'autres épisodes, copier le dossier
-`cast/<nom>/` (portrait.png + voice.wav) dans un emplacement durable. Les épisodes
-UPlanet utilisent `~/.zen/workspace/scenes/cast/{lea,malik}/`, et leurs storyboards
-les référencent par `"image"` et `"voice"`.
+**Banque de personnages.** Un acteur généré une fois est automatiquement enregistré dans
+`$CAST_BANK` (défaut `~/.zen/workspace/characters/<nom>/`, hors `~/.zen/tmp` : jamais
+purgée) et repris tel quel par tout storyboard suivant qui déclare le même nom — un simple
+`"nom": {}` suffit alors, pas besoin de redonner `image_prompt`/`voice_line`. `"refresh":
+true` dans l'entrée `.cast` force une régénération et remplace la banque. Un acteur
+modifié depuis le dernier rendu (signature de son entrée JSON) est automatiquement
+détecté et refait, sans y toucher à la main.
+
+Cette banque est **indépendante** des paquets chiffrés du Studio web (§6 bis) : un
+personnage créé en CLI n'y est pas visible, et réciproquement. Pour le pont entre les
+deux, voir « Uniformiser CLI et Web » au §6 bis — en pratique, si un acteur déclaré
+`"nom": {}` est absent de `$CAST_BANK`, `generate_scene.sh` cherche automatiquement un
+personnage de ce nom dans la bibliothèque du Studio (NOSTR/IPFS) avant d'abandonner.
 
 > Le fond neutre est indispensable : ref2va recopie tout ce qu'il voit dans la
 > photo de référence (un globe holographique sur le portrait réapparaissait dans
@@ -131,15 +140,17 @@ entière) ou un PNG déjà préparé.
 
 ### 4. Écrire le storyboard JSON
 
-Exemples complets dans `IA/generators/storyboards/`. Squelette :
+Exemples complets dans `IA/generators/storyboards/`. Squelette (`lea` déjà dans
+`$CAST_BANK` — un rendu précédent, ou la bibliothèque du Studio web — sinon
+`{"image_prompt": "…", "voice_design": "…", "voice_line": "…"}` ou
+`{"image": "/chemin.png", "voice": "/chemin.wav"}`) :
 
 ```json
 {
   "ratio": "16:9", "megapixels": 0.3, "steps": 10, "ref_steps": 20,
   "style": "clean", "height": 720, "seed": 5005,
   "cast": {
-    "lea": {"image": "/home/frd/.zen/workspace/scenes/cast/lea/portrait.png",
-            "voice": "/home/frd/.zen/workspace/scenes/cast/lea/voice.wav"}
+    "lea": {}
   },
   "shots": [
     {"cast": ["lea"], "duration": 7,
@@ -179,6 +190,17 @@ incrustation), changer éventuellement sa seed dans le storyboard (`"seed": 3777
 puis relancer avec le même `-w`. Seul ce plan est recalculé ; la finition et
 l'assemblage prennent quelques secondes.
 
+Plus rapide pour itérer sur un seul plan : `-i INDEX` (0-based) calcule ce plan et
+s'arrête — pas de finition ni d'assemblage de toute la scène :
+
+```bash
+./generate_scene.sh -w ~/.zen/workspace/scenes/episode06 -i 2 storyboards/episode06.json
+```
+
+La prise précédente de ce plan n'est pas perdue si un autre mécanisme l'archive avant
+de la remplacer (c'est ce que fait l'interface Studio web, §6 bis — « Générer ce
+plan ») ; en CLI pur, `shot_NN.mp4` est simplement écrasé.
+
 Défauts rencontrés et remèdes :
 
 | Symptôme | Cause | Remède |
@@ -190,17 +212,21 @@ Défauts rencontrés et remèdes :
 | Mots mal prononcés (NOSTR → « nocester », uDRIVE, UMAP…) | sigles lus « à l'aveugle » | ajouter le mot à `lib/prononciation_fr.json` |
 | Titre qui chevauche l'incrustation | — | automatique : titre en haut sur les plans `presenter` |
 
-### 6 bis. Studio vidéo IA : partager, modifier, générer (Kind 30510)
+### 6 bis. Studio vidéo IA : partager, modifier, générer, supprimer, récupérer (Kind 30510)
 
-Page `UPlanet/earth/story.html` (menu « Studio vidéo IA ») ou, en ligne de commande, `tools/story_asset.py`.
+Page `UPlanet/earth/story.html` (menu « Studio vidéo IA ») ou, en ligne de commande, `tools/story_asset.py` —
+**même moteur `generate_scene.sh`/`generate_character.sh` des deux côtés** : un storyboard ou un personnage
+fonctionne à l'identique en CLI pur ou lancé depuis la page web, et les deux usages se complètent (voir
+« Uniformiser CLI et Web » plus bas).
 
-**Paquets.** Un personnage (`cast/<nom>/` : portrait, voix, fiche) ou une scène (storyboard + images + casting) est
-un tar.gz chiffré en AES-256-GCM (méthode uCloud), ajouté à IPFS, annoncé par un événement public **Kind 30510**
-(titre, CID, historique, rendus). Jamais de clé dans l'événement. Signature : MULTIPASS du Capitaine.
+**Paquets.** Un personnage (`cast/<nom>/` : portrait, voix, fiche `character.json`) ou une scène (`storyboard.json`
++ images + casting, éventuellement `scene.mp4`) est un tar.gz chiffré en AES-256-GCM (méthode uCloud), ajouté à
+IPFS, annoncé par un événement public **Kind 30510** (titre, type, CID, hash, historique, rendus). Jamais de clé
+dans l'événement. Signature : MULTIPASS du Capitaine.
 
 | Portée | Clé | Qui lit | Comment |
 |---|---|---|---|
-| `private` | aléatoire par version, keyring local 0600 | vos amis | clé envoyée par message fichier NIP-17 (`--share`) |
+| `private` | aléatoire par version, keyring local 0600 | vos amis | clé envoyée par message fichier NIP-17 (`--share`) ; **sauvegardée en plus par DM NOSTR à soi-même** (voir « Récupérer après suppression ») |
 | `coop` | `sha256("uplanet-story-assets:v1:" + $UPLANETNAME)`, comme `cooperative_config.sh` | **tous les Capitaines** de la coopérative | rien à échanger ; propagé par la synchro constellation (kind 30510 dans `backfill_constellation.sh`) |
 
 Chaque Capitaine modifie ses propres paquets ; pour changer celui d'un autre : **copier** (`fork`) dans sa bibliothèque.
@@ -218,6 +244,31 @@ recalculé (signature de leur contenu). Les rendus sont archivés par version ; 
 ajoutée à IPFS et annoncée dans `renders` (les autres Capitaines la voient et l'entendent) ; un rendu privé ne quitte
 pas la station (`STORY_NO_IPFS`).
 
+Enregistrer et générer sont deux actions **séparées** : « Générer » reste désactivé tant qu'il y a des modifications
+non enregistrées (pas d'enregistrement silencieux d'une nouvelle version juste pour prévisualiser un rendu).
+
+**Générer un seul plan.** Bouton « 🎬 Générer ce plan » sur chaque vignette (ou `-i INDEX` en CLI, §6) : relance
+juste ce plan dans le même répertoire de travail que la scène (acteurs et autres plans déjà calculés ne sont pas
+retouchés), sans finition ni assemblage — pour itérer vite sur un plan qui ne convient pas. La prise précédente de
+ce plan n'est jamais perdue : archivée côté serveur avant d'être remplacée, rejouable depuis « Prises précédentes »
+(repliable, sous la vignette).
+
+**Supprimer.** Bouton « Supprimer » (ou `tools/story_asset.py delete <cid>`) : retire toute la lignée de versions de
+*votre* bibliothèque et publie une demande de suppression NIP-09 (kind 5) pour l'événement courant — honorée au
+mieux par les relais, jamais garantie (NOSTR n'efface rien de force). Les blobs restent épinglés sur IPFS, comme
+pour toute ancienne version ; un paquet coopératif peut rester visible chez d'autres Capitaines tant qu'ils n'ont
+pas fait de même.
+
+**Exporter / importer.** Bouton « Exporter » télécharge le paquet **en clair** (tar.gz, hors chiffrement/IPFS/NOSTR
+de cette station) — sauvegarde locale, ou transfert manuel vers une autre station. « Importer un paquet… » dans la
+bibliothèque l'installe comme nouvel asset (nouvelle clé, nouveau CID, nouvelle lignée — comme un `fork` mais
+depuis un fichier local). Équivalent CLI :
+
+```bash
+tools/story_asset.py export <cid> -o perso.tar.gz
+tools/story_asset.py importpkg perso.tar.gz --scope private --name "Ma copie"
+```
+
 ```bash
 tools/story_asset.py create scene "Visite du village" --scope coop
 tools/story_asset.py update <cid> --set storyboard.json=sb.json --description "plan 2 réécrit"
@@ -225,10 +276,79 @@ tools/story_asset.py versions <cid> ; tools/story_asset.py restore <ancien_cid>
 tools/story_asset.py fork <cid_d_un_autre_capitaine> --name "Ma version"
 tools/story_asset.py publish scene "Épisode 6" storyboard.json --video scene.mp4 --share <hex_ami>   # privé
 tools/story_asset.py import <cid> --key <hex> --sha256 <hex>      # côté ami, valeurs du DM
+tools/story_asset.py delete <cid>                                 # retire + demande de suppression NIP-09
 ```
 
 API (UPassport, NIP-98, Capitaine) : `/api/story/*`, voir `UPassport/CLAUDE.md`. Le visage et la voix d'une personne
 réelle ne se partagent qu'avec son consentement. Les rendus d'une scène coopérative sont publics (IPFS).
+
+#### Stockage : disque, NOSTR, IPFS
+
+| Où | Quoi |
+|---|---|
+| `$SCENES_DIR/library/keyring.json` | Mes paquets : CID → `{scope, clé AES (si private), hash, event_id, version, lignée…}`, 0600. La clé `coop` n'y est **jamais** stockée (recalculée à la volée depuis `$UPLANETNAME`). |
+| `$SCENES_DIR/library/renders.json`, `library/jobs/*.json` | Index des rendus scène entière ; état des jobs (survit à un redémarrage d'UPassport). |
+| `$SCENES_DIR/renders/<auteur8>-<d>/src/` | Paquet **déchiffré** de la version en cours de rendu. |
+| `$SCENES_DIR/renders/<auteur8>-<d>/work/` | Cache incrémental (`shot_NN.mp4`, portraits/voix, fichiers `.sig`) : un plan ou un acteur inchangé n'est jamais recalculé. |
+| `$SCENES_DIR/renders/<auteur8>-<d>/v/<cid>/<job>/` | Rendus archivés (scène entière), en liens physiques pour ne pas dupliquer les plans réutilisés. |
+| `$SCENES_DIR/renders/<auteur8>-<d>/v/<cid>/shots/<NN>/` | Prises archivées d'un plan généré isolément. |
+| `$CAST_BANK` (CLI : `~/.zen/workspace/characters/`, Web : une banque par rendu) | Portraits/voix en clair, pour `generate_scene.sh`/`generate_character.sh` — voir « Uniformiser CLI et Web ». |
+| **IPFS** | Chaque version est un tar.gz **chiffré** AES-256-GCM, ajouté via `ipfs add`. Les anciens CID restent épinglés pour toujours (historique/restauration). Pour un rendu `coop`, la vidéo finale en clair est *en plus* ajoutée séparément, pour que les autres Capitaines la regardent sans déchiffrer le paquet. |
+| **NOSTR** | Un événement **Kind 30510** (remplaçable, NIP-33) par lignée de paquet, republié à chaque version. Contenu toujours public (titre, type, CID, hash, historique, rendus) — **jamais la clé**. Relais local (strfry, 7777), propagé à la constellation. La suppression publie un **Kind 5** (NIP-09, best-effort). |
+
+#### Uniformiser CLI et Web
+
+Les deux usages partagent le **même format de storyboard** et le **même moteur** (`generate_scene.sh` /
+`generate_character.sh`) — aucune divergence de ce côté. Ce qui diffère, c'est l'endroit où vivent les
+*personnages* : la banque CLI (`$CAST_BANK`, en clair sur disque) et la bibliothèque Studio web (paquets chiffrés
+IPFS/NOSTR) sont deux magasins distincts, pour ne jamais faire écraser vos personnages par un paquet partagé du
+même nom pendant un rendu web.
+
+Le pont entre les deux est une **résolution automatique en lecture** : si un acteur est déclaré `"nom": {}` dans un
+storyboard lancé en CLI et qu'il est absent de `$CAST_BANK`, `generate_scene.sh` cherche un personnage de ce nom
+dans la bibliothèque du Studio (le vôtre, sinon celui d'un Capitaine coopératif) et l'installe automatiquement
+avant de continuer :
+
+```text
+Acteur lea : recherche dans la bibliothèque du Studio (NOSTR/IPFS)…
+Acteur lea : trouvé dans la bibliothèque, installé dans la banque
+```
+
+Dans l'autre sens (rendre utilisable en CLI un personnage créé côté web), ou pour l'installer ailleurs qu'un
+rendu de scène :
+
+```bash
+tools/story_asset.py resolve-character lea --dest ~/.zen/workspace/characters/lea
+```
+
+⚠️ **`library/` (le trousseau) est indépendant de `$SCENES_DIR`.** Un rendu du Studio web isole chaque paquet dans
+son propre bac à sable (`SCENES_DIR` surchargé vers `renders/<auteur>-<d>/src/`, pour que les chemins
+`$SCENES_DIR/...` écrits dans un storyboard pointent dedans). Mais le trousseau — quels paquets sont « à moi », avec
+quelle clé — est une ressource globale de la station, jamais propre à un rendu : `story_asset.py` résout toujours
+`library/` depuis `$STORY_LIBRARY_DIR` (par défaut `~/.zen/workspace/scenes/library`), **pas** depuis `$SCENES_DIR`.
+Sans ce découplage, `resolve-character` appelé en sous-processus d'un rendu web verrait une bibliothèque vide.
+
+#### Récupérer après suppression de `$SCENES_DIR`
+
+Si `~/.zen/workspace/scenes/` (donc `library/keyring.json`, source de vérité locale) est supprimé :
+
+- Les paquets **`coop`** sont **toujours** entièrement récupérables : leur clé se recalcule depuis `$UPLANETNAME`
+  (jamais stockée nulle part), et leurs métadonnées (titre, historique) viennent du relais NOSTR.
+- Les paquets **`private`** ne le sont que si leur clé a été sauvegardée : à chaque version, `seal()` envoie
+  automatiquement un **DM NOSTR chiffré à soi-même** (kind 4, même mécanisme que BRO) contenant CID + clé — un
+  paquet dont la clé n'a jamais été sauvegardée ainsi (créé avant l'ajout de cette fonction, ou sur une station
+  sans relais joignable au moment de la publication) reste listé après reconstruction mais **non déchiffrable**.
+
+```bash
+tools/story_asset.py rebuild              # refuse si library/keyring.json existe déjà et n'est pas vide
+tools/story_asset.py rebuild --force      # reconstruit quand même (écrase l'existant)
+```
+
+Rebalaie le relais pour vos propres Kind 30510 (titre, type, CID, historique par lignée), déchiffre les
+sauvegardes de clé self-DM pour les paquets `private`, dérive la clé coopérative pour les paquets `coop`, et
+réécrit `library/keyring.json`. Rapporte `{lineages, versions, recovered, unrecoverable}` — `unrecoverable` compte
+les versions `private` sans sauvegarde de clé retrouvée. Un paquet reconstruit ouvre et déchiffre normalement
+(`tools/story_asset.py get <cid>`) dès que sa clé a été récupérée.
 
 ### 7. Publier
 
@@ -292,8 +412,10 @@ démarre qu'au passage du job en exécution ; l'attente en file est bornée à p
 | `style` | `clean` | `vhs` : look cassette (plans IA seulement) |
 | `upscale` | `1` | facteur SeedVR2 (OOM au-delà de ~3 s à 0,4 MP) |
 | `seed` | aléatoire | plan *i* = `seed + i` : épisode reproductible |
-| `voice` | `amelie` | voix Orpheus des `voiceover` (`amelie`, `pierre`) |
-| `cast` | — | `{nom: {image\|image_prompt, voice\|voice_line}}` |
+| `voice` | `amelie` | voix Orpheus de secours des `voiceover` (`amelie`, `pierre`), utilisée si `narrator` absent ou Qwen3-TTS non installé |
+| `narrator.voice_design` | — | voix-off constante (Qwen3-TTS, prononciation du lexique) : une seule synthèse, clonée pour chaque plan. Nécessite `install/install_qwen3_tts.sh` |
+| `narrator.ref` | — | fichier audio de référence pour cloner la voix du narrateur (sinon générée depuis `voice_design` puis réutilisée) |
+| `cast` | — | `{nom: {image\|image_prompt, voice\|voice_line, voice_design?, refresh?}}` — voir §2 et §6 bis (banque de personnages) |
 
 | Type de plan | Champs |
 |---|---|
@@ -367,3 +489,10 @@ dossiers de travail des épisodes 1 à 4 y ont été perdus). Utiliser
 `~/.zen/workspace/scenes/` (défaut de `-w`). ComfyUI garde de son côté une copie
 de chaque image et vidéo générée dans `ComfyUI/output/`, ce qui a permis de
 restaurer les acteurs.
+
+Pour tout personnage ou scène passé par le Studio web ne serait-ce qu'une fois (publié,
+même en `private`), `~/.zen/workspace/scenes/` lui-même devient récupérable depuis
+NOSTR/IPFS si on le supprime — voir « Récupérer après suppression de `$SCENES_DIR` » au
+§6 bis (`tools/story_asset.py rebuild`). Pour un usage CLI pur jamais publié comme
+paquet, cette section reste la seule protection : rien d'autre que ce répertoire ne
+garde le portrait, la voix ou le montage.

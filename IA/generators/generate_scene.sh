@@ -2,12 +2,15 @@
 # Dependencies : jq ffmpeg ffprobe ipfs qrencode (+ playwright dans ~/.astro pour screen/card)
 #### generate_scene.sh : storyboard JSON → vidéo multi-plans (MiniMax H3) assemblée en 720p
 #
-# Usage: generate_scene.sh [-w workdir] [-c] <storyboard.json> [udrive_path]
+# Usage: generate_scene.sh [-w workdir] [-c] [-i index] <storyboard.json> [udrive_path]
 #   -w  répertoire de travail (défaut $SCENES_DIR/scene_*  (~/.zen/workspace/scenes), hors de ~/.zen/tmp
 #       que le nettoyage d'Astroport vide) ; relancer avec le même -w reprend la scène :
 #       acteurs, plans et captures déjà rendus ne sont pas recalculés.
 #   -c  mode acteurs seuls : prépare/rafraîchit .cast (banque de personnages) sans
 #       rendre aucun plan ; <storyboard.json> n'a alors pas besoin de .shots.
+#   -i  ne (re)calcule que le plan d'index INDEX (0-based) et s'arrête (pas de finition ni
+#       d'assemblage) ; utiliser avec le même -w qu'une scène existante pour reprendre
+#       exactement son cache (acteurs, autres plans déjà rendus inchangés).
 # Sortie stdout : URL IPFS de la vidéo finale (ou chemin du fichier si IPFS échoue)
 # Codes de sortie : 0 ok, 1 erreur, 2 storyboard invalide, 3 ComfyUI non équipé, 4 timeout
 #
@@ -86,10 +89,12 @@ usage() {
 
 WORK_DIR=""
 CAST_ONLY=0
-while getopts "w:ch" opt; do
+SHOT_INDEX=""
+while getopts "w:ci:h" opt; do
   case $opt in
     w) WORK_DIR="$OPTARG" ;;
     c) CAST_ONLY=1 ;;
+    i) SHOT_INDEX="$OPTARG" ;;
     *) usage ;;
   esac
 done
@@ -154,6 +159,12 @@ TITLE_FONT=$(fc-match -f '%{file}' 'DejaVu Sans:bold' 2>/dev/null)
 BASE_SEED=$(jq -r '.seed // empty' "$STORYBOARD")
 [ -z "$BASE_SEED" ] && BASE_SEED=$((RANDOM * RANDOM))
 NB_SHOTS=$(jq '(.shots // []) | length' "$STORYBOARD")
+if [ -n "$SHOT_INDEX" ]; then
+  if ! [[ "$SHOT_INDEX" =~ ^[0-9]+$ ]] || [ "$SHOT_INDEX" -ge "$NB_SHOTS" ]; then
+    echo "Erreur : -i $SHOT_INDEX hors plage (0-$((NB_SHOTS - 1)))" >&2
+    exit 2
+  fi
+fi
 
 # Taille exacte de la vidéo finale : petit côté = height, grand côté au ratio (pair)
 rw=${RATIO%:*} rh=${RATIO#*:}
@@ -190,6 +201,15 @@ SCENE_START=$(date +%s)
 PROGRESS="$WORK_DIR/progress.json"
 progress() {  # $1 stage, $2 index du plan (-1 si sans objet), $3 message
   local done_list="" k
+  # Mode -i (un seul plan) : un job de progression à 1 plan, indépendant du reste de la scène
+  if [ -n "$SHOT_INDEX" ]; then
+    [ -s "$WORK_DIR/shot_$(printf "%02d" "$SHOT_INDEX").mp4" ] && done_list="0"
+    jq -n --arg st "$1" --argjson i 0 --argjson n 1 --arg m "$3" \
+          --argjson t0 "$SCENE_START" --argjson now "$(date +%s)" --argjson d "[${done_list}]" \
+          '{stage: $st, shot: $i, shots: $n, message: $m, started: $t0, updated: $now, done: $d}' \
+      > "$PROGRESS.tmp" 2>/dev/null && mv "$PROGRESS.tmp" "$PROGRESS"
+    return
+  fi
   for ((k = 0; k < NB_SHOTS; k++)); do
     [ -s "$WORK_DIR/shot_$(printf "%02d" "$k").mp4" ] && done_list+="$k,"
   done
@@ -306,6 +326,17 @@ for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
   # Graine propre à chaque acteur : avec la graine de la scène pour tous, les voix se ressemblaient
   actor_seed=$(jq -r --argjson s "$(( BASE_SEED + $(printf '%s' "$name" | cksum | cut -d' ' -f1) % 100000 ))" '.seed // $s' <<< "$actor")
 
+  # Repli : personnage publié dans la bibliothèque du Studio web (NOSTR/IPFS, Kind 30510)
+  # mais absent de cette banque locale — pont CLI/Web (story_asset.py::resolve_character).
+  # Seulement en reprise pure (aucune définition propre dans le storyboard) : une vraie
+  # définition locale garde toujours la priorité.
+  if [ "$refresh" != "true" ] && { [ ! -s "$bdir/portrait.png" ] || [ ! -s "$bdir/voice.wav" ]; } \
+     && ! jq -e '.image or .image_prompt or .voice or .voice_line' <<< "$actor" > /dev/null; then
+    echo "Acteur $name : recherche dans la bibliothèque du Studio (NOSTR/IPFS)…" >&2
+    "$ASTRO_PY" "$HOME/.zen/Astroport.ONE/tools/story_asset.py" resolve-character "$name" --dest "$bdir" > /dev/null 2>&1 \
+      && echo "Acteur $name : trouvé dans la bibliothèque, installé dans la banque" >&2
+  fi
+
   # Personnage déjà créé pour une scène précédente : mêmes visage et voix, repris
   # depuis la banque persistante (hors ~/.zen/tmp, jamais purgée par Astroport)
   if [ "$refresh" != "true" ]; then
@@ -399,7 +430,9 @@ if [ "$NARRATOR_QWEN" = 1 ]; then
   vo_lines="$WORK_DIR/vo_lines.json"
   # une ligne par plan à voix-off ; celles déjà synthétisées sont ignorées (reprise)
   todo="[]"
-  for ((i = 0; i < NB_SHOTS; i++)); do
+  v_start=0 v_end=$((NB_SHOTS - 1))
+  [ -n "$SHOT_INDEX" ] && v_start=$SHOT_INDEX && v_end=$SHOT_INDEX
+  for ((i = v_start; i <= v_end; i++)); do
     text=$(jq -r ".shots[$i].voiceover // empty" "$STORYBOARD")
     out="$WORK_DIR/vo_$(printf "%02d" "$i").wav"
     [ -n "$text" ] && [ ! -s "$out" ] \
@@ -486,7 +519,9 @@ card_image() {
   "$ASTRO_PY" "$MY_PATH/lib/capture_page.py" "$html" "$2" "$FINAL_W" "$FINAL_H" --wait 300
 }
 
-for ((i = 0; i < NB_SHOTS; i++)); do
+SHOT_START=0 SHOT_END=$((NB_SHOTS - 1))
+[ -n "$SHOT_INDEX" ] && SHOT_START=$SHOT_INDEX && SHOT_END=$SHOT_INDEX
+for ((i = SHOT_START; i <= SHOT_END; i++)); do
   n=$(printf "%02d" "$i")
   shot=$(jq -c ".shots[$i]" "$STORYBOARD")
   shot_file="$WORK_DIR/shot_${n}.mp4"
@@ -582,6 +617,14 @@ for ((i = 0; i < NB_SHOTS; i++)); do
   # Dernière image, point de départ d'un éventuel plan "continue" suivant
   "$FFMPEG" -v error -y -sseof -0.1 -i "$shot_file" -update 1 -frames:v 1 "$WORK_DIR/last_${n}.png"
 done
+
+# Mode -i : seul ce plan nous intéresse, pas de finition ni d'assemblage de la scène entière
+if [ -n "$SHOT_INDEX" ]; then
+  FINISHED_OK=1
+  progress done -1 "plan $((SHOT_INDEX + 1)) terminé"
+  echo "$WORK_DIR/shot_$(printf "%02d" "$SHOT_INDEX").mp4"
+  exit 0
+fi
 
 ########################################################################
 # Finition plan par plan (voix-off, taille exacte, style, titre), puis assemblage
