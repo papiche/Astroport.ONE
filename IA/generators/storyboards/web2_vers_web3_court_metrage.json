@@ -1,0 +1,108 @@
+{
+  "name": "De l'étoile à la constellation — la mutation du Web2 vers le Web3 (court-métrage, Astroport.ONE / UPlanet)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "ref_steps": 20,
+  "style": "clean",
+  "height": 720,
+  "seed": 3003,
+  "voice": "pierre",
+  "cast": {
+    "malik": {
+      "image_prompt": "Photo of Malik, a 45-year-old man with short dark curly hair, a salt-and-pepper beard, kind brown eyes, a navy blue postal-worker style work jacket with rolled sleeves and a small glowing satchel strap across his chest, calm friendly expression, plain neutral light grey studio background, soft even lighting, 35mm lens",
+      "voice_design": "warm calm man in his 40s, slightly low-pitched, slow and reassuring",
+      "voice_line": "Je ne garde rien. Je porte, et je livre."
+    },
+    "sahar": {
+      "image_prompt": "Photo of Sahar, a 36-year-old French woman of Mediterranean descent, elegant posture, short rebellious strawberry-blonde wavy hair, striking hazel-green sea-foam eyes, refined sharp facial features, wearing an earthy terracotta raspberry knit sweater with a loose safran scarf, neutral calm expression, plain neutral light grey studio background, soft side rim lighting, 50mm portrait",
+      "voice_design": "clear confident woman in her 30s, mid-pitched, warm and determined",
+      "voice_line": "Ma clé, mon identité, mes données."
+    },
+    "lorca": {
+      "image_prompt": "Photo of Lorca, a 43-year-old French former sociologist turned stealth tracker, lean weathered round face with hollow cheeks, intense dark brown eyes, buzz cut dark hair, rugged five o'clock shadow, wearing a dark technical military tracking jacket with high collar, neutral expression, plain neutral light grey studio background, soft even cinematic lighting, shot on 35mm lens",
+      "voice_design": "calm serious man in his 40s, low and measured, thoughtful",
+      "voice_line": "Ici, la confiance se tisse de proche en proche."
+    }
+  },
+  "shots": [
+    {
+      "prompt": "Google Earth style continuous zoom from deep space down onto Earth at night, then onto the San Francisco Bay, a huge glowing blue bird-shaped logo tower pulsing on the city. Thousands of thin cables run from every country on the planet toward this single point, like spokes of a wheel. Low cinematic space drone, cold metallic hum, no speech.",
+      "voiceover": "Pendant vingt ans, nos vies numériques ont convergé vers quelques centres. Une étoile, et nous au bout des rayons.",
+      "title": "WEB2 — Une étoile : tout converge vers le centre",
+      "duration": 9
+    },
+    {
+      "prompt": "Inside a dark orbiting spaceship corridor, a lone person floats connected to the wall by a thick glowing cable plugged into their back like an umbilical cord. Through the porthole, a giant bright wall of a social network, its fog hiding the stars. Ominous low drone, faint electric crackle, no speech.",
+      "voiceover": "Ton identité y est un compte prêté. Tes données, un stock qui ne t'appartient plus. Et le mur décide de ce que tu vois.",
+      "title": "Identité louée · données captives · algorithme opaque",
+      "duration": 9
+    },
+    {
+      "prompt": "Google Earth style zoom OUT from the single tower, the spokes of cables flicker, one cable tenses and snaps with a shower of sparks, the whole planet goes dark for a second, then a few tiny warm lights appear on the dark continents. Silence broken by a deep rumble then a soft rising chime, no speech.",
+      "voiceover": "Puis un câble cède. Et dans le noir, des lumières s'allument, une à une, partout.",
+      "title": "La rupture",
+      "duration": 7
+    },
+    {
+      "cast": ["sahar"],
+      "prompt": "Close-up of Sahar standing on a rooftop at dusk, a small credit-card sized glowing key hanging at her neck, tiny satellites above. She holds the key up toward the camera, it pulses once with soft golden light. She says in French, calm: \"Ma clé, mon identité. Personne ne me la prête, personne ne peut me la reprendre.\" Soft wind ambience, gentle ambient space music.",
+      "title": "MULTIPASS — une clé souveraine : identité NOSTR, portefeuille Ğ1, stockage IPFS",
+      "duration": 9
+    },
+    {
+      "prompt": "Google Earth style zoom IN onto a small village house at night, through its window a tiny Raspberry Pi board glowing on a shelf, a thin golden thread leaving it toward the sky and the stars. Camera slides in to show the board's LEDs blinking. Warm domestic hum, soft electronic pulses, no speech.",
+      "voiceover": "Chez moi, une station, grande comme une carte. Mes données y restent, chiffrées, adressées par leur contenu. Ce qui est à moi n'est pas ailleurs.",
+      "title": "Astroport.ONE — ma station : relais NOSTR + stockage IPFS à la maison",
+      "duration": 10
+    },
+    {
+      "cast": ["malik"],
+      "prompt": "Medium shot of Malik, dressed as a space-age postman with a luminous satchel, walking along an orbital ring station corridor lined with glowing doors. He pulls a small light-message from his satchel and slides it under a door; the door lights up softly. He says in French, calm and warm: \"Je ne garde rien. Je porte, et je livre chez chacun de tes amis.\" Soft footsteps on metal, gentle ambient space music.",
+      "title": "Le postier Web3 : chaque message livré sur le mur de chaque ami",
+      "duration": 9
+    },
+    {
+      "prompt": "Top-down space view, a trembling constellation: a central bright node with a ring of nearby nodes joined by warm golden lines (N1: friends), then a second wider ring lights up one by one, nodes joined to the first ring by thinner silver lines (N2: friends of friends). Pulses of light travel along the lines. Delicate crystalline chimes, no speech.",
+      "voiceover": "Mes amis sont le premier cercle. Les amis de mes amis, le second. Voilà N au carré : une toile de confiance qui se tisse de proche en proche.",
+      "title": "N1 : mes amis   ·   N² : les amis de mes amis",
+      "duration": 10
+    },
+    {
+      "cast": ["lorca"],
+      "prompt": "Close-up of Lorca in a dim control room with a holographic map of the network behind him. A stray red node tries to join the constellation, its line dissolves before reaching the golden circle. Lorca nods slowly and says in French: \"Les amis de mes amis peuvent écrire. Les inconnus, non. Pas de spam, pas de faux comptes.\" Quiet room hum, soft digital chime.",
+      "title": "Confiance relative à chacun : pas de spam, pas de faux comptes",
+      "duration": 9
+    },
+    {
+      "prompt": "Wide space shot of many small glowing stations (houses, a barn, a boat, a school) on Earth and on a ring station, each synchronizing with its neighbors: golden threads ripple across the planet like a wave while the sun rises over the horizon. A coin of light marked as a soft green droplet circulates along the threads between stations. Uplifting orchestral swell, no speech.",
+      "voiceover": "Chaque nuit, les stations voisines se synchronisent. Rien ne dépend d'un centre. Et une monnaie libre, la Ğ1, circule entre nous, de station en station.",
+      "title": "Synchronisation N² entre stations · monnaie libre Ğ1 · économie coopérative ẐEN",
+      "duration": 10
+    },
+    {
+      "prompt": "Google Earth style slow zoom OUT from a single village light to the whole planet seen from orbit, covered by a living web of golden threads and tiny lights, the stars behind. Hold on the Earth as a glowing constellation, no central point anywhere. Gentle cosmic music rising, no speech.",
+      "voiceover": "Hier, une étoile. Aujourd'hui, une constellation. Chaque point est un monde complet, relié à ceux qui lui font confiance.",
+      "title": "WEB3 — Une constellation : pas de centre, des égaux",
+      "duration": 9
+    },
+    {
+      "cast": ["sahar"],
+      "prompt": "Close-up of Sahar on the rooftop at dawn, the whole sky glowing with the golden constellation behind her, she smiles to the camera, relieved and free. She says in French: \"Ma clé, mon identité, mes données. Et un protocole ouvert, pour que chacun puisse tisser le sien.\" Soft wind, warm music swell.",
+      "title": "Un protocole ouvert, du code libre : chacun peut héberger sa station",
+      "duration": 9
+    },
+    {
+      "card": {
+        "title": "De l'étoile à la constellation",
+        "subtitle": "Astroport.ONE · UPlanet · NOSTR + IPFS — La confiance, une énergie décentralisée.",
+        "links": [
+          { "label": "Créer mon MULTIPASS", "url": "https://u.copylaradio.com/g1" },
+          { "label": "Le code (AGPL-3.0)", "url": "https://github.com/papiche/Astroport.ONE" },
+          { "label": "Soutenir le projet", "url": "https://opencollective.com/monnaie-libre" }
+        ]
+      },
+      "duration": 9
+    }
+  ]
+}
