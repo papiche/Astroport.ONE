@@ -1715,6 +1715,45 @@ ${tva_result}"
         else
             log "DEBUG" "No cookie files found for ${PLAYER} - Visit $uSPOT/cookie to upload cookies"
         fi
+
+        ########################################################################
+        ## WEBDAV IMPORT — FaceCloud : import quotidien depuis un cloud externe
+        ########################################################################
+        # Si l'utilisateur a configuré au moins une source WebDAV externe
+        # (UPlanet/earth/ucloud.html, section "Importer depuis un autre cloud"),
+        # lance webdav_import.py une fois par jour par compte, en arrière-plan —
+        # EXACT même patron que les scrapers de domaine ci-dessus (garde
+        # anti-doublon .done, libération du flock hérité 200>&-). Le script
+        # lui-même se plafonne déjà à quelques photos par passage et espace ses
+        # envois pour ne jamais saturer la file GPU FaceID (TTL 30 min, un seul
+        # job à la fois, cf. UPassport/webdav_import.py).
+        WEBDAV_SOURCES_FILE="$PLAYER_DIR/.ucloud/webdav_sources.json"
+        if [[ -s "$WEBDAV_SOURCES_FILE" ]]; then
+            WEBDAV_IMPORT_TODAY_FILE="$HOME/.zen/tmp/webdav_import_${PLAYER}_${TODATE}.done"
+            if [[ -f "$WEBDAV_IMPORT_TODAY_FILE" ]]; then
+                log "DEBUG" "webdav_import déjà fait aujourd'hui pour ${PLAYER} — skip"
+            else
+                WEBDAV_IMPORT_PY="${HOME}/.zen/UPassport/webdav_import.py"
+                if [[ -f "$WEBDAV_IMPORT_PY" ]]; then
+                    WEBDAV_IMPORT_LOG="$HOME/.zen/tmp/webdav_import_${PLAYER}.log"
+                    (
+                        python3 "$WEBDAV_IMPORT_PY" "${PLAYER}" > "$WEBDAV_IMPORT_LOG" 2>&1
+                        wi_exit=$?
+                        if [[ $wi_exit -eq 0 ]]; then
+                            log "INFO" "✅ webdav_import terminé pour ${PLAYER}"
+                        else
+                            log "WARN" "⚠️ webdav_import exit=$wi_exit pour ${PLAYER}"
+                        fi
+                    ) 200>&- &
+                    WEBDAV_IMPORT_PID=$!
+                    log "INFO" "📥 webdav_import lancé pour ${PLAYER} (PID: $WEBDAV_IMPORT_PID)"
+                    log_metric "WEBDAV_IMPORT_PID" "$WEBDAV_IMPORT_PID" "${PLAYER}"
+                    touch "$WEBDAV_IMPORT_TODAY_FILE"
+                else
+                    log "DEBUG" "webdav_import.py introuvable — ignoré pour ${PLAYER}"
+                fi
+            fi
+        fi
     else
         echo "IPNS update skipped for ${PLAYER} (no refresh needed)"
     fi

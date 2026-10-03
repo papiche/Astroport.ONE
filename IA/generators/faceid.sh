@@ -130,6 +130,49 @@ else
     fi
 fi
 
+## 1.5. Redimensionner pour la détection si l'image dépasse une taille
+##      raisonnable — réduit la charge mémoire/GPU par job (aucune image,
+##      même 12 Mpx smartphone, n'était redimensionnée avant ce correctif :
+##      chaque job FaceID chargeait le pixel natif en mémoire ComfyUI, coût
+##      qui grimpe avec la taille des photos sources — cause plausible de la
+##      charge excessive/crash constatée lors d'un import WebDAV de masse,
+##      2026-10-03). bbox est reprojeté sur l'image ORIGINALE (facteur
+##      _scale, étape 8.5) avant la sortie finale — jamais celui de la copie
+##      réduite envoyée à ComfyUI, sous peine de recadrages décalés en aval
+##      (mailjet.py::_crop_face_jpeg). L'orientation EXIF est désormais
+##      normalisée AVANT stockage (cf. UPassport/services/cloud_storage.py::
+##      ingest_plaintext, 2026-10-03) : un simple facteur d'échelle suffit
+##      ici, sans transposition d'axes à gérer.
+_MAX_DETECT_DIM=1600
+_resize_info=$(python3 - "$_img" "$_tmp_dir" "$_MAX_DETECT_DIM" <<'PYEOF' 2>/tmp/faceid_resize_err.$$
+import sys
+from PIL import Image
+path, tmp_dir, max_dim = sys.argv[1], sys.argv[2], int(sys.argv[3])
+img = Image.open(path)
+w, h = img.size
+longest = max(w, h)
+if longest <= max_dim:
+    print(f"{path}\t1.0")
+else:
+    scale = longest / max_dim
+    new_w, new_h = max(1, round(w / scale)), max(1, round(h / scale))
+    out = f"{tmp_dir}/detect_resized.jpg"
+    img.convert("RGB").resize((new_w, new_h), Image.LANCZOS).save(out, "JPEG", quality=90)
+    print(f"{out}\t{scale}")
+PYEOF
+)
+if [ -z "$_resize_info" ]; then
+    # Échec de lecture/redimensionnement (format exotique, image corrompue…) —
+    # on retombe sur l'image d'origine plutôt que d'abandonner tout le job.
+    echo "WARN:faceid:resize_failed:$(tail -c 300 /tmp/faceid_resize_err.$$ 2>/dev/null) — envoi en taille native" >&2
+    _detect_img="$_img"; _detect_basename="$_basename"; _scale="1.0"
+else
+    _detect_img="${_resize_info%%$'\t'*}"
+    _scale="${_resize_info##*$'\t'}"
+    _detect_basename="$(basename "$_detect_img")"
+fi
+rm -f "/tmp/faceid_resize_err.$$"
+
 ## 2. Verrou GPU exclusif — un seul job ComfyUI FaceID à la fois sur ce Brain.
 ##    Ce script est désormais le SEUL point d'acquisition de ce verrou : le
 ##    daemon (_handle_vision_analysis_job) ne le prend plus lui-même, pour
@@ -147,10 +190,12 @@ if ! bash "$MY_PATH/../services/comfyui.me.sh" >&2; then
 fi
 
 ## 4. Téléverser l'image dans le dossier input de ComfyUI (LoadImage ne lit que là)
-_upload_resp=$(curl -s -X POST -F "image=@${_img};filename=${_basename}" \
+##    L'image ENVOYÉE est celle (éventuellement) redimensionnée à l'étape 1.5,
+##    pas `_img`/`_basename` (taille native) — cf. étape 8.5 pour la reprojection.
+_upload_resp=$(curl -s -X POST -F "image=@${_detect_img};filename=${_detect_basename}" \
     "$_COMFYUI_URL/upload/image" 2>/dev/null)
 _uploaded=$(jq -r '.name // empty' <<< "$_upload_resp" 2>/dev/null)
-[ -z "$_uploaded" ] && _uploaded="$_basename"
+[ -z "$_uploaded" ] && _uploaded="$_detect_basename"
 
 ## 5. Convertir le workflow UI → API et y injecter le nom de l'image
 _api_workflow=$(python3 "$_UI2API" "$_WORKFLOW" --url "$_COMFYUI_URL" \
@@ -206,6 +251,26 @@ if [ -z "$_faces_json" ] || [ "$_faces_json" = "null" ]; then
     _entry=$(jq -c --arg id "$_prompt_id" '.[$id] // "absent de /history"' <<< "$_history" 2>/dev/null | head -c 800)
     echo "ERROR:faceid:no_saveText_output — comfyui_wait=${_wait_result} — /history[${_prompt_id}]=${_entry}" >&2
     exit 1
+fi
+
+## 8.5. Reprojeter bbox sur l'image ORIGINALE si une réduction a eu lieu à
+##      l'étape 1.5 — sinon tout consommateur en aval (recadrage de vignette
+##      mailjet.py::_crop_face_jpeg, affichage nébuleuse) pointerait au
+##      mauvais endroit, puisque le pixel chiffré/stocké reste celui en
+##      pleine résolution (seule la COPIE envoyée à ComfyUI a été réduite).
+if [ "$_scale" != "1.0" ]; then
+    _rescaled=$(jq -c --argjson scale "$_scale" '
+        .faces = [ (.faces // [])[] | . as $f |
+            if $f.bbox then
+                $f + {bbox: {x1: ($f.bbox.x1*$scale), y1: ($f.bbox.y1*$scale),
+                             x2: ($f.bbox.x2*$scale), y2: ($f.bbox.y2*$scale)}}
+            else $f end ]
+    ' <<< "$_faces_json" 2>/dev/null)
+    if [ -n "$_rescaled" ] && [ "$_rescaled" != "null" ]; then
+        _faces_json="$_rescaled"
+    else
+        echo "WARN:faceid:bbox_rescale_failed — bbox renvoyé dans le repère réduit (scale=${_scale})" >&2
+    fi
 fi
 
 ## 9. Sortie — .ucloud est réservé aux images de visages (depuis 2026-10-02) :

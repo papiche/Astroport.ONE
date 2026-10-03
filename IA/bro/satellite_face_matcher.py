@@ -73,6 +73,9 @@ QDRANT_HOST = "localhost"
 QDRANT_PORT = 6333
 FACE_VECTOR_SIZE = 512          # InsightFace buffalo_l
 MATCH_THRESHOLD = 0.82          # score Cosine minimal pour considérer un match
+DET_SCORE_THRESHOLD = 0.60      # confiance détection InsightFace minimale (det_score) —
+                                 # en-dessous, le candidat n'est pas un vrai visage
+                                 # (faux positifs "Inconnu_xxx" constatés en import de masse)
 NOTIF_COOLDOWN = 24 * 3600      # 1 notification max par visage inconnu et par jour
 RELAY = "wss://relay.copylaradio.com"
 NOTIF_LOCK_DIR = ZEN / "tmp" / "faceid_notif_lock"
@@ -354,53 +357,46 @@ def _tag_ucloud_index(email: str, path: str, names: list) -> None:
     _log(f"index.json tagué {names} sur {path} ({email})")
 
 
-def _delete_ucloud_entry(email: str, path: str) -> bool:
-    """Retire `path` de index.json (+ sa clé de keyring.json si plus aucune
-    autre entrée ne référence le même CID) — appelé quand AUCUN visage n'est
-    détecté sur la photo : .ucloud est réservé aux images de visages, le
-    reste n'est pas conservé (ni scène, ni inventaire objets/lieux, cf.
-    UPlanet/earth/ucloud.html). Même motif que
-    UPassport/services/cloud_storage.py::remove_subtree()/prune_keyring()
-    (pas d'import cross-projet, juste la même convention de fichier/verrou).
-    Le blob IPFS lui-même n'est pas dépin — c'est la clé de déchiffrement
-    qu'on détruit, comme pour un DELETE DAV classique."""
+def _tag_ucloud_no_face(email: str, path: str) -> bool:
+    """Marque `path` comme analysé sans visage détecté — AUCUNE suppression
+    (contrairement à l'ancienne `_delete_ucloud_entry`, retirée le
+    2026-10-04) : le fichier est déjà sur IPFS, chiffré, à un coût de
+    stockage marginal — le garder permet un post-traitement ultérieur
+    (nouvelle version du modèle, autre type de reconnaissance) sans avoir à
+    tout réimporter. Champ dédié `faceid` sur l'entrée, distinct de `tags`
+    (réservé aux noms d'amis à qui une photo de visage a été partagée) :
+    `{"status": "no_face", "checked_at": "<iso8601>"}` — permet à
+    GET /api/cloud/files de distinguer "analysé, aucun visage" de "pas
+    encore analysé" côté UI (ucloud.html), sans jamais redéclencher d'analyse
+    pour un chemin déjà marqué (cf. webdav_import.py / cloud_import.py, le
+    filet de sécurité SHA256 s'applique pareil, visage ou non)."""
     with _ucloud_lock(email):
         index_file = _ucloud_dir(email) / "index.json"
-        keyring_file = _ucloud_dir(email) / "keyring.json"
         try:
             idx = json.loads(index_file.read_text())
         except Exception as exc:
             _log(f"WARN: index.json illisible pour {email} : {exc}")
             return False
 
-        entry = idx.get("entries", {}).pop(path, None)
+        entry = idx.get("entries", {}).get(path)
         if entry is None:
-            _log(f"WARN: entrée {path} absente de index.json — rien à supprimer")
+            _log(f"WARN: entrée {path} absente de index.json — marquage ignoré")
             return False
-
-        try:
-            keyring = json.loads(keyring_file.read_text())
-        except Exception:
-            keyring = {}
-        live_cids = {e.get("cid") for e in idx.get("entries", {}).values()
-                     if isinstance(e, dict) and e.get("cid")}
-        keyring = {cid: v for cid, v in keyring.items() if cid in live_cids}
+        entry["faceid"] = {
+            "status": "no_face",
+            "checked_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        }
 
         tmp_idx = index_file.with_name(f".{index_file.name}.tmp.{os.getpid()}")
-        tmp_kr = keyring_file.with_name(f".{keyring_file.name}.tmp.{os.getpid()}")
         try:
             tmp_idx.write_text(json.dumps(idx, ensure_ascii=False, indent=2))
             os.chmod(tmp_idx, 0o600)
-            tmp_kr.write_text(json.dumps(keyring, ensure_ascii=False, indent=2))
-            os.chmod(tmp_kr, 0o600)
             os.replace(tmp_idx, index_file)
             os.chmod(index_file, 0o600)
-            os.replace(tmp_kr, keyring_file)
-            os.chmod(keyring_file, 0o600)
         except Exception as exc:
-            _log(f"WARN: écriture index/keyring (suppression) : {exc}")
+            _log(f"WARN: écriture index.json (marquage no_face) : {exc}")
             return False
-    _log(f"index.json — {path} supprimé (aucun visage détecté, non conservé)")
+    _log(f"index.json — {path} marqué 'no_face' (aucun visage détecté, conservé)")
     return True
 
 
@@ -512,13 +508,19 @@ def main() -> int:
         _log(f"ERROR: JSON vision_analysis_result illisible sur stdin : {exc}")
         return 1
 
-    faces = result.get("faces") or []
+    faces_detected = result.get("faces") or []
+    faces = [f for f in faces_detected if float(f.get("det_score") or 0.0) >= DET_SCORE_THRESHOLD]
+    _rejected = len(faces_detected) - len(faces)
+    if _rejected:
+        _log(f"{_rejected} détection(s) sous le seuil de confiance (det_score < {DET_SCORE_THRESHOLD}) écartée(s) — {path}")
     if not faces:
-        # .ucloud est réservé aux images de visages (depuis 2026-10-02) : sans
-        # visage détecté, ni analyse de scène/inventaire ni conservation —
-        # l'entrée (et sa clé de déchiffrement) est retirée immédiatement.
-        _delete_ucloud_entry(email, path)
-        _log(f"aucun visage détecté sur {path} — supprimé")
+        # Depuis 2026-10-04 : conservé, pas supprimé (déjà sur IPFS, coût
+        # marginal — garde la porte ouverte à un post-traitement ultérieur,
+        # cf. _tag_ucloud_no_face). Entre 2026-10-02 et 2026-10-04, ce cas
+        # supprimait l'entrée (`.ucloud` "réservé aux visages") — politique
+        # abandonnée : voir UPassport/CLAUDE.md pour l'historique.
+        _tag_ucloud_no_face(email, path)
+        _log(f"aucun visage détecté sur {path} — marqué, conservé")
         return 0
 
     try:

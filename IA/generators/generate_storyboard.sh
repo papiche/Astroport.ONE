@@ -1,17 +1,19 @@
 #!/bin/bash
 # Dependencies : jq curl ollama (voir ../services/ollama.me.sh)
-#### generate_storyboard.sh : assistant interactif → storyboard.json pour generate_scene.sh
+#### generate_storyboard.sh : discussion avec une IA → storyboard.json pour generate_scene.sh
 #
 # Usage: generate_storyboard.sh [-o fichier.json] [-m modele]
 #   -o  fichier de sortie (défaut $SCENES_DIR/storyboard_<horodatage>.json)
 #   -m  modèle Ollama à utiliser (sinon choix interactif parmi ceux installés)
 #
-# Pose une série de questions (sujet, format, personnages, voix-off…), les transforme
-# en prompt pour une IA locale/essaim (Ollama, via question.py — même moteur que BRO),
-# valide le JSON renvoyé avec les mêmes règles que generate_scene.sh (deux tentatives
-# de correction si le modèle s'écarte du schéma), puis propose de lancer le rendu.
+# Engage une VRAIE conversation (pas un simple questionnaire) : décrivez votre idée, l'IA
+# pose les questions utiles (sujet flou, format, personnages, voix-off…), propose plusieurs
+# pistes de scénario, les affine selon vos retours — tapez "go" dès qu'une piste vous
+# convient pour générer le storyboard JSON final (jusqu'à 3 tentatives de correction
+# automatique si le JSON ne respecte pas le schéma attendu par generate_scene.sh, en
+# conservant tout l'historique de la discussion pour la correction).
 # Compte utilisé pour la trace (~/.zen/tmp/IA.log) : le Capitaine de la station.
-# Codes de sortie : 0 ok, 1 erreur, 2 argument/réponse invalide, 3 Ollama injoignable.
+# Codes de sortie : 0 ok, 1 erreur, 2 réponse invalide, 3 Ollama injoignable.
 
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"
@@ -32,23 +34,21 @@ while getopts "o:m:h" opt; do
   esac
 done
 
-QUESTION_PY="$MY_PATH/../question.py"
-[ -s "$QUESTION_PY" ] || { echo "Erreur : $QUESTION_PY introuvable" >&2; exit 1; }
-
+OLLAMA_URL="http://localhost:11434"
 echo "=== Assistant storyboard (IA) — compte Capitaine : ${CAPTAINEMAIL:-inconnu} ===" >&2
 echo >&2
 
 # Ollama joignable (local → P2P essaim → SSH, même connecteur que pour ComfyUI)
-if ! curl -sf -m 3 http://localhost:11434/api/tags > /dev/null 2>&1; then
+if ! curl -sf -m 3 "$OLLAMA_URL/api/tags" > /dev/null 2>&1; then
   echo "Connexion à Ollama…" >&2
   bash "$MY_PATH/../services/ollama.me.sh" > /dev/null 2>&1
-  curl -sf -m 5 http://localhost:11434/api/tags > /dev/null 2>&1 \
+  curl -sf -m 5 "$OLLAMA_URL/api/tags" > /dev/null 2>&1 \
     || { echo "Erreur : Ollama injoignable (IA/services/ollama.me.sh)" >&2; exit 3; }
 fi
 
 # Moteur : -m donné tel quel, sinon choix interactif parmi les modèles installés
 if [ -z "$MODEL" ]; then
-  mapfile -t MODELS < <(curl -s -m 5 http://localhost:11434/api/tags | jq -r '.models[].name' | grep -v embed)
+  mapfile -t MODELS < <(curl -s -m 5 "$OLLAMA_URL/api/tags" | jq -r '.models[].name' | grep -v embed)
   if [ ${#MODELS[@]} -eq 0 ]; then
     MODEL="gemma3:latest"
   elif [ ${#MODELS[@]} -eq 1 ]; then
@@ -66,89 +66,89 @@ if [ -z "$MODEL" ]; then
   fi
 fi
 echo "→ Moteur retenu : $MODEL" >&2
-echo >&2
 
-# ── Questions ─────────────────────────────────────────────────────────────────
-read -rp "Sujet / scénario de la vidéo (ce qu'elle doit expliquer ou raconter) : " SUJET
-[ -z "$SUJET" ] && { echo "Erreur : un sujet est nécessaire." >&2; exit 2; }
-read -rp "Nombre de plans souhaité (défaut 8) : " NSHOTS; NSHOTS="${NSHOTS:-8}"
-read -rp "Format [16:9/9:16/1:1] (défaut 16:9) : " RATIO; RATIO="${RATIO:-16:9}"
-read -rp "Style [clean/vhs] (défaut clean) : " STYLE; STYLE="${STYLE:-clean}"
-read -rp "Personnage(s) qui parlent, séparés par des virgules (vide = aucun, pas de dialogue) : " CASTNAMES
-read -rp "Voix-off de narrateur en plus des dialogues ? [o/N] : " VO_YN
-NARRATOR_DESIGN=""
-if [[ "${VO_YN,,}" == o* ]]; then
-  read -rp "Timbre du narrateur (ex: 'voix d'homme grave et posée, documentaire'), vide = voix par défaut : " NARRATOR_DESIGN
+# ── Personnages déjà disponibles (banque CLI, alimentée aussi par le Studio web via
+#    resolve-character) : donnés à l'IA dès le départ pour qu'elle les propose d'elle-même ─
+EXISTING_CAST=""
+if [ -d "$CAST_BANK" ]; then
+  for d in "$CAST_BANK"/*/; do
+    [ -s "${d}portrait.png" ] || continue
+    n=$(basename "$d")
+    look=$(jq -r '.look // .image_prompt // empty' "${d}character.json" 2>/dev/null)
+    EXISTING_CAST+=$'\n'"- $n${look:+ : $look}"
+  done
 fi
-read -rp "Carton final avec lien(s) à afficher ? URL (vide = pas de carton) : " CARD_URL
-CARD_LABEL=""
-[ -n "$CARD_URL" ] && read -rp "Libellé de ce lien : " CARD_LABEL
+[ -z "$EXISTING_CAST" ] && EXISTING_CAST=$'\n'"(aucun pour l'instant)"
 
-# ── Personnages : décrit ceux qui existent déjà (CLI ou Studio web), pour cohérence ─
-CAST_BLOCK=""
-IFS=',' read -ra NAMES <<< "$CASTNAMES"
-for raw in "${NAMES[@]}"; do
-  n=$(echo "$raw" | xargs)
-  [ -z "$n" ] && continue
-  bdir="$CAST_BANK/$n"
-  if [ ! -s "$bdir/character.json" ] && [ ! -s "$bdir/portrait.png" ]; then
-    "$ASTRO_PY" "$HOME/.zen/Astroport.ONE/tools/story_asset.py" resolve-character "$n" --dest "$bdir" > /dev/null 2>&1
-  fi
-  if [ -s "$bdir/portrait.png" ]; then
-    look=$(jq -r '.look // .image_prompt // empty' "$bdir/character.json" 2>/dev/null)
-    CAST_BLOCK+=$'\n'"- \"$n\" existe déjà : dans le JSON écrire \"$n\": {} (objet VIDE, ne pas inventer image_prompt/voice_line).${look:+ Apparence pour cohérence du texte : $look}"
-  else
-    CAST_BLOCK+=$'\n'"- \"$n\" est à créer : invente \"image_prompt\" (description physique en anglais, fond neutre) et \"voice_line\" (phrase française de 8 secondes environ, dans son propre style)."
-  fi
-done
-[ -z "$CAST_BLOCK" ] && CAST_BLOCK=$'\n'"(aucun personnage : uniquement des plans muets ou avec voix-off de narrateur)"
-
-# ── Prompt ────────────────────────────────────────────────────────────────────
-PROMPT_FILE=$(mktemp)
-{
-cat <<EOF
-Tu es un scénariste qui écrit des storyboards au format JSON STRICT pour un générateur
-vidéo IA (MiniMax H3 + Z-Image). Réponds UNIQUEMENT avec un objet JSON valide, sans
-markdown, sans commentaire, sans texte avant ou après — rien d'autre que le JSON.
-
-SCHÉMA (n'utilise AUCUN champ en dehors de celui-ci) :
-{
-  "ratio": "$RATIO", "style": "$STYLE",
-  "cast": { "nom": {"image_prompt": "...", "voice_line": "..."} },
-  "shots": [
-    {"cast": ["nom"], "duration": 7,
-     "prompt": "description de l'action et du décor en anglais, se terminant par la
-     réplique au style direct : Nom says in French: \\"...réplique exacte en français...\\""},
-    {"prompt": "plan muet ou d'ambiance en anglais, décrit aussi le son (musique, bruitage)", "duration": 5},
-    {"card": {"title": "...", "links": [{"label": "...", "url": "https://..."}]}, "duration": 8}
-  ]
+# ── Conversation : messages = tableau JSON [{role,content}], manipulé via jq ─────────────
+MESSAGES='[]'
+add_msg() {  # $1 role, $2 contenu
+  MESSAGES=$(jq -c --arg r "$1" --arg c "$2" '. + [{"role":$r,"content":$c}]' <<< "$MESSAGES")
+}
+# $1 = "json" pour forcer une sortie JSON stricte (génération finale), sinon conversation libre
+chat_call() {
+  local temp="0.6" want_json=0
+  [ "$1" = "json" ] && { temp="0.3"; want_json=1; }
+  local body
+  body=$(jq -nc --arg model "$MODEL" --argjson msgs "$MESSAGES" --argjson t "$temp" \
+    '{model:$model, messages:$msgs, stream:false, options:{temperature:$t}}')
+  [ "$want_json" = 1 ] && body=$(jq -c '. + {format:"json"}' <<< "$body")
+  curl -s -m 180 -X POST "$OLLAMA_URL/api/chat" -H "Content-Type: application/json" -d "$body" \
+    | jq -r '.message.content // empty'
 }
 
-RÈGLES IMPORTANTES :
-- Chaque plan avec un personnage qui parle DOIT contenir sa réplique française exacte,
-  entre guillemets, introduite par "Nom says in French:" à l'intérieur du champ "prompt"
-  (pas de champ séparé pour la réplique).
-- Une réplique parlée tient en ~2,5 mots par seconde (une "duration" de 7 s ≈ 17 mots).
-- Un seul personnage par plan qui parle (pas de dialogue croisé dans un même plan).
-- "prompt" toujours en anglais, sauf la réplique elle-même qui est en français.
-- Le premier plan ne peut pas avoir "continue": true.
-- "cast" du haut doit lister TOUS les personnages utilisés dans "shots", et uniquement eux.
+SYSTEM_PROMPT=$(cat <<EOF
+Tu es un scénariste qui aide, PAR LA DISCUSSION, à concevoir un storyboard vidéo pour un
+générateur IA (MiniMax H3 + Z-Image). Réponds en français, de façon concise et conversationnelle.
 
-PERSONNAGES À UTILISER :$CAST_BLOCK
+PENDANT LA DISCUSSION (tant que l'utilisateur n'a pas tapé "go") :
+- Ne produis JAMAIS de JSON. Discute normalement.
+- Si le sujet est encore flou, pose UNE ou DEUX questions courtes à la fois (jamais un long
+  questionnaire d'un coup) : sujet précis, ton/ambiance, format (16:9 paysage / 9:16 vertical /
+  1:1 carré), style (net ou "vhs" cassette), personnages qui parlent, voix-off de narrateur,
+  carton final avec un lien.
+- Dès que tu as une idée du sujet, propose 2 ou 3 PISTES DE SCÉNARIO différentes, numérotées,
+  en une ou deux phrases chacune (angle, nombre de plans approximatif, ton). Demande laquelle
+  retenir, ou si l'utilisateur veut en combiner/ajuster.
+- Affine la piste retenue à chaque message suivant, en tenant compte de tous les retours.
+- Reste bref : pas de longs pavés, l'utilisateur doit pouvoir répondre vite.
 
-DEMANDE : un storyboard de $NSHOTS plans sur le sujet suivant : "$SUJET".
+PERSONNAGES DÉJÀ DISPONIBLES (les proposer activement si pertinent ; les réutiliser SANS
+changer leur apparence) :$EXISTING_CAST
+
+Quand l'utilisateur tape "go", tu recevras une demande explicite de produire le JSON final —
+pas avant.
 EOF
-if [ -n "$NARRATOR_DESIGN" ]; then
-  echo "Ajoute une voix-off de narrateur sur 1 ou 2 plans clés avec le champ \"voiceover\" (texte français), et ajoute au niveau racine \"narrator\": {\"voice_design\": \"$NARRATOR_DESIGN\"}."
-fi
-if [ -n "$CARD_URL" ]; then
-  echo "Termine par un plan carton : {\"card\": {\"title\": \"...\", \"links\": [{\"label\": \"$CARD_LABEL\", \"url\": \"$CARD_URL\"}]}, \"duration\": 8}."
-else
-  echo "N'ajoute AUCUN plan \"card\" : aucun lien ni URL n'a été demandé, n'en invente pas."
-fi
-} > "$PROMPT_FILE"
+)
+add_msg system "$SYSTEM_PROMPT"
 
-# ── Appel IA, avec jusqu'à 2 corrections si le JSON ne respecte pas le schéma ────
+echo >&2
+echo "Décrivez votre idée de vidéo (même vague). Tapez \"go\" à tout moment pour générer le" >&2
+echo "storyboard dès qu'une piste vous convient, \"stop\" pour abandonner." >&2
+echo >&2
+
+while true; do
+  read -rp "Vous> " USER_MSG
+  case "${USER_MSG,,}" in
+    go) break ;;
+    stop|quit|exit) echo "Abandonné." >&2; exit 0 ;;
+    "") continue ;;
+  esac
+  add_msg user "$USER_MSG"
+  echo "…" >&2
+  REPLY=$(chat_call)
+  if [ -z "$REPLY" ]; then
+    echo "Erreur : pas de réponse d'Ollama (réessayez, ou \"stop\" pour abandonner)." >&2
+    MESSAGES=$(jq -c '.[:-1]' <<< "$MESSAGES")  # retire le message non répondu
+    continue
+  fi
+  add_msg assistant "$REPLY"
+  echo >&2
+  echo "IA> $REPLY" >&2
+  echo >&2
+done
+
+# ── Génération finale, avec jusqu'à 3 tentatives de correction (même conversation) ───────
 validate_sb() {
   # $1 fichier JSON ; écrit le message d'erreur sur stdout, rien si valide
   jq -e 'type == "object"' "$1" > /dev/null 2>&1 || { echo "ce n'est pas un objet JSON"; return; }
@@ -163,24 +163,37 @@ validate_sb() {
 
 RAW=$(mktemp)
 CLEAN=$(mktemp)
-trap 'rm -f "$PROMPT_FILE" "$RAW" "$CLEAN"' EXIT
-NPUB_ARG=()
-[ -n "${CAPTAINEMAIL:-}" ] && [ -s "$HOME/.zen/game/nostr/${CAPTAINEMAIL}/HEX" ] \
-  && NPUB_ARG=(--npub "$(cat "$HOME/.zen/game/nostr/${CAPTAINEMAIL}/HEX")")
+trap 'rm -f "$RAW" "$CLEAN"' EXIT
+
+add_msg user "Parfait, génère maintenant le storyboard JSON final de ce qu'on vient de définir.
+Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans texte autour — rien d'autre
+que le JSON. Schéma strict, aucun champ en dehors :
+{\"ratio\": \"16:9\", \"style\": \"clean\",
+ \"cast\": {\"nom\": {\"image_prompt\": \"...\", \"voice_line\": \"...\"}},
+ \"shots\": [
+   {\"cast\": [\"nom\"], \"duration\": 7,
+    \"prompt\": \"description en anglais, finissant par : Nom says in French: \\\"réplique exacte en français\\\"\"},
+   {\"prompt\": \"plan muet ou d'ambiance en anglais, décrit aussi le son\", \"duration\": 5}
+ ]}
+Un personnage déjà existant (voir liste donnée plus haut) s'écrit \"nom\": {} (objet VIDE),
+jamais avec image_prompt/voice_line. Une réplique tient ~2,5 mots/s. Un seul personnage par
+plan qui parle. Le premier plan ne peut pas avoir \"continue\": true. \"cast\" en haut doit
+lister exactement les personnages utilisés dans \"shots\", ni plus ni moins. N'ajoute un plan
+\"card\" (carton + liens) que si on en a explicitement discuté — sinon aucun carton, n'en
+invente pas. Pour tout paramètre non discuté (format, style...), choisis une valeur par défaut
+raisonnable sans redemander."
 
 ATTEMPT=1
 ERR=""
 while [ "$ATTEMPT" -le 3 ]; do
-  echo "Rédaction du storyboard par l'IA (tentative $ATTEMPT/3, $MODEL)…" >&2
-  if [ -n "$ERR" ]; then
-    printf '\nTa réponse précédente était invalide : %s. Corrige et renvoie UNIQUEMENT le JSON complet corrigé.\n' "$ERR" >> "$PROMPT_FILE"
-  fi
-  "$ASTRO_PY" "$QUESTION_PY" --prompt-file "$PROMPT_FILE" --model "$MODEL" --format-json \
-    --temperature 0.4 --max-tokens 6000 "${NPUB_ARG[@]}" > "$RAW"
-  if [ ! -s "$RAW" ]; then
+  echo "Génération du storyboard (tentative $ATTEMPT/3, $MODEL)…" >&2
+  REPLY=$(chat_call json)
+  if [ -z "$REPLY" ]; then
     echo "Erreur : réponse vide d'Ollama" >&2
     exit 3
   fi
+  add_msg assistant "$REPLY"
+  printf '%s' "$REPLY" > "$RAW"
   if jq '.' "$RAW" > "$CLEAN" 2>/dev/null; then :; else
     # Repli : extrait le premier bloc {...} si le modèle a ajouté du texte autour
     python3 -c "import re,sys
@@ -196,13 +209,14 @@ sys.exit(1) if not m else print(m.group(0))" "$RAW" | jq '.' > "$CLEAN" 2>/dev/n
     ERR="le JSON n'a pas pu être analysé"
     echo "Réponse invalide (tentative $ATTEMPT) : $ERR" >&2
   fi
+  add_msg user "Ta réponse n'était pas un storyboard valide : $ERR. Renvoie UNIQUEMENT le JSON complet corrigé, rien d'autre."
   ATTEMPT=$((ATTEMPT + 1))
 done
 if [ -n "$ERR" ]; then
   echo "Erreur : l'IA n'a pas produit un storyboard valide après 3 tentatives ($ERR)." >&2
   echo "Dernière réponse brute dans : $RAW (non supprimée pour inspection)" >&2
   trap - EXIT
-  rm -f "$PROMPT_FILE" "$CLEAN"
+  rm -f "$CLEAN"
   exit 2
 fi
 
