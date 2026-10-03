@@ -72,6 +72,15 @@ if [[ -z "$PLAYER" ]]; then
     exit 1
 fi
 
+# Journal permanent des événements cookie (~/.zen/log n'est pas purgé à 20h12)
+cookie_event() {
+    local _log="$HOME/.zen/log/youtube_cookie.log"
+    mkdir -p "$HOME/.zen/log" 2>/dev/null
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${PLAYER:-?} $*" >> "$_log" 2>/dev/null
+    [[ $(wc -l < "$_log" 2>/dev/null || echo 0) -gt 500 ]] && tail -n 400 "$_log" > "$_log.tmp" && mv "$_log.tmp" "$_log"
+    return 0
+}
+
 # Check if second parameter is a cookie file (not --debug)
 COOKIE_PARAM=""
 if [[ -n "$2" && "$2" != "--debug" && "$2" != "--debug-udrive" ]]; then
@@ -148,6 +157,7 @@ if [[ ! -f "$COOKIE_FILE" || -z "$COOKIE_FILE" ]]; then
             echo "$RESTORED_COOKIE" > "$COOKIE_FILE"
             chmod 0600 "$COOKIE_FILE"
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie restored from NOSTR DID → $COOKIE_FILE" >&2
+            cookie_event "RESTORED depuis DID NOSTR ($(wc -c < "$COOKIE_FILE") octets)"
         else
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] NOSTR DID restore failed or empty for $PLAYER" >&2
         fi
@@ -555,6 +565,20 @@ get_liked_videos() {
         "https://www.youtube.com/playlist?list=WL"
     )
     
+    # Cookie sans cookie de connexion (anonyme) => LL "n'existe pas".
+    # Repli : session du navigateur local, qui reste connectée.
+    local cookie_args=(--cookies "$cookie_file")
+    if ! grep -qE $'\t(SID|__Secure-3PSID|LOGIN_INFO)\t' "$cookie_file" 2>/dev/null; then
+        local _br
+        for _br in firefox chrome chromium brave; do
+            if command -v "$_br" &>/dev/null; then
+                cookie_args=(--cookies-from-browser "$_br")
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie file has no login cookie — using $_br session" >&2
+                break
+            fi
+        done
+    fi
+
     local videos_json=""
     local exit_code=1
     
@@ -570,7 +594,7 @@ get_liked_videos() {
         # --ignore-errors: get partial list when some entries fail ("no longer supported", geo-block, etc.)
         videos_json=$(yt-dlp \
             $YT_PLAYLIST_EXTRACTOR_ARGS \
-            --cookies "$cookie_file" \
+            "${cookie_args[@]}" \
             --print '%(id)s&%(title)s&%(duration)s&%(uploader)s&%(webpage_url)s' \
             --playlist-end "$max_results" \
             --no-warnings \
@@ -1249,12 +1273,14 @@ increment_cookie_failures() {
     [[ -z "$current" ]] && current=0
     local new_count=$((current + 1))
     echo "$new_count" > "$failure_file"
+    cookie_event "FAILURE ${new_count}/3 (cookie $(wc -c < "$COOKIE_FILE" 2>/dev/null || echo absent) octets, login=$(grep -cE $'\t(SID|__Secure-3PSID|LOGIN_INFO)\t' "$COOKIE_FILE" 2>/dev/null))"
     echo "$new_count"
 }
 
 # Remet le compteur d'échecs à zéro (appelé après un succès)
 reset_cookie_failures() {
     local failure_file="$1"
+    [[ -f "$failure_file" ]] && cookie_event "RESET (compteur était $(cat "$failure_file" 2>/dev/null))"
     rm -f "$failure_file" 2>/dev/null || true
 }
 
@@ -1265,6 +1291,7 @@ delete_expired_cookie() {
     local failure_file="$3"
 
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🗑️  3 consecutive cookie failures — deleting expired cookie: $cookie_file" >&2
+    cookie_event "DELETED cookie après 3 échecs ($cookie_file)"
     rm -f "$cookie_file" 2>/dev/null || true
     rm -f "$failure_file" 2>/dev/null || true
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie deleted. User must re-upload at: ${uSPOT}/cookie" >&2

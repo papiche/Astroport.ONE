@@ -242,7 +242,8 @@ if [[ $download_exit_code -ne 0 ]] && echo "$download_output" | grep -qE "403|Fo
 fi
 
 if [[ $download_exit_code -ne 0 ]]; then
-    output_json "{\"error\":\"Download failed (exit code: $download_exit_code)\"}"
+    yt_err=$(echo "$download_output" | grep -E "^ERROR|Sign in|SABR|not a bot|Requested format" | tail -n 1 | tr -d '"\\' | cut -c1-200)
+    output_json "{\"error\":\"Download failed (exit code: $download_exit_code) ${yt_err}\"}"
     exit 1
 fi
 
