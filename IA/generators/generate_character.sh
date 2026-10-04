@@ -62,12 +62,16 @@ if [ ! -s "$OUT/voice.wav" ] && [ -n "$VOICE_DESIGN" ] && [ -n "$LINE" ]; then
     rm -f "$OUT/voice_src.wav"
   else
     # Sans Qwen3-TTS (install/install_qwen3_tts.sh) : repli MiniMax, comme generate_scene.sh — le portrait dit la
-    # phrase pendant 8 s et on garde la piste audio. La description de voix est donnée au modèle pour le timbre.
+    # phrase et on garde la piste audio (la description de voix n'est pas transmise : elle serait lue à voix haute).
     progress voice "voix de $NAME (MiniMax)"
     echo "Attention : Qwen3-TTS absent (install/install_qwen3_tts.sh) — voix de référence créée par MiniMax." >&2
     line_clean=${LINE//\"/\'}
-    prompt=$(python3 "$MY_PATH/lib/pronounce.py" "Close-up: the person looks at the camera and speaks in French at a relaxed pace, voice: ${VOICE_DESIGN}. They say: \"${line_clean}\" Quiet room, no music, no background noise.")
-    "$MY_PATH/generate_minimax.sh" -o "$OUT/voice_src.mp4" -S "$SEED" -i "$OUT/portrait.png" -r 1:1 -m 0.25 -d 8 -s 10 "$prompt" > /dev/null
+    # La description de voix n'est PAS mise dans le prompt : le modèle la lisait à voix haute (« …d'environ douze ans, clair,
+    # énergique… ») ; l'âge et le genre se voient déjà sur le portrait.
+    prompt=$(python3 "$MY_PATH/lib/pronounce.py" "Close-up: the person looks at the camera and speaks in French in a natural, calm voice, at a relaxed pace: \"${line_clean}\" Quiet room, no music, no background noise.")
+    # Durée proportionnelle au texte (~2,2 mots/s + marge) : 22 mots en 8 s donnaient du charabia (débit trop élevé)
+    vdur=$(awk -v n="$(wc -w <<< "$LINE")" 'BEGIN { d = int(n / 2.2 + 1.5); if (d < 6) d = 6; if (d > 12) d = 12; print d }')
+    "$MY_PATH/generate_minimax.sh" -o "$OUT/voice_src.mp4" -S "$SEED" -i "$OUT/portrait.png" -r 1:1 -m 0.25 -d "$vdur" -s 10 "$prompt" > /dev/null
     [ -s "$OUT/voice_src.mp4" ] || fail "voix échouée (MiniMax / ComfyUI injoignable ?)"
     "$FFMPEG" -v error -y -i "$OUT/voice_src.mp4" -vn -ac 1 -ar 48000 "$OUT/voice.wav" || { rm -f "$OUT/voice.wav"; fail "extraction de la voix échouée"; }
     rm -f "$OUT/voice_src.mp4"
