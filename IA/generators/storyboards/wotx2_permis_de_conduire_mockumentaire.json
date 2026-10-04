@@ -1,0 +1,183 @@
+{
+  "name": "WoTx² — Le permis de conduire de la confiance (mockumentaire sur la confiance organisée en MULTIPASS, UPlanet alpha)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "ref_steps": 20,
+  "style": "clean",
+  "height": 720,
+  "seed": 4004,
+  "voice": "pierre",
+  "cast": {
+    "sahar": {},
+    "malik": {},
+    "lorca": {}
+  },
+  "shots": [
+    {
+      "prompt": "Mockumentary opening, handheld documentary camera, slightly desaturated colors. Extreme close-up of a French driving licence held between two fingers, then the camera pulls back to a small car in a quiet village street starting up. Serious nature-documentary atmosphere, soft string music, engine sound, no speech.",
+      "voiceover": "Chez les habitants d'UPlanet, la confiance est organisée. Pour la comprendre, observons un objet que tout le monde connaît : le permis de conduire.",
+      "title": "Mockumentaire — UPlanet, version alpha",
+      "duration": 10
+    },
+    {
+      "prompt": "Documentary style. A bright driving-school classroom, rows of learners filling in a road-sign quiz on paper, then quick cut to a young woman at the wheel of a small car pulling out of a parking space, an instructor in the passenger seat. Quiet classroom ambience then gentle engine, no speech.",
+      "voiceover": "Pour l'obtenir, il faut démontrer un savoir : le code. Puis un savoir-faire : savoir réellement conduire.",
+      "title": "SAVOIR  +  SAVOIR-FAIRE",
+      "duration": 9
+    },
+    {
+      "prompt": "Documentary style, medium shot through the car windscreen: an instructor in the passenger seat signs a paper on a clipboard, then cut to a grey government counter where an official stamps the form with a heavy rubber stamp. Dry office ambience, stamp thud, no speech.",
+      "voiceover": "Qui a le droit de dire que vous savez conduire ? Un moniteur, puis une institution. Chez eux, c'est autrement : la reconnaissance circule entre les personnes.",
+      "title": "Qui dit que je sais ?",
+      "duration": 10
+    },
+    {
+      "cast": [
+        "sahar"
+      ],
+      "prompt": "Close-up of Sahar sitting on a sofa in her living room, she holds a smartphone showing her glowing MULTIPASS key and signs a document with her thumb; a single soft golden ring pulses around the phone. She says in French: \"Je sais conduire. Je le déclare, et je le signe de ma propre clé.\" Quiet living room ambience, soft chime.",
+      "title": "X1 : une compétence auto-signée (Kind 30503) — une déclaration, pas encore une preuve",
+      "duration": 9
+    },
+    {
+      "prompt": "Night view of a small village house with a Raspberry Pi station glowing on a shelf, a calendar page flipping through a week, then the Pi sends thin golden lines to two distant windows where two people hold the same skill symbol (a steering wheel); both smartphones light up with an incoming message. Soft digital chimes, calm ambient music, no speech.",
+      "voiceover": "Chaque semaine, la station repère les MULTIPASS qui partagent une même compétence et leur propose de se rencontrer.",
+      "title": "La cérémonie des compétences : même compétence → invitation à se rencontrer",
+      "duration": 10
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Medium shot of Malik, an experienced driver, in a village square next to his car, reading an invitation message on his smartphone, then smiling at the camera. He says in French: \"La station m'a mis en relation avec une conductrice. On se retrouve : montre-moi ce que tu sais faire.\" Village square ambience, birds, soft music.",
+      "title": "L'invitation arrive : on se rencontre",
+      "duration": 9
+    },
+    {
+      "prompt": "Documentary style, inside a small car on a country road: Sahar drives carefully, her hands steady on the wheel, Malik sits in the passenger seat holding up a smartphone filming her; a small red recording dot on the phone, afternoon sun through the windscreen. A thin golden thread of light links the phone to the sky. Calm engine, gentle music, no speech.",
+      "voiceover": "La rencontre est filmée. La vidéo rejoint sa compétence, comme preuve de savoir-faire, et son MULTIPASS la rend vérifiable.",
+      "title": "La preuve : une vidéo jointe à la compétence",
+      "duration": 10
+    },
+    {
+      "prompt": "Documentary style, handheld. A small car drives carefully on a rainy road at dusk, windscreen wipers, headlights reflecting on the wet tarmac, the driver calm. Beside the road a different friend films with a phone; a second golden thread of light follows the car through the rain. Steady rain, wipers, gentle music, no speech.",
+      "voiceover": "Un pair signe. Une signature ne prouve pas tout.",
+      "title": "Un deuxième pair, une autre situation",
+      "duration": 6
+    },
+    {
+      "prompt": "Documentary style. A woman in a terracotta sweater kneels beside a small car on a country road changing a wheel, a neighbour holds the torch and films quietly with a phone, nodding approvingly. A third golden thread links them and a small glowing web of threads forms above the car. Country road ambience, tools clinking, no speech.",
+      "voiceover": "Mais plusieurs pairs indépendants, qui ont eux-mêmes ce niveau, racontent quelque chose.",
+      "title": "Dépanner : encore un témoin",
+      "duration": 6
+    },
+    {
+      "prompt": "Abstract elegant animation on a dark blue background: a ladder of glowing rings labelled by level, X1, X2, X3. A small node X1 receives one golden thread and stays at level one; then it receives two threads coming from two nodes that themselves already shine at level two, and it rises to level two; then three threads from three nodes of level three, and it rises to level three. Each rise is marked by a soft ascending chime. No speech.",
+      "voiceover": "Voici la règle. Pour atteindre le niveau n, il faut n attestations de pairs qui ont eux-mêmes au moins le niveau n. L'Oracle de la station vérifie chaque signataire.",
+      "title": "Xn : n attestations de pairs de niveau ≥ n (Oracle de la station)",
+      "duration": 11
+    },
+    {
+      "prompt": "Over-the-shoulder shot of a woman in a terracotta sweater opening her digital identity on a tablet. It is not a CV: a glowing constellation of skills (driving, mechanics, first aid, gardening, electricity), each skill node linked by thin golden lines to small portraits of the peers who signed it and to a small video thumbnail. Soft digital chimes, calm ambient music, no speech.",
+      "voiceover": "Son MULTIPASS ne contient plus seulement ce qu'elle affirme, mais ce que des pairs ont reconnu et prouvé. Le CV devient une toile.",
+      "title": "Savoir  →  savoir-faire  →  savoir reconnu",
+      "duration": 10
+    },
+    {
+      "cast": [
+        "sahar",
+        "lorca"
+      ],
+      "prompt": "Handheld documentary shot, rainy street at night. Two cars stopped bumper to bumper after a minor collision, hazard lights blinking, no one hurt. Sahar and Lorca step out of their cars and face each other. Lorca says in French, irritated: \"Vous avez changé de voie sans regarder !\" Sahar answers in French, firm: \"Non, c'est vous qui m'avez coupé la route.\" Rain, hazard clicks, distant traffic.",
+      "title": "Un jour, ça se passe mal : un accident",
+      "duration": 10
+    },
+    {
+      "prompt": "Handheld documentary shot, rainy street at night, the two drivers stand between their stopped cars and try to settle it themselves: one gestures at the dented bumper, the other crosses arms and shakes his head, they both look at their phones, an awkward pause. Rain, hazard clicks, distant traffic, no speech.",
+      "voiceover": "Premier réflexe : s'arranger de pair à pair. Quand les deux parties s'accordent, l'affaire s'arrête là. Ici, elles n'y arrivent pas.",
+      "title": "D'abord, le pair à pair",
+      "duration": 9
+    },
+    {
+      "prompt": "Mockumentary interview style, a long wooden kitchen table where three friends have gathered around two worried drivers, everyone drinking tea, warm lamp light. The camera slowly pans over the friends' faces; faint golden lines connect each friend to both drivers. Quiet domestic ambience, a kettle whistling softly, no speech.",
+      "voiceover": "Alors la justice des cercles est invoquée. La friction est déclarée, la station ouvre le dossier, signé par le Capitaine, et le confie d'abord au premier cercle : ceux qui connaissent les deux parties.",
+      "title": "Pas d'accord → friction déclarée (Kind 1984 → 30506) · justice du cercle N1",
+      "duration": 9
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Close-up of Malik, a mutual friend, sitting at the kitchen table, calm and conciliatory, a mug in his hand. He says in French: \"Je vous connais tous les deux. Vous étiez pressés, vous avez mal interprété la situation. On règle ça entre nous.\" Warm kitchen ambience, soft room tone.",
+      "title": "Médiation amiable : chaque acte est publié (Kind 1506)",
+      "duration": 9
+    },
+    {
+      "prompt": "Documentary style, close-up on the two drivers shaking hands over the kitchen table, then cut to a laptop screen showing a station captain's console where a case line changes to a green status, resolved. Warm music rising gently, no speech.",
+      "voiceover": "Le plus souvent, l'accord se trouve ici. Le Capitaine de la station enregistre la résolution. Rien n'est effacé : tout est publié, sans tribunal.",
+      "title": "Accord → dossier « résolu » · l'historique reste public",
+      "duration": 8
+    },
+    {
+      "prompt": "Documentary style, calm and solemn. A parked car crushed beyond repair after a crash, its owner Lorca standing alone beside it at dawn. The camera pulls back to reveal two concentric rings of people around him: an inner ring of close friends in warm gold, an outer ring of friends of friends in silver; every person places a small glowing light into a shared pool, and a coin of light flows from the pool to the owner. Soft solemn orchestral music, no speech.",
+      "voiceover": "Mais si le dégât est irréparable, personne ne peut le réparer seul. Alors la compensation est réalisée par le premier cercle, les amis, et le second, les amis de ces amis. La perte est partagée.",
+      "title": "Dégât irréparable → compensation par les cercles N1 et N2 (règles programmables)",
+      "duration": 12
+    },
+    {
+      "prompt": "Dolly shot flying through a glowing constellation of golden nodes and links: four large skill nodes (driving, mechanics, first aid, teaching) each surrounded by smaller portrait nodes and video thumbnails, the camera crossing the links from one node to the next, ending on a wide view where the four skill nodes merge into one luminous constellation. Dreamy ambient music, no speech.",
+      "voiceover": "Le même réseau qui règle un conflit conserve aussi la mémoire des compétences : ce que je sais, ce que je sais faire, et ceux qui peuvent en témoigner.",
+      "title": "SAVOIR · SAVOIR-FAIRE · RECONNAISSANCE · CONFIANCE",
+      "duration": 12
+    },
+    {
+      "prompt": "Documentary style, a bright shared workspace where five developers of different ages sit around a long table with laptops showing code editors, one of them draws a network of connected circles on a whiteboard, sunlight through large windows, a small glowing constellation hovering above the whiteboard. Lively but calm ambience, keyboards, soft music, no speech.",
+      "voiceover": "UPlanet est en version alpha. Les règles de confiance, de médiation et de compensation sont programmables. Nous invitons les développeurs Web3 à utiliser ce cadre : MULTIPASS, NOSTR, IPFS, toile de confiance.",
+      "title": "UPlanet — version alpha · règles programmables · framework ouvert aux développeurs Web3",
+      "duration": 12
+    },
+    {
+      "cast": [
+        "sahar"
+      ],
+      "prompt": "Close-up of Sahar on a rooftop at dusk, a huge luminous human constellation of connected people in the sky behind her. She smiles to the camera and says in French: \"Je peux dire que je sais.\" Soft wind, gentle music.",
+      "duration": 5
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Close-up of Malik in his workshop, sawdust in the air, a luminous constellation reflected in the window behind him. He says in French: \"Je peux montrer que je sais faire.\" Soft workshop ambience, gentle music.",
+      "duration": 5
+    },
+    {
+      "cast": [
+        "lorca"
+      ],
+      "prompt": "Close-up of Lorca beside his car at night, the golden constellation of connected people reflected on the wet bonnet. He says in French, with a faint smile: \"Et d'autres peuvent dire qu'ils m'ont vu le faire.\" Soft rain, gentle music.",
+      "duration": 6
+    },
+    {
+      "card": {
+        "title": "WoTx² — la confiance organisée en MULTIPASS",
+        "subtitle": "UPlanet est en version alpha — développeurs Web3, venez construire avec nous. La confiance n'est pas une autorité : c'est une relation qui se vérifie.",
+        "links": [
+          {
+            "label": "Créer mon MULTIPASS",
+            "url": "https://u.copylaradio.com/g1"
+          },
+          {
+            "label": "Compétences WoTx²",
+            "url": "https://u.copylaradio.com/earth/skills.html"
+          },
+          {
+            "label": "Le code (AGPL-3.0)",
+            "url": "https://github.com/papiche/Astroport.ONE"
+          }
+        ]
+      },
+      "duration": 9
+    }
+  ]
+}
