@@ -598,8 +598,9 @@ def validate_storyboard(data):
     if not isinstance(shots, list) or not shots:
         die("storyboard : « shots » doit être une liste non vide")
     for i, sh in enumerate(shots, 1):
-        if not (isinstance(sh.get("prompt"), str) or (sh.get("screen") and not sh.get("presenter")) or sh.get("card")):
-            die(f"storyboard : plan {i} sans prompt (ou screen sans présentateur, ou card)")
+        if not (isinstance(sh.get("prompt"), str) or (sh.get("screen") and not sh.get("presenter")) or sh.get("card")
+                or isinstance(sh.get("video"), str)):
+            die(f"storyboard : plan {i} sans prompt (ou screen sans présentateur, ou card, ou video)")
     if shots[0].get("continue"):
         die("storyboard : le premier plan ne peut pas être « continue »")
     cast = sb.get("cast") or {}
@@ -976,6 +977,113 @@ def cmd_versions(a):
         print(f"v{v['version']:<3} {v['cid']}  {time.strftime('%Y-%m-%d %H:%M', time.localtime(v['created'] or 0))}  rendus={len(v['renders'])}")
 
 
+# ═══ Publication d'un rendu fait en ligne de commande (generate_scene.sh -p) ═══
+RENDERS_ROOT = SCENES / "renders"
+CAST_BANK_DIR = pathlib.Path(os.environ.get("CAST_BANK", os.path.expanduser("~/.zen/workspace/characters")))
+
+
+def asset_key(entry):
+    """Même clé de dossier que UPassport (services/story_render.py::_asset_key)."""
+    return f"{(entry.get('author') or captain_hex() or 'local')[:8]}-{slug(entry['d'])}"
+
+
+def _ipfs_add_file(path):
+    p = subprocess.run(["ipfs", "add", "-q", str(path)], capture_output=True, text=True)
+    return p.stdout.strip().splitlines()[-1] if p.returncode == 0 and p.stdout.strip() else None
+
+
+def _my_asset(typ, name):
+    for e in load_keyring().values():
+        if e.get("type") == typ and e.get("name") == name and not e.get("superseded_by"):
+            return e
+    return None
+
+
+def publish_render(name, storyboard_path, work, scope="coop", description=""):
+    """Rend visible dans story.html (Studio vidéo IA) une scène rendue en CLI : acteurs de la banque, scène
+    (nouvelle version si le storyboard a changé), rendu archivé avec ses plans (CID IPFS), prises de
+    chaque plan. Idempotent : relancer ne republie pas un storyboard inchangé."""
+    work = pathlib.Path(work)
+    sb_bytes = pathlib.Path(storyboard_path).read_bytes()
+    sb = validate_storyboard(sb_bytes)
+    final = work / "scene.mp4"
+    if not final.is_file():
+        die(f"{final} absent : rien à publier")
+    # 1. acteurs
+    for actor in sorted(sb.get("cast") or {}):
+        if _my_asset("character", actor):
+            continue
+        bank = CAST_BANK_DIR / actor
+        if (bank / "portrait.png").is_file():
+            a = argparse.Namespace(type="character", name=actor, dir=str(bank), source=None, video=None,
+                                   description=f"Acteur de « {name} »")
+            manifest, files = _files_from_publish(a)
+            seal(manifest, files, scope=scope)
+    # 2. scène : nouveau paquet, ou nouvelle version si le storyboard a changé
+    entry = _my_asset("scene", name)
+    if entry:
+        _e, _m, files = open_bundle(entry["cid"])
+        if files.get("storyboard.json") != sb_bytes:
+            entry = new_version(entry["cid"], {"storyboard.json": sb_bytes}, description or None)
+    else:
+        a = argparse.Namespace(type="scene", name=name, dir=None, source=str(storyboard_path), video=None,
+                               description=description)
+        manifest, files = _files_from_publish(a)
+        entry = seal(manifest, files, scope=scope)
+    cid = entry["cid"]
+    public = entry.get("scope") == "coop"
+    # 3. rendu archivé (lien physique : un plan réutilisé n'est stocké qu'une fois)
+    import shutil
+    import uuid
+    rid = uuid.uuid4().hex[:12]
+    key = asset_key(entry)
+    arch = RENDERS_ROOT / key / "v" / cid / rid
+    arch.mkdir(parents=True, exist_ok=True)
+    names = ["scene.mp4"] + sorted(f.name for f in work.glob("part_*.mp4")) + sorted(f.name for f in work.glob("vo_*.wav"))
+    for n in names:
+        try:
+            os.link(work / n, arch / n)
+        except OSError:
+            shutil.copy2(work / n, arch / n)
+    dur = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(arch / "scene.mp4")],
+                         capture_output=True, text=True).stdout.strip()
+    rec = {"id": rid, "created": int(time.time()), "duration": round(float(dur or 0), 1),
+           "shots": [n for n in names if n.startswith("part_")], "voices": [n for n in names if n.startswith("vo_")],
+           "public": public, "dir": str(arch)}
+    if public:
+        rec["mp4_cid"] = _ipfs_add_file(arch / "scene.mp4")
+        try:
+            known = json.loads((work / "plans.json").read_text())
+        except (OSError, ValueError):
+            known = {}
+        rec["plans"] = [{"file": n, "cid": known.get(n) or _ipfs_add_file(arch / n)} for n in rec["shots"]]
+    add_render(cid, rec)
+    # 4. prises : le Studio les lit dans <renders>/<clé>/work/takes/NN ; « current » désigne celle du montage
+    for tdir in sorted((work / "takes").glob("*")) if (work / "takes").is_dir() else []:
+        dest = RENDERS_ROOT / key / "work" / "takes" / tdir.name
+        dest.mkdir(parents=True, exist_ok=True)
+        for f in tdir.iterdir():
+            if f.is_file() and f.name != "current" and not (dest / f.name).exists():
+                shutil.copy2(f, dest / f.name)
+        try:
+            sig = (work / f"shot_{tdir.name}.sig").read_text().strip()
+            for j in tdir.glob("*.json"):
+                if json.loads(j.read_text()).get("sig") == sig:
+                    (dest / "current").write_text(j.stem)
+        except (OSError, ValueError):
+            pass
+    if public and rec.get("mp4_cid"):
+        announce(entry)
+    return entry, rec
+
+
+def cmd_publish_render(a):
+    entry, rec = publish_render(a.name, a.source, a.work, a.scope, a.description or "")
+    print(json.dumps({"cid": entry["cid"], "render": rec["id"], "mp4_cid": rec.get("mp4_cid"),
+                      "plans": len(rec.get("plans", []))}, ensure_ascii=False))
+
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -1056,6 +1164,13 @@ def main():
     pk.add_argument("--description")
     pk.add_argument("--dry-run", action="store_true")
     pk.set_defaults(fn=cmd_importpkg)
+    ppr = sub.add_parser("publish-render", help="publie dans la bibliothèque (story.html) une scène rendue en CLI, avec ses plans et prises")
+    ppr.add_argument("name")
+    ppr.add_argument("source", help="storyboard.json")
+    ppr.add_argument("--work", required=True, help="répertoire de travail du rendu (generate_scene.sh -w)")
+    ppr.add_argument("--scope", choices=SCOPES, default="coop")
+    ppr.add_argument("--description")
+    ppr.set_defaults(fn=cmd_publish_render)
     a = p.parse_args()
     if a.cmd == "publish" and a.type == "scene" and not a.source:
         p.error("scene demande STORYBOARD.json")

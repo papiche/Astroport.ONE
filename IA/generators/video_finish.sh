@@ -52,7 +52,16 @@ else
   af="anull"
 fi
 
-"$FFMPEG" -v error -y -i "$IN" -vf "${vf},fps=24" -af "$af" \
+# La piste audio doit couvrir TOUTE la durée de la vidéo : un plan dont l'audio s'arrête avant l'image
+# (voix-off plus courte que le plan) laisse un trou que le muxer MP4 absorbe dans le dernier paquet
+# audio ; à la lecture, le son des plans suivants arrive alors en avance (coupures, lipsync décalé).
+# apad complète par du silence, -shortest s'arrête à la fin de l'image ; sans piste audio, silence.
+if [ -n "$("$FFPROBE" -v error -select_streams a -show_entries stream=index -of csv=p=0 "$IN" | head -1)" ]; then
+  src_audio=(-i "$IN"); amap=(-map 0:v -map 0:a)
+else
+  src_audio=(-i "$IN" -f lavfi -i anullsrc=r=48000:cl=stereo); amap=(-map 0:v -map 1:a)
+fi
+"$FFMPEG" -v error -y "${src_audio[@]}" -vf "${vf},fps=24" -af "${af},apad" "${amap[@]}" -shortest \
        -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p -c:a aac -b:a 160k -ar 48000 -ac 2 \
        -movflags +faststart "$OUT" || exit 1
 echo "$OUT"

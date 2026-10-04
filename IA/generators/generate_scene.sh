@@ -2,7 +2,7 @@
 # Dependencies : jq ffmpeg ffprobe ipfs qrencode (+ playwright dans ~/.astro pour screen/card)
 #### generate_scene.sh : storyboard JSON → vidéo multi-plans (MiniMax H3) assemblée en 720p
 #
-# Usage: generate_scene.sh [-w workdir] [-c] [-i index] <storyboard.json> [udrive_path]
+# Usage: generate_scene.sh [-w workdir] [-c] [-i index] [-p coop|private] <storyboard.json> [udrive_path]
 #   -w  répertoire de travail (défaut $SCENES_DIR/scene_*  (~/.zen/workspace/scenes), hors de ~/.zen/tmp
 #       que le nettoyage d'Astroport vide) ; relancer avec le même -w reprend la scène :
 #       acteurs, plans et captures déjà rendus ne sont pas recalculés.
@@ -11,6 +11,9 @@
 #   -i  ne (re)calcule que le plan d'index INDEX (0-based) et s'arrête (pas de finition ni
 #       d'assemblage) ; utiliser avec le même -w qu'une scène existante pour reprendre
 #       exactement son cache (acteurs, autres plans déjà rendus inchangés).
+#   -p  publie la scène dans la bibliothèque du Studio vidéo IA (story.html) à la fin du rendu :
+#       acteurs, scène (nouvelle version si le storyboard a changé), rendu avec ses plans sur IPFS,
+#       prises de chaque plan. "coop" : visible des autres Capitaines ; "private" : chiffré, sans IPFS.
 # Sortie stdout : URL IPFS de la vidéo finale (ou chemin du fichier si IPFS échoue)
 # Codes de sortie : 0 ok, 1 erreur, 2 storyboard invalide, 3 ComfyUI non équipé, 4 timeout
 #
@@ -31,6 +34,10 @@
 #     {"screen": "http://127.0.0.1:54321/g1", "presenter": "lea", "prompt": "Lea says: \"...\""}
 #                                                               capture d'écran nette (défilement/zoom) +
 #                                                               présentateur en incrustation ronde
+#     {"video": "ipfs://Qm…", "start": 0, "duration": 6, "title": "…"}
+#                                                               séquence vidéo importée (IPFS ou fichier de
+#                                                               $SCENES_DIR), remise au format de la scène ;
+#                                                               n'importer que du contenu dont on a les droits
 #     {"card": {"title": "...", "links": [{"label": "...", "url": "https://..."}]}, "duration": 8}
 #                                                               carton final avec QR codes
 #   ]
@@ -94,11 +101,14 @@ usage() {
 WORK_DIR=""
 CAST_ONLY=0
 SHOT_INDEX=""
-while getopts "w:ci:h" opt; do
+PUBLISH_SCOPE=""
+while getopts "w:ci:p:h" opt; do
   case $opt in
     w) WORK_DIR="$OPTARG" ;;
     c) CAST_ONLY=1 ;;
     i) SHOT_INDEX="$OPTARG" ;;
+    p) PUBLISH_SCOPE="$OPTARG"
+       case "$PUBLISH_SCOPE" in coop|private) ;; *) echo "Erreur : -p coop|private" >&2; exit 2 ;; esac ;;
     *) usage ;;
   esac
 done
@@ -117,8 +127,8 @@ if [ "$CAST_ONLY" -eq 1 ]; then
   fi
 else
   if ! jq -e '.shots | type == "array" and length > 0
-              and all(.[]; (.prompt | type) == "string" or (.screen and (.presenter | not)) or .card)' "$STORYBOARD" > /dev/null 2>&1; then
-    echo "Erreur : storyboard invalide (chaque plan : .prompt, ou .screen sans présentateur, ou .card)" >&2
+              and all(.[]; (.prompt | type) == "string" or (.screen and (.presenter | not)) or .card or ((.video | type) == "string"))' "$STORYBOARD" > /dev/null 2>&1; then
+    echo "Erreur : storyboard invalide (chaque plan : .prompt, ou .screen sans présentateur, ou .card, ou .video)" >&2
     exit 2
   fi
   if jq -e '.shots[0].continue == true' "$STORYBOARD" > /dev/null; then
@@ -277,6 +287,29 @@ speech_render() {
   local out="$1" seed="$2" prompt="$3"
   shift 3
   render -o "$out" "$@" -S "$seed" "$(python3 "$MY_PATH/lib/pronounce.py" "$prompt")"
+}
+
+# Prises : chaque plan IA rendu est conservé sous $WORK_DIR/takes/NN/<id>.mp4 avec sa fiche <id>.json
+# (qualité brouillon/normal, steps, prompt, signature, CID IPFS). Recommencer un plan après un
+# changement de prompt, ou le refaire en qualité normale après un brouillon, n'écrase donc rien.
+# IPFS (donc partageable) sauf rendu privé (STORY_NO_IPFS).
+# $1 index NN, $2 index numérique, $3 fichier plan, $4 graine, $5 durée demandée
+register_take() {
+  local n="$1" idx="$2" f="$3" seed="$4" dur="$5" tdir id cid="" quality real
+  tdir="$WORK_DIR/takes/$n"; mkdir -p "$tdir"
+  id=$(date +%s); while [ -e "$tdir/$id.mp4" ]; do id=$((id + 1)); done
+  cp "$f" "$tdir/$id.mp4" || return 0
+  [ -z "$STORY_NO_IPFS" ] && cid=$(ipfs add -q "$tdir/$id.mp4" 2>/dev/null | tail -n 1)
+  quality=$(jq -r 'if .quality then .quality elif ((.steps // 10) <= 6) then "draft" else "normal" end' "$STORYBOARD")
+  real=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$f" 2>/dev/null)
+  jq -n --arg id "$id" --arg q "$quality" --arg cid "$cid" --arg sig "$(cat "$WORK_DIR/shot_$n.sig" 2>/dev/null)" \
+        --argjson created "$(date +%s)" --argjson idx "$idx" --argjson seed "${seed:-0}" --argjson dur "${real:-0}" \
+        --argjson steps "${STEPS:-10}" --argjson ref_steps "${REF_STEPS:-20}" --argjson mp "${MEGAPIXELS:-0.4}" \
+        --arg ratio "$RATIO" --slurpfile shot <(jq -c ".shots[$idx]" "$STORYBOARD") \
+        '{id: $id, index: $idx, created: $created, quality: $q, steps: $steps, ref_steps: $ref_steps, megapixels: $mp,
+          ratio: $ratio, seed: $seed, duration: $dur, sig: $sig, cid: ($cid | if . == "" then null else . end),
+          prompt: ($shot[0].prompt // ""), voiceover: ($shot[0].voiceover // null), cast: ($shot[0].cast // [])}' \
+    > "$tdir/$id.json" 2>/dev/null || true
 }
 
 ########################################################################
@@ -493,6 +526,28 @@ pip_compose() {
     -map "[v]" -map 1:a -c:v libx264 -preset fast -crf 18 -c:a aac -ar 48000 -ac 2 -shortest "$3"
 }
 
+# $1 référence (CID IPFS, ipfs://CID[/fichier] tel que listé par le uDRIVE, /ipfs/CID, ou fichier sous $SCENES_DIR / le répertoire de
+# travail), $2 fichier de sortie. Pas d'URL http arbitraire : un storyboard partagé ne doit pas pouvoir
+# faire télécharger n'importe quoi à la station.
+import_video() {
+  local ref="$1" out="$2" cid p
+  [ -s "$out" ] && return 0
+  case "$ref" in
+    ipfs://*|/ipfs/*|Qm*|bafy*)
+      cid="${ref#ipfs://}"; cid="${cid#/ipfs/}"
+      # CID puis chemin éventuel (uDRIVE : "CID/nom de fichier.mp4", espaces et accents permis ; pas de « .. »)
+      [[ "$cid" == *..* ]] && return 1
+      [[ "$cid" =~ ^(Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-z2-7]{50,})(/[^/[:cntrl:]]+)*$ ]] || return 1
+      if timeout 600 ipfs cat "$cid" > "$out.part" 2>/dev/null && [ -s "$out.part" ]; then mv "$out.part" "$out"; else rm -f "$out.part"; return 1; fi ;;
+    *)
+      p="${ref//\$SCENES_DIR/$SCENES_DIR}"; p="${p//\$\{SCENES_DIR\}/$SCENES_DIR}"
+      [[ "$p" == *..* ]] && return 1
+      case "$p" in "$SCENES_DIR"/*|"$WORK_DIR"/*) [ -f "$p" ] && cp "$p" "$out" || return 1 ;; *) return 1 ;; esac ;;
+  esac
+  [ -n "$("$FFPROBE" -v error -select_streams v -show_entries stream=index -of csv=p=0 "$out" | head -1)" ] \
+    || { rm -f "$out"; return 1; }
+}
+
 # $1 JSON {title, subtitle?, links:[{label,url}]}, $2 png : carton HTML → capture
 # (police du titre réduite pour tenir dans la largeur)
 card_image() {
@@ -544,6 +599,27 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
     echo "=== Plan $((i + 1))/$NB_SHOTS : carton ===" >&2
     card_image "$(jq -c '.card' <<< "$shot")" "$WORK_DIR/card_${n}.png" || { echo "Erreur : carton $n" >&2; exit 1; }
     screen_clip "$WORK_DIR/card_${n}.png" "$duration" static "$shot_file" || exit 1
+    continue
+  fi
+
+  # ---- Séquence vidéo importée (IPFS) ----
+  if jq -e '(.video | type) == "string"' <<< "$shot" > /dev/null; then
+    echo "=== Plan $((i + 1))/$NB_SHOTS : vidéo importée ===" >&2
+    vsrc=$(jq -r '.video' <<< "$shot")
+    vfile="$WORK_DIR/import_${n}.mp4"
+    import_video "$vsrc" "$vfile" || { echo "Erreur : vidéo du plan $n introuvable ou illisible ($vsrc)" >&2; exit 1; }
+    vstart=$(jq -r '.start // 0' <<< "$shot")
+    vlen=$(jq -r '.duration // 120' <<< "$shot")
+    if [ -n "$("$FFPROBE" -v error -select_streams a -show_entries stream=index -of csv=p=0 "$vfile" | head -1)" ]; then
+      vin=(-ss "$vstart" -i "$vfile"); vmap=(-map 0:v -map 0:a)
+    else
+      vin=(-ss "$vstart" -i "$vfile" -f lavfi -i anullsrc=r=48000:cl=stereo); vmap=(-map 0:v -map 1:a)
+    fi
+    "$FFMPEG" -v error -y "${vin[@]}" -t "$vlen" "${vmap[@]}" \
+      -vf "scale=${FINAL_W}:${FINAL_H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${FINAL_W}:${FINAL_H},setsar=1,fps=24,format=yuv420p" \
+      -c:v libx264 -preset fast -crf 18 -c:a aac -ar 48000 -ac 2 -shortest "$shot_file" \
+      || { echo "Erreur : mise au format de la vidéo du plan $n échouée" >&2; exit 1; }
+    "$FFMPEG" -v error -y -sseof -0.1 -i "$shot_file" -update 1 -frames:v 1 "$WORK_DIR/last_${n}.png"
     continue
   fi
 
@@ -617,6 +693,7 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
 
   echo "=== Plan $((i + 1))/$NB_SHOTS (${duration}s) ===" >&2
   speech_render "$shot_file" "$seed" "$prompt" "${args[@]}"
+  register_take "$n" "$i" "$shot_file" "$seed" "$duration"
 
   # Dernière image, point de départ d'un éventuel plan "continue" suivant
   "$FFMPEG" -v error -y -sseof -0.1 -i "$shot_file" -update 1 -frames:v 1 "$WORK_DIR/last_${n}.png"
@@ -633,6 +710,14 @@ fi
 ########################################################################
 # Finition plan par plan (voix-off, taille exacte, style, titre), puis assemblage
 ########################################################################
+# Loudness intégrée (LUFS) de la piste audio de $1 ; vide si illisible
+lufs() { "$FFMPEG" -nostats -hide_banner -i "$1" -vn -af ebur128=peak=true -f null - 2>&1 \
+         | awk '/Summary/ { s = 1 } s && /^ *I:/ { print $2; exit }'; }
+# Gain (dB) pour passer de $1 LUFS à $2 LUFS, borné à ±12 dB (piste muette : 0)
+gain_db() { awk -v c="$1" -v t="$2" 'BEGIN { if (c == "" || c < -60) { print 0; exit } g = t - c; if (g > 12) g = 12; if (g < -12) g = -12; printf "%.1f", g }'; }
+# Niveau cible : ambiance MiniMax -20 LUFS sous la voix-off, voix-off -16 LUFS, plans finis -16 LUFS
+BED_LUFS=-20; VO_LUFS=-16; SHOT_LUFS=-16
+
 progress finish -1 "finition des plans"
 list="$WORK_DIR/concat.txt"
 : > "$list"
@@ -643,8 +728,14 @@ for ((i = 0; i < NB_SHOTS; i++)); do
   part="$WORK_DIR/part_${n}.mp4"
 
   if [ -s "$WORK_DIR/vo_${n}.wav" ]; then
+    # Ambiance MiniMax ramenée à BED_LUFS (niveaux très inégaux d'un plan à l'autre), voix-off à VO_LUFS.
+    # Ducking léger (≈5 dB sous la voix, ratio 2) : l'ambiance reste audible au lieu d'être écrasée.
+    # La voix et son side-chain sont complétées par du silence (apad) puis coupées à la durée du plan :
+    # sidechaincompress s'arrête sinon à la fin de la voix-off et la piste audio est tronquée.
+    vdur=$("$FFPROBE" -v error -select_streams v -show_entries stream=duration -of csv=p=0 "$src" | head -1)
+    bed_gain=$(gain_db "$(lufs "$src")" "$BED_LUFS")
     "$FFMPEG" -v error -y -i "$src" -i "$WORK_DIR/vo_${n}.wav" -filter_complex \
-      "[0:a]volume=0.6[a0];[1:a]aresample=48000,adelay=400:all=1,loudnorm=I=-16:TP=-1.5:LRA=7,asplit=2[vo][sc];[a0][sc]sidechaincompress=threshold=0.03:ratio=10:attack=15:release=350:makeup=1[duck];[duck][vo]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[a]" \
+      "[0:a]aresample=48000,volume=${bed_gain}dB,apad,atrim=0:${vdur}[a0];[1:a]aresample=48000,adelay=400:all=1,loudnorm=I=${VO_LUFS}:TP=-1.5:LRA=7,aresample=48000,apad,atrim=0:${vdur},asplit=2[vo][sc];[a0][sc]sidechaincompress=threshold=0.1:ratio=2:attack=20:release=500:makeup=1[duck];[duck][vo]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[a]" \
       -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -ar 48000 "$WORK_DIR/mix_${n}.mp4" || exit 1
     src="$WORK_DIR/mix_${n}.mp4"
   fi
@@ -654,6 +745,16 @@ for ((i = 0; i < NB_SHOTS; i++)); do
     finish_args+=(-v)
   fi
   "$MY_PATH/video_finish.sh" "${finish_args[@]}" "$src" "$part" > /dev/null || exit 1
+
+  # Volume homogène d'un plan à l'autre + fondus de 40 / 80 ms aux raccords (pas de clic ni de saut de niveau)
+  pdur=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$part")
+  pgain=$(gain_db "$(lufs "$part")" "$SHOT_LUFS")
+  fout=$(awk -v d="$pdur" 'BEGIN { printf "%.3f", (d > 0.2 ? d - 0.08 : 0) }')
+  "$FFMPEG" -v error -y -i "$part" -c:v copy \
+    -af "volume=${pgain}dB,alimiter=limit=0.95,afade=t=in:d=0.04,afade=t=out:st=${fout}:d=0.08" \
+    -c:a aac -b:a 192k -ar 48000 -ac 2 -movflags +faststart "$part.norm.mp4" \
+    && mv "$part.norm.mp4" "$part" \
+    || echo "Attention : volume du plan $n non normalisé" >&2
 
   # Titre incrusté après le style pour rester net
   title=$(jq -r '.title // empty' <<< "$shot")
@@ -670,6 +771,13 @@ for ((i = 0; i < NB_SHOTS; i++)); do
       || echo "Attention : titre du plan $n non incrusté (filtre drawtext absent ?)" >&2
   fi
   echo "file '$part'" >> "$list"
+  # Plan fini (voix-off, volume, titre) sur IPFS pour pouvoir le partager : plans.json {part_NN.mp4: CID}
+  if [ -z "$STORY_NO_IPFS" ]; then
+    pcid=$(ipfs add -q "$part" 2>/dev/null | tail -n 1)
+    [ -n "$pcid" ] && { jq -c --arg k "part_${n}.mp4" --arg v "$pcid" '. + {($k): $v}' "$WORK_DIR/plans.json" 2>/dev/null \
+                         || jq -nc --arg k "part_${n}.mp4" --arg v "$pcid" '{($k): $v}'; } > "$WORK_DIR/plans.json.tmp" \
+      && mv "$WORK_DIR/plans.json.tmp" "$WORK_DIR/plans.json"
+  fi
 done
 
 progress assemble -1 "assemblage"
@@ -678,8 +786,10 @@ if [ -n "$UDRIVE_PATH" ] && [ -d "$UDRIVE_PATH" ]; then
 else
   final="$WORK_DIR/scene.mp4"
 fi
-# Plans finis à l'identique (taille, 24 i/s, AAC 48 kHz) → copie ; réencodage en secours
-if ! "$FFMPEG" -v error -y -f concat -safe 0 -i "$list" -c copy -movflags +faststart "$final"; then
+# Vidéo copiée, audio réencodé d'un seul tenant et recalé sur les horodatages (aresample async) :
+# pas de trou ni de chevauchement aux raccords, le son reste calé sur l'image (lipsync des acteurs)
+if ! "$FFMPEG" -v error -y -f concat -safe 0 -i "$list" -c:v copy \
+       -af "aresample=async=1:first_pts=0" -c:a aac -b:a 192k -ar 48000 -ac 2 -movflags +faststart "$final"; then
   echo "Concaténation directe impossible, réencodage..." >&2
   "$FFMPEG" -v error -y -f concat -safe 0 -i "$list" -c:v libx264 -crf 20 -preset fast -c:a aac -b:a 192k \
          -movflags +faststart "$final" || exit 1
@@ -695,6 +805,15 @@ fi
 
 FINISHED_OK=1
 progress done -1 "terminé"
+# -p : la scène apparaît dans story.html (acteurs, scène, rendu et plans sur IPFS, prises)
+if [ -n "$PUBLISH_SCOPE" ]; then
+  scene_name=$(jq -r '.name // empty' "$STORYBOARD")
+  [ -z "$scene_name" ] && scene_name=$(basename "$STORYBOARD" .json)
+  echo "Publication dans la bibliothèque du Studio (${PUBLISH_SCOPE})…" >&2
+  python3_bin="${ASTRO_PY:-python3}"
+  "$python3_bin" "$MY_PATH/../../tools/story_asset.py" publish-render "$scene_name" "$STORYBOARD" --work "$WORK_DIR" --scope "$PUBLISH_SCOPE" >&2 \
+    || echo "Attention : publication dans la bibliothèque échouée (le rendu reste disponible dans $WORK_DIR)" >&2
+fi
 # STORY_NO_IPFS=1 : rendu d'un paquet privé, la vidéo ne part pas sur IPFS (UPassport la sert elle-même)
 if [ -n "$STORY_NO_IPFS" ]; then echo "$final"; exit 0; fi
 ipfs_hash=$(ipfs add -wq "$final" 2>/dev/null | tail -n 1)
