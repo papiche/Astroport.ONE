@@ -6,7 +6,7 @@
 #   look    description du visage et des vêtements (anglais conseillé), ex. "woman in her 30s, short black hair"
 #   voix    description de la voix (anglais), ex. "warm low-pitched woman, calm and friendly"
 #   phrase  ce que la voix dit en français (~8 s : l'acteur la reprend comme référence <Audio k>)
-# Produit dossier/portrait.png et dossier/voice.wav ; un fichier déjà présent n'est pas refait
+# Produit dossier/portrait.png et dossier/voice.wav (Qwen3-TTS, ou à défaut MiniMax) ; un fichier déjà présent n'est pas refait
 # (le supprimer pour le régénérer). Suivi : dossier/progress.json (stages portrait voice done failed).
 # Codes de sortie : 0 ok, 1 erreur, 2 arguments.
 
@@ -32,7 +32,10 @@ progress() {
     && mv "$OUT/progress.json.tmp" "$OUT/progress.json"
 }
 OK=0
-trap '[ "$OK" = 1 ] || progress failed "arrêt"' EXIT
+ERRMSG=""
+# Le message d'échec affiché dans le Studio est la vraie cause (pas un « arrêt » générique)
+fail() { ERRMSG="$1"; echo "Erreur : $1" >&2; exit 1; }
+trap '[ "$OK" = 1 ] || progress failed "${ERRMSG:-arrêt}"' EXIT
 
 if [ ! -s "$OUT/portrait.png" ]; then
   progress portrait "portrait de $NAME"
@@ -43,19 +46,33 @@ if [ ! -s "$OUT/portrait.png" ]; then
     "$LOOK, head and shoulders portrait, plain neutral light grey studio background, soft even lighting, looking at the camera" \
     "$image_dir" > /dev/null && mv "$(ls -t "$image_dir"/*.png 2>/dev/null | head -n 1)" "$OUT/portrait.png"
   rm -rf "$image_dir"
-  [ -s "$OUT/portrait.png" ] || { echo "Erreur : portrait échoué" >&2; exit 1; }
+  [ -s "$OUT/portrait.png" ] || fail "portrait échoué (ComfyUI / Z-Image injoignable ?)"
 fi
 
+DONE_MSG="terminé"
 if [ ! -s "$OUT/voice.wav" ] && [ -n "$VOICE_DESIGN" ] && [ -n "$LINE" ]; then
-  [ -n "$QWEN3TTS_PY" ] || { echo "Erreur : Qwen3-TTS absent (install/install_qwen3_tts.sh)" >&2; exit 1; }
-  progress voice "voix de $NAME"
-  bash "$MY_PATH/../services/ollama.me.sh" FREE > /dev/null 2>&1
-  curl -s -m 10 -X POST "http://127.0.0.1:8188/free" -H "Content-Type: application/json" \
-       -d '{"unload_models": true, "free_memory": true}' > /dev/null 2>&1
-  "$QWEN3TTS_PY" "$MY_PATH/generate_voice.py" -o "$OUT/voice_src.wav" -S "$SEED" "$VOICE_DESIGN" "$LINE" > /dev/null \
-    && "$FFMPEG" -v error -y -i "$OUT/voice_src.wav" -ac 1 -ar 48000 "$OUT/voice.wav" \
-    || { rm -f "$OUT/voice.wav"; echo "Erreur : voix échouée" >&2; exit 1; }
-  rm -f "$OUT/voice_src.wav"
+  if [ -n "$QWEN3TTS_PY" ]; then
+    progress voice "voix de $NAME"
+    bash "$MY_PATH/../services/ollama.me.sh" FREE > /dev/null 2>&1
+    curl -s -m 10 -X POST "http://127.0.0.1:8188/free" -H "Content-Type: application/json" \
+         -d '{"unload_models": true, "free_memory": true}' > /dev/null 2>&1
+    "$QWEN3TTS_PY" "$MY_PATH/generate_voice.py" -o "$OUT/voice_src.wav" -S "$SEED" "$VOICE_DESIGN" "$LINE" > /dev/null \
+      && "$FFMPEG" -v error -y -i "$OUT/voice_src.wav" -ac 1 -ar 48000 "$OUT/voice.wav" \
+      || { rm -f "$OUT/voice.wav"; fail "voix échouée (Qwen3-TTS)"; }
+    rm -f "$OUT/voice_src.wav"
+  else
+    # Sans Qwen3-TTS (install/install_qwen3_tts.sh) : repli MiniMax, comme generate_scene.sh — le portrait dit la
+    # phrase pendant 8 s et on garde la piste audio. La description de voix est donnée au modèle pour le timbre.
+    progress voice "voix de $NAME (MiniMax)"
+    echo "Attention : Qwen3-TTS absent (install/install_qwen3_tts.sh) — voix de référence créée par MiniMax." >&2
+    line_clean=${LINE//\"/\'}
+    prompt=$(python3 "$MY_PATH/lib/pronounce.py" "Close-up: the person looks at the camera and speaks in French at a relaxed pace, voice: ${VOICE_DESIGN}. They say: \"${line_clean}\" Quiet room, no music, no background noise.")
+    "$MY_PATH/generate_minimax.sh" -o "$OUT/voice_src.mp4" -S "$SEED" -i "$OUT/portrait.png" -r 1:1 -m 0.25 -d 8 -s 10 "$prompt" > /dev/null
+    [ -s "$OUT/voice_src.mp4" ] || fail "voix échouée (MiniMax / ComfyUI injoignable ?)"
+    "$FFMPEG" -v error -y -i "$OUT/voice_src.mp4" -vn -ac 1 -ar 48000 "$OUT/voice.wav" || { rm -f "$OUT/voice.wav"; fail "extraction de la voix échouée"; }
+    rm -f "$OUT/voice_src.mp4"
+    DONE_MSG="terminé : portrait et voix de référence (créée par MiniMax, Qwen3-TTS absent)"
+  fi
 fi
 OK=1
-progress done "terminé"
+progress done "$DONE_MSG"
