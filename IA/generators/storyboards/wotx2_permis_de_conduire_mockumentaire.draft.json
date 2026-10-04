@@ -3,7 +3,7 @@
   "ratio": "16:9",
   "megapixels": 0.2,
   "steps": 6,
-  "ref_steps": 10,
+  "ref_steps": 20,
   "style": "clean",
   "height": 720,
   "seed": 4004,
@@ -86,12 +86,18 @@
     },
     {
       "cast": [
-        "sahar",
         "lorca"
       ],
-      "prompt": "Handheld documentary shot, rainy street at night. Two cars stopped bumper to bumper after a minor collision, hazard lights blinking, no one hurt. Sahar and Lorca step out of their cars and face each other. Lorca says in French, irritated: \"Vous avez changé de voie sans regarder !\" Sahar answers in French, firm: \"Non, c'est vous qui m'avez coupé la route.\" Rain, hazard clicks, distant traffic.",
+      "prompt": "Handheld documentary close-up, rainy street at night, orange hazard lights blinking on the wet tarmac, two cars stopped bumper to bumper after a minor collision behind him. Lorca stands in the rain beside his car, irritated, pointing back at the other car. He says in French, irritated: \"Vous avez changé de voie sans regarder !\" Rain, hazard clicks, distant traffic.",
       "title": "Un jour, ça se passe mal : un accident",
-      "duration": 10
+      "duration": 6
+    },
+    {
+      "cast": [
+        "sahar"
+      ],
+      "prompt": "Handheld documentary close-up, the same rainy street at night, orange hazard lights blinking behind her. Sahar, soaked by the rain, answers firmly with her arms crossed. She says in French, firm: \"Non, c'est vous qui m'avez coupé la route.\" Rain, hazard clicks, distant traffic.",
+      "duration": 6
     },
     {
       "prompt": "Handheld documentary shot, rainy street at night, the two drivers stand between their stopped cars and try to settle it themselves: one gestures at the dented bumper, the other crosses arms and shakes his head, they both look at their phones, an awkward pause. Rain, hazard clicks, distant traffic, no speech.",
@@ -179,5 +185,6 @@
       },
       "duration": 9
     }
-  ]
+  ],
+  "quality": "draft"
 }
