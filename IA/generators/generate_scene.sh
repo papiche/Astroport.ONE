@@ -28,7 +28,7 @@
 #   "shots": [
 #     {"image_prompt": "...", "prompt": "...", "duration": 5},  image générée (generate_image.sh) puis animée
 #     {"continue": true,      "prompt": "...", "duration": 5},  repart de la dernière image du plan précédent
-#     {"image": "/chemin.png", "prompt": "...", "duration": 5}, image fournie
+#     {"image": "/chemin.png" ou "ipfs://CID/nom.png", "prompt": "...", "duration": 5}, image fournie (fichier ou uDRIVE)
 #     {"prompt": "...", "duration": 5}                          text-to-video
 #     {"cast": ["lea"], "prompt": "Lea ... says: \"...\""}       acteur(s) : même visage et même voix (ref2va)
 #     {"screen": "http://127.0.0.1:54321/g1", "presenter": "lea", "prompt": "Lea says: \"...\""}
@@ -421,7 +421,8 @@ for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
       line=$(jq -r '.voice_line' <<< "$actor")
       speech_render "$cdir/voice_src.mp4" "$actor_seed" \
         "Close-up: the person looks at the camera and speaks in French in a natural, calm voice, at a relaxed pace: \"$line\" Quiet room, no music, no background noise." \
-        -i "$cdir/portrait.png" -r 1:1 -m 0.25 -d 8 -s "$STEPS"
+        -i "$cdir/portrait.png" -r 1:1 -m 0.25 \
+        -d "$(awk -v n="$(wc -w <<< "$line")" 'BEGIN { d = int(n / 2.2 + 1.5); if (d < 6) d = 6; if (d > 12) d = 12; print d }')" -s "$STEPS"
       "$FFMPEG" -v error -y -i "$cdir/voice_src.mp4" -vn -ac 1 -ar 48000 "$cdir/voice.wav" || exit 1
     else
       echo "Erreur : acteur $name absent de la banque ($bdir) et sans .voice/.voice_line dans le storyboard" >&2
@@ -587,6 +588,8 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
   duration=$(jq -r '.duration // 5' <<< "$shot")
   seed=$(jq -r --argjson s "$((BASE_SEED + i))" '.seed // $s' <<< "$shot")
   prompt=$(jq -r '.prompt // ""' <<< "$shot")
+  # Nouvelle prise demandée par le Studio (plan seul) : graine décalée, sinon on referait exactement le même plan
+  [ -n "$SHOT_INDEX" ] && [ -n "$SHOT_SEED_SHIFT" ] && seed=$((seed + SHOT_SEED_SHIFT))
 
   if [ -s "$shot_file" ]; then
     echo "Plan $n déjà rendu, ignoré" >&2
@@ -670,6 +673,18 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
     prompt="$prompt Audio: ambient sound effects and soft background music only, no speech, no voices, no singing."
   fi
 
+  # Garde-fou de débit : au-delà de ~2,5 mots/s le modèle empâte ou invente des syllabes (charabia). Pour un plan avec
+  # acteur, la durée est portée au temps nécessaire à la réplique (~2,2 mots/s + marge), comme pour la voix-off.
+  if jq -e '.cast' <<< "$shot" > /dev/null; then
+    nwords=$(python3 "$MY_PATH/lib/pronounce.py" --lines "$prompt" | tr -s ' ' '\n' | grep -c '[[:alpha:]]')
+    need=$(awk -v n="$nwords" 'BEGIN { d = int(n / 2.2 + 1.5); print (d > 15 ? 15 : d) }')
+    if [ "$need" -gt "$duration" ]; then
+      echo "Plan $n : réplique de $nwords mots, durée portée de ${duration} s à ${need} s (débit <= ~2,5 mots/s)" >&2
+      duration=$need
+    fi
+    [ "$nwords" -gt 33 ] && echo "Attention : plan $n, réplique de $nwords mots > ~33 mots (15 s max) : à raccourcir ou à couper en deux plans" >&2
+  fi
+
   args=(-d "$duration" -r "$RATIO" -m "$MEGAPIXELS" -s "$STEPS")
   [ "$UPSCALE" != "1" ] && [ "$UPSCALE" != "0" ] && args+=(-u "$UPSCALE")
 
@@ -680,7 +695,21 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
   elif jq -e '.continue == true' <<< "$shot" > /dev/null; then
     args+=(-i "$WORK_DIR/last_$(printf "%02d" $((i - 1))).png")
   elif jq -e '.image' <<< "$shot" > /dev/null; then
-    args+=(-i "$(jq -r '.image' <<< "$shot")")
+    start_img=$(jq -r '.image' <<< "$shot")
+    case "$start_img" in
+      ipfs://*|/ipfs/*|Qm*|bafy*)
+        # Image de départ prise dans le uDRIVE (lien IPFS « CID/nom ») : téléchargée puis remise au format du plan
+        sfile="$WORK_DIR/startimg_${n}.png"
+        if [ ! -s "$sfile" ]; then
+          import_video "$start_img" "$WORK_DIR/startimg_${n}.raw" \
+            || { echo "Erreur : image de départ du plan $n introuvable ou illisible ($start_img)" >&2; exit 1; }
+          "$FFMPEG" -v error -y -i "$WORK_DIR/startimg_${n}.raw" -frames:v 1 \
+            -vf "scale=${IMAGE_SIZE%x*}:${IMAGE_SIZE#*x}:force_original_aspect_ratio=increase:flags=lanczos,crop=${IMAGE_SIZE%x*}:${IMAGE_SIZE#*x}" "$sfile" \
+            || { echo "Erreur : image de départ du plan $n inutilisable" >&2; exit 1; }
+        fi
+        start_img="$sfile" ;;
+    esac
+    args+=(-i "$start_img")
   elif jq -e '.image_prompt' <<< "$shot" > /dev/null; then
     first_frame="$WORK_DIR/image_${n}.png"
     if [ ! -s "$first_frame" ]; then
