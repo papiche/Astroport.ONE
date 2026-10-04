@@ -230,6 +230,48 @@ def extract_pubkey_from_nsec_file(private_key_hex: str) -> Optional[str]:
     
     return None
 
+async def fetch_profile_checked(relay_url: str, pubkey: str, open_timeout: float = 6.0):
+    """Lit le kind 0 le plus récent d'un relais. Retourne (événement | None, répondu).
+    `répondu` est vrai seulement si le relais a bien terminé la requête (EOSE) : « aucun profil »
+    et « relais injoignable » ne doivent surtout pas être confondus — dans le second cas, publier un
+    profil construit à partir des seuls arguments écraserait le profil complet (kind 0 remplaçable)."""
+    try:
+        async with websockets.connect(relay_url, open_timeout=open_timeout) as websocket:
+            sub = f"profile_fetch_{int(time.time())}"
+            await websocket.send(json.dumps(["REQ", sub, {"kinds": [0], "authors": [pubkey], "limit": 1}]))
+            best, answered = None, False
+            deadline = time.time() + 8
+            while time.time() < deadline:
+                try:
+                    data = json.loads(await asyncio.wait_for(websocket.recv(), timeout=0.5))
+                except asyncio.TimeoutError:
+                    continue
+                if data[0] == "EVENT" and len(data) >= 3 and data[2].get("kind") == 0 and data[2].get("pubkey") == pubkey:
+                    if best is None or data[2].get("created_at", 0) > best.get("created_at", 0):
+                        best = data[2]
+                elif data[0] == "EOSE":
+                    answered = True
+                    break
+            try:
+                await websocket.send(json.dumps(["CLOSE", sub]))
+            except Exception:
+                pass
+            return best, answered
+    except Exception as e:
+        print(f"⚠️ Relais injoignable pour lire le profil ({relay_url}) : {e}")
+        return None, False
+
+
+async def fetch_best_profile(relays: list, pubkey: str):
+    """Interroge tous les relais en parallèle et garde le profil le plus récent.
+    Retourne (événement | None, nombre de relais qui ont répondu)."""
+    results = await asyncio.gather(*[fetch_profile_checked(r, pubkey) for r in relays])
+    answered = sum(1 for _ev, ok in results if ok)
+    events = [ev for ev, _ok in results if ev]
+    best = max(events, key=lambda e: e.get("created_at", 0)) if events else None
+    return best, answered
+
+
 async def fetch_current_profile(relay_url: str, pubkey: str) -> Optional[Dict[str, Any]]:
     """Récupérer le profil actuel depuis strfry via WebSocket"""
     try:
@@ -393,19 +435,22 @@ async def update_nostr_profile(private_key_input: str, relays: list, args: argpa
         
         print(f"🔑 Clé publique: {hex_pubkey}")
         
-        # Utiliser le premier relai pour récupérer le profil existant
-        relay_url = relays[0] if relays else "ws://127.0.0.1:7777"
-        print(f"📡 Connexion au relai: {relay_url}")
-        
-        # Récupérer le profil existant
-        print("📥 Récupération du profil existant...")
-        existing_event = await fetch_current_profile(relay_url, hex_pubkey)
-        
+        # Lire le profil existant sur TOUS les relais (le plus récent l'emporte) : le premier relais de la liste
+        # est souvent un relais distant parfois injoignable, alors que le relais local a le profil complet.
+        read_relays = list(relays) if relays else ["ws://127.0.0.1:7777"]
+        print(f"📡 Lecture du profil sur {len(read_relays)} relais...")
+        existing_event, answered = await fetch_best_profile(read_relays, hex_pubkey)
+
         if existing_event:
-            print(f"✅ Profil existant trouvé, mise à jour...")
+            print(f"✅ Profil existant trouvé (created_at {existing_event.get('created_at')}), mise à jour...")
+        elif answered == 0:
+            # Aucun relais n'a répondu : on ne sait pas si un profil existe. Publier maintenant un profil construit
+            # des seuls arguments remplacerait (kind 0) un profil complet par un profil partiel.
+            print("❌ Aucun relais n'a répondu : profil existant illisible, mise à jour annulée pour ne pas l'écraser.")
+            return False
         else:
             print("ℹ️ Aucun profil existant, création d'un nouveau profil...")
-        
+
         # Merger les données
         metadata, tags = merge_profile_data(existing_event, args, unknown_args)
         
