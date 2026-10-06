@@ -10,6 +10,7 @@ Usage : pronounce.py "<prompt>"   (le prompt corrigé sort sur stdout)
 """
 
 import json
+import os
 import pathlib
 import re
 import sys
@@ -40,7 +41,10 @@ def main():
     if not QUOTE.search(prompt):
         print(prompt)
         return
-    print(QUOTE.sub(lambda m: '"' + respell(m.group(1)) + '"', prompt) + DICTION)
+    # La consigne de diction (« slowly and clearly, short pauses ») dégradait la parole : 18 mots / 11 s, fidélité 0,74
+    # avec et 0,89 sans (essai du 2026-10-04, Léa). Elle n'est ajoutée que sur demande : PRONOUNCE_DICTION=1.
+    out = QUOTE.sub(lambda m: '"' + respell(m.group(1)) + '"', prompt)
+    print(out + (DICTION if os.environ.get("PRONOUNCE_DICTION") == "1" else ""))
 
 
 if __name__ == "__main__":

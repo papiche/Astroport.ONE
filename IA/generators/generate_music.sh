@@ -91,6 +91,8 @@ check_comfyui_port() {
 
 # Le node YuE2 est-il installé sur ce ComfyUI ?
 has_yue2() {
+  # MUSIC_ENGINE=ace force ACE-Step (repli quand YuE2 plante, p.ex. poids du VAE non chargés)
+  [ "$MUSIC_ENGINE" = "ace" ] && return 1
   curl -s -m 5 "$COMFYUI_URL/object_info/YuE2GenerateSong" | jq -e '.YuE2GenerateSong' >/dev/null 2>&1
 }
 

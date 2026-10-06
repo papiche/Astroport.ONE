@@ -1,0 +1,287 @@
+{
+  "name": "Astroport.ONE — présentation (protocole N², site, installation)",
+  "ratio": "16:9",
+  "megapixels": 0.3,
+  "steps": 10,
+  "ref_steps": 20,
+  "style": "clean",
+  "height": 720,
+  "seed": 5005,
+  "voice": "pierre",
+  "music": {
+    "prompt": "ambient cinematic electronic, warm evolving pads, slow gentle pulse, hopeful, spacious, instrumental, no vocals",
+    "lufs": -26
+  },
+  "cast": {
+    "lea": {},
+    "malik": {}
+  },
+  "shots": [
+    {
+      "cast": [
+        "lea"
+      ],
+      "prompt": "Close-up of a young woman at her desk in a softly lit room, a laptop open behind her, she looks at the camera. Lea says in French, calm: \"Je m'appelle Léa. Je voulais savoir à qui appartient mon réseau social.\" Quiet room ambience.",
+      "title": "À qui appartient votre réseau ?",
+      "duration": 7
+    },
+    {
+      "screen": "https://ipfs.copylaradio.com/ipns/copylaradio.com/bang.html",
+      "motion": "zoom",
+      "voiceover": "Depuis 1977, la science des réseaux sait prédire comment l'information circule. Les plateformes s'en servent pour vous enfermer dans des bulles.",
+      "title": "Le Protocole N² — bang.html",
+      "duration": 9,
+      "screen_js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});var m=document.querySelector('#protocol-modal .modal-content');[].slice.call(m.children).forEach(function(c,i){if([3].indexOf(i)<0&&!c.matches('.modal-close'))c.style.display='none'});m.style.zoom=1.45;m.style.maxHeight='none';m.style.overflow='visible';document.getElementById('protocol-modal').scrollTop=0;"
+    },
+    {
+      "screen": "https://ipfs.copylaradio.com/ipns/copylaradio.com/bang.html",
+      "voiceover": "Le résultat : le plus bruyant domine, et les contenus viraux écrasent tout le reste.",
+      "title": "L'ère du bruit (Web2)",
+      "duration": 7,
+      "record": {
+        "wait": 3500,
+        "actions": [
+          {
+            "click": "#start-simulator"
+          },
+          {
+            "wait": 1200
+          },
+          {
+            "js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});"
+          },
+          {
+            "click": "#next-chapter"
+          },
+          {
+            "wait": 500
+          },
+          {
+            "click": "#next-chapter"
+          },
+          {
+            "wait": 500
+          },
+          {
+            "wait": 900
+          },
+          {
+            "mark": true
+          },
+          {
+            "mouse": [
+              0.625,
+              0.417
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.742,
+              0.625
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.547,
+              0.694
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.703,
+              0.528
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.594,
+              0.583
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.781,
+              0.417
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.562,
+              0.528
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.688,
+              0.722
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.812,
+              0.583
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.641,
+              0.361
+            ]
+          },
+          {
+            "wait": 650
+          }
+        ]
+      }
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/n2_diagram.html?step=2",
+      "motion": "zoom",
+      "voiceover": "UPlanet fait le contraire. Premier cercle, N1 : vos amis directs.",
+      "title": "Premier cercle — N1",
+      "duration": 6
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/n2_diagram.html?step=3",
+      "motion": "zoom",
+      "voiceover": "Deuxième cercle, N2 : les amis de vos amis.",
+      "title": "Deuxième cercle — N2",
+      "duration": 5
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/n2_diagram.html?step=4",
+      "motion": "zoom",
+      "voiceover": "Au-delà, un bouclier : aucun inconnu imposé par un algorithme.",
+      "title": "Le bouclier N²",
+      "duration": 6
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/n2_diagram.html?step=5",
+      "motion": "zoom",
+      "voiceover": "Et vous avez toujours un ami en commun : c'est cela, la confiance.",
+      "title": "Une confiance partagée",
+      "duration": 6
+    },
+    {
+      "prompt": "Slow orbital view of Earth at night, scattered warm lights appear one by one and connect into a constellation of equal nodes with no central point, gentle cosmic music, no speech.",
+      "voiceover": "Ce réseau s'appelle Astroport.ONE : un essaim de stations, toutes égales, sans chef d'orchestre.",
+      "title": "Astroport.ONE — Swarm of Equals",
+      "duration": 8
+    },
+    {
+      "screen": "https://astroport.one/",
+      "motion": "zoom",
+      "voiceover": "Du gros serveur au petit Raspberry Pi, chaque station est un pair souverain.",
+      "title": "astroport.one",
+      "duration": 7,
+      "screen_js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});"
+    },
+    {
+      "screen": "https://astroport.one/",
+      "motion": "zoom",
+      "voiceover": "Chaque station offre ses services : une intelligence artificielle qui tourne chez vous, sans filtre ni publicité, la génération d'images, un cloud privé.",
+      "title": "Les Dragons : les services de chaque station",
+      "duration": 10,
+      "screen_js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});document.querySelectorAll('section').forEach(function(e){if(e.id!=='dragons')e.style.display='none'});document.querySelectorAll('footer').forEach(function(e){e.style.display='none'});document.body.style.zoom=1.25;"
+    },
+    {
+      "prompt": "Close-up of a person at a laptop typing an email address, a small golden key made of light appears above the screen then fades into a glowing identity card, warm room, soft music, no speech.",
+      "voiceover": "Votre identité, c'est un MULTIPASS : une simple adresse email, et vos clés restent chez vous.",
+      "title": "MULTIPASS — identité souveraine",
+      "duration": 8
+    },
+    {
+      "screen": "https://astroport.one/",
+      "motion": "zoom",
+      "voiceover": "Le ẐEN, monnaie coopérative, récompense les services rendus entre pairs : un ẐEN vaut environ un euro.",
+      "title": "L'économie ẐEN",
+      "duration": 8,
+      "screen_js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});document.querySelectorAll('section').forEach(function(e){if(e.id!=='zen')e.style.display='none'});document.querySelectorAll('footer').forEach(function(e){e.style.display='none'});document.body.style.zoom=1.3;"
+    },
+    {
+      "screen": "https://astroport.one/install.html",
+      "motion": "zoom",
+      "voiceover": "Héberger une station coûte peu : un Raspberry Pi consomme environ cinq watts, moins de quinze euros d'électricité par an.",
+      "title": "Devenir Armateur — install.html",
+      "duration": 9,
+      "screen_js": "var hh=document.querySelector('header.page-header');if(hh)hh.style.display='none';['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});document.querySelectorAll('section').forEach(function(e){if(e.textContent.toLowerCase().indexOf('peur de la facture')<0)e.style.display='none'});document.querySelectorAll('footer').forEach(function(e){e.style.display='none'});document.querySelectorAll('section .info-box').forEach(function(e){e.style.display='none'});document.body.style.zoom=1.45;"
+    },
+    {
+      "screen": "https://astroport.one/install.html",
+      "motion": "zoom",
+      "voiceover": "Le protocole verse une participation aux frais de quatorze ẐEN par semaine, pour une station légère.",
+      "title": "Participation aux frais : 14 ẐEN par semaine",
+      "duration": 7,
+      "screen_js": "var hh=document.querySelector('header.page-header');if(hh)hh.style.display='none';['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});document.querySelectorAll('section').forEach(function(e){if(e.textContent.toLowerCase().indexOf('peur de la facture')<0)e.style.display='none'});document.querySelectorAll('footer').forEach(function(e){e.style.display='none'});document.querySelectorAll('section > .sec-label, section > h2, section > .sep, section > p').forEach(function(e){e.style.display='none'});document.body.style.zoom=1.85;"
+    },
+    {
+      "screen": "https://astroport.one/install.html",
+      "motion": "zoom",
+      "voiceover": "Une seule ligne de commande, sur Debian, Ubuntu ou Mint.",
+      "title": "bash <(curl -sL https://install.astroport.com)",
+      "duration": 6,
+      "screen_js": "var hh=document.querySelector('header.page-header');if(hh)hh.style.display='none';['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});document.querySelectorAll('section').forEach(function(e){if(e.textContent.toLowerCase().indexOf('installation en 3')<0)e.style.display='none'});document.querySelectorAll('footer').forEach(function(e){e.style.display='none'});document.body.style.zoom=1.3;"
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Close-up of a friendly man in his cosy living room, a small computer on the shelf behind him, daylight from a window, he smiles at the camera. Malik says in French, calm: \"Chez moi, un petit ordinateur suffit. Venez construire avec nous.\" Quiet room ambience.",
+      "title": "UPlanet — version alpha",
+      "duration": 6
+    },
+    {
+      "card": {
+        "title": "Astroport.ONE · UPlanet",
+        "subtitle": "Un essaim d'égaux · IPFS + NOSTR · ẐEN — UPlanet est en version alpha : venez construire avec nous.",
+        "links": [
+          {
+            "label": "Le protocole N²",
+            "url": "https://ipfs.copylaradio.com/ipns/copylaradio.com/bang.html"
+          },
+          {
+            "label": "Le site Astroport.ONE",
+            "url": "https://astroport.one/"
+          },
+          {
+            "label": "Installer une station",
+            "url": "https://astroport.one/install.html"
+          },
+          {
+            "label": "Le code (AGPL-3.0)",
+            "url": "https://github.com/papiche/Astroport.ONE"
+          }
+        ]
+      },
+      "voiceover": "UPlanet est en version alpha. Le code est libre, sous licence AGPL.",
+      "duration": 8
+    }
+  ]
+}

@@ -14,9 +14,9 @@ echo "######### SUDOERS ASTROPORT (NOPASSWD) #########"
 ########################################################################
 ## Full sudo pour le capitaine (NOPASSWD:ALL) — requis pour install/upgrade
 ########################################################################
-echo "$USER ALL=(ALL) NOPASSWD:ALL" \
-    | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/captain') \
-    && echo "SUDOERS captain : NOPASSWD:ALL"
+# echo "$USER ALL=(ALL) NOPASSWD:ALL" \
+#     | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/captain') \
+#     && echo "SUDOERS captain : NOPASSWD:ALL"
 
 ########################################################################
 ## NOPASSWD explicite par binaire (défense en profondeur)

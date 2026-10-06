@@ -1,0 +1,436 @@
+{
+  "name": "Astroport.ONE — présentation (protocole N², site, installation) [BROUILLON passe 1]",
+  "ratio": "16:9",
+  "megapixels": 0.2,
+  "steps": 6,
+  "ref_steps": 20,
+  "style": "clean",
+  "height": 720,
+  "seed": 5005,
+  "voice": "pierre",
+  "music": {
+    "prompt": "ambient cinematic electronic, warm evolving pads, slow gentle pulse, hopeful, spacious, instrumental, no vocals",
+    "lufs": -26,
+    "max_seconds": 90
+  },
+  "cast": {
+    "lea": {},
+    "malik": {}
+  },
+  "shots": [
+    {
+      "cast": [
+        "lea"
+      ],
+      "prompt": "Close-up of a young woman at her desk in a softly lit room, a laptop open behind her, she looks at the camera. Lea says in French, calm: \"Mon identité, mes amis, mes photos : tout appartient à une entreprise.\" Quiet room ambience.",
+      "title": "À qui appartient votre vie numérique ?",
+      "duration": 7
+    },
+    {
+      "screen": "https://ipfs.copylaradio.com/ipns/copylaradio.com/bang.html",
+      "motion": "zoom",
+      "voiceover": "On sait prédire comment l'information circule. Les plateformes s'en servent pour vous enfermer.",
+      "title": "Le Protocole N² — depuis 1977",
+      "duration": 6,
+      "screen_js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});var m=document.querySelector('#protocol-modal .modal-content');[].slice.call(m.children).forEach(function(c,i){if([3].indexOf(i)<0&&!c.matches('.modal-close'))c.style.display='none'});m.style.zoom=1.45;m.style.maxHeight='none';m.style.overflow='visible';document.getElementById('protocol-modal').scrollTop=0;"
+    },
+    {
+      "screen": "https://ipfs.copylaradio.com/ipns/copylaradio.com/bang.html",
+      "voiceover": "Le plus bruyant domine. Sans votre propre clé, tout appartient à la plateforme.",
+      "title": "L'ère du bruit (Web2)",
+      "duration": 5,
+      "record": {
+        "wait": 3500,
+        "actions": [
+          {
+            "click": "#start-simulator"
+          },
+          {
+            "wait": 1200
+          },
+          {
+            "js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});"
+          },
+          {
+            "click": "#next-chapter"
+          },
+          {
+            "wait": 500
+          },
+          {
+            "click": "#next-chapter"
+          },
+          {
+            "wait": 500
+          },
+          {
+            "wait": 900
+          },
+          {
+            "mark": true
+          },
+          {
+            "mouse": [
+              0.625,
+              0.417
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.742,
+              0.625
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.547,
+              0.694
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.703,
+              0.528
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.594,
+              0.583
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.781,
+              0.417
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.563,
+              0.528
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.688,
+              0.722
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.813,
+              0.583
+            ]
+          },
+          {
+            "wait": 650
+          },
+          {
+            "mouse": [
+              0.641,
+              0.361
+            ]
+          },
+          {
+            "wait": 650
+          }
+        ]
+      },
+      "transition": {
+        "type": "fadeblack",
+        "duration": 0.7
+      }
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/key_diagram.html?step=1&nav=0",
+      "motion": "zoom",
+      "voiceover": "Le cadenas https prouve qui est le site. Votre clé prouve que c'est vous : sans mot de passe, sans plateforme.",
+      "title": "Votre clé est votre signature",
+      "duration": 9
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/key_diagram.html?step=2&nav=0",
+      "motion": "zoom",
+      "voiceover": "Forgez votre clé : votre MULTIPASS se crée avec une simple adresse email. La clé est découpée en trois parts : vous, votre Capitaine, la constellation.",
+      "title": "Forger sa clé : le MULTIPASS",
+      "duration": 9,
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      }
+    },
+    {
+      "screen": "https://u.copylaradio.com/earth/g1.html",
+      "motion": "zoom",
+      "screen_wait": 12000,
+      "screen_js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap','uph'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});",
+      "voiceover": "Créez votre MULTIPASS sur l'Astroport le plus proche… ou installez le vôtre.",
+      "title": "Choisissez votre Astroport",
+      "duration": 7
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/n2_diagram.html?step=3&nav=0",
+      "motion": "zoom",
+      "voiceover": "Autour de vous : vos amis, N1, et les amis de vos amis, N2.",
+      "title": "Premier et deuxième cercles — N1 · N2",
+      "duration": 6
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/n2_diagram.html?step=4&nav=0",
+      "motion": "zoom",
+      "voiceover": "En production, le relais interdit la lecture sans authentification : la toile devient un bouclier.",
+      "title": "Le bouclier N² — Activation",
+      "duration": 7,
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      }
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/tiers_diagram.html?nav=0",
+      "motion": "zoom",
+      "voiceover": "Trois étages : l'utilisateur, le Capitaine qui l'héberge, et l'Armateur qui fournit le matériel.",
+      "title": "Utilisateur · Capitaine · Armateur",
+      "duration": 8
+    },
+    {
+      "screen": "http://127.0.0.1:8099/",
+      "motion": "zoom",
+      "voiceover": "Le Capitaine héberge BRO, votre IA, et peut adapter son code à vos besoins. Tout est libre, sous licence AGPL.",
+      "title": "Tout est AGPL : le Capitaine adapte BRO",
+      "duration": 9,
+      "screen_js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});document.querySelectorAll('section').forEach(function(e){if(e.id!=='dragons')e.style.display='none'});document.querySelectorAll('footer').forEach(function(e){e.style.display='none'});document.body.style.zoom=1.25;var all=document.querySelectorAll('#dragons *');for(var k=0;k<all.length;k++){var e=all[k];if(e.children.length===0&&e.textContent.trim()==='BRO'){var c=e.parentElement;c.style.outline='3px solid #ffd54a';c.style.boxShadow='0 0 40px #ffd54a99';c.style.background='#1a1605';break}}var b=document.createElement('div');b.textContent='AGPL-3.0 · code libre';b.style.cssText='position:fixed;right:28px;bottom:26px;z-index:99999;padding:12px 22px;border:3px solid #5be0ff;border-radius:99px;background:#06222bee;color:#5be0ff;font:800 26px system-ui,sans-serif;letter-spacing:.04em;box-shadow:0 0 30px #5be0ff66';document.body.appendChild(b);"
+    },
+    {
+      "screen": "https://ipfs.copylaradio.com/ipns/copylaradio.com/bang.html",
+      "record": {
+        "wait": 3500,
+        "actions": [
+          {
+            "click": "#start-simulator"
+          },
+          {
+            "wait": 600
+          },
+          {
+            "click": "#next-chapter"
+          },
+          {
+            "wait": 300
+          },
+          {
+            "click": "#next-chapter"
+          },
+          {
+            "wait": 300
+          },
+          {
+            "click": "#next-chapter"
+          },
+          {
+            "wait": 800
+          },
+          {
+            "js": "['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});var pp=document.querySelector('#explanation-content p');if(pp)pp.style.visibility='hidden';var g=document.querySelectorAll('[class*=translate],[id*=translate],[class*=goog]');g.forEach(function(e){e.style.display='none'});"
+          },
+          {
+            "mark": true
+          },
+          {
+            "mouse": [
+              0.62,
+              0.5
+            ]
+          },
+          {
+            "wait": 500
+          },
+          {
+            "mouse": [
+              0.72,
+              0.38
+            ]
+          },
+          {
+            "wait": 500
+          },
+          {
+            "mouse": [
+              0.52,
+              0.34
+            ]
+          },
+          {
+            "wait": 500
+          },
+          {
+            "mouse": [
+              0.8,
+              0.62
+            ]
+          },
+          {
+            "wait": 500
+          },
+          {
+            "mouse": [
+              0.66,
+              0.72
+            ]
+          },
+          {
+            "wait": 500
+          },
+          {
+            "mouse": [
+              0.88,
+              0.45
+            ]
+          },
+          {
+            "wait": 500
+          },
+          {
+            "mouse": [
+              0.56,
+              0.66
+            ]
+          },
+          {
+            "wait": 500
+          },
+          {
+            "mouse": [
+              0.76,
+              0.78
+            ]
+          },
+          {
+            "wait": 500
+          },
+          {
+            "mouse": [
+              0.84,
+              0.3
+            ]
+          },
+          {
+            "wait": 500
+          }
+        ]
+      },
+      "voiceover": "Chaque message se réplique de station en station, et vos fichiers vivent sur IPFS. Abattez une station : le réseau tient.",
+      "title": "Réplication N² + IPFS : la résistance aux cyberattaques",
+      "duration": 9
+    },
+    {
+      "screen": "http://127.0.0.1:8099/install.html",
+      "motion": "zoom",
+      "voiceover": "Un PC de joueur avec sa carte graphique coûte environ neuf euros d'électricité par mois. C'est ce matériel que la constellation recherche.",
+      "title": "L'Armateur : un PC de joueur, environ 9 € d'électricité par mois",
+      "duration": 9,
+      "screen_js": "var hh=document.querySelector('header.page-header');if(hh)hh.style.display='none';['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});document.querySelectorAll('footer').forEach(function(e){e.style.display='none'});var box=null;document.querySelectorAll('.info-box').forEach(function(e){if(e.textContent.indexOf('RTX 3090')>=0)box=e});if(box){var sec=box.closest('section');document.querySelectorAll('section').forEach(function(e){if(e!==sec)e.style.display='none'});Array.from(sec.children).forEach(function(c){if(c!==box)c.style.display='none'});box.querySelectorAll('tr').forEach(function(r){var t=r.textContent;if(t.indexOf('Participation')>=0||t.indexOf('Contrôle')>=0||t.indexOf('annuel')>=0)r.style.display='none'});box.querySelectorAll('p').forEach(function(q,i){if(i>0)q.style.display='none'});box.style.margin='40px auto';box.style.maxWidth='900px'}document.body.style.zoom=1.35;"
+    },
+    {
+      "screen": "http://127.0.0.1:8099/install.html",
+      "motion": "zoom",
+      "voiceover": "En retour, une participation aux frais, négociée pour chaque station, rembourse électricité et internet. Un compteur d'énergie mesure la consommation réelle.",
+      "title": "Participation aux frais : négociée pour chaque station",
+      "duration": 9,
+      "screen_js": "var hh=document.querySelector('header.page-header');if(hh)hh.style.display='none';['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});document.querySelectorAll('section').forEach(function(e){if(e.textContent.toLowerCase().indexOf('peur de la facture')<0)e.style.display='none'});document.querySelectorAll('footer').forEach(function(e){e.style.display='none'});document.querySelectorAll('section > .sec-label, section > h2, section > .sep, section > p').forEach(function(e){e.style.display='none'});document.body.style.zoom=1.85;",
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      }
+    },
+    {
+      "prompt": "One bright central star surrounded by twenty-four small satellites orbiting in rings, from which new smaller constellations bud off and drift away into deep space, gentle cosmic music, no speech.",
+      "voiceover": "Tout part d'une constellation fondatrice : un PC avec GPU et vingt-quatre satellites. Elle recrute de nouveaux Capitaines, qui créent chacun leur constellation.",
+      "title": "1 GPU + 24 satellites",
+      "duration": 10,
+      "transition": {
+        "type": "fadeblack",
+        "duration": 0.7
+      }
+    },
+    {
+      "screen": "http://127.0.0.1:54321/earth/avantages_diagram.html?nav=0",
+      "motion": "zoom",
+      "voiceover": "Utilisateur : vos données restent chez vous. Capitaine : votre IA, votre code. Armateur : vos frais remboursés. Pour tous : un réseau qui résiste.",
+      "title": "Ce que vous y trouvez",
+      "duration": 10
+    },
+    {
+      "screen": "http://127.0.0.1:8099/install.html",
+      "motion": "zoom",
+      "voiceover": "Une seule ligne de commande, sur Debian, Ubuntu ou Mint.",
+      "title": "bash <(curl -sL https://install.astroport.com)",
+      "duration": 6,
+      "screen_js": "var hh=document.querySelector('header.page-header');if(hh)hh.style.display='none';['uplanet-agpl-banner','uplanet-feedback-btn','asw-fab-wrap'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none'});document.querySelectorAll('section').forEach(function(e){if(e.textContent.toLowerCase().indexOf('installation en 3')<0)e.style.display='none'});document.querySelectorAll('footer').forEach(function(e){e.style.display='none'});document.body.style.zoom=1.3;"
+    },
+    {
+      "cast": [
+        "malik"
+      ],
+      "prompt": "Close-up of a friendly man in his cosy living room, a glowing gaming PC tower with a glass side panel, RGB lights and a big graphics card visible, standing on a desk behind him, daylight from a window, he smiles at the camera. Malik says in French, calm: \"Une clé, vos amis, une station : reprenez la main.\" Quiet room ambience.",
+      "title": "Reprenez la main — version alpha",
+      "duration": 6,
+      "transition": {
+        "type": "fade",
+        "duration": 0.5
+      }
+    },
+    {
+      "card": {
+        "title": "Astroport.ONE · UPlanet",
+        "subtitle": "Une clé · vos amis · une station — UPlanet est en version alpha : venez construire avec nous.",
+        "links": [
+          {
+            "label": "Créer mon MULTIPASS",
+            "url": "https://u.copylaradio.com/earth/g1.html"
+          },
+          {
+            "label": "Le protocole N²",
+            "url": "https://ipfs.copylaradio.com/ipns/copylaradio.com/bang.html"
+          },
+          {
+            "label": "Installer une station",
+            "url": "https://astroport.one/install.html"
+          },
+          {
+            "label": "Le code (AGPL-3.0)",
+            "url": "https://github.com/papiche/Astroport.ONE"
+          }
+        ]
+      },
+      "voiceover": "UPlanet est en version alpha. Le code est libre, sous licence AGPL. Reprenez la main : rejoignez-nous.",
+      "duration": 8
+    }
+  ],
+  "quality": "draft"
+}

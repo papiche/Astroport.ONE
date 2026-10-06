@@ -38,6 +38,8 @@
 #                                                               séquence vidéo importée (IPFS ou fichier de
 #                                                               $SCENES_DIR), remise au format de la scène ;
 #                                                               n'importer que du contenu dont on a les droits
+#     {"screen": "https://…", "record": {"actions": [{"click": "#go"}, {"mark": true}, {"mouse": [x, y]}, {"wait": 700}]}, "duration": 8}
+#                                                               page vivante (simulateur) : enregistrée en vidéo (lib/record_page.py)
 #     {"card": {"title": "...", "links": [{"label": "...", "url": "https://..."}]}, "duration": 8}
 #                                                               carton final avec QR codes
 #   ]
@@ -61,6 +63,7 @@
 #              allongée si la phrase ne tient pas, et MiniMax reçoit « no speech ».
 #   title      texte incrusté (bas de l'image) pendant tout le plan, après le style.
 #   motion     plan "screen" : "scroll" (défaut si la page dépasse l'écran) | "zoom"
+#   screen_wait plan "screen" : attente après chargement de la page, en ms (défaut 6000 ; 12000 pour une carte qui se charge lentement)
 #   screen_js  plan "screen" : JavaScript (chaîne ou liste) exécuté avant la capture,
 #              ex. cliquer un onglet : "document.querySelector('#tab').click()"
 # Paramètres globaux, tous optionnels (défauts = priorité à la vitesse sur RTX 3090,
@@ -312,6 +315,23 @@ register_take() {
     > "$tdir/$id.json" 2>/dev/null || true
 }
 
+# Garde-fou de débit : au-delà de ~2,5 mots/s le modèle empâte ou invente des syllabes (charabia). Durée suffisante
+# pour dire la réplique (~2,2 mots/s + marge, 15 s max) ; avertit si la réplique dépasse 14 mots. $1 prompt, $2 durée demandée, $3 étiquette du message ;
+# durée sur stdout, messages sur stderr.
+fit_speech_duration() {
+  local nwords need
+  nwords=$(python3 "$MY_PATH/lib/pronounce.py" --lines "$1" | tr -s ' ' '\n' | grep -c '[[:alpha:]]')
+  need=$(awk -v n="$nwords" 'BEGIN { d = int(n / 2.2 + 1.5); print (d > 15 ? 15 : d) }')
+  # Au-delà d'une phrase d'environ 14 mots, le modèle invente de la parole (essai : 12 mots = fidélité 1,00 ; 18 mots = 0,74)
+  [ "$nwords" -gt 14 ] && echo "Attention : $3, réplique de $nwords mots > 14 : risque de charabia, à couper en plusieurs plans (une phrase par plan)" >&2
+  if [ "$need" -gt "$2" ]; then
+    echo "$3 : réplique de $nwords mots, durée portée de ${2} s à ${need} s (débit <= ~2,5 mots/s)" >&2
+    echo "$need"
+  else
+    echo "$2"
+  fi
+}
+
 ########################################################################
 # Acteurs : portrait neutre + voix de référence, préparés une fois
 ########################################################################
@@ -545,7 +565,8 @@ import_video() {
       [[ "$p" == *..* ]] && return 1
       case "$p" in "$SCENES_DIR"/*|"$WORK_DIR"/*) [ -f "$p" ] && cp "$p" "$out" || return 1 ;; *) return 1 ;; esac ;;
   esac
-  [ -n "$("$FFPROBE" -v error -select_streams v -show_entries stream=index -of csv=p=0 "$out" | head -1)" ] \
+  local sel=v; [ "$3" = audio ] && sel=a
+  [ -n "$("$FFPROBE" -v error -select_streams "$sel" -show_entries stream=index -of csv=p=0 "$out" | head -1)" ] \
     || { rm -f "$out"; return 1; }
 }
 
@@ -597,6 +618,22 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
   fi
   progress shot "$i" "plan $((i + 1))/$NB_SHOTS"
 
+  # ---- Voix-off du narrateur (tous types de plan : IA, capture d'écran, carton, vidéo importée) ----
+  # Synthèse, puis durée du plan portée au temps nécessaire. Un plan « écran » avec présentateur garde la parole du
+  # présentateur : la voix-off y est ignorée.
+  voiceover=$(jq -r '.voiceover // empty' <<< "$shot")
+  jq -e '.presenter' <<< "$shot" > /dev/null && voiceover=""
+  if [ -n "$voiceover" ]; then
+    vo_file="$WORK_DIR/vo_${n}.wav"
+    if [ ! -s "$vo_file" ]; then
+      echo "Plan $n : voix-off ($VOICE)" >&2
+      tts "$voiceover" "$vo_file" || { rm -f "$vo_file"; echo "Erreur : voix-off du plan $n échouée" >&2; exit 1; }
+    fi
+    vo_len=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$vo_file")
+    # Voix décalée de 0,4 s, 0,4 s de marge en fin de plan
+    duration=$(awk -v d="$duration" -v v="$vo_len" 'BEGIN { need = int(v + 0.8 + 0.999); print (need > d ? need : d) }')
+  fi
+
   # ---- Carton final ----
   if jq -e '.card' <<< "$shot" > /dev/null; then
     echo "=== Plan $((i + 1))/$NB_SHOTS : carton ===" >&2
@@ -612,7 +649,7 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
     vfile="$WORK_DIR/import_${n}.mp4"
     import_video "$vsrc" "$vfile" || { echo "Erreur : vidéo du plan $n introuvable ou illisible ($vsrc)" >&2; exit 1; }
     vstart=$(jq -r '.start // 0' <<< "$shot")
-    vlen=$(jq -r '.duration // 120' <<< "$shot")
+    vlen=$(jq -r '.duration // empty' <<< "$shot"); [ -n "$vlen" ] && vlen=$duration; [ -z "$vlen" ] && vlen=120
     if [ -n "$("$FFPROBE" -v error -select_streams a -show_entries stream=index -of csv=p=0 "$vfile" | head -1)" ]; then
       vin=(-ss "$vstart" -i "$vfile"); vmap=(-map 0:v -map 0:a)
     else
@@ -630,12 +667,21 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
   if jq -e '.screen' <<< "$shot" > /dev/null; then
     echo "=== Plan $((i + 1))/$NB_SHOTS : écran ===" >&2
     src=$(jq -r '.screen' <<< "$shot")
+    # Page vivante (simulateur, animation) : enregistrement vidéo du navigateur avec des actions scriptées
+    # {"screen": url, "record": {"wait": 4000, "actions": [{"click": "#start"}, {"mark": true}, {"mouse": [x, y]}, {"wait": 700}]}}
+    if jq -e '.record' <<< "$shot" > /dev/null; then
+      echo "Plan $n : enregistrement de la page animée ($duration s)" >&2
+      "$ASTRO_PY" "$MY_PATH/lib/record_page.py" "$src" "$shot_file" "$FINAL_W" "$FINAL_H" --duration "$duration" \
+        --wait "$(jq -r '.record.wait // 4000' <<< "$shot")" --actions "$(jq -c '.record.actions // []' <<< "$shot")" > /dev/null \
+        || { echo "Erreur : enregistrement de $src échoué" >&2; exit 1; }
+      continue
+    fi
     png="$WORK_DIR/screen_${n}.png"
     if [ ! -s "$png" ]; then
       if [[ "$src" == *://* ]]; then
         js_args=()
         while IFS= read -r code; do js_args+=(--js "$code"); done < <(jq -r '.screen_js // empty | if type == "array" then .[] else . end' <<< "$shot")
-        "$ASTRO_PY" "$MY_PATH/lib/capture_page.py" "$src" "$png" "$FINAL_W" "$FINAL_H" --full --wait 6000 "${js_args[@]}" \
+        "$ASTRO_PY" "$MY_PATH/lib/capture_page.py" "$src" "$png" "$FINAL_W" "$FINAL_H" --full --wait "$(jq -r '.screen_wait // 6000' <<< "$shot")" "${js_args[@]}" \
           || { echo "Erreur : capture de $src échouée" >&2; exit 1; }
       else
         cp "$src" "$png" || exit 1
@@ -646,6 +692,7 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
       talk="$WORK_DIR/talk_${n}.mp4"
       if [ ! -s "$talk" ]; then
         cast_refs "[\"$presenter\"]"
+        duration=$(fit_speech_duration "$prompt" "$duration" "Plan $n (présentateur)")
         speech_render "$talk" "$seed" \
           "${REF_INTRO}Close-up head-and-shoulders shot of ${presenter^} facing the camera against a plain softly lit neutral studio background, talking naturally with small gestures. $prompt" \
           "${REF_ARGS[@]}" -r 1:1 -m 0.2 -d "$duration" -s "$REF_STEPS"
@@ -660,30 +707,12 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
   fi
 
   # ---- Plan IA (MiniMax) ----
-  voiceover=$(jq -r '.voiceover // empty' <<< "$shot")
   if [ -n "$voiceover" ]; then
-    vo_file="$WORK_DIR/vo_${n}.wav"
-    if [ ! -s "$vo_file" ]; then
-      echo "Plan $n : voix-off ($VOICE)" >&2
-      tts "$voiceover" "$vo_file" || { rm -f "$vo_file"; echo "Erreur : voix-off du plan $n échouée" >&2; exit 1; }
-    fi
-    vo_len=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$vo_file")
-    # Voix décalée de 0,4 s, 0,4 s de marge en fin de plan
-    duration=$(awk -v d="$duration" -v v="$vo_len" 'BEGIN { need = int(v + 0.8 + 0.999); print (need > d ? need : d) }')
     prompt="$prompt Audio: ambient sound effects and soft background music only, no speech, no voices, no singing."
   fi
 
-  # Garde-fou de débit : au-delà de ~2,5 mots/s le modèle empâte ou invente des syllabes (charabia). Pour un plan avec
-  # acteur, la durée est portée au temps nécessaire à la réplique (~2,2 mots/s + marge), comme pour la voix-off.
-  if jq -e '.cast' <<< "$shot" > /dev/null; then
-    nwords=$(python3 "$MY_PATH/lib/pronounce.py" --lines "$prompt" | tr -s ' ' '\n' | grep -c '[[:alpha:]]')
-    need=$(awk -v n="$nwords" 'BEGIN { d = int(n / 2.2 + 1.5); print (d > 15 ? 15 : d) }')
-    if [ "$need" -gt "$duration" ]; then
-      echo "Plan $n : réplique de $nwords mots, durée portée de ${duration} s à ${need} s (débit <= ~2,5 mots/s)" >&2
-      duration=$need
-    fi
-    [ "$nwords" -gt 33 ] && echo "Attention : plan $n, réplique de $nwords mots > ~33 mots (15 s max) : à raccourcir ou à couper en deux plans" >&2
-  fi
+  # Plan avec acteur : la durée doit laisser le temps de dire la réplique
+  jq -e '.cast' <<< "$shot" > /dev/null && duration=$(fit_speech_duration "$prompt" "$duration" "Plan $n")
 
   args=(-d "$duration" -r "$RATIO" -m "$MEGAPIXELS" -s "$STEPS")
   [ "$UPSCALE" != "1" ] && [ "$UPSCALE" != "0" ] && args+=(-u "$UPSCALE")
@@ -728,14 +757,6 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
   "$FFMPEG" -v error -y -sseof -0.1 -i "$shot_file" -update 1 -frames:v 1 "$WORK_DIR/last_${n}.png"
 done
 
-# Mode -i : seul ce plan nous intéresse, pas de finition ni d'assemblage de la scène entière
-if [ -n "$SHOT_INDEX" ]; then
-  FINISHED_OK=1
-  progress done -1 "plan $((SHOT_INDEX + 1)) terminé"
-  echo "$WORK_DIR/shot_$(printf "%02d" "$SHOT_INDEX").mp4"
-  exit 0
-fi
-
 ########################################################################
 # Finition plan par plan (voix-off, taille exacte, style, titre), puis assemblage
 ########################################################################
@@ -749,8 +770,12 @@ BED_LUFS=-20; VO_LUFS=-16; SHOT_LUFS=-16
 
 progress finish -1 "finition des plans"
 list="$WORK_DIR/concat.txt"
-: > "$list"
-for ((i = 0; i < NB_SHOTS; i++)); do
+PARTS=(); PLEN=()
+# Mode -i : seul ce plan nous intéresse ; on le finit (voix-off, volume, titre) pour pouvoir le juger tel qu'il sera
+# dans le film, mais on ne touche ni à la liste d'assemblage ni aux autres plans.
+F_START=0; F_END=$((NB_SHOTS - 1))
+if [ -n "$SHOT_INDEX" ]; then F_START=$SHOT_INDEX; F_END=$SHOT_INDEX; else : > "$list"; fi
+for ((i = F_START; i <= F_END; i++)); do
   n=$(printf "%02d" "$i")
   shot=$(jq -c ".shots[$i]" "$STORYBOARD")
   src="$WORK_DIR/shot_${n}.mp4"
@@ -794,12 +819,15 @@ for ((i = 0; i < NB_SHOTS; i++)); do
     title_y="h*0.8-text_h/2"
     jq -e '.presenter' <<< "$shot" > /dev/null && title_y="h*0.07"
     "$FFMPEG" -v error -y -i "$part" \
-      -vf "drawtext=fontfile='${TITLE_FONT}':textfile='$WORK_DIR/title_${n}.txt':fontsize='min(h/16,w*1.4/${nchars})':fontcolor=white:borderw=3:bordercolor=black@0.7:x=(w-text_w)/2:y=${title_y}:enable='gte(t,0.5)':alpha='min(1,(t-0.5)/0.6)'" \
+      -vf "drawtext=fontfile='${TITLE_FONT}':textfile='$WORK_DIR/title_${n}.txt':fontsize='min(h/16,w*1.4/${nchars})':fontcolor=white:borderw=2:bordercolor=black@0.7:box=1:boxcolor=black@0.45:boxborderw=14:x=(w-text_w)/2:y=${title_y}:enable='gte(t,0.5)':alpha='min(1,(t-0.5)/0.6)'" \
       -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p -c:a copy "$part.titled.mp4" \
       && mv "$part.titled.mp4" "$part" \
       || echo "Attention : titre du plan $n non incrusté (filtre drawtext absent ?)" >&2
   fi
-  echo "file '$part'" >> "$list"
+  if [ -z "$SHOT_INDEX" ]; then
+    echo "file '$part'" >> "$list"
+    PARTS+=("$part"); PLEN+=("$("$FFPROBE" -v error -select_streams v -show_entries stream=duration -of csv=p=0 "$part" | head -n 1)")
+  fi
   # Plan fini (voix-off, volume, titre) sur IPFS pour pouvoir le partager : plans.json {part_NN.mp4: CID}
   if [ -z "$STORY_NO_IPFS" ]; then
     pcid=$(ipfs add -q "$part" 2>/dev/null | tail -n 1)
@@ -809,19 +837,104 @@ for ((i = 0; i < NB_SHOTS; i++)); do
   fi
 done
 
+if [ -n "$SHOT_INDEX" ]; then
+  FINISHED_OK=1
+  progress done -1 "plan $((SHOT_INDEX + 1)) terminé"
+  echo "$WORK_DIR/part_$(printf "%02d" "$SHOT_INDEX").mp4"
+  exit 0
+fi
+
 progress assemble -1 "assemblage"
 if [ -n "$UDRIVE_PATH" ] && [ -d "$UDRIVE_PATH" ]; then
   final="$UDRIVE_PATH/scene_$(date +%s).mp4"
 else
   final="$WORK_DIR/scene.mp4"
 fi
+# Transitions : .shots[i].transition = {"type": "fade|fadeblack|fadewhite|dissolve|wipeleft|wiperight|slideleft|slideright|circleopen|zoomin|cut",
+# "duration": 0.5} s'applique entre le plan i et le plan i+1 (image : xfade, son : acrossfade ; « cut » = raccord franc).
+# Sans transition demandée, le chemin rapide ci-dessous (copie de l'image) est conservé.
+TRANS_TYPES=" fade fadeblack fadewhite dissolve wipeleft wiperight slideleft slideright circleopen zoomin "
+trans_any=$(jq -r '[.shots[:-1][] | select(((.transition.type // "cut") != "cut") and (.transition.type != null))] | length' "$STORYBOARD")
+assembled=0
+if [ "${trans_any:-0}" -gt 0 ] && [ "${#PARTS[@]}" -gt 1 ]; then
+  echo "Assemblage avec transitions ($trans_any)…" >&2
+  tin=(); for p in "${PARTS[@]}"; do tin+=(-i "$p"); done
+  tvf=""; taf="[0:a]apad=whole_dur=${PLEN[0]},atrim=0:${PLEN[0]},asetpts=PTS-STARTPTS[p0];"; vprev="0:v"; aprev="p0"; cum="${PLEN[0]}"
+  for ((k = 1; k < ${#PARTS[@]}; k++)); do
+    tt=$(jq -r ".shots[$((k - 1))].transition.type // \"cut\"" "$STORYBOARD")
+    td=$(jq -r ".shots[$((k - 1))].transition.duration // 0.5" "$STORYBOARD")
+    if [ "$tt" = cut ]; then tt=fade; td=0.04; fi                          # xfade n'accepte pas une durée nulle
+    case "$TRANS_TYPES" in *" $tt "*) ;; *) tt=fade ;; esac
+    # jamais plus de la moitié du plus court des deux plans
+    # durée et décalage en images entières : xfade tronque tout le film si le décalage dépasse le début de la dernière image du flux ;
+    # sur la grille des images (24 i/s) l'image et le son restent calés de raccord en raccord (lipsync des derniers plans)
+    td=$(awk -v d="$td" -v a="$cum" -v b="${PLEN[$k]}" 'BEGIN { m = (a < b ? a : b) / 2; f = int(d * 24 + 0.5); mx = int(m * 24); if (f > mx) f = mx; if (f < 2) f = 2; printf "%.5f", f / 24 }')
+    off=$(awk -v c="$cum" -v d="$td" 'BEGIN { printf "%.5f", c - d }')
+    tvf+="[$vprev][$k:v]xfade=transition=$tt:duration=$td:offset=$off[v$k];"
+    # le son de chaque plan est calé sur la durée exacte de son image (sinon l'écart s'accumule de raccord en raccord)
+    taf+="[$k:a]apad=whole_dur=${PLEN[$k]},atrim=0:${PLEN[$k]},asetpts=PTS-STARTPTS[p$k];[$aprev][p$k]acrossfade=d=$td[a$k];"
+    vprev="v$k"; aprev="a$k"
+    cum=$(awk -v o="$off" -v l="${PLEN[$k]}" 'BEGIN { printf "%.5f", o + l }')
+  done
+  if "$FFMPEG" -v error -y "${tin[@]}" -filter_complex "${tvf}${taf%;}" -map "[$vprev]" -map "[$aprev]" \
+       -c:v libx264 -crf 18 -preset fast -pix_fmt yuv420p -c:a aac -b:a 192k -ar 48000 -ac 2 -movflags +faststart "$final"; then
+    assembled=1
+  else
+    echo "Attention : assemblage avec transitions impossible, raccords francs" >&2
+  fi
+fi
 # Vidéo copiée, audio réencodé d'un seul tenant et recalé sur les horodatages (aresample async) :
 # pas de trou ni de chevauchement aux raccords, le son reste calé sur l'image (lipsync des acteurs)
-if ! "$FFMPEG" -v error -y -f concat -safe 0 -i "$list" -c:v copy \
+if [ "$assembled" = 1 ]; then
+  :
+elif ! "$FFMPEG" -v error -y -f concat -safe 0 -i "$list" -c:v copy \
        -af "aresample=async=1:first_pts=0" -c:a aac -b:a 192k -ar 48000 -ac 2 -movflags +faststart "$final"; then
   echo "Concaténation directe impossible, réencodage..." >&2
   "$FFMPEG" -v error -y -f concat -safe 0 -i "$list" -c:v libx264 -crf 20 -preset fast -c:a aac -b:a 192k \
          -movflags +faststart "$final" || exit 1
+fi
+# Fond musical continu sous tout le film (storyboard .music = {"source": "ipfs://…|fichier", "prompt": "style ACE-Step",
+# "lufs": -30, "max_seconds": 90}) : boucle avec fondus croisés, fondus d'entrée et de sortie, baisse du volume sous la voix (sidechain)
+music_json=$(jq -c '.music // empty' "$STORYBOARD")
+if [ -n "$music_json" ]; then
+  mbed="$WORK_DIR/music_bed.wav"
+  if [ ! -s "$mbed" ]; then
+    msrc=$(jq -r '.source // empty' <<< "$music_json"); mraw="$WORK_DIR/music_src.raw"
+    if [ -n "$msrc" ]; then
+      import_video "$msrc" "$mraw" audio || echo "Attention : musique $msrc introuvable ou illisible, film sans fond musical" >&2
+    elif [ -n "$(jq -r '.prompt // empty' <<< "$music_json")" ] && [ ! -s "$mraw" ]; then
+      echo "Fond musical : génération (ACE-Step)…" >&2
+      mmax=$(jq -r '.max_seconds // empty' <<< "$music_json")   # durée max de la chanson YuE2 (défaut du script : 90 s)
+      mout=$(YUE2_MAX_SECONDS="${mmax:-${YUE2_MAX_SECONDS:-90}}" "$MY_PATH/generate_music.sh" "$(jq -r '.prompt' <<< "$music_json")" 2>/dev/null)
+      murl=$(grep -o 'http[^ ]*' <<< "$mout" | tail -n 1)
+      if [ -z "$murl" ]; then   # YuE2 en échec : repli ACE-Step (30 s, bouclé ensuite)
+        echo "Fond musical : YuE2 indisponible, repli ACE-Step…" >&2
+        mout=$(MUSIC_ENGINE=ace "$MY_PATH/generate_music.sh" "$(jq -r '.prompt' <<< "$music_json")" 2>/dev/null)
+        murl=$(grep -o 'http[^ ]*' <<< "$mout" | tail -n 1)
+      fi
+      [ -n "$murl" ] && curl -s -m 120 -o "$mraw" "$murl" || echo "Attention : génération musicale échouée, film sans fond musical" >&2
+    fi
+    if [ -s "$mraw" ]; then
+      mlen=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$mraw")
+      total_s=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$final")
+      # nombre de copies nécessaires, chaînées par des fondus croisés de 2 s
+      ncopies=$(awk -v t="$total_s" -v m="$mlen" 'BEGIN { n = int(t / (m - 2)) + 1; print (n < 1 ? 1 : n) }')
+      minputs=(); mchain=""; prev="0:a"
+      for ((k = 0; k < ncopies; k++)); do minputs+=(-i "$mraw"); done
+      for ((k = 1; k < ncopies; k++)); do mchain+="[$prev][$k:a]acrossfade=d=2[c$k];"; prev="c$k"; done
+      "$FFMPEG" -v error -y "${minputs[@]}" -filter_complex "${mchain}[$prev]aresample=48000,aformat=channel_layouts=stereo[o]" -map "[o]" \
+        -t "$total_s" "$mbed" || { rm -f "$mbed"; echo "Attention : fond musical inutilisable" >&2; }
+    fi
+  fi
+  if [ -s "$mbed" ]; then
+    mgain=$(gain_db "$(lufs "$mbed")" "$(jq -r '.lufs // -30' <<< "$music_json")")
+    total_s=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$final")
+    fo=$(awk -v t="$total_s" 'BEGIN { printf "%.2f", (t > 4 ? t - 3 : 0) }')
+    "$FFMPEG" -v error -y -i "$final" -i "$mbed" -filter_complex \
+      "[1:a]volume=${mgain}dB,afade=t=in:d=2,afade=t=out:st=${fo}:d=3[m];[0:a]asplit=2[a][sc];[m][sc]sidechaincompress=threshold=0.04:ratio=4:attack=30:release=700:makeup=1[duck];[a][duck]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[mix]" \
+      -map 0:v -map "[mix]" -c:v copy -c:a aac -b:a 192k -ar 48000 "$final.music.mp4" \
+      && mv "$final.music.mp4" "$final" || echo "Attention : mixage du fond musical échoué" >&2
+  fi
 fi
 total=$("$FFPROBE" -v error -show_entries format=duration -of csv=p=0 "$final")
 echo "Scène assemblée : $final (${total%.*} s)" >&2
