@@ -206,20 +206,23 @@ if [[ "$FORMAT" == "mp4" && -n "$SUB_LANG" ]]; then
     log_debug "Subtitles requested: $SUB_LANG"
 fi
 
-case "$FORMAT" in
-    mp3)
-        download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS \
-            -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 \
-            --no-mtime --embed-thumbnail --add-metadata --write-info-json \
-            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
-        ;;
-    mp4)
-        download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS $SUB_ARGS \
-            -f "$VIDEO_FORMAT_FILTER" -S "res,ext:mp4:m4a" --recode-video mp4 \
-            --no-mtime --embed-thumbnail --add-metadata --write-info-json \
-            -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
-        ;;
-esac
+run_download() {
+    case "$FORMAT" in
+        mp3)
+            download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS \
+                -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 \
+                --no-mtime --embed-thumbnail --add-metadata --write-info-json \
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
+            ;;
+        mp4)
+            download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS $SUB_ARGS \
+                -f "$VIDEO_FORMAT_FILTER" -S "res,ext:mp4:m4a" --recode-video mp4 \
+                --no-mtime --embed-thumbnail --add-metadata --write-info-json \
+                -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
+            ;;
+    esac
+}
+run_download
 download_exit_code=$?
 
 # Retry sur erreur 403 avec tv_embedded
@@ -239,6 +242,18 @@ if [[ $download_exit_code -ne 0 ]] && echo "$download_output" | grep -qE "403|Fo
             ;;
     esac
     download_exit_code=$?
+fi
+
+# Cookie MULTIPASS périmé : YouTube répond "page needs to be reloaded" / 403 et ce cookie passe avant
+# ceux du navigateur, qui eux fonctionnent. On réessaie une fois avec le navigateur par défaut.
+if [[ $download_exit_code -ne 0 && -n "$cookie_file" ]] && echo "$download_output" | grep -qE "needs to be reloaded|Sign in|not a bot|403|Forbidden"; then
+    fallback_browser=$(detect_default_browser)
+    if [[ -n "$fallback_browser" ]]; then
+        log_debug "MULTIPASS cookie rejected. Retrying with $fallback_browser cookies..."
+        COMMON_ARGS="${COMMON_ARGS/$COOKIESRC/--cookies-from-browser $fallback_browser}"
+        run_download
+        download_exit_code=$?
+    fi
 fi
 
 if [[ $download_exit_code -ne 0 ]]; then

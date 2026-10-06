@@ -2083,17 +2083,21 @@ if command -v bro_log_event &>/dev/null; then
     bro_log_event "sync_likes" "$_yt_ok" "youtube" "" "{\"player\":\"${PLAYER}\",\"exit_code\":${sync_exit_code}}"
 fi
 
-# Synchronisation des chaînes suivies (.youtube.com.channels) — best-effort :
-# ne modifie JAMAIS le code de sortie du script (les likes restent la référence)
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube channels synchronization (best-effort)..." >&2
-sync_youtube_channels "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE" || \
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: channels sync encountered errors (ignored)" >&2
+# Cookie supprimé par sync_youtube_likes (3 échecs) : ne pas lancer yt-dlp --cookies sur ce chemin,
+# il recréerait un cookie anonyme qui relancerait le compteur d'échecs chaque jour
+if [[ -f "$COOKIE_FILE" ]]; then
+    # Synchronisation des chaînes suivies (.youtube.com.channels) — best-effort :
+    # ne modifie JAMAIS le code de sortie du script (les likes restent la référence)
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube channels synchronization (best-effort)..." >&2
+    sync_youtube_channels "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE" || \
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: channels sync encountered errors (ignored)" >&2
 
-# Traces de visionnage pour le matching LOVE/MUSE (Kind 10600) — best-effort :
-# ne modifie JAMAIS le code de sortie du script (comme les chaînes suivies).
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube watch-history trace sync (best-effort)..." >&2
-sync_youtube_history_traces "$PLAYER" "$COOKIE_FILE" || \
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: watch-history trace sync encountered errors (ignored)" >&2
+    # Traces de visionnage pour le matching LOVE/MUSE (Kind 10600) — best-effort :
+    # ne modifie JAMAIS le code de sortie du script (comme les chaînes suivies).
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube watch-history trace sync (best-effort)..." >&2
+    sync_youtube_history_traces "$PLAYER" "$COOKIE_FILE" || \
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: watch-history trace sync encountered errors (ignored)" >&2
+fi
 
 if [[ $sync_exit_code -eq 0 ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: YouTube likes sync completed successfully for $PLAYER" >&2
