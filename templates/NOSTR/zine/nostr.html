@@ -5,592 +5,81 @@
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="Description" content="Votre billet MULTIPASS — email + PASS pour vous connecter, P1 pour récupérer votre compte." />
   <link rel="icon" type="image/png" href="http://127.0.0.1:8080/ipfs/Qma5LvAd8HqiR2GadhRxWs6tF8XvtpFHfskh2sB9a15tyL" />
+<!--
+  Billet MULTIPASS — même habillage que le Ğ1Billet (UPlanet/earth/billet.html,
+  UPassport routers/qr.py::_BILLET_A4_PAGE) : papier, or, rouge, Georgia.
+  N'y figurent QUE : P1 (part SSSS joueur "M-…", QR), l'email et le PASS.
+  Le nsec n'est plus envoyé par email : email + PASS suffisent à récupérer
+  la clé depuis n'importe quelle station (UPassport /g1nostr, pass_code).
+
+  Mise en page en <table> + styles inline : rendu stable dans les clients mail
+  (Gmail/Outlook ignorent flex/grid et une partie des <style>).
+  La trace "UPlanet:XXXXXXXX" (_UPLANET8_) doit rester présente :
+  tools/respawn_nostrcard_helper.py la relit pour identifier l'UPlanet.
+-->
 <style>
-/* These are just the article styles, so change these to whatever fits your theme! */
-
-/* Probably keep this one bit as is though, it's going to make arranging things in print easier for you! */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: sans-serif;
-}
-
-h1 {
-  color: #1c4587;
-  text-align: center;
-  font-style: italic;
-  font-size: 180%;
-}
-
-h2 {
-  background: #ead1dc;
-  color: #741b47;
-  font-family: monospace;
-  text-align: center;
-  font-size: 140%;
-  font-weight: normal;
-  margin: 0.2rem 0 0 0;
-  padding: 0.2rem 0 0.2rem;
-}
-
-th {
-  text-align: left;
-  background: #c9daf8;
-  color: #073763;
-}
-
-p {
-  padding: 0.2rem;
-  padding-top: 0.5rem;
-  font-size: 105%;
-}
-
-ul {
-  padding-left: 2rem;
-  list-style: none;
-}
-
-.zine-li:before {
-  content: '\21D2';
-  margin-left: -20px;
-  margin-right: 10px;
-}
-
-.zine-link {
-  font-family: monospace;
-  background: #c9daf8;
-  color: #073763;
-}
-
-.captioned-img {
-  object-fit: contain;
-  max-height: 100%;
-  max-width: 100%;
-  padding: 0 2rem 0 2rem;
-}
-
-figcaption {
-  font-family: monospace;
-  font-size: 80%;
-  font-style: italic;
-  background: #c9daf8;
-  color: #073763;
-  margin: 0 1rem 0 1rem;
-}
-
-.full-img {
-  object-fit: contain;
-  max-height: 100%;
-  max-width: 100%;
-  padding: 1rem;
-}
-
-.mini-img {
-  max-width: 10rem;
-}
-
-.glitchButton {
-  float: left;
-  padding: 1rem 0.5rem 0 0.5rem;
-}
-
-.cc-licence {
-  float: right;
-  margin: 1rem 0.5rem 0 0.5rem;
-}
-
-/* Any styles that you **only** want to appear on a device should go in here! */
-
-@media screen {
-  body {
-    max-width: 30rem;
-    background: #ead1dc;
-    margin: auto;
-  }
-
-  .zine {
-    background: white;
-    padding: 10px;
-    border-left: 4px solid #741b47;
-    border-bottom: 4px solid #741b47;
-
-  }
-
-  .zine-page {
-    margin-top: 10px;
-  }
-}
-
-/* Any styles that you want to apply **just** when the zine is printed go in here! */
-@media print {
-  body {
-    font-size: 45%;
-  }
-
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .mini-img {
-    max-width: 4.4rem;
-  }
-
-  /* Définition de la taille de la page pour le format A4 */
-  @page {
-    size: landscape;
-    margin: 0.7cm;
-    bleed: 0;
-  }
-
-  .zine {
-    /* Modifier les styles de la grille pour s'adapter au format A4 */
-    width: 100vw;
-    height: 100vh;
-    display: grid;
-    gap: 1.5px;
-    background: lightgrey;
-    grid-template-areas:
-      "page-5 page-4 page-3 page-2"
-      "page-6 page-7 page-8 page-1";
-    grid-template-columns: repeat(4, 25%);
-    grid-template-rows: repeat(2, 50%);
-  }
-
-  .zine-page {
-    background: white;
-    padding: 0.5cm;
-    overflow: hidden;
-  }
-
-  /* Rotation des pages pour s'adapter au format paysage de l'A4 */
-  .page-5, .page-4, .page-3, .page-2 {
-    transform: rotate(180deg) translateX(-0.1px);
-  }
-
-  /* Assignation des pages aux zones de la grille */
-  .page-1 {
-    grid-area: page-1;
-  }
-
-  .page-2 {
-    grid-area: page-2;
-  }
-
-  .page-3 {
-    grid-area: page-3;
-  }
-
-  .page-4 {
-    grid-area: page-4;
-  }
-
-  .page-5 {
-    grid-area: page-5;
-  }
-
-  .page-6 {
-    grid-area: page-6;
-  }
-
-  .page-7 {
-    grid-area: page-7;
-  }
-
-  .page-8 {
-    grid-area: page-8;
-  }
-
-  /* Correction des débordements en mode impression */
-
-  /* Limitation des tableaux qui débordent */
-  table {
-    width: 100%;
-    table-layout: fixed;
-    word-wrap: break-word;
-    font-size: 85%;
-  }
-
-  table td {
-    word-break: break-all;
-    overflow-wrap: break-word;
-    hyphens: auto;
-    padding: 0.1rem;
-  }
-
-  /* Gestion spécifique des chaînes longues comme les clés NOSTR */
-  table td:last-child {
-    font-family: monospace;
-    font-size: 75%;
-    line-height: 1.1;
-    word-break: break-all;
-  }
-
-  /* Réduction de la taille du texte pour les éléments critiques */
-  h2 {
-    font-size: 120%;
-    margin: 0.1rem 0;
-    padding: 0.1rem 0;
-  }
-
-  p {
-    padding: 0.1rem;
-    font-size: 95%;
-  }
-
-  /* Optimisation des listes */
-  ul {
-    padding-left: 1.5rem;
-  }
-
-  .zine-li:before {
-    margin-left: -15px;
-    margin-right: 8px;
-  }
-
-  /* Optimisation des images en mode impression */
-  .full-img {
-    max-height: 40vh;
-    width: 100%;
-    object-fit: contain;
-  }
-
-  .half-img {
-    max-height: 35vh;
-    max-width: 48%;
-    object-fit: contain;
-  }
-
-  .captioned-img {
-    max-height: 35vh;
-    max-width: 100%;
-    object-fit: contain;
-    padding: 0.1rem;
-  }
-
-  /* Ajustements spécifiques pour les pages problématiques */
-
-  /* Page 2 - Tableau des clés NOSTR */
-  .page-2 table {
-    font-size: 70%;
-  }
-
-  .page-2 table td {
-    padding: 0.05rem;
-    line-height: 1;
-  }
-
-  /* Page 5 - Tableau des options */
-  .options-table {
-    font-size: 75%;
-  }
-
-  .options-table th,
-  .options-table td {
-    padding: 0.2rem;
-    font-size: 90%;
-  }
-
-  .service-block {
-    margin-bottom: 0.5rem;
-    padding: 0.2rem;
-  }
-
-  .service-type-header {
-    font-size: 100%;
-    padding: 0.2rem 0.3rem;
-    margin-bottom: 0.2rem;
-  }
-
-  /* Page 8 - Détails de la box */
-  .box-details {
-    padding: 0.3rem;
-    font-size: 90%;
-  }
-
-  .box-details p {
-    padding: 0.05rem 0;
-    font-size: 90%;
-  }
-
-  /* Forcer la coupure des mots très longs */
-  .detail-value {
-    word-break: break-all;
-    font-size: 85%;
-  }
-
-  /* Réduction générale pour éviter les débordements */
-  .zine-page * {
-    box-sizing: border-box;
-  }
-
-  /* Style spécifique pour les clés longues */
-  .long-key {
-    font-family: monospace !important;
-    font-size: 45% !important;
-    word-break: break-all !important;
-    line-height: 1.1 !important;
-    padding: 0.05rem !important;
-  }
-}
-
-
-/* Styles pour les images dans le Zine */
-/* Pour que les images ne s'étendent pas plus que leur container*/
-.zine-page img {
-    max-width: 100%;
-    height: auto;
-  }
-/* Pour que les images qui occupent une colonne complète soit mise a la bonne taille*/
-.full-img {
-    object-fit: contain;
-  }
-/* Pour que les images qui occupent une demi colonne soit mise a la bonne taille */
-.half-img {
-    object-fit: contain;
-    max-height: 45vh;
-    max-width: 100%;
-  }
-
-/* Ajout d'un peu de marge, pour un rendu plus propre */
-.zine-page img {
-  margin: 0.5rem 0;
-}
-/* Pour les images avec des captions*/
-.captioned-img {
-    object-fit: contain;
-    max-height: 100%;
-    max-width: 100%;
-    padding: 0.2rem;
-  }
-
-/* Styles d'images en mode écran (ajustable) */
-@media screen {
-  .full-img {
-    max-height: 60vh; /* Ajustez selon votre besoin */
-  }
-    .half-img {
-    max-height: 25vh;
-  }
-}
-
-/* Styles d'images en mode impression */
-@media print {
-
-  .full-img {
-    max-height: 45vh;
-    width: 100%;
-  }
-    .half-img {
-     max-height: 40vh;
-    max-width: 50%;
-  }
-
-}
-/* Styles pour la nouvelle structure de la page 5 */
-.service-block {
-  margin-bottom: 0.8rem;
-  padding: 0.3rem;
-  border: 1px solid #d1b8c5; /* Légère bordure pour séparer les blocs */
-  border-radius: 4px;
-}
-
-.service-type-header {
-  font-family: monospace;
-  background: #e0e0e0; /* Un fond légèrement différent pour le titre de section */
-  color: #741b47;
-  padding: 0.3rem 0.5rem;
-  font-size: 110%;
-  margin-bottom: 0.4rem;
-  border-bottom: 2px solid #741b47;
-}
-
-.service-item {
-  padding: 0.2rem 0.1rem;
-}
-
-.service-name {
-  font-weight: bold;
-  color: #1c4587; /* Couleur du titre principal pour le nom du service */
-}
-
-.service-description {
-  display: block; /* Pour que la description aille à la ligne si besoin */
-  font-size: 95%;
-  padding-left: 0.5rem;
-}
-
-.options-table {
-  width: 100%;
-  border-collapse: collapse; /* Pour des bordures nettes */
-  font-size: 95%;
-}
-
-.options-table th,
-.options-table td {
-  border: 1px solid #d1b8c5; /* Bordures fines pour les cellules */
-  padding: 0.4rem;
-  text-align: left;
-  vertical-align: top;
-}
-
-/* Les th sont déjà stylés globalement, mais on peut ajuster si besoin */
-.options-table th {
-  background: #c9daf8; /* Rappel du style existant */
-  color: #073763;      /* Rappel du style existant */
-}
-
-.options-table td.cost {
-  text-align: right;
-  font-weight: bold;
-  white-space: nowrap; /* Pour que le coût ne se coupe pas */
-}
-
-.info-divider {
-  margin: 0.8rem 0;
-  border: 0;
-  border-top: 2px dashed #741b47;
-}
-
-.box-details {
-  background: #f8f0f3; /* Fond très léger pour cette section */
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #d1b8c5;
-}
-
-.box-details p {
-  padding: 0.1rem 0; /* Ajustement du padding pour les paragraphes de détails */
-  font-size: 100%;
-}
-
-.detail-label {
-  color: #741b47; /* Couleur du sous-titre h2 */
-  /* font-weight: bold; */ /* Optionnel */
-}
-
-.detail-value {
-  color: #1c4587; /* Couleur du titre h1 */
-  font-family: monospace;
-}
-
-/* Pour l'affichage mobile, si les tables deviennent trop larges (responsive) */
-@media screen and (max-width: 600px) { /* Ajustez le breakpoint si besoin */
-  .options-table thead {
-    display: none; /* Cache les en-têtes en mode mobile/petit écran */
-  }
-  .options-table, .options-table tbody, .options-table tr, .options-table td {
-    display: block;
-    width: 100%;
-  }
-  .options-table tr {
-    margin-bottom: 0.5rem;
-    border: 1px solid #d1b8c5;
-    border-radius: 3px;
-  }
-  .options-table td {
-    text-align: right; /* Aligne le contenu à droite */
-    padding-left: 50%; /* Laisse de la place pour le label */
-    position: relative;
-    border: none; /* Enlève les bordures internes des cellules */
-    border-bottom: 1px dashed #eee; /* Ligne de séparation légère entre "propriétés" */
-  }
-  .options-table td:last-child {
-    border-bottom: none;
-  }
-  .options-table td:before {
-    content: attr(data-label); /* Utilise l'attribut data-label pour afficher l'en-tête */
-    position: absolute;
-    left: 0.3rem;
-    width: 45%; /* Largeur pour le label */
-    padding-right: 0.5rem;
-    font-weight: bold;
-    text-align: left;
-    white-space: nowrap;
-    color: #073763; /* Couleur des th originaux */
-  }
-  .options-table td.cost {
-    text-align: right; /* Maintient l'alignement pour le coût */
-  }
-}
-
-/* Style pour les clés longues (mode écran et impression) */
-.long-key {
-  font-family: monospace;
-  font-size: 65%;
-  word-break: break-all;
-  overflow-wrap: break-word;
-  line-height: 1.2;
-}
+  @media print { .noprint { display:none !important; } body { background:#fff !important; } }
 </style>
-
-  <meta name="Description" content="Vos clés MULTIPASS — à sauvegarder avant toute chose : clé privée, code PIN, clé partagée en 3." />
-  <meta name="theme-color" content="#1a237e" />
 </head>
+<body style="margin:0;padding:24px 8px;background:#e9e4da;font-family:Georgia,serif;color:#222;">
 
-<main class="zine">
+<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0"
+       style="width:100%;max-width:560px;margin:0 auto;border-collapse:collapse;">
+  <tr>
+    <td class="noprint" style="padding:0 4px 14px 4px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#333;">
+      Bienvenue sur UPlanet&nbsp;! Voici votre <b>billet MULTIPASS</b>. Imprimez-le ou gardez cet email&nbsp;:
+      on ne vous renverra pas ces informations.
+    </td>
+  </tr>
 
-<header class="zine-page page-1">
-    <h2> 🔑 toto@yopmail.com 🔑 </h2>
-    <p style="text-align:center; font-size:110%;">
-        Trois choses à sauvegarder maintenant, avant d'aller plus loin.<br>Rien d'autre ne compte pour l'instant.
-    </p>
-    <button class="print-button">🖨️Print</button> <strong><a target="zine" href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3"> (comment imprimer/plier ce Zine)</a> </strong>
-</header>
+  <!-- ═══ BILLET ═══ -->
+  <tr>
+    <td style="background:#f5f0e8;border:2px solid #c8a83c;border-radius:10px;padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+        <tr>
+          <td colspan="2" style="background:#2d5a1b;border-radius:8px 8px 0 0;padding:8px 14px;
+                                 font-family:Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:2px;color:#c8a83c;">
+            🔑 MULTIPASS &nbsp;·&nbsp; UPLANET
+          </td>
+        </tr>
+        <tr>
+          <!-- P1 : part SSSS joueur -->
+          <td width="170" valign="top" align="center" style="padding:16px 8px 12px 14px;">
+            <img src="http://127.0.0.1:8080/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP"
+                 width="150" height="150" alt="QR P1"
+                 style="display:block;width:150px;height:150px;background:#fff;padding:4px;border:1px solid #c8a83c;border-radius:4px;">
+            <div style="margin-top:6px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#8b1a1a;letter-spacing:1px;">P1</div>
+          </td>
+          <td valign="middle" style="padding:16px 14px 12px 8px;">
+            <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#666;">Email</div>
+            <div style="font-size:16px;font-weight:bold;color:#222;word-break:break-all;margin-bottom:14px;">toto@yopmail.com</div>
+            <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#666;">PASS</div>
+            <div style="display:inline-block;margin-top:2px;padding:4px 14px;background:#fff;border:1.5px solid #c8a83c;border-radius:6px;
+                        font-family:'Courier New',monospace;font-size:30px;font-weight:bold;letter-spacing:6px;color:#8b1a1a;">_PASSCODE_</div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="padding:6px 14px 10px 14px;border-top:1px dashed #c8a83c;
+                                 font-family:Arial,sans-serif;font-size:10px;color:#666;text-align:right;">
+            _UPLANET8_ &nbsp;·&nbsp; _DATE_
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
 
-<section class="zine-page page-2">
-    <h2>1) 🔐 Votre clé privée "NSec"</h2>
-    <table>
-    <tr>
-        <td colspan=2><b>nsec13x0643lc3al5fk92auurh7ww0993syj566eh7ta8r2jpkprs44rs33cute</b></td>
-    </tr>
-    </table>
-    <br>
-        <ul>
-            <li>
-              Elle vous identifie sur tout le réseau. <b>Ne la partagez jamais</b> — nous ne vous la redemanderons jamais par email. Si vous la perdez ou la soupçonnez volée, prévenez votre Capitaine : vos Ẑen restent à l'abri, seule votre identité sociale doit être renouvelée.
-            </li>
-        </ul>
-    <h2>2) 🔢 Votre code PIN</h2>
-    <table>
-    <tr>
-        <td colspan=2><b>CODE : _PASSCODE_</b></td>
-    </tr>
-    </table>
-    <br>
-        <ul>
-            <li>
-              4 chiffres. Ils permettent de récupérer l'accès à ce compte (et à votre ZEN Card quand elle sera créée) depuis n'importe quel terminal UPlanet — gardez-le avec votre NSec.
-            </li>
-        </ul>
-</section>
-
-<section class="zine-page page-3">
-    <h2> 3) 🧩 Votre clé partagée en trois </h2>
-    <img class="captioned-img" title="SSSS KEY" src='http://127.0.0.1:8080/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP'\>
-    <p>
-        Une part pour vous, une pour le Capitaine de votre station, une pour UPlanet. Il en faut <b>deux sur trois</b> pour reconstituer la clé — jamais une seule main n'agit seule.
-    </p>
-</section>
-
-<footer class="zine-page page-4">
-    <h2> ✅ C'est tout pour aujourd'hui </h2>
-    <p>
-        Gardez cette page ou imprimez la carte — on ne vous renverra pas ces informations par la suite.
-    </p>
-    <p style="font-size:80%; padding-top:0.6rem;">
-        La présentation du réseau (_UPLANET8_) arrive demain dans un second message.
-    </p>
-</footer>
-
-</main>
-
-<script src="http://127.0.0.1:8080/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/script.js" async defer></script>
+  <tr>
+    <td style="padding:16px 4px 0 4px;font-family:Arial,sans-serif;font-size:13px;line-height:1.55;color:#333;">
+      <b>Email + PASS</b> : c'est tout ce qu'il faut pour vous connecter
+      (application Ẑelkova, <a href="_CORACLEURL_" style="color:#2d5a1b;">Coracle</a>, pages UPlanet).
+      Gardez le PASS pour vous&nbsp;: 3 essais erronés bloquent la récupération et alertent votre Capitaine.<br><br>
+      <b>P1</b> : une des trois parts de votre clé. Seule, elle ne permet rien&nbsp;; elle sert à reconstituer
+      votre compte avec le Capitaine de votre station si besoin.
+    </td>
+  </tr>
+</table>
 
 </body>
 </html>
