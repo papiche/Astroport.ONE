@@ -350,7 +350,23 @@ if [[ "$AMOUNT" == "DRAIN" ]]; then
         exit 1
     fi
     log "DRAIN : vidage total du wallet (${TOTAL_COINS} Ğ1 incluant 1 Ğ1 existential deposit)"
-    AMOUNT=$(echo "$TOTAL_COINS - 0.01" | bc)
+    # Montant EXACT (pas de marge "-0.01") : gcli transfer sans --keep-alive
+    # autorise déjà la "mort" du compte (transfer_allow_death), donc envoyer
+    # le solde total laisse directement 0 — pas besoin de compter sur un
+    # balayage de poussière (dust sweep) de la chaîne pour un reliquat
+    # artificiel qu'on aurait nous-même laissé. Vérifié en production (cf.
+    # historique de transaction) : une marge de -0.01 finissait de toute
+    # façon à 0.00 Ğ1 via ce balayage — autant l'envoyer explicitement.
+    AMOUNT="$TOTAL_COINS"
+    # DRAIN vide le dépôt existentiel par définition : la vérification de
+    # suffisance ci-dessous doit comparer au solde TOTAL, pas au solde
+    # transférable ($COINS, qui exclut justement ce dépôt) — sinon la
+    # condition est TOUJOURS vraie (COINS est structurellement ~1 Ğ1 sous
+    # TOTAL_COINS) et DRAIN échoue à chaque fois avec "solde insuffisant",
+    # même quand le wallet a largement de quoi être vidé (bug constaté en
+    # production : réconciliation Ğ1Billet bloquée, cf. UPassport
+    # routers/qr.py::redeem_billet).
+    COINS="$TOTAL_COINS"
 elif [[ "$AMOUNT" == "ALL" ]]; then
     AMOUNT="$COINS"
 fi
