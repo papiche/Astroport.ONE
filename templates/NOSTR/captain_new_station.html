@@ -1,0 +1,28 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#fff3e0;color:#1a1a2e}
+.c{max-width:600px;margin:0 auto;background:white}
+.h{background:linear-gradient(135deg,#e65c00,#f9a825);color:white;padding:1.5rem;text-align:center}
+.h .lbl{font-size:.8rem;opacity:.8;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
+.h h1{margin:0;font-size:1.3rem}
+.ct{padding:1.5rem}
+.card{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:1rem;margin:1rem 0;font-size:.9rem}
+.card table{width:100%;border-collapse:collapse}
+.card td{padding:.3rem .5rem;vertical-align:top}
+.card td:first-child{font-weight:bold;color:#555;width:50%}
+.warn{background:#fff3e0;border-left:4px solid #e65c00;border-radius:4px;padding:1rem;margin:1rem 0;font-size:.9rem}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
+small{color:#666;font-size:.8rem}
+</style></head>
+<body><div class="c">
+<div class="h"><div class="lbl">👑 Notification Capitaine</div><h1>🛰️ Nouvelle(s) machine(s) dans le swarm</h1></div>
+<div class="ct">
+<p><strong>_COUNT_</strong> nouvelle(s) station(s) détectée(s) par <code>_STATION_</code> :</p>
+_ROWS_
+<div class="warn">
+<p>Une machine en mode <strong>ORIGIN</strong> est dans l'espace d'accueil : elle voit le swarm mais ne fait pas encore partie de votre constellation ẐEN.</p>
+<p><strong>À faire :</strong> évaluer la machine et son capitaine. Si vous les validez, transmettez-lui la <code>swarm.key</code> de la constellation : le nouvel arrivant lance <code>zen_join.beta.sh &lt;EMAIL&gt; &lt;DOMAINE&gt; &lt;swarm.key&gt;</code> pour passer de ORIGIN à ẐEN.</p>
+<p>Ces informations viennent du <code>12345.json</code> publié par la machine : elles sont déclaratives et non vérifiées.</p>
+</div>
+<p style="text-align:center;margin-top:1.5rem"><small>Astroport.ONE — support@qo-op.com</small></p>
+</div></div></body></html>

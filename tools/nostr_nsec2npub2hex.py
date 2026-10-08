@@ -24,6 +24,7 @@ if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
 del _sys, _os
 
 
+import os
 import sys
 import argparse
 from bech32 import bech32_decode, bech32_encode, convertbits
@@ -105,7 +106,8 @@ def main():
         parser.print_help()
         sys.exit(0)
 
-    nsec = args.nsec
+    # "-" = lire la clé dans NOSTR_NSEC (évite de l'exposer dans `ps`)
+    nsec = os.environ.get("NOSTR_NSEC", "") if args.nsec == "-" else args.nsec
 
     # Get hex private key
     hex_privkey = nsec_to_hex(nsec)

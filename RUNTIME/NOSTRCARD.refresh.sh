@@ -81,7 +81,8 @@ ensure_player_dunikey() {
     uplanet_salt=$(echo -n "${UPLANETNAME}" | sha256sum | cut -c1-16)
 
     local tmp candidate_v1 candidate_ss58
-    tmp=$(mktemp)
+    mkdir -p "$HOME/.zen/tmp"
+    tmp=$(mktemp -p "$HOME/.zen/tmp")   # contient une clé : ~/.zen/tmp est vidé à 20h12
     "${MY_PATH}/../tools/keygen" -t duniter -o "$tmp" "${salt}" "${pepper}_${uplanet_salt}" 2>/dev/null
     candidate_v1=$(grep -E '^pub:' "$tmp" 2>/dev/null | awk '{print $2}')
     candidate_ss58=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$candidate_v1" 2>/dev/null)
@@ -229,21 +230,62 @@ log "INFO" "Starting NOSTRCARD.refresh.sh - PID: $$"
 gstart=`date +%s`
 
 
+# Un cycle horaire encore actif au démarrage du suivant = station saturée.
+# Alerte le Capitaine (au plus 1 email/jour) pour envisager de déménager des MULTIPASS.
+# Seuil 50 min : évite les fausses alertes quand un run manuel croise le cron.
+alert_captain_overlap() {
+    local runpid="$1" elapsed_s=0
+    [[ -n "$runpid" ]] && elapsed_s=$(ps -o etimes= -p "$runpid" 2>/dev/null | tr -d ' ')
+    elapsed_s=${elapsed_s:-0}
+    log "WARN" "⏳ Cycle précédent toujours actif (PID ${runpid:-?}, $((elapsed_s / 60)) min) — nouveau cycle annulé"
+    [[ $elapsed_s -lt 3000 || -z "$CAPTAINEMAIL" ]] && return 0
+
+    local flag="$HOME/.zen/tmp/nostrcard_overlap_alert_$(date +%Y%m%d)"
+    [[ -e "$flag" ]] && return 0
+    touch "$flag"
+    find "$HOME/.zen/tmp" -maxdepth 1 -name 'nostrcard_overlap_alert_*' -mtime +3 -delete 2>/dev/null
+
+    local nplayers load power tmpf
+    nplayers=$(ls "$HOME/.zen/game/nostr/" 2>/dev/null | grep -c "@")
+    load=$(awk '{print $1" / "$2" / "$3}' /proc/loadavg 2>/dev/null)
+    power=$(jq -r '.power_score // "?"' "$HOME/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json" 2>/dev/null)
+    tmpf=$(mktemp)
+    sed -e "s~_STATION_~${IPFSNODEID}~g" \
+        -e "s~_NOW_~$(date '+%Y-%m-%d %H:%M')~g" \
+        -e "s~_ELAPSED_~$((elapsed_s / 60))~g" \
+        -e "s~_NPLAYERS_~${nplayers}~g" \
+        -e "s~_LOAD_~${load:-?}~g" \
+        -e "s~_NPROC_~$(nproc 2>/dev/null)~g" \
+        -e "s~_POWER_~${power:-?}~g" \
+        "${MY_PATH}/../templates/NOSTR/captain_station_saturated.html" > "$tmpf"
+    timeout 60 "${MY_PATH}/../tools/mailjet.sh" --channel alerts \
+        --template "${MY_PATH}/../templates/NOSTR/captain_station_saturated.html" \
+        --expire 48h "${CAPTAINEMAIL}" "$tmpf" "⏳ Station saturée — cycle MULTIPASS > $((elapsed_s / 60)) min" \
+        && log "INFO" "Alerte saturation envoyée au Capitaine ${CAPTAINEMAIL}" \
+        || log "WARN" "Envoi de l'alerte saturation au Capitaine échoué"
+    rm -f "$tmpf"
+}
+
 #### AVOID MULTIPLE RUN
 #### AVOID MULTIPLE RUN (AVEC AUTO-NETTOYAGE)
 LOCK_FILE="/tmp/nostrcard_refresh.lock"
-exec 200>"$LOCK_FILE"
+# NOSTRCARD_LOCK_HELD=1 est posé par le dispatch parallèle ci-dessous : le parent
+# garde le verrou pendant que ses enfants (un par joueur) tournent, ils ne doivent
+# donc pas le reprendre (sinon "lock refused" et aucun joueur traité).
+[[ -z "$NOSTRCARD_LOCK_HELD" ]] && exec 200>"$LOCK_FILE"
 
-if ! flock -n 200; then
+if [[ -z "$NOSTRCARD_LOCK_HELD" ]] && ! flock -n 200; then
     echo "Verrou actif détecté. Vérification des processus fantômes..."
     # Récupère tous les PID qui maintiennent le verrou ouvert
     STALE_PIDS=$(lsof -t "$LOCK_FILE" 2>/dev/null || fuser "$LOCK_FILE" 2>/dev/null | tr -d ':')
     
     REAL_RUN=false
+    REAL_PID=""
     for p in $STALE_PIDS; do
         # Vérifie si c'est vraiment le script principal qui tourne
         if [[ "$p" != "$$" ]] && ps -p "$p" -o cmd= 2>/dev/null | grep -q "[N]OSTRCARD.refresh.sh"; then
             REAL_RUN=true
+            REAL_PID="$p"
             break
         fi
     done
@@ -255,7 +297,9 @@ if ! flock -n 200; then
         # On retente d'acquérir le verrou après avoir fait le ménage
         flock -n 200 || { echo "Script déjà en cours"; exit 0; }
     else
-        echo "Script déjà en cours (instance légitime en cours d'exécution)"; exit 0;
+        echo "Script déjà en cours (instance légitime en cours d'exécution)"
+        alert_captain_overlap "$REAL_PID"
+        exit 0
     fi
 fi
 
@@ -461,7 +505,7 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 ## Dispatch parallèle quand ASTRO_PARALLEL_REFRESH > 1 (appel complet, sans $1)
 _PARALLEL="${ASTRO_PARALLEL_REFRESH:-1}"
 if [[ -z "$1" && "$_PARALLEL" -gt 1 && "${#NOSTR[@]}" -gt 1 ]]; then
-    printf '%s\n' "${NOSTR[@]}" | xargs -P "$_PARALLEL" -I{} bash "$0" {}
+    printf '%s\n' "${NOSTR[@]}" | NOSTRCARD_LOCK_HELD=1 xargs -P "$_PARALLEL" -I{} bash "$0" {}
     exit $?
 fi
 
@@ -535,6 +579,7 @@ for PLAYER in "${NOSTR[@]}"; do
     # ---------------------------------------------------------
     log "INFO" ">>>>>>>>>>>>>>>>>>============================================ Processing MULTIPASS : $PLAYER "
     start=$(date +%s)
+    REFRESH_REASON=""   # ne pas hériter de la valeur du joueur précédent
     HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null)
     [[ -z "$HEX" ]] && log "ERROR" "Missing HEX for $PLAYER" && continue
 
@@ -675,8 +720,9 @@ for PLAYER in "${NOSTR[@]}"; do
         && chmod 600 ~/.zen/game/uplanet.dunikey
     ###################### DISCO DECRYPTION - with Captain + UPlanet parts
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.disco ]]; then
-        tmp_mid=$(mktemp)
-        tmp_tail=$(mktemp)
+        mkdir -p "$HOME/.zen/tmp"
+        tmp_mid=$(mktemp -p "$HOME/.zen/tmp")    # parts SSSS : ~/.zen/tmp est vidé à 20h12
+        tmp_tail=$(mktemp -p "$HOME/.zen/tmp")
         # Decrypt the middle part using CAPTAIN key
         ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/.ssss.mid.captain.enc" \
                 -k ~/.zen/game/players/.current/secret.dunikey -o "$tmp_mid"
@@ -908,7 +954,7 @@ ${tva_result}"
                             if [[ $payment_success -eq 0 ]]; then
                                 # Record successful payment
                                 echo "$TODATE" > "$last_payment_file"
-                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf_ZEN ẐEN = $Total_ZEN ẐEN)"
+                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf_ZEN ẐEN = $Npaf Ğ1)"
                                 log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
                                 PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
 
@@ -977,6 +1023,7 @@ ${tva_result}"
                                 # Payment failed - send error email
                                 log "ERROR" "❌ MULTIPASS payment failed for ${PLAYER} on $TODATE ($Npaf_ZEN ẐEN = $Npaf Ğ1)"
                                 log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
+                                PAYMENTS_FAILED=$((PAYMENTS_FAILED + 1))
 
                                 # Send error email via mailjet
                                 PAYMENT_STATUS_TEXT=$([ $payment_success -eq 0 ] && echo '✅ OK' || echo '❌ Échec')
@@ -1206,7 +1253,7 @@ ${tva_result}"
         NODE_NOSTR_HEX=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
         ### SEND PROFILE TO NOSTR RELAYS
         SETUP_ARGS=(
-            "$NSEC"
+            "-"   # NSEC passé par NOSTR_NSEC (pas dans `ps`)
             "✌(◕‿-)✌ $title" "$G1PUBNOSTR"
             "$description"
             "$myLIBRA/$zavatar"
@@ -1223,7 +1270,7 @@ ${tva_result}"
         [[ -n "$G1V2ADDRESS" ]] && SETUP_ARGS+=(--g1v2 "$G1V2ADDRESS")
         [[ -n "$ZENCARDG1_V2" ]] && SETUP_ARGS+=(--zencard_v2 "$ZENCARDG1_V2")
 
-        ${MY_PATH}/../tools/nostr_setup_profile.py \
+        NOSTR_NSEC="$NSEC" ${MY_PATH}/../tools/nostr_setup_profile.py \
             "${SETUP_ARGS[@]}" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
@@ -1260,7 +1307,16 @@ ${tva_result}"
                 ) && log "INFO" "✅ Tag #i email: publié pour ${PLAYER}" \
                   || log "WARN" "⚠️ Republication tag email échouée pour ${PLAYER}"
             fi
-            if [[ "$REFRESH_REASON" == "daily_update" ]]; then
+            # should_refresh() n'est appelé que plus bas : on reproduit ici sa condition
+            # "daily_update" (jour pas encore rafraîchi ET heure programmée dépassée).
+            _did_daily=false
+            if [[ "$(cat ~/.zen/game/nostr/${PLAYER}/.todate 2>/dev/null)" != "$TODATE" ]]; then
+                _did_rt=$(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time 2>/dev/null)
+                [[ "$_did_rt" =~ ^[0-9]{2}:[0-9]{2}$ ]] || _did_rt="00:00"
+                _did_now=$(date '+%H:%M')
+                [[ $((10#${_did_now%%:*} * 60 + 10#${_did_now##*:})) -ge $((10#${_did_rt%%:*} * 60 + 10#${_did_rt##*:})) ]] && _did_daily=true
+            fi
+            if [[ "$_did_daily" == "true" ]]; then
                     
                     # Update DID document - Read from NOSTR relay (source of truth) instead of local cache
                     # This updates IPNS addresses, wallet info, and other metadata
@@ -1334,8 +1390,9 @@ ${tva_result}"
                             fi
                             
                             # Update or create DID document
-                            ${MY_PATH}/../tools/did_manager_nostr.sh update "${PLAYER}" "$update_type" "0" "0" \
-                                2>&1 | while read line; do log "DEBUG" "$line"; done
+                            ( set -o pipefail
+                              ${MY_PATH}/../tools/did_manager_nostr.sh update "${PLAYER}" "$update_type" "0" "0" \
+                                  2>&1 | while read line; do log "DEBUG" "$line"; done )
                             
                             if [[ $? -eq 0 ]]; then
                                 # Log the end date from U.SOCIETY.end file if it exists
@@ -1392,8 +1449,8 @@ ${tva_result}"
             _RELAY_NSEC=$(grep "^NSEC=" "${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr" 2>/dev/null | cut -d';' -f1 | cut -d= -f2)
             if [[ -n "$_RELAY_NSEC" ]]; then
                 _RELAY_TAGS=$(python3 -c "import json; relays=['wss://relay.copylaradio.com','$myRELAY']; print(json.dumps([['r',r] for r in dict.fromkeys(relays)]))")
-                python3 "${MY_PATH}/../tools/nostr_node_intercom.py" publish \
-                    --nsec "$_RELAY_NSEC" \
+                printf '%s' "$_RELAY_NSEC" | python3 "${MY_PATH}/../tools/nostr_node_intercom.py" publish \
+                    --nsec-stdin \
                     --kind 10002 \
                     --tags "$_RELAY_TAGS" \
                     --content "" \
@@ -1419,8 +1476,8 @@ ${tva_result}"
                 if [[ ! -f "$FOLLOW_SENTINEL" ]] || \
                    [[ $(find "$FOLLOW_SENTINEL" -mtime +7 2>/dev/null | wc -l) -gt 0 ]]; then
                     log "INFO" "👥 Ensuring ${PLAYER} follows CAPTAIN ${CAPTAINEMAIL}"
-                    ${MY_PATH}/../tools/nostr_follow.sh \
-                        "$NSEC" "$CAPTAINHEX" \
+                    NOSTR_NSEC="$NSEC" ${MY_PATH}/../tools/nostr_follow.sh \
+                        - "$CAPTAINHEX" \
                         "$myRELAY" "wss://relay.copylaradio.com" 2>/dev/null \
                         && touch "$FOLLOW_SENTINEL" \
                         && log "INFO" "✅ Captain follow (kind 3) re-published for ${PLAYER}" \
@@ -1811,6 +1868,8 @@ for PLAYER in "${NOSTR[@]}"; do
     [[ ! -f "${RDIR}/.roaming" ]] && continue
 
     _ROAMING_AGE_H=$(( ($(date +%s) - $(stat -c %Y "${RDIR}/.roaming" 2>/dev/null || echo 0)) / 3600 ))
+    # TTL : ne supprimer que les visiteurs inactifs depuis plus de 24h
+    [[ $(( _ROAMING_AGE_H * 60 )) -lt $_ROAMING_TTL_MIN ]] && continue
     log "INFO" "✈️ ROAMING CLEANUP: ${PLAYER} — inactif depuis ${_ROAMING_AGE_H}h → suppression"
     rm -rf "${RDIR}"
 done
@@ -1835,6 +1894,5 @@ log_metric "PAYMENTS_PROCESSED" "$PAYMENTS_PROCESSED"
 log_metric "PAYMENTS_FAILED" "$PAYMENTS_FAILED"
 log_metric "EXECUTION_TIME_SECONDS" "$dur"
 rm -Rf ~/.zen/tmp/${MOATS}
-rm -f "$LOCKFILE"
 
 exit 0

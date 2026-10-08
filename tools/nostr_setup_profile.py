@@ -8,6 +8,7 @@ if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
     _os.execv(_venv_python, [_venv_python] + _sys.argv)
 del _sys, _os
 
+import os
 import sys
 import json
 import argparse
@@ -22,7 +23,9 @@ def nostr_setup_profile(args):
         relay_manager.add_relay(relay)
 
     # Create private_key / public_key from nsec
-    private_key = PrivateKey.from_nsec(args.private_key)
+    # "-" = lire la clé dans NOSTR_NSEC (évite de l'exposer dans `ps`)
+    nsec = os.environ.get("NOSTR_NSEC", "") if args.private_key == "-" else args.private_key
+    private_key = PrivateKey.from_nsec(nsec)
     public_key = private_key.public_key.hex()
 
     # Create metadata JSON

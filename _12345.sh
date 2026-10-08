@@ -621,6 +621,20 @@ while true; do
                             
                             for znod in $(cat ~/.zen/tmp/_swarm_list.${peer_id}); do
                                 [[ "${znod}" == "${IPFSNODEID}" ]] && continue
+                                # Liste fournie par un pair (non fiable) : l'ID sert de nom de dossier,
+                                # on n'accepte qu'un PeerID IPFS (pas de "..", pas de chemin).
+                                [[ "${znod}" =~ ^[A-Za-z0-9]{20,80}$ ]] || continue
+                                # Même contrôle anti-intrus que pour les pairs directs : une station
+                                # annoncée par un pair doit elle aussi publier un _MySwarm.moats valide.
+                                is_astroport_node "$znod"
+                                _znod_check=$?
+                                if [[ $_znod_check -eq 2 ]]; then
+                                    echo "Station $znod (via $peer_id) injoignable, nouvel essai au prochain cycle"
+                                    continue
+                                elif [[ $_znod_check -ne 0 ]]; then
+                                    echo "[$(date)] REJECTED: $znod (announced by $peer_id) - Reason: Non-conforming Astroport Metadata" >> ~/.zen/tmp/swarm_intruders.log
+                                    continue
+                                fi
                                 # Téléchargement des balises des stations découvertes
                                 TMP_ZNOD="/tmp/get_znod_${znod}"
                                 if ipfs --timeout 60s get --progress="false" -o "$TMP_ZNOD" /ipns/${znod} 2>/dev/null; then
@@ -665,6 +679,10 @@ while true; do
 
             # Supprimer les dossiers restés vides
             find ~/.zen/tmp/swarm -mindepth 1 -maxdepth 1 -type d -empty -delete
+
+            ## 2b. INFORMER LE CAPITAINE DES NOUVELLES MACHINES (ex: Astroport ORIGIN à évaluer)
+            [[ -x "${MY_PATH}/RUNTIME/SWARM.newnode.alert.sh" ]] \
+                && "${MY_PATH}/RUNTIME/SWARM.newnode.alert.sh" 2>&1 | tail -n 3
 
             ## 3. PUBLICATION DE NOTRE PROPRE SWARM (CHAN)
             SWARMSIZE=$(du -sb ~/.zen/tmp/swarm | awk '{print $1}')

@@ -271,7 +271,7 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     
     if [[ ${#allhex[@]} -gt 0 ]] && [[ -n "${CAPTAIN_NSEC:-}" ]]; then
         echo "Following ${#nostrhex[@]} NOSTR cards, ${#umaphex[@]} UMAP, ${#sectorhex[@]} SECTOR, ${#regionhex[@]} REGION, ${#captainhex[@]} same-uplanet captains (single kind3)"
-        $HOME/.zen/Astroport.ONE/tools/nostr_follow.sh "$CAPTAIN_NSEC" "${allhex[@]}" >/dev/null 2>&1
+        NOSTR_NSEC="$CAPTAIN_NSEC" $HOME/.zen/Astroport.ONE/tools/nostr_follow.sh - "${allhex[@]}" >/dev/null 2>&1
     fi
 fi
 ##################################################################################

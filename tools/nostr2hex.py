@@ -8,6 +8,7 @@ if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
     _os.execv(_venv_python, [_venv_python] + _sys.argv)
 del _sys, _os
 
+import os
 import sys
 from bech32 import bech32_decode, convertbits
 
@@ -25,7 +26,8 @@ if __name__ == "__main__":
         print("Usage: ./nostr2hex.py <npub1_or_nsec1_key>")
         sys.exit(1)
 
-    nostr_key = sys.argv[1]
+    # "-" = lire la clé dans NOSTR_NSEC (évite de l'exposer dans `ps`)
+    nostr_key = os.environ.get("NOSTR_NSEC", "") if sys.argv[1] == "-" else sys.argv[1]
     try:
         hex_key = nostr_to_hex(nostr_key)
         print(hex_key)

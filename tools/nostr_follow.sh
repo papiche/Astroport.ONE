@@ -12,6 +12,8 @@ if [[ $# -lt 2 ]]; then
 fi
 
 SOURCE_NSEC="$1"
+# "-" = lire la clé dans NOSTR_NSEC (évite de l'exposer dans `ps`)
+[[ "$SOURCE_NSEC" == "-" ]] && SOURCE_NSEC="$NOSTR_NSEC"
 shift
 RELAY=""
 
@@ -26,14 +28,14 @@ fi
 RELAY="${RELAY:-$myRELAY}"
 
 # Convert NSEC to HEX
-NPRIV_HEX=$(${MY_PATH}/nostr2hex.py "$SOURCE_NSEC")
+NPRIV_HEX=$(NOSTR_NSEC="$SOURCE_NSEC" ${MY_PATH}/nostr2hex.py -)
 if [[ -z "$NPRIV_HEX" ]]; then
     echo "Error: Failed to convert NSEC to HEX."
     exit 1
 fi
 
 # Get the source pubkey from the NSEC
-SOURCE_HEX=$(${MY_PATH}/nostr_nsec2npub2hex.py "$SOURCE_NSEC")
+SOURCE_HEX=$(NOSTR_NSEC="$SOURCE_NSEC" ${MY_PATH}/nostr_nsec2npub2hex.py -)
 
 # Query existing follow list using strfry scan
 cd $HOME/.zen/strfry
@@ -85,7 +87,8 @@ fi
 
 # Send the updated kind 3 event
 # Create temp keyfile for nostr_send_note.py
-TMP_KEYFILE=$(mktemp)
+mkdir -p "$HOME/.zen/tmp"
+TMP_KEYFILE=$(mktemp -p "$HOME/.zen/tmp")   # nettoyé par 20h12 si le script est interrompu
 echo "NSEC=$SOURCE_NSEC;" > "$TMP_KEYFILE"
 
 python3 $MY_PATH/nostr_send_note.py \

@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:0;background:#fff3e0;color:#1a1a2e}
+.c{max-width:600px;margin:0 auto;background:white}
+.h{background:linear-gradient(135deg,#e65c00,#f9a825);color:white;padding:1.5rem;text-align:center}
+.h .lbl{font-size:.8rem;opacity:.8;letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
+.h h1{margin:0;font-size:1.3rem}
+.ct{padding:1.5rem}
+.card{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:1rem;margin:1rem 0;font-size:.9rem}
+.card table{width:100%;border-collapse:collapse}
+.card td{padding:.3rem .5rem;vertical-align:top}
+.card td:first-child{font-weight:bold;color:#555;width:50%}
+.warn{background:#fff3e0;border-left:4px solid #e65c00;border-radius:4px;padding:1rem;margin:1rem 0;font-size:.9rem}
+p{line-height:1.6;margin:.4rem 0;font-size:.92rem}
+small{color:#666;font-size:.8rem}
+</style></head>
+<body><div class="c">
+<div class="h"><div class="lbl">👑 Notification Capitaine</div><h1>⏳ Station saturée — le cycle MULTIPASS déborde</h1></div>
+<div class="ct">
+<p>Le rafraîchissement horaire des MULTIPASS (<code>NOSTRCARD.refresh.sh</code>) tournait <strong>encore</strong> quand le cycle suivant a démarré. Le nouveau cycle a été annulé pour éviter un double traitement.</p>
+<div class="card"><table>
+<tr><td>Station</td><td>_STATION_</td></tr>
+<tr><td>Date</td><td>_NOW_</td></tr>
+<tr><td>Durée du cycle en cours</td><td>_ELAPSED_ min</td></tr>
+<tr><td>MULTIPASS hébergés</td><td>_NPLAYERS_</td></tr>
+<tr><td>Charge CPU (1 / 5 / 15 min)</td><td>_LOAD_ (_NPROC_ cœurs)</td></tr>
+<tr><td>Power-Score</td><td>_POWER_</td></tr>
+</table></div>
+<div class="warn">
+<p>⚠️ Un cycle qui dépasse une heure signifie que la station n'arrive plus à traiter ses MULTIPASS dans le temps imparti (IPFS, paiements, scrapers, import WebDAV…).</p>
+<p><strong>À envisager :</strong> déménager une partie des MULTIPASS vers une station moins chargée de l'essaim, ou renforcer cette station.</p>
+<p>Cette alerte est envoyée au plus une fois par jour.</p>
+</div>
+<p style="text-align:center;margin-top:1.5rem"><small>Astroport.ONE — support@qo-op.com</small></p>
+</div></div></body></html>
