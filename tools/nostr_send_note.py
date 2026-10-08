@@ -48,6 +48,9 @@ if os.path.exists(_venv_python) and sys.executable != _venv_python:
 import json
 import argparse
 import time
+import socket
+import ssl
+from urllib.parse import urlparse
 import websocket
 from pynostr.event import Event, EventKind
 from pynostr.key import PrivateKey
@@ -161,10 +164,26 @@ class NostrWebSocketClient:
     def connect(self, timeout: int = CONNECT_TIMEOUT) -> bool:
         """Connect to the relay"""
         try:
-            self.ws = websocket.create_connection(
-                self.relay_url,
-                timeout=timeout
-            )
+            try:
+                self.ws = websocket.create_connection(
+                    self.relay_url,
+                    timeout=timeout
+                )
+            except Exception:
+                # AAAA record may point to an unreachable IPv6 host: retry over IPv4 only
+                parsed = urlparse(self.relay_url)
+                port = parsed.port or (443 if parsed.scheme == "wss" else 80)
+                sock = socket.create_connection(
+                    socket.getaddrinfo(parsed.hostname, port, socket.AF_INET, socket.SOCK_STREAM)[0][4],
+                    timeout=timeout
+                )
+                if parsed.scheme == "wss":
+                    sock = ssl.create_default_context().wrap_socket(sock, server_hostname=parsed.hostname)
+                self.ws = websocket.create_connection(
+                    self.relay_url,
+                    timeout=timeout,
+                    socket=sock
+                )
             self.connected = True
             return True
         except Exception as e:

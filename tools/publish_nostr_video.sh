@@ -991,10 +991,12 @@ fi
 
 # Check result
 if [ $NOSTR_EXIT_CODE -eq 0 ]; then
-    # Parse JSON output
-    EVENT_ID=$(echo "$NOSTR_OUTPUT" | jq -r '.event_id // empty' 2>/dev/null || echo "")
-    RELAYS_SUCCESS=$(echo "$NOSTR_OUTPUT" | jq -r '.relays_success // 0' 2>/dev/null || echo "0")
-    RELAYS_TOTAL=$(echo "$NOSTR_OUTPUT" | jq -r '.relays_total // 0' 2>/dev/null || echo "0")
+    # Parse JSON output (stderr is merged: strip relay error lines before the JSON object)
+    NOSTR_JSON=$(echo "$NOSTR_OUTPUT" | sed -n '/^{/,$p')
+    [ -z "$NOSTR_JSON" ] && NOSTR_JSON="$NOSTR_OUTPUT"
+    EVENT_ID=$(echo "$NOSTR_JSON" | jq -r '.event_id // empty' 2>/dev/null || echo "")
+    RELAYS_SUCCESS=$(echo "$NOSTR_JSON" | jq -r '.relays_success // 0' 2>/dev/null || echo "0")
+    RELAYS_TOTAL=$(echo "$NOSTR_JSON" | jq -r '.relays_total // 0' 2>/dev/null || echo "0")
     
     if [ -z "$EVENT_ID" ]; then
         # Fallback to old parsing method
