@@ -150,15 +150,12 @@ done
 
 # ── Génération finale, avec jusqu'à 3 tentatives de correction (même conversation) ───────
 validate_sb() {
-  # $1 fichier JSON ; écrit le message d'erreur sur stdout, rien si valide
+  # $1 fichier JSON ; écrit le message d'erreur sur stdout, rien si valide.
+  # Règles du rendu lui-même : déléguées à generate_scene.sh --check (une seule source,
+  # sinon les copies divergent — l'ancienne copie ici refusait les plans "video").
+  local err
   jq -e 'type == "object"' "$1" > /dev/null 2>&1 || { echo "ce n'est pas un objet JSON"; return; }
-  jq -e '.shots | type == "array" and length > 0
-         and all(.[]; (.prompt | type) == "string" or (.screen and (.presenter | not)) or .card)' "$1" > /dev/null 2>&1 \
-    || { echo 'chaque plan doit avoir "prompt" (texte), ou "screen" sans présentateur, ou "card"'; return; }
-  jq -e '.shots[0].continue != true' "$1" > /dev/null 2>&1 \
-    || { echo 'le premier plan ne peut pas avoir "continue": true'; return; }
-  missing=$(jq -r '(.cast // {}) as $c | [.shots[] | ((.cast // []) + [.presenter // empty])[] | select($c[.] | not)] | unique | join(" ")' "$1" 2>/dev/null)
-  [ -n "$missing" ] && { echo "acteur(s) absent(s) de \"cast\" : $missing"; return; }
+  err=$("$MY_PATH/generate_scene.sh" --check "$1" 2>&1 > /dev/null) || echo "${err#Erreur : }"
 }
 
 RAW=$(mktemp)

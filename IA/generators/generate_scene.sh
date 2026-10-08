@@ -3,6 +3,8 @@
 #### generate_scene.sh : storyboard JSON → vidéo multi-plans (MiniMax H3) assemblée en 720p
 #
 # Usage: generate_scene.sh [-w workdir] [-c] [-i index] [-p coop|private] <storyboard.json> [udrive_path]
+#        generate_scene.sh --check <storyboard.json>     valide le storyboard sans rien calculer
+#        generate_scene.sh -h | --help                   cette aide complète (schéma JSON inclus)
 #   -w  répertoire de travail (défaut $SCENES_DIR/scene_*  (~/.zen/workspace/scenes), hors de ~/.zen/tmp
 #       que le nettoyage d'Astroport vide) ; relancer avec le même -w reprend la scène :
 #       acteurs, plans et captures déjà rendus ne sont pas recalculés.
@@ -14,77 +16,98 @@
 #   -p  publie la scène dans la bibliothèque du Studio vidéo IA (story.html) à la fin du rendu :
 #       acteurs, scène (nouvelle version si le storyboard a changé), rendu avec ses plans sur IPFS,
 #       prises de chaque plan. "coop" : visible des autres Capitaines ; "private" : chiffré, sans IPFS.
+#   udrive_path  dossier où copier la vidéo finale (scene_<horodatage>.mp4), ex. un uDRIVE.
 # Sortie stdout : URL IPFS de la vidéo finale (ou chemin du fichier si IPFS échoue)
-# Codes de sortie : 0 ok, 1 erreur, 2 storyboard invalide, 3 ComfyUI non équipé, 4 timeout
+# Codes de sortie : 0 ok, 1 erreur, 2 storyboard invalide ou usage, 3 ComfyUI non équipé, 4 timeout
+# Pas de storyboard ? generate_storyboard.sh le rédige avec une IA (Ollama) en posant quelques questions.
+# Exemples complets : storyboard*.example.json, storyboards/*.json — guide : docs/how-to/VIDEO_GENERATION_MINIMAX.md
 #
-# Storyboard (exemples : storyboard*.example.json, storyboards/*.json) :
-# {
-#   "ratio": "16:9", "megapixels": 0.4, "steps": 10, "style": "vhs", "height": 720, "seed": 42,
-#   "cast": {
-#     "lea": {"image_prompt": "portrait…",  "voice_line": "phrase FR de ~8 s"},
-#     "malik": {"image": "/portrait.png", "voice": "/voix_10s.wav"},
-#     "ana":   {"image_prompt": "…", "voice_design": "warm low-pitched woman in her 50s, slow", "voice_line": "…"}
-#   },
-#   "shots": [
-#     {"image_prompt": "...", "prompt": "...", "duration": 5},  image générée (generate_image.sh) puis animée
-#     {"continue": true,      "prompt": "...", "duration": 5},  repart de la dernière image du plan précédent
-#     {"image": "/chemin.png" ou "ipfs://CID/nom.png", "prompt": "...", "duration": 5}, image fournie (fichier ou uDRIVE)
-#     {"prompt": "...", "duration": 5}                          text-to-video
-#     {"cast": ["lea"], "prompt": "Lea ... says: \"...\""}       acteur(s) : même visage et même voix (ref2va)
-#     {"screen": "http://127.0.0.1:54321/g1", "presenter": "lea", "prompt": "Lea says: \"...\""}
-#                                                               capture d'écran nette (défilement/zoom) +
-#                                                               présentateur en incrustation ronde
-#     {"video": "ipfs://Qm…", "start": 0, "duration": 6, "title": "…"}
-#                                                               séquence vidéo importée (IPFS ou fichier de
-#                                                               $SCENES_DIR), remise au format de la scène ;
-#                                                               n'importer que du contenu dont on a les droits
-#     {"screen": "https://…", "record": {"actions": [{"click": "#go"}, {"mark": true}, {"mouse": [x, y]}, {"wait": 700}]}, "duration": 8}
-#                                                               page vivante (simulateur) : enregistrée en vidéo (lib/record_page.py)
-#     {"card": {"title": "...", "links": [{"label": "...", "url": "https://..."}]}, "duration": 8}
-#                                                               carton final avec QR codes
-#   ]
-# }
-# Acteurs ("cast", ref2va) : portrait sur fond neutre (fourni ou généré par Z-Image)
-# et voix de référence : fournie ("voice"), inventée par Qwen3-TTS VoiceDesign d'après
-# "voice_design" (description du timbre, âge, ton : une voix distincte par acteur), ou à
-# défaut créée par MiniMax en faisant dire "voice_line" au portrait. Dans un plan "cast", le script ajoute en tête du prompt la phrase qui lie
-# chaque nom à <Picture k>/<Audio k> : écrire ensuite le prompt avec les noms.
-# N'utiliser le visage ou la voix d'une personne réelle qu'avec son consentement.
+# ══ STORYBOARD JSON ══════════════════════════════════════════════════════════════
+# Règles vérifiées avant tout calcul (mêmes règles dans tools/story_asset.py::validate_storyboard
+# et generate_storyboard.sh) :
+#   - "shots" : liste non vide ; chaque plan a "prompt" (texte), ou "screen" SANS "presenter",
+#     ou "card", ou "video" (texte) ;
+#   - le premier plan ne peut pas être "continue" ;
+#   - tout nom cité dans un "cast" de plan ou un "presenter" est déclaré dans "cast" (racine).
+# Chemins : "$HOME" et "$SCENES_DIR" sont résolus dans toutes les chaînes. Une image/vidéo/musique
+# accepte un fichier, ou une référence IPFS : CID, ipfs://CID[/fichier] (uDRIVE), /ipfs/CID.
+# Champs inconnus ignorés (ex. "name" et "ui", écrits par l'interface story.html).
 #
-# Banque de personnages (~/.zen/workspace/characters/<nom>/, hors ~/.zen/tmp : jamais
-# purgée) : portrait.png et voice.wav sont enregistrés là après une première génération,
-# et repris tels quels par tout storyboard suivant qui déclare le même nom — même un
-# simple "nom": {} suffit alors (pas besoin de redonner image_prompt/voice_line).
-# "refresh": true dans l'entrée .cast force une régénération et remplace la banque.
+# Racine (tout est optionnel sauf "shots") :
+#   ratio       "16:9" (défaut) | "9:16" (vertical Reels/Shorts) | "4:3" | "1:1"...
+#   megapixels  résolution de calcul, défaut 0.4 (864x480 en 16:9) ; 0.25 ≈ 360p
+#   steps       défaut 10 ; ref_steps : plans avec acteur (ref2va), défaut 20 (en dessous : artefacts)
+#   quality     étiquette des prises ("draft" | "normal"…), défaut : "draft" si steps <= 6, sinon "normal"
+#   height      petit côté de la vidéo finale, défaut 720 (1280x720 / 720x1280)
+#   style       "clean" (défaut) | "vhs" (plans IA seulement : écrans et cartons restent nets)
+#   upscale     facteur SeedVR2 (lent), défaut 1 = aucun ; OOM au-delà de ~3 s à 0.4 MP
+#   seed        chaque plan utilise seed + index : scène reproductible (défaut : aléatoire)
+#   voice       voix Orpheus de la voix-off : "amelie" (défaut) | "pierre"
+#   narrator    {"voice_design": "description du timbre", "ref": "/voix.wav"} : voix-off Qwen3-TTS
+#               constante (remplace Orpheus si install/install_qwen3_tts.sh a été lancé)
+#   music       fond musical continu : {"source": "ipfs://…|fichier"} OU {"prompt": "style musical",
+#               "max_seconds": 90} (généré, YuE2 puis repli ACE-Step) ; "lufs": -30 (volume, défaut).
+#               Boucle avec fondus, baisse sous la voix.
+#   cast        {"nom": {acteur}, …} — voir Acteurs
+#   shots       [plan, …] — voir Plans
 #
-# Champs de plan optionnels :
-#   voiceover  narration (texte FR) lue par Orpheus TTS (voix globale "voice" :
-#              "amelie" | "pierre"), mixée sur l'ambiance du plan ; la durée est
-#              allongée si la phrase ne tient pas, et MiniMax reçoit « no speech ».
-#   title      texte incrusté (bas de l'image) pendant tout le plan, après le style.
-#   motion     plan "screen" : "scroll" (défaut si la page dépasse l'écran) | "zoom"
-#   screen_wait plan "screen" : attente après chargement de la page, en ms (défaut 6000 ; 12000 pour une carte qui se charge lentement)
-#   screen_js  plan "screen" : JavaScript (chaîne ou liste) exécuté avant la capture,
-#              ex. cliquer un onglet : "document.querySelector('#tab').click()"
-# Paramètres globaux, tous optionnels (défauts = priorité à la vitesse sur RTX 3090,
-# ~5 min par plan de 5 s) :
-#   ratio      "16:9" | "9:16" (vertical smartphone, Reels/Shorts) | "4:3" | "1:1"...
-#   megapixels 0.4 (864x480 en 16:9), 0.25 ≈ 360p ; steps 10 ;
-#   ref_steps  steps des plans avec acteur (ref2va), défaut 20 : en dessous, artefacts
-#   Les répliques passent par lib/prononciation_fr.json (orthographe phonétique des
-#   sigles : MULTIPASS, NOSTR, UMAP…) : y ajouter tout mot mal prononcé.
-#   height     petit côté de la vidéo finale, défaut 720 (1280x720 / 720x1280)
-#   style      "clean" (défaut) ou "vhs" (plans IA seulement : écrans et cartons restent nets)
-#   upscale    facteur SeedVR2 (lent) ; défaut 1 = aucun. OOM au-delà de ~3 s à 0.4 MP.
-#   seed       chaque plan utilise seed + index : scène reproductible.
-# Un plan peut surcharger "seed" et "duration" (5 à 10 s conseillé).
+# Acteurs ("cast" racine) — même visage et même voix d'un plan à l'autre (ref2va) :
+#   image | image_prompt   portrait fourni, ou décrit (généré par Z-Image, fond neutre)
+#   voice | voice_design | voice_line
+#                          voix fournie (.wav ~10 s), ou inventée par Qwen3-TTS VoiceDesign d'après
+#                          la description (timbre, âge, ton), ou à défaut créée par MiniMax en faisant
+#                          dire "voice_line" (phrase FR ~8 s) au portrait
+#   refresh: true          régénère et remplace la banque
+#   Banque de personnages ($CAST_BANK = ~/.zen/workspace/characters/<nom>/, jamais purgée) :
+#   portrait.png et voice.wav y sont gardés après une première génération ; ensuite "nom": {} suffit.
+#   Un acteur absent de la banque est cherché dans la bibliothèque du Studio (story_asset.py).
+#   Dans un plan "cast", le script ajoute en tête du prompt la phrase qui lie chaque nom à
+#   <Picture k>/<Audio k> : écrire le prompt avec les noms. Visage ou voix d'une personne réelle :
+#   seulement avec son consentement.
+#
+# Plans ("shots") — un type par plan :
+#   {"prompt": "..."}                                      text-to-video
+#   {"image_prompt": "...", "prompt": "..."}               image générée (generate_image.sh) puis animée
+#   {"image": "/chemin.png" | "ipfs://CID/nom.png", "prompt": "..."}   image fournie, animée
+#   {"continue": true, "prompt": "..."}                    repart de la dernière image du plan précédent
+#   {"cast": ["lea"], "prompt": "Lea ... says: \"...\""}   acteur(s) — un seul par plan conseillé
+#   {"screen": "https://…", "presenter": "lea", "prompt": "Lea says: \"...\""}
+#                      capture d'écran nette (défilement/zoom) + présentateur en incrustation ronde
+#   {"screen": "https://…", "record": {"actions": [...], "wait": 4000}}
+#                      page VIVANTE enregistrée en vidéo (lib/record_page.py), actions dans l'ordre :
+#                      {"click": "#css"} {"mouse": [x, y]} (pixels, ou fractions 0–1) {"wait": ms}
+#                      {"js": "code"} {"mark": true} (début de la partie conservée)
+#   {"video": "ipfs://Qm…", "start": 0}                    séquence importée (IPFS ou fichier), remise au
+#                      format de la scène ; sans "duration" : jusqu'à 120 s. Contenu dont on a les droits.
+#   {"card": {"title": "...", "subtitle": "...", "links": [{"label": "...", "url": "https://..."}]}}
+#                      carton final, un QR code par lien
+# Champs communs, tous optionnels :
+#   duration    secondes, défaut 5 (5 à 10 conseillé) ; seed : surcharge seed + index
+#   title       texte incrusté en bas de l'image pendant tout le plan (en haut si "presenter")
+#   voiceover   narration FR (voix "voice" ou "narrator"), mixée sur l'ambiance ; la durée s'allonge
+#               si la phrase ne tient pas, et MiniMax reçoit « no speech »
+#   transition  {"type": "fade|fadeblack|fadewhite|dissolve|wipeleft|wiperight|slideleft|slideright|
+#               circleopen|zoomin|cut", "duration": 0.5} entre CE plan et le suivant (défaut : cut)
+# Plans "screen" seulement :
+#   motion      "scroll" (défaut si la page dépasse l'écran) | "zoom"
+#   screen_wait attente après chargement, en ms (défaut 6000 ; 12000 pour une carte lente)
+#   screen_js   JavaScript (chaîne ou liste) exécuté avant la capture, ex. "document.querySelector('#tab').click()"
 #
 # Écrire les prompts :
 #  - une action par plan ; décrire le son : voix (langue, ton, texte exact entre
 #    guillemets), bruitages, musique — sinon le plan est muet ;
 #  - un texte parlé tient en ~2,5 mots/s : 5 s ≈ 12 mots ;
 #  - gros plans pour les visages : ils restent nets même en basse résolution ;
-#  - pas de texte à l'écran demandé au modèle (illisible) : utiliser "title" ou "card".
+#  - pas de texte à l'écran demandé au modèle (illisible) : utiliser "title" ou "card" ;
+#  - sigles mal prononcés (MULTIPASS, NOSTR, UMAP…) : les ajouter à lib/prononciation_fr.json.
+#
+# Environnement : SCENES_DIR, CAST_BANK (cf. lib/env.sh) ; STORY_NO_IPFS=1 (rien sur IPFS) ;
+# SHOT_SEED_SHIFT (décale la graine des plans : nouvelle prise, utilisé par le Studio web).
+# Défauts = priorité à la vitesse sur RTX 3090 (~5 min par plan de 5 s).
+#
+# Suivi de progression (lu par l'interface UPlanet/earth/story.html via UPassport) :
+# $WORK_DIR/progress.json = {stage, shot, shots, message, started, updated, done:[indices rendus]}
+# stages : prepare cast voiceover shot finish assemble done failed
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
@@ -92,14 +115,27 @@ ME="${0##*/}"
 # FFMPEG (avec drawtext), COMFY_PY, ASTRO_PY, SCENES_DIR : voir lib/env.sh
 . "$MY_PATH/lib/env.sh"
 
-usage() {
-  sed -n '5,13p' "$0" | sed 's/^# \{0,1\}//' >&2
-  echo >&2
-  echo "Pas de storyboard sous la main ? generate_storyboard.sh pose quelques questions et en" >&2
-  echo "rédige un avec l'aide d'une IA (Ollama, moteur au choix) :" >&2
-  echo "  $MY_PATH/generate_storyboard.sh" >&2
+# Aide = l'en-tête de ce fichier (une seule source de vérité, schéma JSON compris).
+header() { awk 'NR > 1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "$0"; }
+help() { header; exit 0; }
+usage() {  # erreur d'usage : résumé sur stderr (du « Usage » au premier séparateur)
+  header | awk '/^Usage:/ { p = 1 } p && /^══/ { exit } p' >&2
+  echo "Aide complète et schéma du storyboard : $ME --help" >&2
   exit 2
 }
+
+# Options longues (getopts ne les connaît pas)
+CHECK_ONLY=0
+args=()
+for a in "$@"; do
+  case "$a" in
+    --help) help ;;
+    --check) CHECK_ONLY=1 ;;
+    --*) echo "Erreur : option inconnue $a" >&2; usage ;;
+    *) args+=("$a") ;;
+  esac
+done
+set -- "${args[@]}"
 
 WORK_DIR=""
 CAST_ONLY=0
@@ -112,6 +148,7 @@ while getopts "w:ci:p:h" opt; do
     i) SHOT_INDEX="$OPTARG" ;;
     p) PUBLISH_SCOPE="$OPTARG"
        case "$PUBLISH_SCOPE" in coop|private) ;; *) echo "Erreur : -p coop|private" >&2; exit 2 ;; esac ;;
+    h) help ;;
     *) usage ;;
   esac
 done
@@ -119,9 +156,9 @@ shift $((OPTIND - 1))
 
 STORYBOARD="$1"
 UDRIVE_PATH="$2"
-[ -f "$STORYBOARD" ] || usage
-
-. "${HOME}/.zen/Astroport.ONE/tools/my.sh"
+[ -n "$STORYBOARD" ] || usage
+[ -f "$STORYBOARD" ] || { echo "Erreur : storyboard introuvable : $STORYBOARD" >&2; exit 2; }
+jq empty "$STORYBOARD" 2> /dev/null || { echo "Erreur : $STORYBOARD n'est pas un JSON valide" >&2; exit 2; }
 
 if [ "$CAST_ONLY" -eq 1 ]; then
   if ! jq -e '.cast | type == "object" and length > 0' "$STORYBOARD" > /dev/null 2>&1; then
@@ -144,6 +181,13 @@ else
     exit 2
   fi
 fi
+if [ "$CHECK_ONLY" = 1 ]; then
+  jq -r '"OK : " + ((.shots // []) | length | tostring) + " plan(s), cast : "
+         + ((.cast // {}) | keys | join(", ") | if . == "" then "aucun" else . end)' "$STORYBOARD"
+  exit 0
+fi
+
+. "${HOME}/.zen/Astroport.ONE/tools/my.sh"
 
 # Chemins du storyboard portables : $HOME, ${HOME} et $SCENES_DIR sont résolus ici
 mkdir -p "$SCENES_DIR"
@@ -870,9 +914,9 @@ if [ "${trans_any:-0}" -gt 0 ] && [ "${#PARTS[@]}" -gt 1 ]; then
     # sur la grille des images (24 i/s) l'image et le son restent calés de raccord en raccord (lipsync des derniers plans)
     td=$(awk -v d="$td" -v a="$cum" -v b="${PLEN[$k]}" 'BEGIN { m = (a < b ? a : b) / 2; f = int(d * 24 + 0.5); mx = int(m * 24); if (f > mx) f = mx; if (f < 2) f = 2; printf "%.5f", f / 24 }')
     off=$(awk -v c="$cum" -v d="$td" 'BEGIN { printf "%.5f", c - d }')
-    tvf+="[$vprev][$k:v]xfade=transition=$tt:duration=$td:offset=$off[v$k];"
+    tvf+="[$vprev][$k:v]xfade=transition=$tt:duration=$td:offset=${off}[v$k];"
     # le son de chaque plan est calé sur la durée exacte de son image (sinon l'écart s'accumule de raccord en raccord)
-    taf+="[$k:a]apad=whole_dur=${PLEN[$k]},atrim=0:${PLEN[$k]},asetpts=PTS-STARTPTS[p$k];[$aprev][p$k]acrossfade=d=$td[a$k];"
+    taf+="[$k:a]apad=whole_dur=${PLEN[$k]},atrim=0:${PLEN[$k]},asetpts=PTS-STARTPTS[p$k];[$aprev][p$k]acrossfade=d=${td}[a$k];"
     vprev="v$k"; aprev="a$k"
     cum=$(awk -v o="$off" -v l="${PLEN[$k]}" 'BEGIN { printf "%.5f", o + l }')
   done

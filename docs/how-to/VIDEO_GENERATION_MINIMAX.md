@@ -183,10 +183,14 @@ demandé — demandez-lui explicitement de ne pas le faire si vous ne voulez auc
 }
 ```
 
+Tous les champs (vidéo importée, page vivante, transitions, fond musical, voix-off…) et les
+règles de validation : section « Champs du storyboard » plus bas, ou `./generate_scene.sh --help`.
+
 ### 5. Lancer le rendu
 
 ```bash
 cd ~/.zen/Astroport.ONE/IA/generators
+./generate_scene.sh --check storyboards/episode06.json   # validation seule, instantanée
 ./generate_scene.sh -w ~/.zen/workspace/scenes/episode06 storyboards/episode06.json
 ```
 
@@ -424,29 +428,71 @@ démarre qu'au passage du job en exécution ; l'attente en file est bornée à p
 
 ### Champs du storyboard
 
-| Champ global | Défaut | Effet |
+Référence complète, identique à l'aide du script : `./generate_scene.sh --help`.
+Valider un storyboard sans rien calculer : `./generate_scene.sh --check fichier.json`
+(code `0` et résumé `OK : N plan(s), cast : …`, sinon code `2` et la règle violée).
+
+**Règles vérifiées avant tout calcul.** Mêmes règles dans `generate_scene.sh`,
+`tools/story_asset.py::validate_storyboard` (Studio web) et `generate_storyboard.sh`
+(qui appelle `--check`). Un test UPassport (`tests/test_storyboard_rules.py`) vérifie
+que les deux implémentations rendent le même verdict, exemples livrés compris.
+
+- `shots` est une liste non vide.
+- Chaque plan a `prompt` (texte), ou `screen` **sans** `presenter`, ou `card`, ou `video` (texte).
+- Le premier plan n'est pas `continue`.
+- Tout nom cité dans un `cast` de plan ou dans `presenter` est déclaré dans `cast` (racine).
+
+**Valeurs.** `$HOME` et `$SCENES_DIR` sont résolus dans toutes les chaînes. Une image,
+une vidéo ou une musique accepte un fichier, ou une référence IPFS : CID,
+`ipfs://CID[/fichier]` (uDRIVE), `/ipfs/CID`. Les champs inconnus sont ignorés (par
+exemple `name` et `ui`, écrits par `story.html`).
+
+| Champ racine | Défaut | Effet |
 |---|---|---|
 | `ratio` | `16:9` | `9:16` pour smartphone ; aussi `4:3`, `1:1`… |
 | `megapixels` | `0.4` | 0,25 ≈ 360p, 0,3 ≈ 736×416 ; calcul puis agrandissement en `height` |
-| `steps` / `ref_steps` | `10` / `20` | plans sans / avec acteur |
+| `steps` / `ref_steps` | `10` / `20` | plans sans / avec acteur (sous 20, ref2va dérive en dessin) |
+| `quality` | `draft` si `steps` ≤ 6, sinon `normal` | étiquette des prises (affichée par `story.html` : Brouillon / Normal) |
 | `height` | `720` | petit côté de la vidéo finale |
 | `style` | `clean` | `vhs` : look cassette (plans IA seulement) |
 | `upscale` | `1` | facteur SeedVR2 (OOM au-delà de ~3 s à 0,4 MP) |
 | `seed` | aléatoire | plan *i* = `seed + i` : épisode reproductible |
-| `voice` | `amelie` | voix Orpheus de secours des `voiceover` (`amelie`, `pierre`), utilisée si `narrator` absent ou Qwen3-TTS non installé |
+| `voice` | `amelie` | voix Orpheus des `voiceover` (`amelie`, `pierre`), utilisée si `narrator` absent ou Qwen3-TTS non installé |
 | `narrator.voice_design` | — | voix-off constante (Qwen3-TTS, prononciation du lexique) : une seule synthèse, clonée pour chaque plan. Nécessite `install/install_qwen3_tts.sh` |
 | `narrator.ref` | — | fichier audio de référence pour cloner la voix du narrateur (sinon générée depuis `voice_design` puis réutilisée) |
-| `cast` | — | `{nom: {image\|image_prompt, voice\|voice_line, voice_design?, refresh?}}` — voir §2 et §6 bis (banque de personnages) |
+| `music.source` | — | fond musical continu : fichier ou IPFS |
+| `music.prompt` / `music.max_seconds` | — / `90` | fond musical généré (YuE2, repli ACE-Step 30 s bouclé) si pas de `source` |
+| `music.lufs` | `-30` | volume du fond ; bouclé avec fondus, baissé sous la voix |
+| `cast` | — | acteurs, voir ci-dessous |
+| `shots` | **requis** | plans, voir ci-dessous |
+
+| Champ d'acteur (`cast.<nom>`) | Effet |
+|---|---|
+| `image` \| `image_prompt` | portrait fourni, ou décrit (généré par Z-Image, fond neutre) |
+| `voice` \| `voice_design` \| `voice_line` | voix fournie (.wav ~10 s), ou inventée par Qwen3-TTS d'après la description, ou à défaut créée par MiniMax en faisant dire `voice_line` (~8 s) au portrait |
+| `refresh: true` | régénère et remplace la banque |
+| `{}` (vide) | acteur repris de la banque `$CAST_BANK`, ou de la bibliothèque du Studio (§2, §6 bis) |
 
 | Type de plan | Champs |
 |---|---|
-| Acteur (ref2va) | `cast: [nom]`, `prompt` (avec la réplique entre guillemets) |
+| Text-to-video | `prompt` |
 | Image générée puis animée | `image_prompt`, `prompt` |
+| Image fournie puis animée | `image` (fichier ou IPFS), `prompt` |
 | Suite du plan précédent | `continue: true`, `prompt` (repart de sa dernière image) |
-| Image fournie / text-to-video | `image` / rien, `prompt` |
-| Écran | `screen` (URL ou PNG), `motion` (`scroll`/`zoom`), `screen_js`, `presenter`, `prompt` |
-| Carton | `card: {title, subtitle, links: [{label, url}]}` |
-| Communs | `duration` (5-10 s), `seed`, `title`, `voiceover` (TTS mixé, MiniMax reçoit « no speech ») |
+| Acteur (ref2va) | `cast: [nom]`, `prompt` (avec la réplique entre guillemets) ; un acteur par plan conseillé |
+| Écran fixe | `screen` (URL ou PNG), `motion` (`scroll` par défaut si la page dépasse, ou `zoom`), `screen_wait` (ms, défaut 6000), `screen_js` (chaîne ou liste) |
+| Écran + présentateur | idem + `presenter: nom` + `prompt` (réplique du présentateur, incrusté en rond) |
+| Page vivante | `screen`, `record: {actions: [...], wait: 4000}` — actions dans l'ordre : `{"click": "#css"}`, `{"mouse": [x, y]}` (pixels ou fractions 0–1), `{"wait": ms}`, `{"js": "code"}`, `{"mark": true}` (début de la partie conservée) |
+| Vidéo importée | `video` (fichier ou IPFS), `start` (s, défaut 0) ; sans `duration` : jusqu'à 120 s. Contenu dont on a les droits |
+| Carton | `card: {title, subtitle, links: [{label, url}]}` (un QR code par lien) |
+
+| Champ commun (tout plan) | Défaut | Effet |
+|---|---|---|
+| `duration` | `5` | secondes (5-10 conseillé) |
+| `seed` | `seed + i` | surcharge la graine du plan |
+| `title` | — | texte incrusté en bas pendant tout le plan (en haut sur un plan `presenter`) |
+| `voiceover` | — | narration FR (voix `voice` ou `narrator`) mixée sur l'ambiance ; la durée s'allonge si besoin, MiniMax reçoit « no speech » |
+| `transition` | `cut` | `{type, duration: 0.5}` entre CE plan et le suivant : `fade`, `fadeblack`, `fadewhite`, `dissolve`, `wipeleft`, `wiperight`, `slideleft`, `slideright`, `circleopen`, `zoomin`, `cut` |
 
 ### Prompts ajoutés par les scripts
 
