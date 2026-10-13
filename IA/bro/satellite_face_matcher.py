@@ -24,8 +24,11 @@ Pour chaque visage détecté :
     (512 dims, distance Cosine) ;
   • visage NOMMÉ et associé à un pubkey (score ≥ SEUIL) → vérification de
     réciprocité N1 (chacun suit l'autre) puis partage de la photo, CHIFFRÉE
-    avec une clé neuve par destinataire, via un message fichier NIP-17
-    (rumor kind:15 gift-wrappé) ;
+    avec une clé neuve par destinataire : ami hébergé sur CETTE station →
+    copie directe dans son .ucloud (/Reçues/<expéditeur>/, UPassport
+    ucloud_share.py, aucun message) ; ami ailleurs → message fichier NIP-17
+    (rumor kind:15 gift-wrappé), suspendu pendant un rattrapage silencieux
+    (`.ucloud/faceid_quiet_until`, cf. UPassport/faceid_reprocess.py) ;
   • visage inconnu → création d'un point `Inconnu_{hash8}` STABLE (le même
     visage revu demain retombera sur ce même point au lieu d'en créer un
     nouveau) + notification BRO au propriétaire, rate-limitée à 1/24h.
@@ -38,6 +41,8 @@ du nom de l'ami reconnu.
 Usage :
     satellite_face_matcher.py <email> <owner_hex> <path> <ipfs_link>
     (le JSON vision_analysis_result complet est lu sur stdin)
+    satellite_face_matcher.py --send <email> <owner_hex> <friend_hex> <friend_name> <path>…
+    (envoi NIP-17 explicite vers une autre station, cf. POST /mailjet/person-send)
 
 Exit : 0 = traité (même si aucun visage), 1 = erreur bloquante.
 """
@@ -198,12 +203,28 @@ def _notify_owner(owner_hex: str, message: str) -> bool:
         return False
 
 
+def _quiet_mode(email: str) -> bool:
+    """Rattrapage en cours (UPassport/faceid_reprocess.py) : `.ucloud/
+    faceid_quiet_until` (epoch, stockage DURABLE — jamais ~/.zen/tmp/, purgé
+    chaque nuit) suspend les notifications « visage inconnu » et les envois
+    NIP-17 inter-stations, pour ne pas inonder le propriétaire ni ses amis
+    pendant la réanalyse de milliers de photos. Les copies locales
+    (ucloud_share.py) restent actives : silencieuses par nature."""
+    try:
+        until = int((_ucloud_dir(email) / "faceid_quiet_until").read_text().strip() or 0)
+    except Exception:
+        return False
+    return time.time() < until
+
+
 def _notify_unknown_face(email: str, owner_hex: str, short: str, path: str) -> None:
     """Notification « visage non reconnu », rate-limitée à 1/24h par visage.
 
     Le rate-limit est par `Inconnu_xxx` et non global : deux inconnus distincts
     sur la même photo méritent deux notifications, mais le même inconnu revu
     dix fois dans la journée n'en mérite qu'une."""
+    if _quiet_mode(email):
+        return
     NOTIF_LOCK_DIR.mkdir(parents=True, exist_ok=True)
     lock = NOTIF_LOCK_DIR / f"{owner_hex[:16]}_{short}"
     if lock.exists() and (time.time() - lock.stat().st_mtime) < NOTIF_COOLDOWN:
@@ -239,6 +260,70 @@ def _is_reciprocal(owner_hex: str, friend_hex: str) -> bool:
     suffit pas — sans quoi n'importe qui pourrait, en suivant le propriétaire,
     se rendre destinataire de ses photos."""
     return friend_hex in _n1_follows(owner_hex) and owner_hex in _n1_follows(friend_hex)
+
+
+# ── Partage local (même station) : copie directe dans le .ucloud ami ─────────
+
+UCLOUD_SHARE = ZEN / "UPassport" / "ucloud_share.py"
+
+
+def _local_email_for_hex(hex_pubkey: str) -> str:
+    """Email du MULTIPASS hébergé ICI dont le HEX vaut `hex_pubkey`, sinon ''."""
+    for hex_file in (ZEN / "game" / "nostr").glob("*@*/HEX"):
+        try:
+            if hex_file.read_text().strip().lower() == hex_pubkey.lower():
+                return hex_file.parent.name
+        except Exception:
+            continue
+    return ""
+
+
+def _share_local(email: str, owner_hex: str, owner_name: str, path: str,
+                 friend: dict, friend_email: str) -> bool:
+    """Copie `path` dans le cloud de `friend_email` (cf. UPassport
+    services/cloud_storage.py::share_copy) — aucun message envoyé."""
+    if not UCLOUD_SHARE.exists():
+        _log(f"WARN: {UCLOUD_SHARE} introuvable — repli NIP-17")
+        return False
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(UCLOUD_SHARE), email, friend_email, owner_hex,
+             owner_name, path],
+            capture_output=True, text=True, timeout=180)
+    except Exception as exc:
+        _log(f"WARN: ucloud_share vers {friend.get('name')} : {exc}")
+        return False
+    if proc.returncode != 0:
+        _log(f"WARN: ucloud_share vers {friend.get('name')} : {proc.stderr.strip()[:200]}")
+        return False
+    _log(f"📥 {path} copiée dans le cloud de {friend.get('name')} ({proc.stdout.strip()[:160]})")
+    return True
+
+
+def _share_node(email: str, owner_name: str, path: str, friend: dict) -> bool:
+    """Ami hébergé sur une autre station de la constellation : envoi par le
+    canal inter-NODE (UPassport ucloud_share.py --remote → node_share.py).
+    False si sa station n'est pas connue ici (repli NIP-17 par l'appelant)."""
+    if not UCLOUD_SHARE.exists():
+        return False
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(UCLOUD_SHARE), "--remote", email, friend["pubkey"], owner_name, path],
+            capture_output=True, text=True, timeout=300)
+    except Exception as exc:
+        _log(f"WARN: envoi inter-NODE vers {friend.get('name')} : {exc}")
+        return False
+    if proc.returncode == 0:
+        _log(f"📡 {path} envoyée à la station de {friend.get('name')} ({proc.stdout.strip()[:120]})")
+        return True
+    if proc.returncode != 3:
+        _log(f"WARN: envoi inter-NODE vers {friend.get('name')} : {proc.stderr.strip()[:200]}")
+    return False
+
+
+def _owner_display_name(email: str) -> str:
+    """Nom affiché de l'expéditeur dans /Reçues/<nom>/ chez le destinataire."""
+    return email.split("@", 1)[0]
 
 
 # ── Chiffrement + envoi NIP-17 (§B6) ─────────────────────────────────────────
@@ -308,8 +393,40 @@ def _ucloud_lock(email: str, timeout: float = 10.0):
         os.close(fd)
 
 
+_UDB = None
+
+
+def _udb():
+    """Module `ucloud_db` de UPassport (stdlib seule : SQLite WAL — l'index et le
+    keyring du cloud ne sont PLUS des index.json/keyring.json, réécrits en entier
+    à chaque PUT). Introuvable → None, et les anciennes fonctions JSON ci-dessous
+    restent le repli (station pas encore migrée)."""
+    global _UDB
+    if _UDB is None:
+        _UDB = False
+        for cand in (ZEN / "UPassport" / "services",
+                     Path(__file__).resolve().parents[3] / "UPassport" / "services"):
+            if (cand / "ucloud_db.py").is_file():
+                if str(cand) not in sys.path:
+                    sys.path.insert(0, str(cand))
+                try:
+                    import ucloud_db as _m
+                    _UDB = _m
+                except Exception as exc:            # pragma: no cover
+                    _log(f"WARN: ucloud_db inutilisable ({exc}) — repli JSON")
+                break
+    return _UDB or None
+
+
 def _ucloud_get_key(email: str, cid: str) -> str:
-    """Clé AES-256 hex du blob `cid`, lue dans keyring.json. Chaîne vide si absente."""
+    """Clé AES-256 hex du blob `cid` (table `keyring` de ucloud.db). Chaîne vide si absente."""
+    udb = _udb()
+    if udb:
+        try:
+            return udb.key_get(udb.connect(_ucloud_dir(email)), cid) or ""
+        except Exception as exc:
+            _log(f"WARN: ucloud.db illisible pour {email} : {exc}")
+            return ""
     keyring_file = _ucloud_dir(email) / "keyring.json"
     try:
         keyring = json.loads(keyring_file.read_text())
@@ -322,6 +439,19 @@ def _tag_ucloud_index(email: str, path: str, names: list) -> None:
     """Ajoute les noms reconnus au tableau `tags` de l'entrée `path` dans
     index.json du propriétaire — pas de republication (le cloud chiffré ne
     publie rien sur IPNS, il sert en local, cf. UPassport/CLAUDE.md)."""
+    udb = _udb()
+    if udb:
+        def _add(entry):
+            tags = entry.get("tags") or []
+            new = [n for n in names if n not in tags]
+            if not new:
+                return False
+            entry["tags"] = tags + new
+            return True
+        with _ucloud_lock(email):          # même verrou que cloud_storage.index_lock
+            if udb.patch_entry(_ucloud_dir(email), path, _add):
+                _log(f"ucloud.db tagué {names} sur {path} ({email})")
+        return
     with _ucloud_lock(email):
         index_file = _ucloud_dir(email) / "index.json"
         try:
@@ -358,6 +488,10 @@ def _tag_ucloud_index(email: str, path: str, names: list) -> None:
 
 
 def _tag_ucloud_no_face(email: str, path: str) -> bool:
+    return _tag_ucloud_faceid(email, path, "no_face")
+
+
+def _tag_ucloud_faceid(email: str, path: str, status: str, count: int = 0) -> bool:
     """Marque `path` comme analysé sans visage détecté — AUCUNE suppression
     (contrairement à l'ancienne `_delete_ucloud_entry`, retirée le
     2026-10-04) : le fichier est déjà sur IPFS, chiffré, à un coût de
@@ -370,6 +504,20 @@ def _tag_ucloud_no_face(email: str, path: str) -> bool:
     encore analysé" côté UI (ucloud.html), sans jamais redéclencher d'analyse
     pour un chemin déjà marqué (cf. webdav_import.py / cloud_import.py, le
     filet de sécurité SHA256 s'applique pareil, visage ou non)."""
+    udb = _udb()
+    if udb:
+        def _mark(entry):
+            entry["faceid"] = {"status": status, "checked_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+            if count:
+                entry["faceid"]["count"] = count
+            return True
+        with _ucloud_lock(email):
+            ok = udb.patch_entry(_ucloud_dir(email), path, _mark)
+        if ok:
+            _log(f"ucloud.db — {path} marqué '{status}'" + (f" ({count} visage(s))" if count else ""))
+        else:
+            _log(f"WARN: entrée {path} absente de ucloud.db — marquage ignoré")
+        return ok
     with _ucloud_lock(email):
         index_file = _ucloud_dir(email) / "index.json"
         try:
@@ -383,9 +531,11 @@ def _tag_ucloud_no_face(email: str, path: str) -> bool:
             _log(f"WARN: entrée {path} absente de index.json — marquage ignoré")
             return False
         entry["faceid"] = {
-            "status": "no_face",
+            "status": status,
             "checked_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         }
+        if count:
+            entry["faceid"]["count"] = count
 
         tmp_idx = index_file.with_name(f".{index_file.name}.tmp.{os.getpid()}")
         try:
@@ -394,9 +544,9 @@ def _tag_ucloud_no_face(email: str, path: str) -> bool:
             os.replace(tmp_idx, index_file)
             os.chmod(index_file, 0o600)
         except Exception as exc:
-            _log(f"WARN: écriture index.json (marquage no_face) : {exc}")
+            _log(f"WARN: écriture index.json (marquage {status}) : {exc}")
             return False
-    _log(f"index.json — {path} marqué 'no_face' (aucun visage détecté, conservé)")
+    _log(f"index.json — {path} marqué '{status}'" + (f" ({count} visage(s))" if count else ""))
     return True
 
 
@@ -491,7 +641,43 @@ def _share_photo(email: str, owner_hex: str, path: str, ipfs_link: str,
 
 # ── main ─────────────────────────────────────────────────────────────────────
 
+def _send_main(argv: list) -> int:
+    """`--send <email> <owner_hex> <friend_hex> <friend_name> <path>…` —
+    envoi EXPLICITE (« Envoyer ses photos », UPassport routers/mailjet.py::
+    _send_remote) vers un ami hébergé sur une AUTRE station : un message
+    fichier NIP-17 par photo, sans condition de suivi mutuel (le
+    propriétaire l'a demandé) ni mode silencieux."""
+    if len(argv) < 5:
+        print("Usage: satellite_face_matcher.py --send <email> <owner_hex> <friend_hex> <friend_name> <path>…",
+              file=sys.stderr)
+        return 1
+    email, owner_hex, friend_hex, friend_name = argv[:4]
+    udb = _udb()
+    try:
+        if udb:
+            _conn = udb.connect(_ucloud_dir(email))
+            entries = {p: udb.get_entry(_conn, p) for p in argv[4:]}
+        else:
+            entries = json.loads((_ucloud_dir(email) / "index.json").read_text()).get("entries", {})
+    except Exception as exc:
+        _log(f"ERROR: index illisible pour {email} : {exc}")
+        return 1
+    friend = {"name": friend_name, "pubkey": friend_hex}
+    sent = 0
+    for path in argv[4:]:
+        cid = (entries.get(path) or {}).get("cid")
+        if not cid:
+            _log(f"WARN: {path} absent du cloud — ignoré")
+            continue
+        if _share_photo(email, owner_hex, path, cid, [friend]):
+            sent += 1
+    _log(f"--send : {sent}/{len(argv) - 4} photo(s) envoyée(s) à {friend_name} ({friend_hex[:12]}…)")
+    return 0 if sent else 1
+
+
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "--send":
+        return _send_main(sys.argv[2:])
     if len(sys.argv) != 5:
         print("Usage: satellite_face_matcher.py <email> <owner_hex> <path> <ipfs_link>",
               file=sys.stderr)
@@ -522,6 +708,8 @@ def main() -> int:
         _tag_ucloud_no_face(email, path)
         _log(f"aucun visage détecté sur {path} — marqué, conservé")
         return 0
+
+    _tag_ucloud_faceid(email, path, "faces", len(faces))
 
     try:
         client = _client()
@@ -574,8 +762,14 @@ def main() -> int:
                 continue
 
             try:
-                hits = client.query_points(collection_name=collection,
-                                           query=embedding, limit=1).points
+                # Les visages de RÉFÉRENCE des fiches de contact (payload
+                # ref="contact", UPassport routers/contacts.py) ne servent qu'aux
+                # suggestions « est-ce … ? » de FaceCloud : jamais de
+                # reconnaissance ni de partage automatique à partir d'eux.
+                hits = client.query_points(
+                    collection_name=collection, query=embedding, limit=1,
+                    query_filter=models.Filter(must_not=[models.FieldCondition(
+                        key="ref", match=models.MatchValue(value="contact"))])).points
             except Exception as exc:
                 _log(f"WARN: recherche Qdrant échouée : {exc}")
                 continue
@@ -634,7 +828,25 @@ def main() -> int:
     if not friends:
         return 0
 
-    served = _share_photo(email, owner_hex, path, ipfs_link, friends)
+    # Ami hébergé sur CETTE station → copie directe dans son .ucloud ; ami sur
+    # une AUTRE station connue de la constellation → canal inter-NODE (sa
+    # station range la photo dans son cloud) ; aucun message humain dans les
+    # deux cas. Station inconnue → message fichier NIP-17, en dernier recours,
+    # sauf pendant un rattrapage silencieux (cf. _quiet_mode).
+    served, remote = [], []
+    owner_name = _owner_display_name(email)
+    for friend in friends:
+        friend_email = _local_email_for_hex(friend["pubkey"])
+        if friend_email and _share_local(email, owner_hex, owner_name, path, friend, friend_email):
+            served.append(friend["name"])
+        elif _share_node(email, owner_name, path, friend):
+            served.append(friend["name"])
+        else:
+            remote.append(friend)
+    if remote and _quiet_mode(email):
+        _log(f"mode silencieux : {len(remote)} envoi(s) NIP-17 inter-stations différé(s) pour {path}")
+    elif remote:
+        served += _share_photo(email, owner_hex, path, ipfs_link, remote)
     if served:
         _tag_ucloud_index(email, path, served)
     return 0

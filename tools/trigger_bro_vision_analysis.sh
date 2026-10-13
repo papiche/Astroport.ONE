@@ -42,7 +42,9 @@ EMAIL="$1"
 OWNER_HEX="$2"
 RELPATH="$3"
 IPFS_LINK="$4"
-DECRYPTION_KEY="$5"
+## La clé arrive de préférence par l'environnement (UCLOUD_DECRYPTION_KEY) : en
+## argv elle serait lisible dans `ps` par tout processus local.
+DECRYPTION_KEY="${5:-$UCLOUD_DECRYPTION_KEY}"
 TARGET_PUBKEY="$6"
 TARGET_NAME="$7"
 
@@ -71,10 +73,11 @@ TARGET_HEX=$(grep -oP '^CONNECTION_NODE_HEX=\K.*' "$STATUS_FILE" 2>/dev/null | t
 
 PAYLOAD=$(jq -n --arg email "$EMAIL" --arg owner_hex "$OWNER_HEX" \
     --arg path "$RELPATH" --arg ipfs_link "$IPFS_LINK" --arg reply_node_hex "$NODE_HEX_SELF" \
-    --arg decryption_key "$DECRYPTION_KEY" \
+    --arg decryption_key "$DECRYPTION_KEY" --arg task "${UCLOUD_TASK:-}" \
     --arg target_pubkey "$TARGET_PUBKEY" --arg target_name "$TARGET_NAME" \
     '{email:$email, owner_hex:$owner_hex, path:$path, ipfs_link:$ipfs_link, reply_node_hex:$reply_node_hex}
      + (if ($decryption_key|length) == 64 then {decryption_key:$decryption_key} else {} end)
+     + (if ($task|length) > 0 then {task:$task} else {} end)
      + (if ($target_pubkey|length) == 64 then {target_pubkey:$target_pubkey, target_name:$target_name} else {} end)' \
     2>/dev/null)
 [[ -z "$PAYLOAD" ]] && exit 0

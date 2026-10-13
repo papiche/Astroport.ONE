@@ -536,15 +536,37 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
                 RESTORE_UCLOUD_DIR="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/.ucloud"
                 mkdir -p "${RESTORE_UCLOUD_DIR}"
                 chmod 700 "${RESTORE_UCLOUD_DIR}"
-                cp "${UCLOUD_INDEX_FILE}" "${RESTORE_UCLOUD_DIR}/index.json"
-                chmod 600 "${RESTORE_UCLOUD_DIR}/index.json"
-                if [[ -f "${UCLOUD_KEYRING_FILE}" ]]; then
-                    cp "${UCLOUD_KEYRING_FILE}" "${RESTORE_UCLOUD_DIR}/keyring.json"
-                    chmod 600 "${RESTORE_UCLOUD_DIR}/keyring.json"
-                    echo -e "${GREEN}   ✅ uCloud restored (${UCLOUD_ENTRIES} entrée(s)) — re-enroll via FaceCloud for a new WebDAV password${NC}"
+                UCLOUD_BACKUP_PY="${HOME}/.zen/UPassport/ucloud_backup.py"
+                if [[ -f "${UCLOUD_BACKUP_PY}" ]]; then
+                    # Module partagé (UPassport/ucloud_backup.py) : fusion index +
+                    # trousseau, ET sources WebDAV/CardDAV, état d'import,
+                    # invitations en attente. Le catalogue de visages est
+                    # restauré plus bas (collection au NOUVEAU hex).
+                    python3 "${UCLOUD_BACKUP_PY}" restore "${RESTORE_EMAIL}" \
+                        --bundle "$(dirname "${UCLOUD_INDEX_FILE}")" --no-qdrant \
+                        && echo -e "${GREEN}   ✅ uCloud restored (${UCLOUD_ENTRIES} entrée(s), sources et invitations comprises)${NC}"
+                    # Prise de garde : épingler TOUS les fichiers chiffrés sur
+                    # CETTE station. Sans ça, ils ne vivent que tant que
+                    # l'ancienne station les garde épinglés. En arrière-plan :
+                    # des milliers de CID peuvent prendre du temps.
+                    nohup python3 "${UCLOUD_BACKUP_PY}" pin "${RESTORE_EMAIL}" \
+                        > "$HOME/.zen/tmp/ucloud_pin_${RESTORE_EMAIL}.log" 2>&1 &
+                    echo -e "${CYAN}   📌 Épinglage des fichiers chiffrés lancé en arrière-plan${NC}"
                 else
-                    echo -e "${YELLOW}   ⚠️  uCloud index restored WITHOUT keyring — entries unreadable until the keyring is recovered${NC}"
+                    # Les JSON restaurés remplacent la base SQLite (ucloud.db) : elle est
+                    # recréée et importée depuis eux au premier accès d'UPassport.
+                    rm -f "${RESTORE_UCLOUD_DIR}/ucloud.db" "${RESTORE_UCLOUD_DIR}/ucloud.db-wal" "${RESTORE_UCLOUD_DIR}/ucloud.db-shm"
+                    cp "${UCLOUD_INDEX_FILE}" "${RESTORE_UCLOUD_DIR}/index.json"
+                    chmod 600 "${RESTORE_UCLOUD_DIR}/index.json"
+                    if [[ -f "${UCLOUD_KEYRING_FILE}" ]]; then
+                        cp "${UCLOUD_KEYRING_FILE}" "${RESTORE_UCLOUD_DIR}/keyring.json"
+                        chmod 600 "${RESTORE_UCLOUD_DIR}/keyring.json"
+                        echo -e "${GREEN}   ✅ uCloud restored (${UCLOUD_ENTRIES} entrée(s))${NC}"
+                    else
+                        echo -e "${YELLOW}   ⚠️  uCloud index restored WITHOUT keyring — entries unreadable until the keyring is recovered${NC}"
+                    fi
                 fi
+                echo -e "${CYAN}   ℹ️  Re-enroll via FaceCloud for a new WebDAV/CardDAV password${NC}"
             fi
 
             # Restore Qdrant face-recognition catalog under a FRESH collection

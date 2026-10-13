@@ -145,6 +145,37 @@ done
 log_output "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
 
 #######################################################################
+# ESPACE DISQUE des MULTIPASS : .ucloud (cloud chiffré FaceCloud) + APP/uDRIVE (fichiers publics)
+# Mesuré chaque jour par NOSTRCARD.refresh.sh (UPassport/ucloud_usage.py → <multipass>/.storage_usage.json).
+# Offres : MULTIPASS 10 Go (NCARD=1 Ẑ/sem) · ZenCard 128 Go (NCARD+ZCARD = 5 Ẑ/sem).
+# Au-delà du forfait : période de grâce + lettre « parrain de l'infrastructure ẐEN » (NOSTRCARD.refresh.sh) ;
+# UPassport ne refuse les NOUVEAUX fichiers (DAV 507) que bien plus loin ; rien n'est jamais supprimé.
+#######################################################################
+STORAGE_USED=0; STORAGE_QUOTA=0; STORAGE_UCLOUD=0; STORAGE_UDRIVE=0; STORAGE_FULL=0; STORAGE_OVER=0; STORAGE_N=0
+for _nostr in "${NOSTRS[@]}"; do
+    _su="$HOME/.zen/game/nostr/${_nostr}/.storage_usage.json"
+    [[ -s "$_su" ]] || continue
+    read -r _used _quota _uc _ud _full _over < <(jq -r '[.used // 0, .quota // 0, .ucloud // 0, .udrive // 0, (.full // false), (.over // false)] | @tsv' "$_su" 2>/dev/null)
+    [[ "$_used" =~ ^[0-9]+$ ]] || { log_output "⚠️ .storage_usage.json illisible pour ${_nostr}"; continue; }
+    STORAGE_N=$((STORAGE_N + 1))
+    STORAGE_USED=$((STORAGE_USED + _used)); STORAGE_QUOTA=$((STORAGE_QUOTA + _quota))
+    STORAGE_UCLOUD=$((STORAGE_UCLOUD + _uc)); STORAGE_UDRIVE=$((STORAGE_UDRIVE + _ud))
+    if [[ "$_full" == "true" ]]; then
+        STORAGE_FULL=$((STORAGE_FULL + 1))
+        log_output "  💾 ${_nostr} : $(( _used / 1000000000 )) Go pour un forfait de $(( _quota / 1000000000 )) Go — GRÂCE ÉPUISÉE, nouveaux fichiers refusés"
+    elif [[ "$_over" == "true" ]]; then
+        STORAGE_OVER=$((STORAGE_OVER + 1))
+        log_output "  🌱 ${_nostr} : $(( _used / 1000000000 )) Go pour un forfait de $(( _quota / 1000000000 )) Go — période de grâce (lettre « parrain ẐEN » envoyée)"
+    fi
+done
+log_output "STOCKAGE : ${STORAGE_N} MULTIPASS mesurés — $(echo "scale=1; $STORAGE_USED / 1000000000" | bc) Go utilisés (.ucloud $(echo "scale=1; $STORAGE_UCLOUD / 1000000000" | bc) Go + uDRIVE $(echo "scale=1; $STORAGE_UDRIVE / 1000000000" | bc) Go) sur $(echo "scale=1; $STORAGE_QUOTA / 1000000000" | bc) Go d'offres vendues — ${STORAGE_OVER} en période de grâce, ${STORAGE_FULL} bloqué(s)"
+mkdir -p "$LOG_DIR"
+jq -n --argjson n "$STORAGE_N" --argjson used "$STORAGE_USED" --argjson quota "$STORAGE_QUOTA" \
+      --argjson ucloud "$STORAGE_UCLOUD" --argjson udrive "$STORAGE_UDRIVE" --argjson full "$STORAGE_FULL" --argjson over "$STORAGE_OVER" \
+      '{multipass_measured:$n, used_bytes:$used, sold_quota_bytes:$quota, ucloud_bytes:$ucloud, udrive_bytes:$udrive, grace:$over, blocked:$full}' \
+      > "$LOG_DIR/storage_usage.json" || log_output "⚠️ écriture de storage_usage.json impossible"
+
+#######################################################################
 # Configuration des paramètres économiques
 # PAF : Participation Aux Frais (coûts de fonctionnement)
 # NCARD : Coût hebdomadaire de la carte NOSTR

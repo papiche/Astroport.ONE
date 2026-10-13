@@ -467,52 +467,77 @@ else
     echo "⚠️  uDRIVE manifest not found (no uDRIVE data to backup)"
 fi
 
-# Copy uCloud (encrypted personal cloud) index.json + keyring.json — the
-# actual encrypted blobs stay pinned on IPFS (cloud_storage.py::ipfs_add_bytes
-# pins at PUT time), only these two files are needed to find and decrypt them
-# again. dav_token is deliberately NOT copied: it's tied to the OLD hex and
-# the WebDAV password is only ever shown once — restoration re-enrolls
-# (POST /api/cloud/enroll, FaceCloud) instead of reusing a stale token.
-UCLOUD_DIR="${HOME}/.zen/game/nostr/${player}/.ucloud"
-if [[ -s "${UCLOUD_DIR}/index.json" ]]; then
-    cp "${UCLOUD_DIR}/index.json" "${BACKUP_DIR}/ucloud_index.json"
-    UCLOUD_ENTRIES=$(jq -r '.entries | length' "${UCLOUD_DIR}/index.json" 2>/dev/null || echo "0")
-    echo "✅ uCloud index exported (${UCLOUD_ENTRIES} entrée(s))"
-    if [[ -s "${UCLOUD_DIR}/keyring.json" ]]; then
-        cp "${UCLOUD_DIR}/keyring.json" "${BACKUP_DIR}/ucloud_keyring.json"
-        echo "✅ uCloud keyring exported"
-    else
-        echo "⚠️  uCloud keyring.json manquant — fichiers illisibles après restauration"
-    fi
-else
-    echo "ℹ️  Pas de cloud chiffré (uCloud) actif pour ${player}"
-fi
-
-# Export Qdrant face-recognition catalog (faces_<hex> — embeddings 512D +
-# payload name/pubkey/timestamp/source_path/bbox, cf.
-# Astroport.ONE/IA/bro/satellite_face_matcher.py). The collection name is
-# tied to the OLD hex and becomes orphaned after migration — a fresh
-# collection is recreated under the NEW hex on restore (nostr_RESTORE_TW.sh).
+# uCloud (FaceCloud) : export par le module PARTAGÉ avec la sauvegarde
+# quotidienne et la restauration (UPassport/ucloud_backup.py export) — mêmes
+# noms de fichiers qu'avant (ucloud_index.json, ucloud_keyring.json,
+# qdrant_faces.json, lus tels quels par nostr_RESTORE_TW.sh), plus ce qui
+# manquait : sources WebDAV/CardDAV, état d'import (évite un réimport complet),
+# invitations « Envoyer ses photos » en attente. Les fiches de contact (vCard)
+# sont des fichiers du cloud : couvertes par l'index. dav_token jamais copié
+# (lié à l'ANCIEN hex — réenrôlement via FaceCloud après restauration).
+# Qdrant : utilisé par la branche de repli ci-dessous ET par l'export LifeOS qui suit.
 QDRANT_URL="http://localhost:6333"
 QDRANT_API_KEY=""
 [[ -s "${HOME}/.zen/ai-company/.env" ]] && QDRANT_API_KEY=$(grep '^QDRANT_API_KEY=' "${HOME}/.zen/ai-company/.env" | cut -d= -f2-)
-QDRANT_COLLECTION="faces_${hex}"
-QDRANT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "api-key: ${QDRANT_API_KEY}" \
-    "${QDRANT_URL}/collections/${QDRANT_COLLECTION}" 2>/dev/null)
-if [[ "${QDRANT_STATUS}" == "200" ]]; then
-    QDRANT_POINTS=$(curl -s -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json" \
-        -X POST "${QDRANT_URL}/collections/${QDRANT_COLLECTION}/points/scroll" \
-        -d '{"limit":10000,"with_payload":true,"with_vector":true}' 2>/dev/null \
-        | jq -c '.result.points' 2>/dev/null)
-    if [[ -n "${QDRANT_POINTS}" ]] && [[ "${QDRANT_POINTS}" != "null" ]]; then
-        echo "${QDRANT_POINTS}" > "${BACKUP_DIR}/qdrant_faces.json"
-        QDRANT_COUNT=$(echo "${QDRANT_POINTS}" | jq 'length' 2>/dev/null || echo "0")
-        echo "✅ Qdrant face catalog exported (${QDRANT_COUNT} visage(s))"
-    else
-        echo "⚠️  Échec export catalogue Qdrant"
-    fi
+UCLOUD_BACKUP_PY="${HOME}/.zen/UPassport/ucloud_backup.py"
+if [[ -f "${UCLOUD_BACKUP_PY}" ]] && UCLOUD_EXPORT=$(python3 "${UCLOUD_BACKUP_PY}" export "${player}" "${BACKUP_DIR}" 2>/dev/null | tail -n 1) \
+        && [[ -n "${UCLOUD_EXPORT}" ]]; then
+    echo "✅ uCloud (FaceCloud) exporté : ${UCLOUD_EXPORT}"
 else
-    echo "ℹ️  Pas de catalogue de visages Qdrant pour ${player}"
+    echo "⚠️  ucloud_backup.py indisponible — export minimal (index/trousseau/visages)"
+    # Copy uCloud (encrypted personal cloud) index.json + keyring.json — the
+    # actual encrypted blobs stay pinned on IPFS (cloud_storage.py::ipfs_add_bytes
+    # pins at PUT time), only these two files are needed to find and decrypt them
+    # again. dav_token is deliberately NOT copied: it's tied to the OLD hex and
+    # the WebDAV password is only ever shown once — restoration re-enrolls
+    # (POST /api/cloud/enroll, FaceCloud) instead of reusing a stale token.
+    UCLOUD_DIR="${HOME}/.zen/game/nostr/${player}/.ucloud"
+    # L'index et le keyring vivent dans SQLite (ucloud.db) : exportés en JSON
+    # historique (mêmes noms de fichiers) par UPassport/ucloud_export.py.
+    UCLOUD_EXPORT_PY="${HOME}/.zen/UPassport/ucloud_export.py"
+    if [[ -s "${UCLOUD_DIR}/ucloud.db" && -f "${UCLOUD_EXPORT_PY}" ]]; then
+        if UCLOUD_EXPORT_OUT=$(python3 "${UCLOUD_EXPORT_PY}" "${player}" "${BACKUP_DIR}"); then
+            echo "✅ uCloud exporté : ${UCLOUD_EXPORT_OUT}"
+        else
+            echo "⚠️  Export uCloud en échec — fichiers illisibles après restauration" >&2
+        fi
+    elif [[ -s "${UCLOUD_DIR}/index.json" ]]; then
+        cp "${UCLOUD_DIR}/index.json" "${BACKUP_DIR}/ucloud_index.json"
+        UCLOUD_ENTRIES=$(jq -r '.entries | length' "${UCLOUD_DIR}/index.json" 2>/dev/null || echo "0")
+        echo "✅ uCloud index exported (${UCLOUD_ENTRIES} entrée(s))"
+        if [[ -s "${UCLOUD_DIR}/keyring.json" ]]; then
+            cp "${UCLOUD_DIR}/keyring.json" "${BACKUP_DIR}/ucloud_keyring.json"
+            echo "✅ uCloud keyring exported"
+        else
+            echo "⚠️  uCloud keyring.json manquant — fichiers illisibles après restauration"
+        fi
+    else
+        echo "ℹ️  Pas de cloud chiffré (uCloud) actif pour ${player}"
+    fi
+
+    # Export Qdrant face-recognition catalog (faces_<hex> — embeddings 512D +
+    # payload name/pubkey/timestamp/source_path/bbox, cf.
+    # Astroport.ONE/IA/bro/satellite_face_matcher.py). The collection name is
+    # tied to the OLD hex and becomes orphaned after migration — a fresh
+    # collection is recreated under the NEW hex on restore (nostr_RESTORE_TW.sh).
+    QDRANT_COLLECTION="faces_${hex}"
+    QDRANT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "api-key: ${QDRANT_API_KEY}" \
+        "${QDRANT_URL}/collections/${QDRANT_COLLECTION}" 2>/dev/null)
+    if [[ "${QDRANT_STATUS}" == "200" ]]; then
+        QDRANT_POINTS=$(curl -s -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json" \
+            -X POST "${QDRANT_URL}/collections/${QDRANT_COLLECTION}/points/scroll" \
+            -d '{"limit":10000,"with_payload":true,"with_vector":true}' 2>/dev/null \
+            | jq -c '.result.points' 2>/dev/null)
+        if [[ -n "${QDRANT_POINTS}" ]] && [[ "${QDRANT_POINTS}" != "null" ]]; then
+            echo "${QDRANT_POINTS}" > "${BACKUP_DIR}/qdrant_faces.json"
+            QDRANT_COUNT=$(echo "${QDRANT_POINTS}" | jq 'length' 2>/dev/null || echo "0")
+            echo "✅ Qdrant face catalog exported (${QDRANT_COUNT} visage(s))"
+        else
+            echo "⚠️  Échec export catalogue Qdrant"
+        fi
+    else
+        echo "ℹ️  Pas de catalogue de visages Qdrant pour ${player}"
+    fi
 fi
 
 # Export Qdrant LifeOS personal memory (memory_<hex16> — mémoires par slot :

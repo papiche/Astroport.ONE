@@ -1211,13 +1211,42 @@ _handle_comfyui_result() {
 _handle_vision_analysis_job() {
     local payload="$1" sender="$2"
 
-    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _REPLY_NODE_HEX _DECRYPTION_KEY _TARGET_PUBKEY _TARGET_NAME
-    _payload_get "$payload" email owner_hex path ipfs_link reply_node_hex decryption_key target_pubkey target_name
+    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _REPLY_NODE_HEX _DECRYPTION_KEY _TARGET_PUBKEY _TARGET_NAME _TASK
+    _payload_get "$payload" email owner_hex path ipfs_link reply_node_hex decryption_key target_pubkey target_name task
 
     [[ -z "$_IPFS_LINK" || -z "$_OWNER_HEX" ]] && \
         _log "WARN: 👁️ vision_analysis_job: payload incomplet (ipfs_link/owner_hex)" && return
 
-    _log "👁️ vision_analysis_job: ${_PATH:-?} (${_EMAIL:-?}) de ${sender:0:12}…"
+    _log "👁️ vision_analysis_job: ${_PATH:-?} (${_EMAIL:-?}) de ${sender:0:12}… [${_TASK:-faces}]"
+
+    ## Tâche « describe » (FaceCloud) : description de la photo par le modèle vision d'Ollama de CE Brain,
+    ## au lieu de la détection de visages. Même canal, même clé, même accusé — seul le résultat change.
+    if [[ "${_TASK:-}" == "describe" ]]; then
+        local _DESC_PY="$MY_PATH/../vision_describe.py" _desc_json
+        if [[ -s "$_DESC_PY" && ${#_DECRYPTION_KEY} -eq 64 ]]; then
+            _desc_json=$(python3 "$_DESC_PY" --cid "$_IPFS_LINK" --key "$_DECRYPTION_KEY" 2>>"$LOG_FILE")
+        else
+            _desc_json='{"error":"vision_describe.py ou clé absents"}'
+        fi
+        local _reply
+        _reply=$(python3 -c "
+import json, sys
+d = json.loads(sys.argv[5] or '{}')
+print(json.dumps({'email': sys.argv[1], 'owner_hex': sys.argv[2], 'path': sys.argv[3], 'ipfs_link': sys.argv[4],
+                  'task': 'describe', 'status': 'ok' if d.get('description') else 'failed',
+                  'description': d.get('description', ''), 'model': d.get('model', ''), 'error': d.get('error', '')}))
+" "${_EMAIL:-}" "${_OWNER_HEX:-}" "${_PATH:-}" "${_IPFS_LINK:-}" "$_desc_json" 2>/dev/null)
+        local _r _ok=false
+        if [[ -n "$_REPLY_NODE_HEX" && ${#_REPLY_NODE_HEX} -eq 64 && -n "$_reply" ]]; then
+            for _r in "${_RELAYS[@]}"; do
+                printf '%s\n' "$NODE_NSEC" | python3 "$INTERCOM" send --nsec-stdin --to "$_REPLY_NODE_HEX" \
+                    --channel "vision_analysis_result" --payload "$_reply" --relays "$_r" 2>/dev/null && _ok=true
+            done
+        fi
+        $_ok && _log "👁️ vision describe: résultat → ${_REPLY_NODE_HEX:0:12}…" \
+             || _log "WARN: 👁️ vision describe: échec (modèle indisponible ou DM non livré)"
+        return
+    fi
 
     local _FACEID_SH="$MY_PATH/../generators/faceid.sh"
 
@@ -1260,11 +1289,14 @@ except Exception as exc:
 # La sortie réelle du node SaveText est imbriquée :
 # {\"images\":[{\"faces\":[...]}, ...]} — pas {\"faces\":[...]} à plat.
 # On accepte les deux formes, plus une liste nue en repli.
+# Les DEUX formes sont fusionnées (pas l'une OU l'autre) : un 'faces' racine
+# vide à côté d'un 'images' rempli (faceid.sh avant 2026-10-12, photos
+# réduites) faisait perdre toutes les détections → photo marquée no_face.
 faces = []
 if isinstance(parsed, dict):
     if isinstance(parsed.get('faces'), list):
-        faces = parsed['faces']
-    elif isinstance(parsed.get('images'), list):
+        faces.extend(parsed['faces'])
+    if isinstance(parsed.get('images'), list):
         for img in parsed['images']:
             if isinstance(img, dict) and isinstance(img.get('faces'), list):
                 faces.extend(img['faces'])
@@ -1330,10 +1362,22 @@ print(json.dumps(out))
 ## satellite_face_matcher.py, qui reçoit le JSON complet sur stdin.
 _handle_vision_analysis_result() {
     local payload="$1"
-    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _STATUS
-    _payload_get "$payload" email owner_hex path ipfs_link status
+    local _EMAIL _OWNER_HEX _PATH _IPFS_LINK _STATUS _TASK
+    _payload_get "$payload" email owner_hex path ipfs_link status task
 
-    _log "👁️ vision_analysis_result: ${_PATH:-?} status=${_STATUS:-?} email=${_EMAIL:-?}"
+    _log "👁️ vision_analysis_result: ${_PATH:-?} status=${_STATUS:-?} email=${_EMAIL:-?} [${_TASK:-faces}]"
+
+    ## Résultat d'une DESCRIPTION : écrite dans le cloud de l'utilisateur par UPassport (jamais écrasée
+    ## si l'utilisateur l'a modifiée à la main). Aucun appariement de visages.
+    if [[ "${_TASK:-}" == "describe" ]]; then
+        bro_user_is_local "$_EMAIL" || { _log "WARN: 👁️ describe: ${_EMAIL:-?} non hébergé ici — ignoré"; return; }
+        local _dscript="$HOME/.zen/UPassport/ucloud_describe.py"
+        [[ -s "$_dscript" ]] || { _log "WARN: 👁️ describe: $_dscript introuvable"; return; }
+        printf '%s' "$payload" | python3 "$_dscript" --apply >> "$LOG_FILE" 2>&1 \
+            && _log "👁️ describe: description enregistrée pour ${_PATH:-?}" \
+            || _log "WARN: 👁️ describe: enregistrement échoué pour ${_PATH:-?}"
+        return
+    fi
 
     if [[ "${_STATUS:-}" != "ok" ]]; then
         _log "ℹ️  👁️ vision_analysis_result: status≠ok — rien à apparier"
@@ -1359,6 +1403,27 @@ _handle_vision_analysis_result() {
         >> "$LOG_FILE" 2>&1 \
         && _log "👁️ vision_analysis_result: appariement terminé pour ${_PATH:-?}" \
         || _log "WARN: 👁️ vision_analysis_result: satellite_face_matcher.py a échoué"
+}
+
+## ── Canaux "ucloud_share" / "ucloud_share_ack" : photos reconnues ─────
+## Une station de la constellation envoie à CETTE station des photos où un
+## MULTIPASS hébergé ici a été reconnu (UPassport/services/node_share.py) :
+## CID + clé de copies rechiffrées, rangées dans son cloud sous /Reçues/.
+## Le sender a déjà été authentifié comme NODE swarm (_is_swarm_node) ;
+## UPassport/ucloud_share.py --receive vérifie en plus que le destinataire
+## (email ET clé) est bien hébergé ici, puis renvoie un accusé de réception
+## (canal ucloud_share_ack) qui permet à l'expéditeur de désépingler ses
+## copies temporaires (--ack).
+_handle_ucloud_share() {
+    local payload="$1" mode="$2"
+    local _script="$HOME/.zen/UPassport/ucloud_share.py"
+    if [[ ! -s "$_script" ]]; then
+        _log "WARN: 📸 ucloud_share : $_script introuvable"
+        return
+    fi
+    printf '%s' "$payload" | python3 "$_script" "$mode" >> "$LOG_FILE" 2>&1 \
+        && _log "📸 ucloud_share ${mode#--} traité" \
+        || _log "WARN: 📸 ucloud_share ${mode#--} refusé ou en échec (détail dans $LOG_FILE)"
 }
 
 ## ── Canal "udrive" : sync fichier depuis IPFS → APP/uDRIVE ───────────
@@ -1969,7 +2034,7 @@ _process_event() {
     ## jamais par un humain en chat — donc aucune entrée correspondante dans le
     ## `case` soumis au niveau d'abonnement MULTIPASS plus bas, contrairement à
     ## comfyui_job qui, lui, est aussi accessible à l'utilisateur.
-    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_job|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result)$ ]]; then
+    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_job|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result|ucloud_share|ucloud_share_ack)$ ]]; then
         if ! _is_swarm_node "$sender"; then
             _log "WARN: canal inter-NODE '$channel' de ${sender:0:12}... non reconnu comme NODE swarm — ignoré"
             return
@@ -1984,6 +2049,8 @@ _process_event() {
             self_command_relay)      _handle_self_command_relay "$payload" ;;
             vision_analysis_job)     _handle_vision_analysis_job "$payload" "$sender" ;;
             vision_analysis_result)  _handle_vision_analysis_result "$payload" ;;
+            ucloud_share)            _handle_ucloud_share "$payload" "--receive" ;;
+            ucloud_share_ack)        _handle_ucloud_share "$payload" "--ack" ;;
         esac
         return
     fi

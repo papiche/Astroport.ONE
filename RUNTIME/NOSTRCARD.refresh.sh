@@ -41,6 +41,23 @@ log_metric() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$$] [METRIC] [$player] $metric=$value" >> "$LOGFILE"
 }
 
+## Sauvegarde FINALE du cloud FaceCloud avant toute destruction de MULTIPASS
+## (insolvabilité, clé incompatible) — SYNCHRONE : le compte disparaît juste
+## après, y compris par la suppression brutale de repli (rm -rf, sans aucun
+## export). UPassport/ucloud_backup.py snapshot met à jour l'archive chiffrée
+## et son pointeur NOSTR (kind 30078 d=facecloud:backup), restaurables depuis
+## n'importe quelle station avec les identifiants de l'ancien compte.
+ucloud_final_backup() {
+    local player="$1"
+    local script="${HOME}/.zen/UPassport/ucloud_backup.py"
+    [[ ( -s "${HOME}/.zen/game/nostr/${player}/.ucloud/ucloud.db" || -s "${HOME}/.zen/game/nostr/${player}/.ucloud/index.json" ) && -f "$script" ]] || return 0
+    if timeout 300 python3 "$script" snapshot "${player}" >> "$HOME/.zen/tmp/ucloud_backup_${player}.log" 2>&1; then
+        log "INFO" "☁️ sauvegarde finale FaceCloud faite pour ${player} avant destruction"
+    else
+        log "WARN" "⚠️ sauvegarde finale FaceCloud en échec pour ${player} (destruction maintenue)"
+    fi
+}
+
 # Régénère ~/.zen/game/nostr/$player/.secret.dunikey si absent OU incompatible,
 # en le validant contre G1PUBNOSTR (source de vérité déjà créditée), formule
 # PEPPER_UPLANET_SALT (seule formule actuelle, cf. make_NOSTRCARD.sh — wallet
@@ -107,6 +124,7 @@ ensure_player_dunikey() {
                 return 1
             fi
             log "CRITICAL" "INCOMPATIBLE DUNIKEY: triggering nostr_DESTROY_TW.sh for ${player}"
+            ucloud_final_backup "${player}"
             if ! "${MY_PATH}/../tools/nostr_DESTROY_TW.sh" "${player}" "INCOMPATIBLE_KEY"; then
                 log "ERROR" "Graceful destruction failed for ${player}. Forcing brutal removal."
                 local hex
@@ -1082,6 +1100,7 @@ ${tva_result}"
                             # Capitaine : immunisé contre l'insolvabilité, mais les autres sont supprimés
                             if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
                                 log "INFO" "Triggering destruction for insolvent player: ${PLAYER}"
+                                ucloud_final_backup "${PLAYER}"
                                 # Tentative de destruction propre (avec backup et cash back)
                                 if ! ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}" "INSOLVENCY"; then
                                     log "ERROR" "Graceful destruction failed for ${PLAYER}. Forcing brutal removal."
@@ -1774,42 +1793,85 @@ ${tva_result}"
         fi
 
         ########################################################################
-        ## WEBDAV IMPORT — FaceCloud : import quotidien depuis un cloud externe
+        ## FaceCloud — import WebDAV PUIS sauvegarde hors station (quotidien)
         ########################################################################
-        # Si l'utilisateur a configuré au moins une source WebDAV externe
-        # (UPlanet/earth/ucloud.html, section "Importer depuis un autre cloud"),
-        # lance webdav_import.py une fois par jour par compte, en arrière-plan —
-        # EXACT même patron que les scrapers de domaine ci-dessus (garde
-        # anti-doublon .done, libération du flock hérité 200>&-). Le script
-        # lui-même se plafonne déjà à quelques photos par passage et espace ses
-        # envois pour ne jamais saturer la file GPU FaceID (TTL 30 min, un seul
-        # job à la fois, cf. UPassport/webdav_import.py).
-        WEBDAV_SOURCES_FILE="$PLAYER_DIR/.ucloud/webdav_sources.json"
-        if [[ -s "$WEBDAV_SOURCES_FILE" ]]; then
-            WEBDAV_IMPORT_TODAY_FILE="$HOME/.zen/tmp/webdav_import_${PLAYER}_${TODATE}.done"
-            if [[ -f "$WEBDAV_IMPORT_TODAY_FILE" ]]; then
-                log "DEBUG" "webdav_import déjà fait aujourd'hui pour ${PLAYER} — skip"
-            else
-                WEBDAV_IMPORT_PY="${HOME}/.zen/UPassport/webdav_import.py"
-                if [[ -f "$WEBDAV_IMPORT_PY" ]]; then
-                    WEBDAV_IMPORT_LOG="$HOME/.zen/tmp/webdav_import_${PLAYER}.log"
-                    (
-                        python3 "$WEBDAV_IMPORT_PY" "${PLAYER}" > "$WEBDAV_IMPORT_LOG" 2>&1
-                        wi_exit=$?
-                        if [[ $wi_exit -eq 0 ]]; then
-                            log "INFO" "✅ webdav_import terminé pour ${PLAYER}"
-                        else
-                            log "WARN" "⚠️ webdav_import exit=$wi_exit pour ${PLAYER}"
-                        fi
-                    ) 200>&- &
-                    WEBDAV_IMPORT_PID=$!
-                    log "INFO" "📥 webdav_import lancé pour ${PLAYER} (PID: $WEBDAV_IMPORT_PID)"
-                    log_metric "WEBDAV_IMPORT_PID" "$WEBDAV_IMPORT_PID" "${PLAYER}"
-                    touch "$WEBDAV_IMPORT_TODAY_FILE"
-                else
-                    log "DEBUG" "webdav_import.py introuvable — ignoré pour ${PLAYER}"
-                fi
+        # Une seule tâche de fond, dans cet ordre, une fois par jour et par
+        # compte (marqueur .done, libération du flock hérité 200>&-) :
+        #  1. UPassport/webdav_import.py — si au moins une source WebDAV externe
+        #     est configurée (ucloud.html, onglet Sources) ; se plafonne et
+        #     analyse en mode rapide (cf. UPassport/CLAUDE.md) ;
+        #  2. UPassport/ucloud_backup.py snapshot — archive chiffrée du cloud
+        #     (index, trousseau, sources, contacts, visages) sur IPFS + UN event
+        #     kind 30078 d=facecloud:backup chiffré pour soi-même ; rien de
+        #     republié si rien n'a changé. APRÈS l'import, pour que la
+        #     sauvegarde du jour contienne les photos importées du jour.
+        # nostr_DESTROY_TW.sh ne tourne qu'à la désactivation d'un compte : la
+        # sauvegarde régulière vit ICI (et une sauvegarde finale synchrone est
+        # faite juste avant toute destruction, cf. ucloud_final_backup).
+        ## Espace du MULTIPASS (.ucloud chiffré + uDRIVE public) → ${PLAYER_DIR}/.storage_usage.json,
+        ## lu par ZEN.ECONOMY.sh (offres 10 Go / 128 Go). Mesuré à CHAQUE rafraîchissement, même sans cloud FaceCloud.
+        UCLOUD_USAGE_PY="${HOME}/.zen/UPassport/ucloud_usage.py"
+        if [[ -f "$UCLOUD_USAGE_PY" ]]; then
+            if ! timeout 120 python3 "$UCLOUD_USAGE_PY" "${PLAYER}" > "$HOME/.zen/tmp/ucloud_usage_${PLAYER}.log" 2>&1; then
+                log "WARN" "⚠️ mesure d'espace en échec pour ${PLAYER} (cf. ucloud_usage_${PLAYER}.log)"
             fi
+        fi
+        ## PÉRIODE DE GRÂCE : au-delà du forfait l'utilisateur reçoit UNE lettre (rappel tous les 30 jours tant qu'il
+        ## dépasse) l'invitant à devenir parrain de l'infrastructure ẐEN. Elle ne dit PAS jusqu'où va la grâce.
+        ## Retour sous le forfait → marqueur effacé (une nouvelle dérive redéclenchera la lettre).
+        _SU="$PLAYER_DIR/.storage_usage.json"
+        _GRACE_MARK="$PLAYER_DIR/.storage_grace_letter"
+        if [[ -s "$_SU" ]]; then
+            if [[ "$(jq -r '.over // false' "$_SU" 2>/dev/null)" == "true" ]]; then
+                _last_letter=$(cat "$_GRACE_MARK" 2>/dev/null); [[ "$_last_letter" =~ ^[0-9]+$ ]] || _last_letter=0
+                if (( $(date +%s) - _last_letter > 30 * 86400 )); then
+                    _g_tmp=$(mktemp)
+                    _g_go() { echo "scale=1; $1 / 1000000000" | bc | sed 's/^\./0./'; }
+                    sed -e "s~_PLAYER_~${PLAYER}~g" \
+                        -e "s~_USED_~$(_g_go "$(jq -r '.used' "$_SU")") Go~g" \
+                        -e "s~_QUOTA_~$(_g_go "$(jq -r '.quota' "$_SU")") Go~g" \
+                        -e "s~_TIER_~$(jq -r '.label' "$_SU")~g" \
+                        -e "s~_ZEN_~$(jq -r '.zen_week' "$_SU")~g" \
+                        -e "s~_OC_URL_~$(jq -r '.sponsor_url' "$_SU")~g" \
+                        "${MY_PATH}/../templates/NOSTR/multipass_storage_grace.html" > "$_g_tmp"
+                    if timeout 60 "${MY_PATH}/../tools/mailjet.sh" --channel usociety \
+                        --template "${MY_PATH}/../templates/NOSTR/multipass_storage_grace.html" \
+                        --expire 30d "${PLAYER}" "$_g_tmp" "🌱 Votre espace dépasse votre forfait — devenez parrain de l'infrastructure ẐEN"; then
+                        date +%s > "$_GRACE_MARK"
+                        log "INFO" "🌱 lettre de période de grâce envoyée à ${PLAYER}"
+                    else
+                        log "WARN" "⚠️ lettre de période de grâce non envoyée à ${PLAYER}"
+                    fi
+                    rm -f "$_g_tmp"
+                fi
+            else
+                rm -f "$_GRACE_MARK"
+            fi
+        fi
+        FACECLOUD_TODAY_FILE="$HOME/.zen/tmp/facecloud_daily_${PLAYER}_${TODATE}.done"
+        WEBDAV_SOURCES_FILE="$PLAYER_DIR/.ucloud/webdav_sources.json"
+        WEBDAV_IMPORT_PY="${HOME}/.zen/UPassport/webdav_import.py"
+        UCLOUD_BACKUP_PY="${HOME}/.zen/UPassport/ucloud_backup.py"
+        if [[ -s "$PLAYER_DIR/.ucloud/ucloud.db" || -s "$PLAYER_DIR/.ucloud/index.json" || -s "$WEBDAV_SOURCES_FILE" ]] && [[ ! -f "$FACECLOUD_TODAY_FILE" ]]; then
+            (
+                if [[ -s "$WEBDAV_SOURCES_FILE" && -f "$WEBDAV_IMPORT_PY" ]]; then
+                    if python3 "$WEBDAV_IMPORT_PY" "${PLAYER}" > "$HOME/.zen/tmp/webdav_import_${PLAYER}.log" 2>&1; then
+                        log "INFO" "✅ webdav_import terminé pour ${PLAYER}"
+                    else
+                        log "WARN" "⚠️ webdav_import en échec pour ${PLAYER} (cf. webdav_import_${PLAYER}.log)"
+                    fi
+                fi
+                if [[ -f "$UCLOUD_BACKUP_PY" && ( -s "$PLAYER_DIR/.ucloud/ucloud.db" || -s "$PLAYER_DIR/.ucloud/index.json" ) ]]; then
+                    if python3 "$UCLOUD_BACKUP_PY" snapshot "${PLAYER}" > "$HOME/.zen/tmp/ucloud_backup_${PLAYER}.log" 2>&1; then
+                        log "INFO" "☁️ sauvegarde FaceCloud à jour pour ${PLAYER}"
+                    else
+                        log "WARN" "⚠️ sauvegarde FaceCloud en échec pour ${PLAYER} (cf. ucloud_backup_${PLAYER}.log)"
+                    fi
+                fi
+            ) 200>&- &
+            log "INFO" "☁️ FaceCloud quotidien lancé pour ${PLAYER} (PID: $!)"
+            log_metric "FACECLOUD_DAILY_PID" "$!" "${PLAYER}"
+            touch "$FACECLOUD_TODAY_FILE"
         fi
     else
         echo "IPNS update skipped for ${PLAYER} (no refresh needed)"

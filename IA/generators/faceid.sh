@@ -41,11 +41,23 @@
 #   4. Upload de l'image dans le dossier input ComfyUI (LoadImage ne lit que là)
 #   5. Conversion du workflow UI → API (comfyui_ui2api.py) avec injection
 #      du nom de fichier uploadé
-#   6. Soumission à /prompt, attente via websocket (comfyui_wait.py)
+#   6. Soumission à /prompt, attente par interrogation de /history (0,3 s)
 #   7. Extraction de la sortie du node SaveText depuis /history
 #
 # Exit codes: 0 = succès (JSON valide sur stdout) ; 1 = échec (message
 # détaillé sur stderr, préfixé "ERROR:faceid:").
+#
+# Mode --batch (depuis 2026-10-12, rattrapage rapide UPassport/faceid_reprocess.py
+# --quick) : lit des chemins d'images LOCALES déjà en clair sur stdin, une par
+# ligne, et écrit pour chacune UNE ligne JSON sur stdout, dans l'ordre :
+#   {"file": "<chemin>", "ok": true, "faces": [...]}    ou
+#   {"file": "<chemin>", "ok": false, "error": "<raison>"}
+# my.sh, comfyui.me.sh (local → tunnel SSH → P2P IPFS) et la conversion du
+# workflow ne sont faits qu'UNE fois pour tout le lot (mesuré : ~7 s sur ~8 s
+# par appel unitaire, l'inférence elle-même ~0,6 s). Le verrou GPU est pris et
+# relâché PAR IMAGE, pour ne jamais bloquer les envois en direct (DM
+# vision_analysis_job) pendant un long rattrapage. Si ComfyUI est injoignable
+# au démarrage : une ligne {"fatal": "comfyui_unreachable"} et exit 1.
 #
 # Réutilisé tel quel par Astroport.ONE/IA/bro/bro_dm_daemon.sh
 # (_handle_vision_analysis_job, canal DM vision_analysis_job/result du
@@ -58,7 +70,8 @@ MY_PATH="$(cd "${MY_PATH}" && pwd)"
 ME="${0##*/}"
 
 if [ -z "$1" ]; then
-    echo "Usage: $0 <image_locale_ou_lien_ipfs> [fichier_json_de_sortie]" >&2
+    echo "Usage: $0 <image_locale_ou_lien_ipfs> [fichier_json_de_sortie] [decryption_key_hex]" >&2
+    echo "       $0 --batch   (chemins d'images LOCALES en clair sur stdin, une ligne JSON par image sur stdout)" >&2
     echo "Exemple: $0 /home/user/photo.jpg" >&2
     echo "Exemple: $0 QmHash.../photo.jpg faces.json" >&2
     exit 1
@@ -86,8 +99,15 @@ _tmp_dir=$(mktemp -d /tmp/faceid_XXXXXX)
 _cleanup() { rm -rf "$_tmp_dir"; }
 trap _cleanup EXIT
 
+_BATCH=""
+[ "$IMG_ARG" = "--batch" ] && _BATCH=1
+
 ## 1. Résoudre l'image : fichier local existant, sinon lien/CID IPFS
-if [ -f "$IMG_ARG" ]; then
+##    (mode unitaire seulement — en --batch, l'appelant fournit des fichiers
+##    locaux déjà déchiffrés)
+if [ -n "$_BATCH" ]; then
+    :
+elif [ -f "$IMG_ARG" ]; then
     _img="$IMG_ARG"
     _basename=$(basename "$IMG_ARG")
 else
@@ -130,21 +150,29 @@ else
     fi
 fi
 
-## 1.5. Redimensionner pour la détection si l'image dépasse une taille
-##      raisonnable — réduit la charge mémoire/GPU par job (aucune image,
-##      même 12 Mpx smartphone, n'était redimensionnée avant ce correctif :
-##      chaque job FaceID chargeait le pixel natif en mémoire ComfyUI, coût
-##      qui grimpe avec la taille des photos sources — cause plausible de la
-##      charge excessive/crash constatée lors d'un import WebDAV de masse,
-##      2026-10-03). bbox est reprojeté sur l'image ORIGINALE (facteur
-##      _scale, étape 8.5) avant la sortie finale — jamais celui de la copie
-##      réduite envoyée à ComfyUI, sous peine de recadrages décalés en aval
-##      (mailjet.py::_crop_face_jpeg). L'orientation EXIF est désormais
-##      normalisée AVANT stockage (cf. UPassport/services/cloud_storage.py::
-##      ingest_plaintext, 2026-10-03) : un simple facteur d'échelle suffit
-##      ici, sans transposition d'axes à gérer.
-_MAX_DETECT_DIM=1600
-_resize_info=$(python3 - "$_img" "$_tmp_dir" "$_MAX_DETECT_DIM" <<'PYEOF' 2>/tmp/faceid_resize_err.$$
+## Étapes 1.5 → 8.5 pour UNE image locale : `_detect_local <image> <nom>`
+## écrit le JSON aplati {"faces":[…]} dans "$_tmp_dir/result.json" ; retour
+## ≠ 0 + message "ERROR:faceid:…" sur stderr en cas d'échec. À appeler dans
+## le shell COURANT (jamais dans un $( … )) : les caches ci-dessous doivent
+## survivre d'une image à l'autre en --batch. Partagée par le mode unitaire
+## et le mode --batch (même code, jamais deux implémentations).
+_API_WORKFLOW_TEMPLATE=""    # conversion UI → API faite une fois, image injectée ensuite
+_COMFY_READY=""              # comfyui.me.sh déjà vérifié (mode --batch)
+
+_detect_local() {
+    local _img="$1" _basename="$2"
+
+    ## 1.5. Redimensionner pour la détection si l'image dépasse une taille
+    ##      raisonnable — réduit la charge mémoire/GPU par job (cause
+    ##      plausible de la charge excessive constatée lors d'un import WebDAV
+    ##      de masse, 2026-10-03). bbox est reprojeté sur l'image ORIGINALE
+    ##      (facteur _scale, étape 8.5) avant la sortie — jamais celui de la
+    ##      copie réduite envoyée à ComfyUI, sous peine de recadrages décalés
+    ##      en aval (mailjet.py::_crop_face_jpeg). L'orientation EXIF est
+    ##      normalisée AVANT stockage (cloud_storage.py::ingest_plaintext) : un
+    ##      simple facteur d'échelle suffit ici.
+    local _MAX_DETECT_DIM=1600 _resize_info _detect_img _detect_basename _scale
+    _resize_info=$(python3 - "$_img" "$_tmp_dir" "$_MAX_DETECT_DIM" <<'PYRESIZE' 2>"$_tmp_dir/resize_err"
 import sys
 from PIL import Image
 path, tmp_dir, max_dim = sys.argv[1], sys.argv[2], int(sys.argv[3])
@@ -159,126 +187,170 @@ else:
     out = f"{tmp_dir}/detect_resized.jpg"
     img.convert("RGB").resize((new_w, new_h), Image.LANCZOS).save(out, "JPEG", quality=90)
     print(f"{out}\t{scale}")
-PYEOF
+PYRESIZE
 )
-if [ -z "$_resize_info" ]; then
-    # Échec de lecture/redimensionnement (format exotique, image corrompue…) —
-    # on retombe sur l'image d'origine plutôt que d'abandonner tout le job.
-    echo "WARN:faceid:resize_failed:$(tail -c 300 /tmp/faceid_resize_err.$$ 2>/dev/null) — envoi en taille native" >&2
-    _detect_img="$_img"; _detect_basename="$_basename"; _scale="1.0"
-else
-    _detect_img="${_resize_info%%$'\t'*}"
-    _scale="${_resize_info##*$'\t'}"
-    _detect_basename="$(basename "$_detect_img")"
-fi
-rm -f "/tmp/faceid_resize_err.$$"
+    if [ -z "$_resize_info" ]; then
+        # Format exotique / image corrompue : on retombe sur l'image d'origine
+        echo "WARN:faceid:resize_failed:$(tail -c 300 "$_tmp_dir/resize_err" 2>/dev/null) — envoi en taille native" >&2
+        _detect_img="$_img"; _detect_basename="$_basename"; _scale="1.0"
+    else
+        _detect_img="${_resize_info%%$'\t'*}"
+        _scale="${_resize_info##*$'\t'}"
+        _detect_basename="$(basename "$_detect_img")"
+    fi
 
-## 2. Verrou GPU exclusif — un seul job ComfyUI FaceID à la fois sur ce Brain.
-##    Ce script est désormais le SEUL point d'acquisition de ce verrou : le
-##    daemon (_handle_vision_analysis_job) ne le prend plus lui-même, pour
-##    éviter un deadlock (parent tenant le verrou en attendant ce script fils).
-exec 9>"$_GPU_LOCK"
-if ! flock -x -w 300 9; then
-    echo "ERROR:faceid:gpu_lock_timeout" >&2
-    exit 1
-fi
+    ## 2. Verrou GPU exclusif — un seul job ComfyUI FaceID à la fois sur ce
+    ##    Brain. Ce script est le SEUL point d'acquisition de ce verrou (le
+    ##    daemon ne le prend pas lui-même : deadlock parent/fils sinon).
+    ##    Relâché en fin d'image, y compris en mode --batch.
+    exec 9>"$_GPU_LOCK"
+    if ! flock -x -w 300 9; then
+        echo "ERROR:faceid:gpu_lock_timeout" >&2
+        return 1
+    fi
 
-## 3. ComfyUI accessible (local → tunnel SSH → swarm P2P)
-if ! bash "$MY_PATH/../services/comfyui.me.sh" >&2; then
-    echo "ERROR:faceid:comfyui_unreachable" >&2
-    exit 1
-fi
+    ## 3. ComfyUI accessible (local → tunnel SSH → swarm P2P) — une seule fois
+    ##    par lot en --batch.
+    if [ -z "$_COMFY_READY" ]; then
+        if ! bash "$MY_PATH/../services/comfyui.me.sh" >&2; then
+            flock -u 9
+            echo "ERROR:faceid:comfyui_unreachable" >&2
+            return 2
+        fi
+        [ -n "$_BATCH" ] && _COMFY_READY=1
+    fi
 
-## 4. Téléverser l'image dans le dossier input de ComfyUI (LoadImage ne lit que là)
-##    L'image ENVOYÉE est celle (éventuellement) redimensionnée à l'étape 1.5,
-##    pas `_img`/`_basename` (taille native) — cf. étape 8.5 pour la reprojection.
-_upload_resp=$(curl -s -X POST -F "image=@${_detect_img};filename=${_detect_basename}" \
-    "$_COMFYUI_URL/upload/image" 2>/dev/null)
-_uploaded=$(jq -r '.name // empty' <<< "$_upload_resp" 2>/dev/null)
-[ -z "$_uploaded" ] && _uploaded="$_detect_basename"
+    ## 4. Téléverser l'image (éventuellement réduite) dans input/ de ComfyUI
+    local _upload_resp _uploaded
+    _upload_resp=$(curl -s -X POST -F "image=@${_detect_img};filename=${_detect_basename}" \
+        "$_COMFYUI_URL/upload/image" 2>/dev/null)
+    _uploaded=$(jq -r '.name // empty' <<< "$_upload_resp" 2>/dev/null)
+    [ -z "$_uploaded" ] && _uploaded="$_detect_basename"
 
-## 5. Convertir le workflow UI → API et y injecter le nom de l'image
-_api_workflow=$(python3 "$_UI2API" "$_WORKFLOW" --url "$_COMFYUI_URL" \
-    --set "1.image=${_uploaded}")
-if [ -z "$_api_workflow" ]; then
-    echo "ERROR:faceid:workflow_conversion_failed (custom nodes InsightFace absents de ce ComfyUI ?)" >&2
-    exit 1
-fi
+    ## 5. Workflow UI → API (converti une fois), nom de l'image injecté
+    if [ -z "$_API_WORKFLOW_TEMPLATE" ]; then
+        _API_WORKFLOW_TEMPLATE=$(python3 "$_UI2API" "$_WORKFLOW" --url "$_COMFYUI_URL" \
+            --set "1.image=placeholder.png")
+        if [ -z "$_API_WORKFLOW_TEMPLATE" ]; then
+            flock -u 9
+            echo "ERROR:faceid:workflow_conversion_failed (custom nodes InsightFace absents de ce ComfyUI ?)" >&2
+            return 1
+        fi
+    fi
+    local _api_workflow
+    _api_workflow=$(jq -c --arg img "$_uploaded" '.["1"].inputs.image = $img' <<< "$_API_WORKFLOW_TEMPLATE")
 
-## 6. Soumettre à /prompt avec un client_id pour l'attente WebSocket ciblée
-_client_id=$(python3 -c "import uuid; print(str(uuid.uuid4()))")
-_submit_resp=$(jq -n --argjson wf "$_api_workflow" --arg cid "$_client_id" \
-    '{prompt:$wf, client_id:$cid}' 2>/dev/null | \
-    curl -s -X POST -H "Content-Type: application/json" --data-binary @- \
-         "$_COMFYUI_URL/prompt" 2>/dev/null)
-_prompt_id=$(jq -r '.prompt_id // empty' <<< "$_submit_resp" 2>/dev/null)
-if [ -z "$_prompt_id" ]; then
-    # La réponse d'erreur ComfyUI nomme précisément l'entrée fautive — la
-    # journaliser entièrement est ce qui rend ce chemin débogable.
-    echo "ERROR:faceid:prompt_rejected:${_submit_resp:0:400}" >&2
-    exit 1
-fi
+    ## 6. Soumettre à /prompt avec un client_id pour l'attente WebSocket ciblée
+    local _client_id _submit_resp _prompt_id
+    _client_id=$(python3 -c "import uuid; print(str(uuid.uuid4()))")
+    _submit_resp=$(jq -n --argjson wf "$_api_workflow" --arg cid "$_client_id" \
+        '{prompt:$wf, client_id:$cid}' 2>/dev/null | \
+        curl -s -X POST -H "Content-Type: application/json" --data-binary @- \
+             "$_COMFYUI_URL/prompt" 2>/dev/null)
+    _prompt_id=$(jq -r '.prompt_id // empty' <<< "$_submit_resp" 2>/dev/null)
+    if [ -z "$_prompt_id" ]; then
+        # La réponse d'erreur ComfyUI nomme précisément l'entrée fautive.
+        flock -u 9
+        _COMFY_READY=""          # tunnel tombé ? revérifié à l'image suivante
+        echo "ERROR:faceid:prompt_rejected:${_submit_resp:0:400}" >&2
+        return 1
+    fi
 
-## 7. Attendre la fin via WebSocket (comfyui_wait.py, réutilisé tel quel).
-##    Sa sortie (une ligne: done / error:<msg> / timeout / no_websocket) est
-##    le SEUL endroit où une exception ComfyUI (poids manquants, node en
-##    échec...) est visible — la jeter silencieusement transformait toute
-##    erreur réelle en un "/history vide" incompréhensible en aval.
-_wait_result=$(python3 "$MY_PATH/../comfyui_wait.py" "$_client_id" "$_prompt_id" \
-    --url "ws://127.0.0.1:8188/ws" --timeout 180 2>&1)
-if [ "$_wait_result" != "done" ]; then
-    echo "WARN:faceid:comfyui_wait:${_wait_result} — tentative de lecture de /history quand même" >&2
-fi
+    ## 7. Attendre la fin en interrogeant /history (0,3 s). PAS de WebSocket
+    ##    (comfyui_wait.py) ici : l'inférence ne dure que ~0,6 s, et le job
+    ##    finissait souvent AVANT que le WebSocket soit connecté — l'événement
+    ##    « terminé » était alors manqué et chaque photo perdait 180 s
+    ##    (constaté au rattrapage --batch du 2026-10-12). /history porte aussi
+    ##    l'erreur d'exécution éventuelle (status.status_str == "error").
+    local _wait_result="timeout" _deadline=$((SECONDS + 180)) _history=""
+    while [ "$SECONDS" -lt "$_deadline" ]; do
+        _history=$(curl -s "$_COMFYUI_URL/history/${_prompt_id}" 2>/dev/null)
+        case "$(jq -r --arg id "$_prompt_id" '.[$id].status.status_str // empty' <<< "$_history" 2>/dev/null)" in
+            success) _wait_result="done"; break ;;
+            error)   _wait_result="error:$(jq -c --arg id "$_prompt_id" '.[$id].status.messages' <<< "$_history" 2>/dev/null | head -c 400)"; break ;;
+        esac
+        sleep 0.3
+    done
+    if [ "$_wait_result" != "done" ]; then
+        echo "WARN:faceid:comfyui_wait:${_wait_result} — tentative de lecture de /history quand même" >&2
+    fi
 
-## 8. Récupérer la sortie texte du node SaveText depuis /history
-##    Le nom exact de la clé sous laquelle SaveText expose son texte dans
-##    .outputs.<node_id> dépend de la version du node (souvent "text", parfois
-##    "string", scalaire ou tableau [0]) — on essaie toutes les formes
-##    plausibles, et on journalise le JSON brut si aucune ne matche.
-_history=$(curl -s "$_COMFYUI_URL/history/${_prompt_id}" 2>/dev/null)
-_faces_json=$(jq -r --arg id "$_prompt_id" '
-    [ .[$id].outputs // {} | to_entries[] | .value
-      | (.text? // .string? // empty)
-      | if type == "array" then .[0] else . end
-      | select(. != null and . != "")
-    ] | first // empty
-' <<< "$_history" 2>/dev/null)
+    ## 8. Sortie texte du node SaveText depuis /history (clé "text" ou
+    ##    "string", scalaire ou tableau [0] selon la version du node).
+    local _faces_json _entry
+    flock -u 9                   # le GPU est libre dès que le résultat est là
+    _faces_json=$(jq -r --arg id "$_prompt_id" '
+        [ .[$id].outputs // {} | to_entries[] | .value
+          | (.text? // .string? // empty)
+          | if type == "array" then .[0] else . end
+          | select(. != null and . != "")
+        ] | first // empty
+    ' <<< "$_history" 2>/dev/null)
+    if [ -z "$_faces_json" ] || [ "$_faces_json" = "null" ]; then
+        _entry=$(jq -c --arg id "$_prompt_id" '.[$id] // "absent de /history"' <<< "$_history" 2>/dev/null | head -c 800)
+        echo "ERROR:faceid:no_saveText_output — comfyui_wait=${_wait_result} — /history[${_prompt_id}]=${_entry}" >&2
+        return 1
+    fi
 
-if [ -z "$_faces_json" ] || [ "$_faces_json" = "null" ]; then
-    # .outputs vide ne dit rien sur LA cause — .status (messages d'exécution,
-    # y compris une éventuelle exception Python du node) est ce qui l'explique
-    # réellement. On journalise les deux, plus le résultat de l'attente ci-dessus.
-    _entry=$(jq -c --arg id "$_prompt_id" '.[$id] // "absent de /history"' <<< "$_history" 2>/dev/null | head -c 800)
-    echo "ERROR:faceid:no_saveText_output — comfyui_wait=${_wait_result} — /history[${_prompt_id}]=${_entry}" >&2
-    exit 1
-fi
-
-## 8.5. Reprojeter bbox sur l'image ORIGINALE si une réduction a eu lieu à
-##      l'étape 1.5 — sinon tout consommateur en aval (recadrage de vignette
-##      mailjet.py::_crop_face_jpeg, affichage nébuleuse) pointerait au
-##      mauvais endroit, puisque le pixel chiffré/stocké reste celui en
-##      pleine résolution (seule la COPIE envoyée à ComfyUI a été réduite).
-if [ "$_scale" != "1.0" ]; then
-    _rescaled=$(jq -c --argjson scale "$_scale" '
-        .faces = [ (.faces // [])[] | . as $f |
-            if $f.bbox then
+    ## 8.5. Aplatir puis reprojeter bbox sur l'image ORIGINALE.
+    ##    La sortie SaveText est IMBRIQUÉE ({"images":[{"faces":[…]}]}) : les
+    ##    deux formes sont fusionnées en un seul `faces` racine et `images`
+    ##    est supprimé — TOUJOURS, réduction ou non. Avant 2026-10-12, ce jq
+    ##    ne lisait que `.faces` racine (absent) → créait `faces: []` À CÔTÉ de
+    ##    `images` intact, que bro_dm_daemon.sh::_vision_result_payload lisait
+    ##    en priorité : TOUTE photo > _MAX_DETECT_DIM (= toute photo
+    ##    smartphone) finissait marquée `no_face` malgré une détection réussie
+    ##    (bug constaté sur un import WebDAV : 1877/2006 photos perdues).
+    local _flat
+    _flat=$(jq -c --argjson scale "$_scale" '
+        .faces = [ ((.faces // []) + [ (.images // [])[] | (.faces? // [])[] ]) | .[] | . as $f |
+            if $f.bbox and $scale != 1 then
                 $f + {bbox: {x1: ($f.bbox.x1*$scale), y1: ($f.bbox.y1*$scale),
                              x2: ($f.bbox.x2*$scale), y2: ($f.bbox.y2*$scale)}}
-            else $f end ]
+            else $f end ] | del(.images)
     ' <<< "$_faces_json" 2>/dev/null)
-    if [ -n "$_rescaled" ] && [ "$_rescaled" != "null" ]; then
-        _faces_json="$_rescaled"
+    if [ -n "$_flat" ] && [ "$_flat" != "null" ]; then
+        _faces_json="$_flat"
     else
-        echo "WARN:faceid:bbox_rescale_failed — bbox renvoyé dans le repère réduit (scale=${_scale})" >&2
+        echo "WARN:faceid:flatten_failed — sortie brute renvoyée (scale=${_scale})" >&2
     fi
+    rm -f "$_tmp_dir/detect_resized.jpg"
+    printf '%s\n' "$_faces_json" > "$_tmp_dir/result.json"
+}
+
+## ── Mode --batch : un lot d'images locales, une ligne JSON par image ──────
+if [ -n "$_BATCH" ]; then
+    if ! bash "$MY_PATH/../services/comfyui.me.sh" >&2; then
+        echo '{"fatal": "comfyui_unreachable"}'
+        exit 1
+    fi
+    _COMFY_READY=1
+    while IFS= read -r _file; do
+        [ -z "$_file" ] && continue
+        if [ ! -f "$_file" ]; then
+            jq -cn --arg f "$_file" '{file:$f, ok:false, error:"file_not_found"}'
+            continue
+        fi
+        if _detect_local "$_file" "$(basename "$_file")" 2>"$_tmp_dir/err"; then
+            jq -c --arg f "$_file" '{file:$f, ok:true, faces:(.faces // [])}' "$_tmp_dir/result.json" \
+                || jq -cn --arg f "$_file" '{file:$f, ok:false, error:"bad_json"}'
+        else
+            _err=$(grep -o 'ERROR:faceid:[^ ]*' "$_tmp_dir/err" | head -1)
+            jq -cn --arg f "$_file" --arg e "${_err:-unknown}" '{file:$f, ok:false, error:$e}'
+        fi
+        cat "$_tmp_dir/err" >&2
+    done
+    exit 0
 fi
 
-## 9. Sortie — .ucloud est réservé aux images de visages (depuis 2026-10-02) :
-##    zéro visage détecté n'enchaîne plus sur IA/inventory_recognition.py (la
-##    photo sera supprimée côté Satellite, cf. satellite_face_matcher.py
-##    ::_delete_ucloud_entry) — pas la peine de dépenser du GPU Ollama pour
-##    une analyse de scène qui ne sera jamais conservée.
-_final_json="$_faces_json"
+## ── Mode unitaire ─────────────────────────────────────────────────────────
+## 9. Sortie — zéro visage détecté n'enchaîne plus sur une analyse de scène
+##    (retirée le 2026-10-02) : la photo est simplement marquée `no_face`
+##    côté Satellite (satellite_face_matcher.py::_tag_ucloud_no_face).
+if ! _detect_local "$_img" "$_basename"; then
+    exit 1
+fi
+_final_json=$(cat "$_tmp_dir/result.json")
 echo "$_final_json"
 if [ -n "$OUT_JSON" ]; then
     echo "$_final_json" > "$OUT_JSON"
