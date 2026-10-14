@@ -7,9 +7,11 @@ Chaque station Astroport.ONE offre à ses MULTIPASS un assistant IA **personnali
 Lorsqu'un utilisateur pose une question à son NODE via un **DM NOSTR (kind 4)**, le NODE interroge deux sources de contexte avant de construire sa réponse :
 
 1. **La base de connaissance globale** de la station (`nextcloud_kb`), alimentée par les documents NextCloud/Astroport ou — si NextCloud est absent — les fichiers `docs/*.md` locaux.
-2. **La mémoire personnelle** de l'utilisateur (`memory_{hex}`), construite à partir de ses `#rec` (kind 1 public ou DM direct).
+2. **La mémoire personnelle** de l'utilisateur (`memory_{hex}`), construite à partir de ses `#rec` envoyés en DM au NODE.
 
 Le tout repose sur Ollama (LLM souverain) et Qdrant (base vectorielle locale). Aucun cloud, aucune API commerciale.
+
+> **Simplification 2026-10** : il n'existe plus qu'**une seule mémoire personnelle** par MULTIPASS (anciennement répartie en 13 "slots" numérotés 0 à 12). Qdrant est l'unique source de vérité — plus de fichier `~/.zen/flashmem/{user_id}/slotN.json` local. Le kind 1 public (post NOSTR visible de tous) n'est plus écouté pour `#rec` ni pour aucune autre commande : seul le DM chiffré au NODE déclenche BRO.
 
 ---
 
@@ -19,13 +21,11 @@ Le tout repose sur Ollama (LLM souverain) et Qdrant (base vectorielle locale). A
 ┌─────────────────────────────────────────────────────────────────┐
 │                    CAPTURE DES SOUVENIRS                        │
 │                                                                 │
-│  Via kind 1 public  :  #rec Mon projet est une ferme bio        │
 │  Via DM au NODE     :  #rec Mon projet est une ferme bio        │
 │       │                                                         │
 │       ▼                                                         │
-│  short_memory.py <event_json> <lat> <lon> <slot> <user_id>      │
+│  short_memory.py <event_json> <lat> <lon> <user_id>             │
 │       │                                                         │
-│       ├──► ~/.zen/flashmem/{user_id}/slot{N}.json               │
 │       └──► Qdrant : collection memory_{user_hex[:16]}           │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -70,37 +70,7 @@ Comment fonctionne le portefeuille ẐEN ?
 Explique-moi le protocole UPlanet.
 ```
 
-Le NODE interroge la base de connaissance + vos mémoires personnelles et répond avec Ollama.
-
----
-
-#### Question libre → réponse IA (slot 0 par défaut)
-
-```
-Quels services sont disponibles sur cette station ?
-```
-→ Le NODE répond en utilisant la KB globale + **slot 0** (mémoire générale).
-
-#### Sélectionner un ou plusieurs slots de mémoire pour la réponse
-
-Ajoutez les tags `#N` dans votre message pour préciser quels slots utiliser comme contexte :
-
-```
-Quelles plantes couvre-sol recommandes-tu ? #1
-```
-→ Contexte : slot 1 uniquement.
-
-```
-Quel modèle Ollama me convient ? #1 #5
-```
-→ Contexte : slots 1 **et** 5 combinés (ferme + budget, par exemple).
-
-```
-Quels sont mes projets en cours ? #1 #2 #3
-```
-→ Contexte : slots 1, 2 et 3 combinés.
-
-Sans aucun `#N`, le **slot 0** (contexte général) est utilisé par défaut.
+Le NODE interroge la base de connaissance + votre mémoire personnelle et répond avec Ollama.
 
 ---
 
@@ -109,24 +79,12 @@ Sans aucun `#N`, le **slot 0** (contexte général) est utilisé par défaut.
 ```
 #rec Mon projet est une ferme biologique en Bretagne.
 ```
-→ Mémorisé dans le **slot 0** (accessible à tous).
+→ Mémorisé dans votre mémoire personnelle (une seule, pas de numéro à choisir).
 
 ```
-#rec #2 Je préfère les réponses courtes avec des exemples.
+#rec Sol argilo-limoneux, 3 ha. #bro Quelles cultures recommandes-tu ?
 ```
-→ Mémorisé dans le **slot 2** (sociétaires). Le numéro de slot est le tag `#N` séparé.
-
-```
-#rec #1 Sol argilo-limoneux, 3 ha. #bro Quelles cultures recommandes-tu ?
-```
-→ Mémorise dans slot 1 ET répond immédiatement avec ce contexte.
-
-**Slots disponibles :**
-
-| Slot | Accès | Usage recommandé |
-|------|-------|-----------------|
-| 0 | Tous les MULTIPASS hébergés | Contexte général, préférences |
-| 1–12 | Sociétaires CopyLaRadio uniquement | Projets thématiques, notes, agenda |
+→ Mémorise ET répond immédiatement avec ce contexte.
 
 ---
 
@@ -135,41 +93,31 @@ Sans aucun `#N`, le **slot 0** (contexte général) est utilisé par défaut.
 ```
 #mem
 ```
-→ Liste tous vos slots non vides avec un aperçu du dernier message.
-
-```
-#mem #2
-```
-→ Affiche les 5 derniers messages du slot 2.
+→ Affiche les 5 derniers souvenirs enregistrés.
 
 ---
 
-#### `#reset` — Effacer des mémoires
+#### `#reset` — Effacer sa mémoire
 
 ```
 #reset
 ```
-→ Efface tous vos slots (0–12).
-
-```
-#reset #2
-```
-→ Efface uniquement le slot 2.
+→ Efface toute votre mémoire personnelle.
 
 ---
 
 ### Exemples de sessions complètes
 
-**Session 1 — Mémoriser et interroger avec sélection de slot :**
+**Session 1 — Mémoriser et interroger :**
 
 ```
-DM → NODE :  #rec #1 Ferme bio en Bretagne, cultures maraîchères, sol argilo-limoneux.
-NODE → DM :  💾 Mémorisé dans slot 1 (71 caractères).
+DM → NODE :  #rec Ferme bio en Bretagne, cultures maraîchères, sol argilo-limoneux.
+NODE → DM :  💾 Mémorisé (71 caractères).
 
-DM → NODE :  #rec #5 Budget infrastructure : 500 EUR/mois.
-NODE → DM :  💾 Mémorisé dans slot 5 (38 caractères).
+DM → NODE :  #rec Budget infrastructure : 500 EUR/mois.
+NODE → DM :  💾 Mémorisé (38 caractères).
 
-DM → NODE :  Quel équipement d'irrigation me recommandes-tu ? #1 #5
+DM → NODE :  Quel équipement d'irrigation me recommandes-tu ?
 NODE → DM :  En tenant compte de votre ferme bio en Bretagne et d'un budget
              de 500 EUR/mois, je recommande un système goutte-à-goutte...
 ```
@@ -177,22 +125,22 @@ NODE → DM :  En tenant compte de votre ferme bio en Bretagne et d'un budget
 **Session 2 — Mémoriser ET interroger en une commande :**
 
 ```
-DM → NODE :  #rec #3 Projet apiculture, 10 ruches. #bro Quels miels produire en Bretagne ?
-NODE → DM :  💾 Mémorisé dans slot 3 (37 caractères).
+DM → NODE :  #rec Projet apiculture, 10 ruches. #bro Quels miels produire en Bretagne ?
+NODE → DM :  💾 Mémorisé (37 caractères).
              En Bretagne, avec 10 ruches, le miel de sarrasin...
 ```
 
-**Session 3 — Gérer ses mémoires :**
+**Session 3 — Gérer sa mémoire :**
 
 ```
 DM → NODE :  #mem
-NODE → DM :  🧠 Mémoires enregistrées :
-               Slot 1 (3 msg) : Ferme bio en Bretagne, cultures maraîchères…
-               Slot 3 (1 msg) : Projet apiculture, 10 ruches…
-               Slot 5 (1 msg) : Budget infrastructure : 500 EUR/mois…
+NODE → DM :  🧠 Souvenirs enregistrés :
+               Ferme bio en Bretagne, cultures maraîchères…
+               Projet apiculture, 10 ruches…
+               Budget infrastructure : 500 EUR/mois…
 
-DM → NODE :  #reset #5
-NODE → DM :  🗑️ Slot 5 effacé.
+DM → NODE :  #reset
+NODE → DM :  🗑️ Mémoire effacée.
 ```
 
 ---
@@ -256,7 +204,7 @@ Si `NC_PASSWORD` n'est pas configuré, `nextcloud_bro_sync.sh` **indexe automati
 | Ollama absent (question) | Fallback : meilleur extrait Qdrant brut |
 | Qdrant vide (question) | Fallback : grep dans `docs/*.md` |
 | NextCloud absent (sync) | Fallback : indexation auto de `docs/*.md` |
-| Ollama absent (embed `#rec`) | `_upsert_to_qdrant()` silencieux, flashmem écrit quand même |
+| Ollama absent (embed `#rec`) | `_upsert_to_qdrant()` échoue, mémoire non enregistrée (pas de fichier local de secours) |
 | Collection `memory_{hex}` absente | Recherche ignorée, contexte global seul |
 | Utilisateur non hébergé (`#rec` DM) | DM d'erreur explicite, mémoire non sauvegardée |
 
@@ -268,8 +216,8 @@ Si `NC_PASSWORD` n'est pas configuré, `nextcloud_bro_sync.sh` **indexe automati
 |---------|------|
 | `IA/nextcloud_bro_sync.sh` | Sync NextCloud/docs → Qdrant + requête RAG combinée |
 | `IA/bro_dm_daemon.sh` | Daemon DM kind 4 : `#rec`, `#mem`, `#reset`, BRO |
-| `IA/short_memory.py` | Capture `#rec` → flashmem + Qdrant |
-| `NIP-101/filter/1.sh` | Filtre strfry kind 1, détecte `#rec` public |
+| `IA/short_memory.py` | Capture `#rec` → Qdrant |
+| `IA/memory_manager.py` | Interface Qdrant unifiée (upsert/search/delete/recent, compression RÊVE) |
 | `NIP-101/filter/4.sh` | Filtre strfry kind 4, enqueue DMs adressés au NODE |
 
 ### Collections Qdrant
@@ -317,4 +265,4 @@ Si Ollama local est absent, le daemon tente :
 - Les mémoires restent sur la station. Aucune donnée personnelle n'est envoyée à l'extérieur.
 - L'embedding est généré localement par Ollama (`nomic-embed-text`).
 - Qdrant tourne en local (Docker profil `ai`) ou bare-metal.
-- Les souvenirs `#rec` kind 1 sont publiés volontairement sur NOSTR (public). Les `#rec` DM restent privés (chiffrés NIP-04).
+- Les souvenirs `#rec` ne sont capturés que par DM chiffré (NIP-44, repli NIP-04) — le kind 1 public n'est plus écouté par BRO.

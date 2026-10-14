@@ -666,6 +666,18 @@ get_fast_capacities() {
     local value_ratio
     value_ratio=$(echo "$power_score" "$avg_w_recent" "${PAF:-14}" | awk '{ d = $2 + $3; printf "%.4f", (d > 0 ? $1/d : $1) }' 2>/dev/null || echo 0)
 
+    ## ── Éligibilité ARBOR (bâton de parole) — LECTURE SEULE du cache écrit
+    ## par IA/arbor_baton_eligibility.sh (vérification réseau faite une fois/
+    ## jour par 20h12.process.sh, jamais ici : cette fonction reste 100%
+    ## locale, cf. note "IMPORTANT" en tête de fichier).
+    local arbor_elig_cache="$HOME/.zen/tmp/arbor_baton_eligibility.json"
+    local arbor_eligible="false" arbor_eligible_checked_at=0
+    if [[ -f "$arbor_elig_cache" ]]; then
+        arbor_eligible=$(jq -r '.eligible // false' "$arbor_elig_cache" 2>/dev/null || echo "false")
+        arbor_eligible_checked_at=$(jq -r '.checked_at // 0' "$arbor_elig_cache" 2>/dev/null || echo 0)
+        [[ "$arbor_eligible_checked_at" =~ ^[0-9]+$ ]] || arbor_eligible_checked_at=0
+    fi
+
     cat << EOF
     "zencard_slots": ${zencard_slots:-0},
     "nostr_slots": ${nostr_slots:-0},
@@ -702,7 +714,9 @@ get_fast_capacities() {
             "available_gb": $root_available_gb,
             "mount_point": "/"
         }
-    }
+    },
+    "arbor_eligible": ${arbor_eligible:-false},
+    "arbor_eligible_checked_at": ${arbor_eligible_checked_at:-0}
 EOF
 }
 

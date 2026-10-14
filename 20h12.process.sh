@@ -971,13 +971,31 @@ fi
 ## BRO ARBOR — Détection continue de besoins Web2 récurrents (tous comptes)
 ## N'écrit ni ne génère aucun code : signale au capitaine par DM NODE les
 ## patterns de demandes non satisfaites par BRO (voir arbor_self_improve.py).
+##
+## Bâton de parole (arbor_baton.sh) : seule la station qui le détient (ou qui
+## se l'auto-attribue si vacant depuis trop longtemps, cf. ARBOR_BATON_
+## TIMEOUT_HOURS) lance ce cycle automatique — évite que toute la
+## constellation mine le même signal en double. Le déclenchement MANUEL
+## (forge/explore/apply) depuis l'UI capitaine reste toujours disponible sur
+## CHAQUE station, bâton ou pas.
 ########################################################################
+ARBOR_ELIGIBILITY="${MY_PATH}/IA/arbor_baton_eligibility.sh"
+[[ -x "$ARBOR_ELIGIBILITY" ]] && "$ARBOR_ELIGIBILITY" status >> "$LOG_FILE" 2>&1
+
+ARBOR_BATON="${MY_PATH}/IA/arbor_baton.sh"
 ARBOR_MINER="${MY_PATH}/IA/arbor_self_improve.py"
 if [[ -f "$ARBOR_MINER" ]]; then
-    echo "🔍 BRO Arbor : analyse des besoins récurrents (tous comptes)..."
-    python3 "$ARBOR_MINER" --mine-requests --notify-captain >> "$LOG_FILE" 2>&1 \
-        && echo "✅ arbor_self_improve --mine-requests OK" \
-        || echo "⚠️  arbor_self_improve --mine-requests échoué (non bloquant)"
+    if [[ -x "$ARBOR_BATON" ]] && ! "$ARBOR_BATON" check-and-claim >> "$LOG_FILE" 2>&1; then
+        echo "ℹ️  BRO Arbor : bâton détenu par une autre station — mining différé ici." >> "$LOG_FILE"
+    else
+        echo "🔍 BRO Arbor : analyse des besoins récurrents (tous comptes)..."
+        if python3 "$ARBOR_MINER" --mine-requests --notify-captain >> "$LOG_FILE" 2>&1; then
+            echo "✅ arbor_self_improve --mine-requests OK"
+            [[ -x "$ARBOR_BATON" ]] && "$ARBOR_BATON" mark-run >> "$LOG_FILE" 2>&1
+        else
+            echo "⚠️  arbor_self_improve --mine-requests échoué (non bloquant)"
+        fi
+    fi
 else
     echo "ℹ️  arbor_self_improve.py introuvable — skip mining BRO"
 fi

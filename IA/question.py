@@ -115,20 +115,34 @@ def load_identity(user_id: str) -> str:
     return "\n\n".join(parts)
 
 
-def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=0):
+def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=0,
+                 question_text=""):
     """
-    Charge la mémoire contextuelle depuis les slots utilisateur ou les mémoires UMAP/pubkey.
-    """
-    if user_id and slot is not None:
-        slot_file = os.path.expanduser(f"~/.zen/flashmem/{user_id}/slot{slot}.json")
-        if os.path.isfile(slot_file):
-            try:
-                with open(slot_file, 'r') as f:
-                    memory = json.load(f)
-                    messages = memory.get('messages', [])
-                    return "\n".join(f"- {m.get('content', '')}" for m in messages[-20:])
-            except Exception:
-                pass
+    Charge la mémoire contextuelle depuis la mémoire personnelle (utilisateur)
+    ou les mémoires UMAP/pubkey (ambiantes, non personnelles).
+
+    Simplification 2026-10 : la mémoire personnelle (user_id) n'est plus lue
+    comme "les 20 derniers messages bruts d'un tiroir numéroté choisi par
+    l'utilisateur" — elle est retrouvée par PERTINENCE SÉMANTIQUE à la
+    question posée (memory_manager.search_user_slot, Qdrant), sur l'unique
+    slot personnel (0). Fini les #1-#12 à mémoriser soi-même : BRO retrouve
+    seul ce qui compte. Qdrant est désormais la seule source de vérité pour
+    cette mémoire (plus de fichier ~/.zen/flashmem/{user_id}/slot0.json lu
+    ici — short_memory.py continue de l'écrire pour compatibilité ascendante
+    mais rien ici n'en dépend plus)."""
+    if user_id:
+        try:
+            sys.path.insert(0, MY_DIR)
+            import memory_manager
+            query = question_text or "contexte personnel récent"
+            hits = memory_manager.search_user_slot(user_id, query, slots=[slot], limit=5)
+            if hits:
+                return "\n".join(
+                    f"- {h.get('payload', {}).get('content', '')}" for h in hits
+                )
+        except Exception as e:
+            print(f"[question.py] load_context: recherche Qdrant échouée ({e}) — contexte vide", file=sys.stderr)
+        return ""
 
     base_memory_dir = os.path.expanduser("~/.zen/flashmem/uplanet_memory")
     os.makedirs(base_memory_dir, exist_ok=True)
@@ -347,7 +361,7 @@ def answer_question(question_text: str, model_name: str = "gemma3:12b",
 
     # 2. Contexte utilisateur (slot / UMAP / pubkey)
     if user_id is not None:
-        user_ctx = load_context(user_id=user_id, slot=slot)
+        user_ctx = load_context(user_id=user_id, slot=slot, question_text=question_text)
         if user_ctx:
             context_parts.append(f"Historique personnel :\n{wrap_untrusted('personal_history', user_ctx)}")
     elif lat and lon:

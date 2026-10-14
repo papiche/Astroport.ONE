@@ -208,11 +208,22 @@ def _upsert_geo_to_qdrant(lat, lon, content, pubkey, timestamp, event_id=""):
         return False
 
 
-def _maybe_reve(user_id, slot, slot_file):
-    """Déclenche le cycle RÊVE si le slot est plein (>= seuil dans memory_manager)."""
+def _maybe_reve(user_id, slot):
+    """Déclenche le cycle RÊVE si le slot est plein (>= seuil). Plus de
+    fichier JSON local à inspecter (simplification 2026-10) : un count Qdrant
+    bon marché (exact, pas de scroll complet) sert de garde avant d'invoquer
+    `reve` — qui, lui, fait le vrai scroll+tri seulement si nécessaire."""
     if not _HAS_MEMORY_MGR:
         return
     try:
+        count_out = subprocess.run(
+            [sys.executable, _MEMORY_MGR, "count-slot",
+             "--user-id", user_id, "--slot", str(slot)],
+            capture_output=True, text=True, timeout=30
+        )
+        count = int((count_out.stdout or "0").strip() or "0")
+        if count < 170:  # REVE_THRESHOLD=150 dans memory_manager + marge
+            return
         subprocess.run(
             [sys.executable, _MEMORY_MGR, "reve",
              "--user-id", user_id, "--slot", str(slot)],
@@ -247,7 +258,10 @@ def main():
 
     latitude = sys.argv[2]
     longitude = sys.argv[3]
-    slot = int(sys.argv[4]) if len(sys.argv) > 4 and sys.argv[4].isdigit() and 0 <= int(sys.argv[4]) <= 12 else 0
+    # Une seule mémoire par MULTIPASS depuis la simplification 2026-10 — plus
+    # de slots 1-12, l'argument est accepté pour compatibilité ascendante des
+    # appelants existants mais toujours résolu à 0.
+    slot = 0
     user_id = sys.argv[5] if len(sys.argv) > 5 else None
 
     event_id = event_json.get('event', {}).get('id', '')
@@ -288,33 +302,19 @@ def main():
         memory['messages'] = memory['messages'][-200:]
         _write_json_atomic(memory_file, memory)
 
-    # --- Multi-user, multi-slot memory ---
+    # --- Mémoire personnelle (Qdrant seule source de vérité, simplification
+    # 2026-10) --- plus de fichier ~/.zen/flashmem/{user_id}/slot0.json local :
+    # Qdrant SEUL est désormais écrit, lu et nettoyé (reve_compress_slot
+    # scrolle Qdrant directement, cf. memory_manager.py). Élimine du même coup
+    # la logique "qdrant_synced"/rattrapage anti-perte (plus de 2e copie qui
+    # pourrait diverger de Qdrant).
     if user_id:
-        USER_DIR = os.path.expanduser(f"~/.zen/flashmem/{user_id}")
-        os.makedirs(USER_DIR, exist_ok=True)
-        slot_file = os.path.join(USER_DIR, f"slot{slot}.json")
-        with _file_lock(slot_file):
-            slot_mem = _read_json_or_default(slot_file, lambda: {
-                "user_id": user_id,
-                "slot": slot,
-                "messages": []
-            })
-            slot_synced = _upsert_to_qdrant(user_id, content, _ts, slot)
-            slot_mem['messages'].append({
-                "timestamp": _ts,
-                "event_id": event_id,
-                "latitude": latitude,
-                "longitude": longitude,
-                "content": content,
-                "qdrant_synced": slot_synced,
-            })
-            # Fenêtre glissante slot : 200 entrées — RÊVE compresse à 150 et garde 80 récentes
-            slot_mem['messages'] = slot_mem['messages'][-200:]
-            _write_json_atomic(slot_file, slot_mem)
-        print(f"Memory updated for user: {user_id}, slot: {slot}")
-        # RÊVE : comprimer à partir de 170 entrées (REVE_THRESHOLD=150 dans memory_manager)
-        if len(slot_mem['messages']) >= 170:
-            _maybe_reve(user_id, slot, slot_file)
+        slot_synced = _upsert_to_qdrant(user_id, content, _ts, slot)
+        if slot_synced:
+            print(f"Memory updated for user: {user_id}, slot: {slot}")
+            _maybe_reve(user_id, slot)
+        else:
+            print(f"WARN: Qdrant upsert failed for user: {user_id}, slot: {slot} — mémoire non enregistrée")
     else:
         print("No user_id provided, slot memory not updated.")
 

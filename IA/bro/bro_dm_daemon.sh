@@ -358,17 +358,30 @@ CRAFTPROMPT
 }
 
 ## ── Canal "plain" : question BRO → réponse IA ────────────────────────
-## slots : liste CSV de slots mémoire à inclure ("0" = tous, "1,5" = slots 1 et 5)
+## Mémoire personnelle unifiée (plus de slots numérotés #1-#12 — simplification
+## 2026-10 : question.py::load_context fait de la recherche sémantique Qdrant
+## sur l'historique de CE MULTIPASS, BRO retrouve seul ce qui est pertinent).
+## Même moteur que les ponts Telegram/Mastodon (IA/channels/*_bridge.py).
 _handle_bro() {
-    local sender="$1" question="$2" slots="${3:-0}"
+    local sender="$1" question="$2"
     [[ -z "$question" ]] && return
-    _log "🧠 BRO question de ${sender:0:12}... (slots: $slots): ${question:0:80}"
+    local email
+    email=$(_sender_email "$sender")
+    _log "🧠 BRO question de ${sender:0:12}... (${email:-?}): ${question:0:80}"
+
+    local -a _cmd=("$MY_PATH/../question.py" "$question"
+        --model "gemma3:latest" --ctx 8192 --max-tokens 1024 --npub "$sender")
+    [[ -n "$email" ]] && _cmd+=(--user-id "$email")
 
     local answer
-    answer=$(bash "$BRO_SYNC" --query "$question" --user "$sender" --slots "$slots" 2>/dev/null)
+    answer=$(python3 "${_cmd[@]}" 2>/dev/null)
     if [[ -z "$answer" ]]; then
-        _log "WARN: BRO sync retourne vide — Ollama/Qdrant indisponible ?"
-        _alert_captain "BRO Sync a retourné une réponse vide pour la question :\n${question}\n\nSender: ${sender}\n\nVérifiez Ollama et Qdrant."
+        _log "WARN: question.py vide — fallback BRO sync"
+        answer=$(bash "$BRO_SYNC" --query "$question" --user "$sender" --slots "0" 2>/dev/null)
+    fi
+    if [[ -z "$answer" ]]; then
+        _log "WARN: BRO sync retourne vide aussi — Ollama/Qdrant indisponible ?"
+        _alert_captain "question.py ET BRO Sync ont retourné une réponse vide pour la question :\n${question}\n\nSender: ${sender}\n\nVérifiez Ollama et Qdrant."
         answer="⚠️ Le service IA est temporairement indisponible. Réessayez dans quelques minutes."
     fi
 
@@ -388,7 +401,7 @@ _handle_bro() {
 ##   #cure  / #soin      → a_quoi_ca_sert.py --cure (Level ≥ 2)
 ##   défaut              → a_quoi_ca_sert.py         (Level ≥ 1)
 _handle_bro_image() {
-    local sender="$1" img_json="$2" hint="$3" level="$4"
+    local sender="$1" img_json="$2" hint="$3"
 
     local cid enc_key iv_hex filename
     cid=$(jq -r '._uenc_img.cid      // ""' <<< "$img_json" 2>/dev/null)
@@ -431,12 +444,12 @@ _handle_bro_image() {
     ## Router selon le hint utilisateur
     local result
     local hint_lower="${hint,,}"
-    if [[ "$_USER_LEVEL" -ge 2 ]] && echo "$hint_lower" | grep -qiE '#plant|#plante|#botanique|#flora'; then
+    if echo "$hint_lower" | grep -qiE '#plant|#plante|#botanique|#flora'; then
         _log "🌿 Plantnet pour ${sender:0:12}…"
         result=$(~/.astro/bin/python3 "$MY_PATH/../plantnet_recognition.py" \
             "$tmp_img" 2>/dev/null)
 
-    elif [[ "$_USER_LEVEL" -ge 2 ]] && echo "$hint_lower" | grep -qiE '#cure|#soin|#médecin|#remède|#herbe|#thérap'; then
+    elif echo "$hint_lower" | grep -qiE '#cure|#soin|#médecin|#remède|#herbe|#thérap'; then
         _log "🧪 a_quoi_ca_sert --cure pour ${sender:0:12}…"
         result=$(~/.astro/bin/python3 "$MY_PATH/../a_quoi_ca_sert.py" \
             "$tmp_img" --cure 2>/dev/null)
@@ -456,15 +469,13 @@ _handle_bro_image() {
         return 1
     fi
 
-    ## Ajouter rappel des modes disponibles si level ≥ 2
-    if [[ "$_USER_LEVEL" -ge 2 ]]; then
-        result+="
+    ## Rappel des modes disponibles — accessible à tous, plus de palier requis.
+    result+="
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 💡 Envoie l'image avec un mot-clé :
   #plant → reconnaissance botanique (PlantNet)
   #cure  → propriétés médicinales détaillées"
-    fi
 
     _send_dm "$sender" "$result" "${_RELAYS[0]}" \
         && _log "🖼️  BRO image réponse envoyée à ${sender:0:12}…" \
@@ -473,9 +484,6 @@ _handle_bro_image() {
 
 ## ── Résoudre email depuis sender hex → délégué à bro_common_lib.sh ──
 _sender_email() { bro_resolve_email "$1"; }
-
-## ── Vérifier accès slot → bro_common_lib.sh ─────────────────────────
-_check_slot_access() { bro_check_slot_access "$@"; }
 
 ## ── Canal "plain" #rec:<skill> : contribution à la mémoire partagée ───────
 ## Syntaxe : "#rec:devops Je maîtrise nginx" → ~/.zen/flashmem/skills/devops.md
@@ -589,14 +597,17 @@ _handle_bro_skill() {
     [[ -z "$question" ]] && return
     _log "🎓 BRO skill:$skill de ${sender:0:12}...: ${question:0:80}"
 
+    ## --user-id (PAS --npub, qui ne sert qu'au logging dans question.py) lie
+    ## la réponse à la mémoire/identité réelle de CE MULTIPASS — load_identity()/
+    ## load_context() résolvent ~/.zen/game/nostr/{user_id}/... avec l'EMAIL.
+    local email
+    email=$(_sender_email "$sender")
+    local -a _cmd=("$MY_PATH/../question.py" "$question"
+        --model "gemma3:latest" --ctx 8192 --max-tokens 2048 --skill "$skill" --npub "$sender")
+    [[ -n "$email" ]] && _cmd+=(--user-id "$email")
+
     local answer
-    answer=$(python3 "$MY_PATH/../question.py" "$question" \
-        --model       "gemma3:latest" \
-        --ctx         8192 \
-        --max-tokens  2048 \
-        --skill       "$skill" \
-        --npub        "$sender" \
-        2>/dev/null)
+    answer=$(python3 "${_cmd[@]}" 2>/dev/null)
 
     if [[ -z "$answer" ]]; then
         _log "WARN: question.py skill vide — fallback BRO sync"
@@ -610,11 +621,17 @@ _handle_bro_skill() {
 }
 
 ## ── Canal "plain" avec #rec : sauvegarde mémoire personnelle depuis DM ─
-## Syntaxe DM : "#rec <texte>"               → slot 0
-##              "#rec #2 <texte>"             → slot 2 (sociétaires)
+## Syntaxe DM : "#rec <texte>"               → mémoire personnelle (recherche
+##                                              sémantique Qdrant à la lecture,
+##                                              plus de numéro de slot à choisir)
 ##              "#rec <texte> #bro <question>"→ mémorise ET interroge l'IA
+## Simplification 2026-10 : les 12 tiroirs numérotés #1-#12 (zéro sémantique
+## propre, contrôle d'accès identique sur toute la plage — cf. investigation)
+## sont remplacés par UNE mémoire par MULTIPASS, retrouvée par pertinence
+## (question.py::load_context → memory_manager.search_user_slot), pas par
+## numéro mémorisé par l'utilisateur.
 _handle_rec() {
-    local sender="$1" content="$2" slot="${3:-0}"
+    local sender="$1" content="$2"
 
     ## Trouver l'email associé au sender hex parmi les MULTIPASS locaux
     local email
@@ -626,41 +643,31 @@ _handle_rec() {
             "${_RELAYS[0]}" 2>/dev/null
         return
     fi
-
-    ## Vérifier accès slot
-    if ! _check_slot_access "$email" "$slot"; then
-        _log "WARN: #rec slot $slot refusé pour ${sender:0:12}... ($email)"
-        _send_dm "$sender" \
-            "⚠️ Accès refusé : le slot $slot est réservé aux sociétaires. Le slot 0 reste accessible." \
-            "${_RELAYS[0]}" 2>/dev/null
-        return
-    fi
-    _log "💾 #rec DM de ${sender:0:12}... ($email) slot $slot : ${content:0:60}"
+    _log "💾 #rec DM de ${sender:0:12}... ($email) : ${content:0:60}"
 
     ## Construire l'event JSON minimal pour short_memory.py
     local event_json
     event_json=$(jq -n --arg pub "$sender" --arg msg "$content" '{event: {pubkey: $pub, content: $msg}}')
 
     if [[ -n "$event_json" ]]; then
-        python3 "$MY_PATH/../short_memory.py" "$event_json" "0" "0" "$slot" "$email" 2>/dev/null \
-            && _log "💾 Mémorisé ($email, slot $slot)" \
-            || _log "WARN: échec short_memory.py pour $email slot $slot"
+        python3 "$MY_PATH/../short_memory.py" "$event_json" "0" "0" "0" "$email" 2>/dev/null \
+            && _log "💾 Mémorisé ($email)" \
+            || _log "WARN: échec short_memory.py pour $email"
     fi
 
     _send_dm "$sender" \
-        "💾 Mémorisé dans slot $slot (${#content} caractères). Envoyez une question BRO par DM pour utiliser ce contexte." \
+        "💾 Mémorisé (${#content} caractères). Posez n'importe quelle question BRO par DM, je retrouverai ce contexte si pertinent." \
         "${_RELAYS[0]}" 2>/dev/null
 }
 
-## ── Canal "plain" avec #mem : afficher les mémoires personnelles ────────
-## Syntaxe DM : "#mem"       → contenu du slot 0 (5 derniers messages)
-##              "#mem #2"    → contenu du slot 2 (5 derniers messages)
-##              "#mem #all"  → résumé de tous les slots non vides
-## Sans #all, seul le slot 0 est concerné — jamais tous les slots par défaut.
-## Même convention que UPlanet_IA_Responder.sh (TAGS[all]) et bro/tools.py
-## (_slots_from_text), pour un comportement identique sur les 3 canaux.
+## ── Canal "plain" avec #mem : afficher la mémoire personnelle récente ──
+## Syntaxe DM : "#mem" → 5 souvenirs les plus récents.
+## Simplification 2026-10 : plus de tiroirs #1-#12/#all à connaître — une
+## seule mémoire par MULTIPASS, Qdrant comme unique source de vérité (plus de
+## fichier ~/.zen/flashmem/{email}/slotN.json local, cf. memory_manager.py
+## recent_user_slot/search_user_slot).
 _handle_mem() {
-    local sender="$1" slot="${2:-0}" all_slots="${3:-false}"
+    local sender="$1"
     local email
     email=$(_sender_email "$sender")
     if [[ -z "$email" ]]; then
@@ -670,89 +677,30 @@ _handle_mem() {
         return
     fi
 
-    local user_dir="$HOME/.zen/flashmem/$email"
-    local reply
+    local recent_json
+    recent_json=$(python3 "$MY_PATH/../memory_manager.py" recent-slot --user-id "$email" --slot 0 --limit 5 2>/dev/null)
 
-    if [[ "$all_slots" == "true" ]]; then
-        ## Résumé multi-slots : filtré par accès AVANT d'entrer dans python
-        ## (jamais de shell-out depuis l'intérieur du heredoc — l'email ne
-        ## doit jamais atteindre une commande shell non contrôlée). Corrige
-        ## une lacune réelle : cette branche ne vérifiait auparavant AUCUN
-        ## accès, contrairement à #reset (_handle_reset) qui l'a toujours fait.
-        ## Un seul appel à _check_slot_access (slot "1", représentatif de la
-        ## plage 1-12 — le niveau BRO ne dépend pas du numéro de slot) plutôt
-        ## que 12 appels redondants, chacun spawnant bro_user_level.py.
-        local -a _allowed=(0)
-        if _check_slot_access "$email" "1"; then
-            local s
-            for s in $(seq 1 12); do _allowed+=("$s"); done
-        fi
-        reply=$(python3 - "$user_dir" "${_allowed[*]}" <<'PYEOF'
-import json, os, sys
-user_dir = sys.argv[1]
-allowed = {int(x) for x in sys.argv[2].split()} if sys.argv[2] else set()
-lines = ["🧠 Mémoires enregistrées :"]
-found = False
-for s in sorted(allowed):
-    sf = os.path.join(user_dir, f"slot{s}.json")
-    if not os.path.exists(sf): continue
-    try:
-        d = json.load(open(sf))
-        msgs = d.get("messages", [])
-        if not msgs: continue
-        last = msgs[-1].get("content", "")[:80]
-        lines.append(f"  Slot {s} ({len(msgs)} msg) : {last}…")
-        found = True
-    except Exception:
-        pass
-if not found:
-    lines = ["Aucune mémoire enregistrée. Utilisez #rec <texte> pour mémoriser."]
-print("\n".join(lines))
-PYEOF
-        )
+    local reply
+    if [[ -z "$recent_json" || "$recent_json" == "[]" ]]; then
+        reply="Aucune mémoire enregistrée. Utilisez #rec <texte> pour mémoriser."
     else
-        if ! _check_slot_access "$email" "$slot"; then
-            _send_dm "$sender" \
-                "⚠️ Accès refusé : le slot $slot est réservé aux sociétaires." \
-                "${_RELAYS[0]}" 2>/dev/null
-            return
-        fi
-        reply=$(python3 - "$user_dir" "$slot" <<'PYEOF'
-import json, os, sys
-user_dir, slot = sys.argv[1], sys.argv[2]
-sf = os.path.join(user_dir, f"slot{slot}.json")
-if not os.path.exists(sf):
-    print(f"Slot {slot} vide.")
-    sys.exit()
-try:
-    d = json.load(open(sf))
-    msgs = d.get("messages", [])[-5:]
-    lines = [f"📁 Slot {slot} ({len(d.get('messages',[]))} msg — 5 derniers) :"]
-    for m in msgs:
-        ts = m.get("timestamp", "")[:10]
-        lines.append(f"  [{ts}] {m.get('content','')[:120]}")
-    print("\n".join(lines))
-except Exception as e:
-    print(f"Erreur lecture slot {slot}: {e}")
-PYEOF
-        )
+        local lines
+        lines=$(jq -r '.[] | "  [\(.payload.timestamp[0:10] // "?")] \(.payload.content // "" | .[0:120])"' <<< "$recent_json" 2>/dev/null)
+        reply="🧠 Mémoires récentes :
+${lines}"
     fi
 
-    _log "📖 #mem répondu à ${sender:0:12}... ($email, slot $slot, all=$all_slots)"
+    _log "📖 #mem répondu à ${sender:0:12}... ($email)"
     _send_dm "$sender" "${reply:-Erreur lecture mémoire.}" \
         "${_RELAYS[0]}" 2>/dev/null
 }
 
-## ── Canal "plain" avec #reset : effacer mémoires personnelles ───────────
-## Syntaxe DM : "#reset"     → efface uniquement le slot 0
-##              "#reset #2"  → efface uniquement le slot 2
-##              "#reset #all" → efface tous les slots (0-12)
-## Sans #all, seul le slot 0 est effacé — jamais tous les slots par défaut
-## (avant ce fix, un simple "#reset" sans argument effaçait TOUT). Même
-## convention que UPlanet_IA_Responder.sh (TAGS[all]) et bro/tools.py
-## (_slots_from_text), pour un comportement identique sur les 3 canaux.
+## ── Canal "plain" avec #reset : effacer la mémoire personnelle ──────────
+## Syntaxe DM : "#reset" → efface la mémoire Qdrant (seule source de vérité
+## désormais — avant cette simplification, #reset n'effaçait QUE le cache
+## JSON local, jamais les vecteurs Qdrant eux-mêmes, un vrai bug silencieux).
 _handle_reset() {
-    local sender="$1" slot="${2:-0}" all_slots="${3:-false}"
+    local sender="$1"
     local email
     email=$(_sender_email "$sender")
     if [[ -z "$email" ]]; then
@@ -762,46 +710,13 @@ _handle_reset() {
         return
     fi
 
-    local user_dir="$HOME/.zen/flashmem/$email"
-    local reply
+    python3 "$MY_PATH/../memory_manager.py" delete-slot --user-id "$email" --slot 0 >/dev/null 2>&1
+    ## Cache local historique (pré-simplification) — nettoyage défensif, ce
+    ## fichier ne devrait plus jamais être recréé par short_memory.py.
+    rm -f "$HOME/.zen/flashmem/$email/slot0.json" 2>/dev/null
 
-    if [[ "$all_slots" == "true" ]]; then
-        ## Un seul appel à _check_slot_access (voir _handle_mem) plutôt que
-        ## 12 appels redondants.
-        local _has_soc_access=false
-        _check_slot_access "$email" "1" && _has_soc_access=true
-        local -a _cleared=()
-        local s
-        for s in 0 $(seq 1 12); do
-            [[ $s -gt 0 && "$_has_soc_access" != "true" ]] && continue
-            if [[ -f "$user_dir/slot${s}.json" ]]; then
-                rm -f "$user_dir/slot${s}.json"
-                _cleared+=("$s")
-            fi
-        done
-        if [[ ${#_cleared[@]} -eq 0 ]]; then
-            reply="Aucune mémoire à effacer."
-        else
-            reply="🗑️ Mémoires effacées (slots ${_cleared[*]// /, })."
-        fi
-    else
-        if ! _check_slot_access "$email" "$slot"; then
-            _send_dm "$sender" \
-                "⚠️ Accès refusé : le slot $slot est réservé aux sociétaires." \
-                "${_RELAYS[0]}" 2>/dev/null
-            return
-        fi
-        if [[ -f "$user_dir/slot${slot}.json" ]]; then
-            rm -f "$user_dir/slot${slot}.json"
-            reply="🗑️ Slot $slot effacé."
-        else
-            reply="Slot $slot déjà vide."
-        fi
-    fi
-
-    _log "🗑️ #reset ($email, slot $slot, all=$all_slots)"
-    _send_dm "$sender" "$reply" \
-        "${_RELAYS[0]}"
+    _log "🗑️ #reset ($email)"
+    _send_dm "$sender" "🗑️ Mémoire effacée." "${_RELAYS[0]}" 2>/dev/null
 }
 
 ## ── Helper : parser un payload JSON en plusieurs variables shell ─────
@@ -1428,6 +1343,38 @@ _handle_ucloud_share() {
         || _log "WARN: 📸 ucloud_share ${mode#--} refusé ou en échec (détail dans $LOG_FILE)"
 }
 
+## ── Canal "arbor_baton" : notification de courtoisie, transmission du
+## bâton de parole ARBOR (cf. IA/arbor_baton.sh). L'état (ARBOR_BATON_HOLDER/
+## SINCE) est déjà écrit par la station émettrice AVANT l'envoi de ce DM —
+## ce handler ne fait QUE prévenir le capitaine, aucune mutation d'état ici.
+_handle_arbor_baton() {
+    local payload="$1" sender="$2"
+    local _ACTION _FROM_HEX _SINCE
+    _payload_get "$payload" action from_hex since
+
+    [[ "$_ACTION" != "offer" ]] && { _log "WARN: arbor_baton: action inattendue '$_ACTION' de ${sender:0:12}..."; return; }
+
+    local _from_name="${_FROM_HEX:-$sender}"
+    local _f
+    for _f in "$HOME/.zen/tmp/swarm"/*/12345.json; do
+        [[ -f "$_f" ]] || continue
+        if [[ "$(jq -r '.NODEHEX // empty' "$_f" 2>/dev/null)" == "$sender" ]]; then
+            _from_name=$(jq -r '.hostname // empty' "$_f" 2>/dev/null)
+            break
+        fi
+    done
+
+    _log "🪄 Bâton ARBOR reçu de ${_from_name} (${sender:0:12}...)"
+
+    [[ -z "${CAPTAINEMAIL:-}" ]] && return
+    local _captain_hex
+    _captain_hex=$(bro_resolve_hex "$CAPTAINEMAIL")
+    [[ -z "$_captain_hex" ]] && return
+    _send_dm "$_captain_hex" \
+        "🪄 Le bâton de parole ARBOR vous a été transmis par la station ${_from_name}. Le cycle d'auto-amélioration quotidien (mine-requests) tourne désormais ici. Détails dans l'onglet 🧬 ARBOR." \
+        "${_RELAYS[0]}" 2>/dev/null
+}
+
 ## ── Canal "udrive" : sync fichier depuis IPFS → APP/uDRIVE ───────────
 _handle_udrive() {
     local payload="$1"
@@ -1541,23 +1488,17 @@ _send_welcome_messages() {
     local WELCOME_MSG
     WELCOME_MSG="🧠 Bonjour ! Je suis BRO, l'assistant IA de votre station Astroport.
 
-Envoyez-moi vos questions en DM — je rechercherai dans la base de connaissance (Nextcloud + docs) et vous répondrai grâce à Ollama.
+Envoyez-moi vos questions en DM — je retrouve seul ce qui est pertinent dans votre mémoire personnelle et vous réponds grâce à Ollama.
 
 ━━━ COMMANDES ━━━
 
-❓ Question libre → réponse IA (utilise slot 0 par défaut)
+❓ Question libre → réponse IA, contexte retrouvé automatiquement
    Exemple : « Quels services sont disponibles ici ? »
 
-🔢 Sélectionner des slots de mémoire pour le contexte :
-   Ma question #1        → utilise le slot 1
-   Ma question #1 #5     → utilise les slots 1 et 5 combinés
+💾 #rec <texte>           → mémoriser (je m'en souviendrai pour les prochaines questions)
+   #rec <texte> #bro <?>  → mémoriser ET interroger l'IA dans le même message
 
-💾 #rec <texte>           → mémoriser dans le slot 0
-   #rec #2 <texte>        → mémoriser dans le slot 2 (sociétaires)
-   #rec <texte> #bro <?>  → mémoriser ET interroger l'IA
-
-📖 #mem                   → voir toutes vos mémoires
-   #mem #2                → voir le contenu du slot 2
+📖 #mem                   → voir vos mémoires récentes
 
 🎯 Contexte skill (base de connaissance partagée du node) :
    #rec:<skill> <note>    → contribuer à la mémoire partagée du skill
@@ -1573,8 +1514,7 @@ Envoyez-moi vos questions en DM — je rechercherai dans la base de connaissance
    ex: #craft https://instructables.com/...
    → retourne un JSON {name, icon, ingredients, ...} pour l'éditeur de craft
 
-🗑️ #reset                  → effacer toutes vos mémoires
-   #reset #2              → effacer uniquement le slot 2
+🗑️ #reset                  → effacer votre mémoire
 
 ━━━━━━━━━━━━━━━━━
 
@@ -2038,7 +1978,7 @@ _process_event() {
     ## jamais par un humain en chat — donc aucune entrée correspondante dans le
     ## `case` soumis au niveau d'abonnement MULTIPASS plus bas, contrairement à
     ## comfyui_job qui, lui, est aussi accessible à l'utilisateur.
-    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result|ucloud_share|ucloud_share_ack)$ ]]; then
+    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result|ucloud_share|ucloud_share_ack|arbor_baton)$ ]]; then
         if ! _is_swarm_node "$sender"; then
             _log "WARN: canal inter-NODE '$channel' de ${sender:0:12}... non reconnu comme NODE swarm — ignoré"
             return
@@ -2054,6 +1994,7 @@ _process_event() {
             vision_analysis_result)  _handle_vision_analysis_result "$payload" ;;
             ucloud_share)            _handle_ucloud_share "$payload" "--receive" ;;
             ucloud_share_ack)        _handle_ucloud_share "$payload" "--ack" ;;
+            arbor_baton)             _handle_arbor_baton "$payload" "$sender" ;;
         esac
         return
     fi
@@ -2061,8 +2002,8 @@ _process_event() {
     ## ── Canal "comfyui_job" : double origine, routage spécial ───────────
     ## Contrairement aux canaux ci-dessus, comfyui_job peut être émis SOIT par
     ## un NODE swarm (délégation inter-station, bypass niveau — traité ici),
-    ## SOIT directement par un utilisateur final (gated par _USER_LEVEL ≥ 4,
-    ## traité plus bas dans le case général). Avant ce correctif (2026-10), le
+    ## SOIT directement par un utilisateur final (traité plus bas dans le case
+    ## général, accessible à tous désormais). Avant ce correctif (2026-10), le
     ## filtre regex ci-dessus interceptait TOUJOURS ce canal et rejetait tout
     ## expéditeur non-NODE — rendant l'entrée "comfyui_job" du case général
     ## définitivement inatteignable pour une requête utilisateur directe.
@@ -2071,7 +2012,15 @@ _process_event() {
         return
     fi
 
-    ## ── Niveau d'accès BRO (atom4love + souscription ẐEN) ───────────────
+    ## ── Niveau d'accès BRO ───────────────────────────────────────────────
+    ## Simplification 2026-10-14 (décision capitaine) : BRO est accessible à
+    ## tous les MULTIPASS hébergés sans palier économique — l'usage reste de
+    ## toute façon monétisé en ẐEN sur le MULTIPASS de l'appelant (kind 7).
+    ## _USER_LEVEL ne sert donc plus qu'à (a) écarter les expéditeurs
+    ## totalement inconnus de la constellation (level 0, anti-abus — même
+    ## logique que la limite à 3 messages du kind-1 public) et (b) réserver la
+    ## modération #mod:<skill>/#rm:<skill> au Capitaine (level 5, rôle
+    ## administratif unique, pas un palier payant).
     ## Levels : 0=anonyme 1=locataire 2=atome 3=satellite 4=constellation 5=capitaine
     local _USER_LEVEL
     _USER_LEVEL=$(bro_user_level "$sender" "${_CONSTELLATION_RELAY}")
@@ -2094,28 +2043,9 @@ _process_event() {
             if jq -e '._uenc_img' <<< "$question" >/dev/null 2>&1; then
                 local _img_hint
                 _img_hint=$(jq -r '._uenc_img.hint // ""' <<< "$question" 2>/dev/null)
-                _handle_bro_image "$sender" "$question" "$_img_hint" "$_USER_LEVEL"
+                _handle_bro_image "$sender" "$question" "$_img_hint"
                 return
             fi
-
-            ## Collecter TOUS les slots #N (1-12) mentionnés — ex: "#1 #5" → slots=(1 5)
-            ## Cohérent avec UPlanet_IA_Responder.sh (slot détecté par tag standalone)
-            local _slots=() slot=0
-            for i in {1..12}; do
-                if [[ "$question" =~ \#${i}([[:space:]]|$) ]]; then
-                    _slots+=("$i")
-                fi
-            done
-            ## slot = premier slot (pour #rec/#mem/#reset) ; slot_str = liste CSV pour BRO
-            [[ ${#_slots[@]} -gt 0 ]] && slot="${_slots[0]}"
-            ## #all : #mem/#reset visent tous les slots (0-12) au lieu du seul
-            ## slot 0 par défaut — même convention que UPlanet_IA_Responder.sh
-            ## (TAGS[all]) et bro/tools.py (_slots_from_text) pour que les 3
-            ## canaux se comportent identiquement.
-            local _mem_reset_all=false
-            [[ "$question" =~ \#all([[:space:]]|$) ]] && _mem_reset_all=true
-            local slot_str
-            slot_str=$(IFS=,; echo "${_slots[*]:-0}")
 
             ## ── Extraire [ctx:<skill>:<level>] si présent (préfixe minelife.html) ──
             local _ctx_skill=""
@@ -2126,49 +2056,35 @@ _process_event() {
 
             ## Router selon la commande DM
             if echo "$question" | grep -qi '#reset'; then
-                _handle_reset "$sender" "$slot" "$_mem_reset_all"
+                _handle_reset "$sender"
 
             elif echo "$question" | grep -qi '#craft'; then
-                ## #craft <url> — requiert Level ≥ 2 (atom4love)
-                if [[ "$_USER_LEVEL" -lt 2 ]]; then
-                    _send_dm "$sender" "🔒 #craft nécessite un profil atom4love.\nCrée le tien sur atomic.html puis reviens !"
-                    return
-                fi
+                ## #craft <url> — accessible à tous, plus de palier requis.
                 local craft_url
                 craft_url=$(echo "$question" | grep -oiE 'https?://[^[:space:]]+' | head -1)
                 [[ -z "$craft_url" ]] && craft_url=$(echo "$question" | sed 's/#craft[[:space:]]*//' | xargs)
                 _handle_craft "$sender" "$craft_url"
 
             elif echo "$question" | grep -qi '#badge'; then
-                ## #badge <skill> — requiert Level ≥ 3 (satellite / constellation)
-                if [[ "$_USER_LEVEL" -lt 3 ]]; then
-                    _send_dm "$sender" "🔒 #badge nécessite une souscription ẐEN (satellite ou constellation).\nhttps://opencollective.com/monnaie-libre/contribute"
-                    return
-                fi
+                ## #badge <skill> — accessible à tous, plus de palier requis.
                 local badge_skill
                 badge_skill=$(echo "$question" | sed 's/.*#badge[[:space:]]*//' | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-' | head -c 40)
                 _handle_badge "$sender" "$badge_skill"
 
             elif [[ "$question" =~ ^#mem:([a-z0-9_-]*)([[:space:]]|$) ]]; then
-                ## #mem:<skill> — requiert Level ≥ 2 (atom4love)
-                if [[ "$_USER_LEVEL" -lt 2 ]]; then
-                    _send_dm "$sender" "🔒 #mem:<skill> nécessite un profil atom4love.\nCrée le tien sur atomic.html !"
-                    return
-                fi
+                ## #mem:<skill> — accessible à tous, plus de palier requis.
                 _handle_mem_skill "$sender" "${BASH_REMATCH[1]}"
 
             elif echo "$question" | grep -qi '#mem'; then
-                _handle_mem "$sender" "$slot" "$_mem_reset_all"
+                _handle_mem "$sender"
 
             elif [[ "$question" =~ ^#rec:([a-z0-9_-]+)[[:space:]]+(.*) ]]; then
-                ## #rec:<skill> — requiert Level ≥ 3 (satellite ẐEN). Relevé
-                ## depuis ATOME (2, trivialement obtenable) pour introduire
-                ## une friction économique réelle contre l'empoisonnement de
-                ## la mémoire collective — même seuil que bro_watch_core.py.
-                if [[ "$_USER_LEVEL" -lt 3 ]]; then
-                    _send_dm "$sender" "🔒 #rec:<skill> nécessite une souscription ẐEN satellite ou constellation.\nhttps://opencollective.com/monnaie-libre/contribute"
-                    return
-                fi
+                ## #rec:<skill> — accessible à tous, plus de palier requis.
+                ## La friction anti-poisoning (relevée à SATELLITE en 2026-07)
+                ## est abandonnée : la modération a posteriori du Capitaine
+                ## (#mod:<skill> / #rm:<skill>, toujours réservée au Capitaine)
+                ## reste le filet de sécurité réel contre une contribution
+                ## abusive de la mémoire collective.
                 _handle_rec_skill "$sender" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
 
             elif [[ "$question" =~ ^#mod:([a-z0-9_-]+) ]]; then
@@ -2191,26 +2107,22 @@ _process_event() {
                 _handle_rm_skill "$sender" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
 
             elif echo "$question" | grep -qi '#rec'; then
-                ## Extraire le texte à mémoriser (sans #rec, sans tous les #N, sans #bro...)
+                ## Extraire le texte à mémoriser (sans #rec, sans #bro...)
                 local mem_text bro_question=""
                 mem_text=$(echo "$question" | sed 's/#rec\b[[:space:]]*//' | xargs)
-                ## Supprimer tous les tags de slot détectés
-                for _s in "${_slots[@]}"; do
-                    mem_text=$(echo "$mem_text" | sed "s/#${_s}\b[[:space:]]*//" | xargs)
-                done
                 if echo "$mem_text" | grep -qi '#bro'; then
                     bro_question=$(echo "$mem_text" | grep -oi '#bro[[:space:]].*' | sed 's/#bro[[:space:]]//I' | xargs)
                     mem_text=$(echo "$mem_text" | sed 's/#bro.*//Ii' | xargs)
                 fi
-                [[ -n "$mem_text" ]] && _handle_rec "$sender" "$mem_text" "$slot"
-                [[ -n "$bro_question" ]] && _handle_bro "$sender" "$bro_question" "$slot_str"
+                [[ -n "$mem_text" ]] && _handle_rec "$sender" "$mem_text"
+                [[ -n "$bro_question" ]] && _handle_bro "$sender" "$bro_question"
 
             elif [[ -n "$_ctx_skill" ]]; then
                 ## Question avec contexte skill [ctx:<skill>] → réponse pédagogique
                 _handle_bro_skill "$sender" "$question" "$_ctx_skill"
 
             else
-                _handle_bro "$sender" "$question" "$slot_str"
+                _handle_bro "$sender" "$question"
             fi
             ;;
         udrive)
@@ -2220,14 +2132,10 @@ _process_event() {
             _handle_love "$payload" "$sender"
             ;;
         comfyui_job)
-            ## comfyui_job — requiert Level ≥ 4 (constellation avec IA).
+            ## comfyui_job — accessible à tous, plus de palier requis.
             ## N'est atteint ici QUE pour une requête directe d'un utilisateur
             ## final (sender non reconnu comme NODE swarm) — le cas inter-NODE
-            ## est intercepté plus haut, avant le calcul de _USER_LEVEL.
-            if [[ "$_USER_LEVEL" -lt 4 ]]; then
-                _send_dm "$sender" "🔒 ComfyUI nécessite une souscription constellation (avec IA).\nhttps://opencollective.com/monnaie-libre/contribute"
-                return
-            fi
+            ## est intercepté plus haut.
             _handle_comfyui_job "$payload" "$sender"
             ;;
         *)

@@ -8,7 +8,6 @@ Extrait de bro_watch_core.py (split du monolithe, aucune logique modifiée).
 import os
 import re
 import sys
-import json
 import time
 import hashlib
 import tempfile
@@ -18,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 import bro_tools
 from bro._shared import BRO_IA_PATH
 
-__all__ = ['QDRANT_HOST', 'QDRANT_PORT', 'QDRANT_TOPICS_COLLECTION', 'QDRANT_EMBED_MODEL', 'QDRANT_VECTOR_SIZE', 'SEMANTIC_THRESHOLD', '_qdrant_client', '_qdrant_embed', '_cosine', '_topic_point_id', 'semantic_match', 'QDRANT_INTENT_COLLECTION', 'INTENT_MARGIN_THRESHOLD', 'INTENT_SHARED_NEGATIVES', '_intent_point_id', '_seed_intent_corpus', 'match_intent', 'BRO_MEMORY_SLOT', 'BRO_PERSONA_SLOT', 'PERSONA_RECALL_THRESHOLD', 'QDRANT_NETWORK_COLLECTION', 'NETWORK_RECALL_THRESHOLD', 'MEMORY_RECALL_THRESHOLD', '_memory_slot_file', '_recall_relevant_memories', '_remember_exchange', '_recall_persona', '_recall_network_profile', '_forget_memory']
+__all__ = ['QDRANT_HOST', 'QDRANT_PORT', 'QDRANT_TOPICS_COLLECTION', 'QDRANT_EMBED_MODEL', 'QDRANT_VECTOR_SIZE', 'SEMANTIC_THRESHOLD', '_qdrant_client', '_qdrant_embed', '_cosine', '_topic_point_id', 'semantic_match', 'QDRANT_INTENT_COLLECTION', 'INTENT_MARGIN_THRESHOLD', 'INTENT_SHARED_NEGATIVES', '_intent_point_id', '_seed_intent_corpus', 'match_intent', 'BRO_MEMORY_SLOT', 'BRO_PERSONA_SLOT', 'PERSONA_RECALL_THRESHOLD', 'QDRANT_NETWORK_COLLECTION', 'NETWORK_RECALL_THRESHOLD', 'MEMORY_RECALL_THRESHOLD', '_recall_relevant_memories', '_remember_exchange', '_recall_persona', '_recall_network_profile', '_forget_memory']
 
 
 
@@ -216,9 +215,6 @@ NETWORK_RECALL_THRESHOLD = 0.60
 
 MEMORY_RECALL_THRESHOLD = 0.72
 
-def _memory_slot_file(owner_email):
-    return os.path.expanduser(f"~/.zen/flashmem/{owner_email}/slot{BRO_MEMORY_SLOT}.json")
-
 def _recall_relevant_memories(owner_email, text, limit=3):
     """Recherche sémantique dans la mémoire self-DM (Qdrant, memory_manager.py).
     Dégradation silencieuse (chaîne vide) si Qdrant/Ollama indisponible — ne
@@ -246,30 +242,23 @@ def _remember_exchange(owner_email, text, answer):
     présent dans le MÊME prompt juste après. Mémoriser uniquement ce que
     l'utilisateur a dit élimine cette boucle de rétroaction. Déclenche le
     cycle RÊVE (compression épisodique → sémantique) au-delà du seuil.
-    Dégradation silencieuse : ne doit jamais faire échouer la réponse."""
+    Dégradation silencieuse : ne doit jamais faire échouer la réponse.
+
+    Simplification 2026-10 : Qdrant seule source de vérité (plus de fichier
+    ~/.zen/flashmem/{owner_email}/slot{BRO_MEMORY_SLOT}.json local) — le
+    compte de points Qdrant remplace le compte de messages du JSON comme
+    garde avant d'invoquer le cycle RÊVE."""
     try:
         from datetime import datetime
         content = text
         ts = datetime.utcnow().isoformat() + "Z"
 
-        slot_file = _memory_slot_file(owner_email)
-        os.makedirs(os.path.dirname(slot_file), exist_ok=True)
-        if os.path.isfile(slot_file):
-            with open(slot_file, encoding="utf-8") as f:
-                slot_mem = json.load(f)
-        else:
-            slot_mem = {"user_id": owner_email, "slot": BRO_MEMORY_SLOT, "messages": []}
-        slot_mem["messages"].append({"timestamp": ts, "content": content})
-        slot_mem["messages"] = slot_mem["messages"][-200:]
-        with open(slot_file, "w", encoding="utf-8") as f:
-            json.dump(slot_mem, f, indent=2, ensure_ascii=False)
-
         import sys
         sys.path.insert(0, BRO_IA_PATH)
         import memory_manager as mm
-        mm.upsert_user_slot(owner_email, BRO_MEMORY_SLOT, content, timestamp=ts)
-        if len(slot_mem["messages"]) >= 170:
-            mm.reve_compress_slot(owner_email, BRO_MEMORY_SLOT, slot_file=slot_file)
+        ok = mm.upsert_user_slot(owner_email, BRO_MEMORY_SLOT, content, timestamp=ts)
+        if ok and mm.count_user_slot(owner_email, BRO_MEMORY_SLOT) >= 170:
+            mm.reve_compress_slot(owner_email, BRO_MEMORY_SLOT)
     except Exception as e:
         print(f"[BRO_WATCH] Mémoire self-DM indisponible pour {owner_email} : {e}")
 
@@ -312,15 +301,10 @@ def _recall_network_profile(username, limit=1):
     return ""
 
 def _forget_memory(owner_email):
-    """#oublie — efface la mémoire self-DM (fichier local + points Qdrant du
-    slot dédié). Contrôle explicite de l'utilisateur sur sa propre mémoire,
-    symétrique au #reset des slots société (bro_dm_daemon.sh)."""
-    slot_file = _memory_slot_file(owner_email)
-    try:
-        if os.path.isfile(slot_file):
-            os.remove(slot_file)
-    except Exception:
-        pass
+    """#oublie — efface la mémoire self-DM (points Qdrant du slot dédié,
+    seule source de vérité). Contrôle explicite de l'utilisateur sur sa
+    propre mémoire, symétrique au #reset de la mémoire personnelle
+    (bro_dm_daemon.sh)."""
     try:
         import sys
         sys.path.insert(0, BRO_IA_PATH)

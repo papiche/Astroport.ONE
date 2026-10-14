@@ -333,6 +333,30 @@ def search_user_slot(user_id: str, query: str, slots: list = None,
     return r.get("result", [])
 
 
+def recent_user_slot(user_id: str, slot: int = 0, limit: int = 5) -> list:
+    """Retourne les `limit` entrées les plus récentes d'un slot, triées par
+    timestamp décroissant — pour "voici ce que tu m'as dit récemment" (#mem),
+    par opposition à search_user_slot qui cherche par pertinence sémantique à
+    une question. Volume modeste par construction (RÊVE compresse au-delà de
+    REVE_THRESHOLD), le tri client-side après un scroll complet reste cher."""
+    cname = f"memory_{_user_hex(user_id)}"
+    points: list = []
+    offset = None
+    while True:
+        body: dict = {"limit": 250, "with_payload": True, "with_vector": False,
+                      "filter": {"must": [{"key": "slot", "match": {"value": slot}}]}}
+        if offset:
+            body["offset"] = offset
+        r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/scroll", body)
+        result = r.get("result", {})
+        points.extend(result.get("points", []))
+        offset = result.get("next_page_offset")
+        if not offset:
+            break
+    points.sort(key=lambda p: p.get("payload", {}).get("timestamp", ""), reverse=True)
+    return points[:limit]
+
+
 def count_user_slot(user_id: str, slot: int) -> int:
     """Nombre de points Qdrant d'un slot — pas de recherche sémantique
     nécessaire (contrairement à search_user_slot), utilisé pour l'affichage
@@ -575,101 +599,59 @@ def _ollama_summarize(text: str, activity: str = "", max_tokens: int = 200) -> s
     return r.get("response", "").strip()
 
 
-def reve_compress_slot(user_id: str, slot: int,
-                       slot_file: str = None) -> bool:
+def reve_compress_slot(user_id: str, slot: int = 0) -> bool:
     """
     Déclenche la compression RÊVE pour un slot si >= REVE_THRESHOLD entrées.
     Résume les anciennes en [RÊVE] + conserve les REVE_KEEP plus récentes.
     Retourne True si compression effectuée.
+
+    Simplification 2026-10 : scrolle Qdrant directement (seule source de
+    vérité désormais — plus de fichier ~/.zen/flashmem/{user_id}/slot{N}.json
+    local à lire/purger). Élimine la logique "qdrant_synced"/rattrapage
+    anti-perte de l'ancienne version : il n'existe plus de seconde copie qui
+    pourrait diverger de Qdrant, donc plus rien à rattraper avant de purger.
     """
-    if not slot_file:
-        slot_file = os.path.expanduser(
-            f"~/.zen/flashmem/{user_id}/slot{slot}.json")
-    if not os.path.isfile(slot_file):
+    cname = f"memory_{_user_hex(user_id)}"
+    points: list = []
+    offset = None
+    while True:
+        body: dict = {"limit": 250, "with_payload": True, "with_vector": False,
+                      "filter": {"must": [{"key": "slot", "match": {"value": slot}}]}}
+        if offset:
+            body["offset"] = offset
+        r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/scroll", body)
+        result = r.get("result", {})
+        points.extend(result.get("points", []))
+        offset = result.get("next_page_offset")
+        if not offset:
+            break
+
+    if len(points) < REVE_THRESHOLD:
         return False
 
-    with open(slot_file, encoding="utf-8") as f:
-        data = json.load(f)
-
-    msgs = data.get("messages", [])
-    if len(msgs) < REVE_THRESHOLD:
-        return False
-
-    to_compress = msgs[:-REVE_KEEP]
-    recent      = msgs[-REVE_KEEP:]
-
-    # Sécurité anti-perte (2026-07-06) : to_compress est sur le point d'être
-    # PURGÉ du JSON ci-dessous — s'il contient un message jamais synchronisé
-    # dans Qdrant (qdrant_synced=false, posé par short_memory.py), c'est la
-    # SEULE copie qui en resterait, et elle va disparaître. Rattrapage avant
-    # toute purge ; abandon complet (rien n'est modifié) si le rattrapage
-    # échoue encore — nouvelle tentative au prochain cycle RÊVE plutôt qu'une
-    # perte silencieuse.
-    unsynced = [m for m in to_compress if not m.get("qdrant_synced", True)]
-    if unsynced:
-        print(f"[memory_manager] 🔄 RÊVE : rattrapage de {len(unsynced)} message(s) "
-              f"jamais synchronisés avant compression ({user_id}, slot {slot})")
-        failed = sum(
-            0 if upsert_user_slot(user_id, slot, m.get("content", ""),
-                                   timestamp=m.get("timestamp"), event_id=m.get("event_id", ""))
-            else 1
-            for m in unsynced
-        )
-        if failed:
-            print(f"[memory_manager] ❌ RÊVE abandonné pour {user_id}/slot{slot} : "
-                  f"{failed}/{len(unsynced)} message(s) toujours non synchronisés après "
-                  f"rattrapage — rien n'est purgé du JSON, nouvelle tentative au prochain cycle.")
-            observability.log_event(user_id, "reve_compression", "abort_unsynced",
-                                     success=False, extra={"failed": failed, "total": len(unsynced)})
-            return False
-        print(f"[memory_manager] ✅ RÊVE : rattrapage réussi pour {len(unsynced)} message(s)")
+    points.sort(key=lambda p: p.get("payload", {}).get("timestamp", ""))
+    to_compress = points[:-REVE_KEEP]
 
     block = "\n".join(
-        f"[{m.get('timestamp', '')[:10]}] {m.get('content', '')}"
-        for m in to_compress
+        f"[{p.get('payload', {}).get('timestamp', '')[:10]}] {p.get('payload', {}).get('content', '')}"
+        for p in to_compress
     )
     activity_block = observability.digest(
         user_id,
-        since_ts=to_compress[0].get("timestamp") if to_compress else None,
-        until_ts=to_compress[-1].get("timestamp") if to_compress else None,
+        since_ts=to_compress[0].get("payload", {}).get("timestamp") if to_compress else None,
+        until_ts=to_compress[-1].get("payload", {}).get("timestamp") if to_compress else None,
     )
     summary = _ollama_summarize(block, activity_block)
     if not summary:
         return False
 
     ts_now = datetime.utcnow().isoformat() + "Z"
-    # importance = nombre de messages condensés dans ce résumé — un souvenir
-    # qui en synthétise beaucoup doit peser plus qu'un message isolé (cf.
-    # upsert_user_slot). season dérivée du timestamp du DERNIER message
-    # compressé (pas ts_now, qui est l'instant de la compression elle-même,
-    # pas celui du souvenir).
-    summary_season = _season(to_compress[-1].get("timestamp", ts_now)) if to_compress else _season(ts_now)
-    summary_entry: dict = {
-        "timestamp": ts_now,
-        "event_id":  f"reve:{hashlib.md5(summary.encode()).hexdigest()[:8]}",
-        "content":   f"[RÊVE] {summary}",
-        "source":    "reve_compression",
-        "season":    summary_season,
-        "importance": len(to_compress),
-    }
-    if to_compress and "latitude" in to_compress[-1]:
-        summary_entry["latitude"]  = to_compress[-1]["latitude"]
-        summary_entry["longitude"] = to_compress[-1]["longitude"]
-
-    data["messages"] = [summary_entry] + recent
-    with open(slot_file, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-    upsert_user_slot(user_id, slot, summary_entry["content"], timestamp=ts_now,
+    upsert_user_slot(user_id, slot, f"[RÊVE] {summary}", timestamp=ts_now,
                      importance=len(to_compress))
 
-    # Purge des vecteurs individuels remplacés par le résumé ci-dessus — sans
-    # ça, ils restent orphelins dans Qdrant pour toujours : ni retrouvables
-    # depuis le JSON local (déjà purgé plus haut), ni jamais nettoyés, et
-    # continuent de polluer search_user_slot (2026-07-06).
-    old_ids = [_stable_id(user_id, m.get("timestamp"))
-               for m in to_compress if m.get("timestamp")]
-    cname = f"memory_{_user_hex(user_id)}"
+    # Purge des points individuels remplacés par le résumé ci-dessus — sans
+    # ça, ils restent orphelins dans Qdrant pour toujours.
+    old_ids = [p["id"] for p in to_compress]
     if not _delete_points(cname, old_ids):
         print(f"[memory_manager] ⚠️ RÊVE : {len(old_ids)} vecteur(s) compressé(s) "
               f"non purgés de Qdrant pour {user_id}/slot{slot} (orphelins, sans impact "
@@ -867,6 +849,11 @@ if __name__ == "__main__":
     pd.add_argument("--user-id", required=True)
     pd.add_argument("--slot",    type=int, required=True)
 
+    prs = sub.add_parser("recent-slot")
+    prs.add_argument("--user-id", required=True)
+    prs.add_argument("--slot",    type=int, default=0)
+    prs.add_argument("--limit",   type=int, default=5)
+
     pcs = sub.add_parser("count-slot")
     pcs.add_argument("--user-id", required=True)
     pcs.add_argument("--slot",    type=int, required=True)
@@ -959,6 +946,10 @@ if __name__ == "__main__":
     elif args.cmd == "delete-slot":
         ok = delete_user_slot(args.user_id, args.slot)
         sys.exit(0 if ok else 1)
+
+    elif args.cmd == "recent-slot":
+        results = recent_user_slot(args.user_id, args.slot, args.limit)
+        print(json.dumps(results, ensure_ascii=False))
 
     elif args.cmd == "count-slot":
         print(count_user_slot(args.user_id, args.slot))

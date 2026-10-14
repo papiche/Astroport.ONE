@@ -55,6 +55,26 @@ CAPTAIN_HEX=$(cat "$HOME/.zen/game/nostr/${CURRENT_CAPTAIN}/HEX" 2>/dev/null 2>&
 # distincte du Capitaine et des MULTIPASS. Ne doit jamais être purgée.
 SELF_NODE_HEX=$(cat "$HOME/.zen/tmp/${IPFSNODEID}/HEX" 2>/dev/null)
 
+# HEX du DID coopératif (UPLANETNAME.G1, cf. tools/cooperative_config.sh::
+# COOP_CONFIG_KEYFILE) : identité PARTAGÉE par toute la constellation (dérivée
+# à froid de $UPLANETNAME, identique sur chaque station), porteuse de l'event
+# kind 30800 d=cooperative-config (PAF, seuils ARBOR, bâton de parole ARBOR
+# depuis 2026-10-14, etc.) et de nombreux événements historiques (billets Ğ1,
+# notes). AVANT ce correctif (2026-10-15), cette clé n'était PROTÉGÉE QUE par
+# effet de bord : RUNTIME/ORACLE.refresh.sh l'ajoute incidemment au fichier
+# ~/.zen/game/nostr/ZSWARM/HEX (registre de clés système pour un usage sans
+# rapport, le filtrage Oracle/Mirofish), lui-même repris par le scan générique
+# `find ~/.zen/game/nostr -name HEX` de get_authorized_keys() — AUCUNE station
+# qui n'aurait jamais exécuté ORACLE.refresh.sh (fraîchement installée, ou ce
+# script désactivé) n'aurait cette protection : --clean aurait alors supprimé
+# TOUT l'event cooperative-config et tout l'historique de cette clé, sans
+# avertissement. Protection désormais EXPLICITE et indépendante de ZSWARM.
+COOP_DID_KEYFILE="$HOME/.zen/game/uplanet.G1.nostr"
+COOP_DID_HEX=""
+if [[ -s "$COOP_DID_KEYFILE" ]]; then
+    COOP_DID_HEX=$(grep -oE 'HEX=[0-9a-f]{64}' "$COOP_DID_KEYFILE" | head -1 | cut -d= -f2)
+fi
+
 # --- FONCTIONS ---
 get_authorized_keys() {
     find "$NOSTR_DATA_DIR" -name "HEX" -exec cat {} \; 2>/dev/null > "$TEMP_ALLOWED"
@@ -64,6 +84,7 @@ get_authorized_keys() {
     # être traitée comme autorisée au même titre que le MULTIPASS qui l'héberge.
     find "$NOSTR_DATA_DIR" -name "HEX_LOVE" -exec cat {} \; 2>/dev/null >> "$TEMP_ALLOWED"
     [[ -n "$SELF_NODE_HEX" ]] && echo "$SELF_NODE_HEX" >> "$TEMP_ALLOWED"
+    [[ -n "$COOP_DID_HEX" ]] && echo "$COOP_DID_HEX" >> "$TEMP_ALLOWED"
     sort -u "$TEMP_ALLOWED" -o "$TEMP_ALLOWED"
 }
 
@@ -264,6 +285,8 @@ for author in "${AUTHORS[@]}"; do
 
     if [[ "$author" == "$SELF_NODE_HEX" ]]; then
         AUTHOR_DISPLAY_NAME[$author]="$IPFSNODEID"; AUTHOR_STATUS[$author]="🛰️  NODE (local)"
+    elif [[ -n "$COOP_DID_HEX" && "$author" == "$COOP_DID_HEX" ]]; then
+        AUTHOR_DISPLAY_NAME[$author]="UPLANETNAME.G1 (DID coopératif)"; AUTHOR_STATUS[$author]="🏛️  DID COOPÉRATIF"
     elif [[ -n "${ALLOWED_SET[$author]:-}" && -n "$NODE_LABEL" ]]; then
         AUTHOR_DISPLAY_NAME[$author]="$NODE_LABEL"; AUTHOR_STATUS[$author]="🌐 NODE ACTIF"
     elif [[ -n "${ALLOWED_SET[$author]:-}" ]]; then
@@ -345,6 +368,8 @@ case "$1" in
         echo "  🛰️  NODE DISPARU    ancienne station, absente du swarm depuis >48h (candidate purge)"
         echo "  ✅ AUTORISÉ         MULTIPASS connu (local ou swarm)"
         echo "  👑 CAPITAINE        MULTIPASS du capitaine (protégé)"
+        echo "  🏛️  DID COOPÉRATIF   clé UPLANETNAME.G1 partagée constellation (config coop + bâton"
+        echo "                      ARBOR + historique, protégé explicitement, cf. tools/cooperative_config.sh)"
         echo "  📜 DID+ABONNEMENT VALIDE  DID (kind 30800) de la même constellation UPLANET"
         echo "                            avec un abonnement coopératif actif (protégé)"
         echo "  ❌ À PURGER         MULTIPASS inconnu"

@@ -12,23 +12,20 @@ BRO répond automatiquement à toute question libre en cherchant dans sa base de
 
 | Commande | Rôle |
 |----------|------|
-| `<question libre>` | Réponse IA depuis la base de connaissance |
-| `Ma question #1` | Utilise le slot mémoire 1 comme contexte |
-| `Ma question #1 #5` | Combine les slots 1 et 5 |
+| `<question libre>` | Réponse IA — le contexte personnel pertinent est retrouvé automatiquement (recherche sémantique Qdrant), rien à sélectionner |
 
 ### Mémoire personnelle
 
+Une seule mémoire par MULTIPASS (simplification 2026-10 : plus de "slots" numérotés à retenir soi-même — BRO retrouve ce qui est pertinent à la question posée).
+
 | Commande | Rôle |
 |----------|------|
-| `#rec <texte>` | Mémoriser dans le slot 0 (personnel) |
-| `#rec #2 <texte>` | Mémoriser dans le slot 2 (sociétaires) |
-| `#rec <texte> #bro <question>` | Mémoriser ET interroger l'IA |
-| `#mem` | Voir toutes vos mémoires (tous slots) |
-| `#mem #2` | Voir le contenu du slot 2 |
-| `#reset` | Effacer toutes vos mémoires |
-| `#reset #2` | Effacer uniquement le slot 2 |
+| `#rec <texte>` | Mémoriser |
+| `#rec <texte> #bro <question>` | Mémoriser ET interroger l'IA dans le même message |
+| `#mem` | Voir vos mémoires récentes |
+| `#reset` | Effacer votre mémoire |
 
-### Compétences partagées (Level ≥ 2 — profil atom4love requis)
+### Compétences partagées
 
 | Commande | Rôle |
 |----------|------|
@@ -52,36 +49,24 @@ Exemple : `#opendata prix immobilier Paris`
 
 *Nécessite que la station ait installé le venv MCP isolé (`install/install_mcp_venv.sh`, appelé automatiquement par `install.sh`) — sinon la commande n'apparaît pas dans `#help`.*
 
-### Badges et IA (niveaux avancés)
+### Badges et IA
 
-| Commande | Niveau requis | Rôle |
-|----------|--------------|------|
-| `#badge <skill>` | Level 3 — satellite ẐEN | Générer une image de badge skill (ComfyUI) |
-| `comfyui_job` | Level 4 — constellation IA | Génération d'image IA avancée |
+| Commande | Rôle |
+|----------|------|
+| `#badge <skill>` | Générer une image de badge skill (ComfyUI) |
+| `comfyui_job` | Génération d'image IA avancée |
 
 ---
 
 ## Niveaux d'accès
 
-| Niveau | Condition | Commandes débloquées |
-|--------|-----------|---------------------|
-| 0 | Membre enregistré | Questions libres, #rec, #mem, #reset |
-| 2 | Profil atom4love créé sur atomic.html | #craft, #rec:<skill>, #mem:<skill> |
-| 3 | Souscription satellite ẐEN | #badge |
-| 4 | Souscription constellation avec IA | ComfyUI jobs |
+Simplification 2026-10-14 (décision capitaine) : **BRO est accessible à tous les MULTIPASS hébergés sur la station, sans palier économique** — l'usage reste de toute façon monétisé en ẐEN sur le MULTIPASS de l'appelant (kind 7). Le niveau réel (0-5, `bro_user_level.py`) ne sert plus qu'à :
 
-Pour créer un profil atom4love (Level 2) : aller sur `atomic.html`, saisir date/heure/lieu de naissance.
-
----
-
-## Sélection de slots mémoire
-
-Les slots permettent de segmenter ta mémoire personnelle :
-- Slot 0 : usage général (défaut)
-- Slot 1-9 : usage libre
-- Slot 2 : convention pour les notes de sociétaires
-
-Exemple : `Comment optimiser ma station ? #3` → BRO répond en utilisant ton contexte slot 3.
+| Niveau | Rôle |
+|--------|------|
+| 0 | Expéditeur totalement inconnu de la constellation (aucun MULTIPASS nulle part) — ignoré, anti-abus |
+| 1 à 4 | Toutes les commandes ci-dessus, sans distinction |
+| 5 (Capitaine) | `#mod:<skill>` / `#rm:<skill>` (modération a posteriori de la mémoire partagée), `#arbor` — rôle administratif unique de la station, jamais un palier payant |
 
 ---
 

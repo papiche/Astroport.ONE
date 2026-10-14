@@ -27,7 +27,7 @@ from bro.identity import _dispatch_identity_update_check, list_preferences_histo
 from bro.nostr import send_dm_to_owner
 import mcp_client
 
-__all__ = ['ACTIVE_TOOLS_FILE', 'TOOLS_GENERATED_DIR', 'list_active_tools', '_extract_tool_docstring', '_call_tool', '_extract_manifest_routing_examples', '_register_arbor_tool', 'activate_tool', 'add_tool_examples', 'deactivate_tool', '_load_arbor_tools_into_registry', 'TOOL_ROUTING_MODEL', '_META_CAPABILITY_PHRASES', 'match_tool', '_try_registered_tools', '_slots_from_text', '_generic_slot_file', '_persist_slot_content', '_format_slot_summary', '_clear_slot', '_tool_help', '_tool_mem', '_tool_reset', '_tool_pref', '_tool_rec', '_tool_scraper', '_tool_opendata', 'ACCESS_LEVEL_ATOME', 'ACCESS_LEVEL_SATELLITE', 'ACCESS_LEVEL_CAPITAINE', '_owner_access_level', '_ACCESS_LEVEL_LABEL', '_make_gated_handler', '_tool_craft', '_tool_badge', '_tool_rec_skill', '_tool_mem_skill', '_tool_mod_skill', '_tool_rm_skill', '_notify_captain_skill_contribution', '_run_skill_notify_background', '_register_system_tools']
+__all__ = ['ACTIVE_TOOLS_FILE', 'TOOLS_GENERATED_DIR', 'list_active_tools', '_extract_tool_docstring', '_call_tool', '_extract_manifest_routing_examples', '_register_arbor_tool', 'activate_tool', 'add_tool_examples', 'deactivate_tool', '_load_arbor_tools_into_registry', 'TOOL_ROUTING_MODEL', '_META_CAPABILITY_PHRASES', 'match_tool', '_try_registered_tools', '_persist_memory', '_format_memory_summary', '_clear_memory', '_tool_help', '_tool_mem', '_tool_reset', '_tool_pref', '_tool_rec', '_tool_scraper', '_tool_opendata', 'ACCESS_LEVEL_CAPITAINE', '_owner_access_level', '_tool_craft', '_tool_badge', '_tool_rec_skill', '_tool_mem_skill', '_tool_mod_skill', '_tool_rm_skill', '_notify_captain_skill_contribution', '_run_skill_notify_background', '_register_system_tools']
 
 
 
@@ -275,76 +275,45 @@ def _try_registered_tools(owner_email, text):
         return result
     return None
 
-def _slots_from_text(text):
-    """Détecte les tags #1..#12 et #all dans le texte (cohérent avec
-    bro_dm_daemon.sh et UPlanet_IA_Responder.sh) — retourne la liste des
-    slots visés. #all → tous les slots (0-12), priorité sur les #N
-    explicites. Sans #all ni #N, seul le slot 0 (personnel) est visé —
-    jamais tous les slots par défaut."""
-    if re.search(r"#all\b", text, re.IGNORECASE):
-        return list(range(13))
-    slots = [i for i in range(1, 13) if re.search(rf"#{i}\b", text)]
-    return slots or [0]
-
-def _generic_slot_file(owner_email, slot):
-    return os.path.expanduser(f"~/.zen/flashmem/{owner_email}/slot{slot}.json")
-
-def _persist_slot_content(owner_email, slot, content):
-    """#rec — mémorise EXPLICITEMENT une note dans le slot demandé (0-12,
-    système documenté dans BRO_HELP_COMMANDS.md), distinct du rappel
-    automatique de conversation (BRO_MEMORY_SLOT). Même mécanique que
-    _remember_exchange : fichier local (lu par question.py --slot) + Qdrant
-    (memory_manager.py, pour la recherche sémantique)."""
+## Simplification 2026-10 : une seule mémoire par MULTIPASS (plus de slots
+## 1-12/#all à retenir soi-même) — Qdrant (memory_manager.py) comme unique
+## source de vérité, retrouvée par pertinence sémantique à la question posée
+## (question.py::load_context) plutôt que par numéro choisi par l'utilisateur.
+## Remplace _slots_from_text/_generic_slot_file/_persist_slot_content/
+## _format_slot_summary/_clear_slot (fichiers JSON locaux, jamais nettoyés
+## par #reset côté Qdrant — bug corrigé au passage) et _filter_accessible_slots
+## (gating "sociétaire" sur les slots 1-12, sans objet puisqu'il n'y a plus
+## qu'un seul slot, accessible à tout niveau ≥ 1).
+def _persist_memory(owner_email, content):
+    """#rec — mémorise dans Qdrant, seule source de vérité."""
     try:
-        from datetime import datetime
-        ts = datetime.utcnow().isoformat() + "Z"
-        slot_file = _generic_slot_file(owner_email, slot)
-        os.makedirs(os.path.dirname(slot_file), exist_ok=True)
-        if os.path.isfile(slot_file):
-            with open(slot_file, encoding="utf-8") as f:
-                slot_mem = json.load(f)
-        else:
-            slot_mem = {"user_id": owner_email, "slot": slot, "messages": []}
-        slot_mem["messages"].append({"timestamp": ts, "content": content})
-        slot_mem["messages"] = slot_mem["messages"][-200:]
-        with open(slot_file, "w", encoding="utf-8") as f:
-            json.dump(slot_mem, f, indent=2, ensure_ascii=False)
-
         import sys
         sys.path.insert(0, BRO_IA_PATH)
         import memory_manager as mm
-        mm.upsert_user_slot(owner_email, slot, content, timestamp=ts)
-        if len(slot_mem["messages"]) >= 170:
-            mm.reve_compress_slot(owner_email, slot, slot_file=slot_file)
-        return True
+        return mm.upsert_user_slot(owner_email, 0, content)
     except Exception as e:
-        print(f"[BRO_WATCH] #rec indisponible pour {owner_email} slot {slot} : {e}")
+        print(f"[BRO_WATCH] #rec indisponible pour {owner_email} : {e}")
         return False
 
-def _format_slot_summary(owner_email, slot, limit=5):
-    slot_file = _generic_slot_file(owner_email, slot)
-    try:
-        with open(slot_file, encoding="utf-8") as f:
-            messages = json.load(f).get("messages", [])
-    except Exception:
-        return None
-    if not messages:
-        return None
-    lines = [f"- {m.get('content', '')}" for m in messages[-limit:]]
-    return "\n".join(lines)
-
-def _clear_slot(owner_email, slot):
-    slot_file = _generic_slot_file(owner_email, slot)
-    try:
-        if os.path.isfile(slot_file):
-            os.remove(slot_file)
-    except Exception:
-        pass
+def _format_memory_summary(owner_email, limit=5):
     try:
         import sys
         sys.path.insert(0, BRO_IA_PATH)
         import memory_manager as mm
-        mm.delete_user_slot(owner_email, slot)
+        hits = mm.recent_user_slot(owner_email, slot=0, limit=limit)
+    except Exception:
+        return None
+    if not hits:
+        return None
+    lines = [f"- {h.get('payload', {}).get('content', '')}" for h in hits]
+    return "\n".join(lines)
+
+def _clear_memory(owner_email):
+    try:
+        import sys
+        sys.path.insert(0, BRO_IA_PATH)
+        import memory_manager as mm
+        mm.delete_user_slot(owner_email, 0)
     except Exception:
         pass
 
@@ -358,51 +327,13 @@ def _tool_help(owner_email, text):
     lines.append("Voir aussi : #mem (souvenirs), #reset (les effacer), #rec <texte> (en noter un).")
     return "\n".join(lines)
 
-def _filter_accessible_slots(owner_email, slots):
-    """Sépare les slots demandés en (accessibles, refusés). Slot 0 toujours
-    accessible ; slots 1-12 réservés au niveau BRO réel ≥ ACCESS_LEVEL_SATELLITE
-    (sociétaire), même seuil et même source de vérité (bro_user_level.py) que
-    bro_dm_daemon.sh::_check_slot_access (canal NODE) et
-    UPlanet_IA_Responder.sh::check_memory_slot_access (canal public,
-    aujourd'hui désactivé). Avant ce fix, #mem/#reset n'avaient ICI absolument
-    aucune vérification (contrairement à #craft/#badge/#rec:<skill>, déjà
-    gated via _make_gated_handler) — n'importe quel niveau pouvait lire/effacer
-    n'importe quel slot 1-12 par self-DM."""
-    if not any(s > 0 for s in slots):
-        return slots, []
-    if _owner_access_level(owner_email) >= ACCESS_LEVEL_SATELLITE:
-        return slots, []
-    return [s for s in slots if s == 0], [s for s in slots if s != 0]
-
 def _tool_mem(owner_email, text):
-    slots = _slots_from_text(text)
-    accessible, denied = _filter_accessible_slots(owner_email, slots)
-    parts = []
-    for slot in accessible:
-        summary = _format_slot_summary(owner_email, slot)
-        parts.append(f"Slot {slot} :\n{summary}" if summary else f"Slot {slot} : (vide)")
-    if denied:
-        denied_str = ", ".join(str(s) for s in denied)
-        parts.append(f"🔒 Slot(s) {denied_str} réservé(s) aux sociétaires "
-                      f"({_ACCESS_LEVEL_LABEL[ACCESS_LEVEL_SATELLITE]}).")
-    if not parts:
-        return "⚠️ Aucun slot accessible."
-    return "🧠 " + "\n\n".join(parts)
+    summary = _format_memory_summary(owner_email)
+    return f"🧠 {summary}" if summary else "⚠️ Aucune mémoire enregistrée. Utilisez #rec <texte> pour mémoriser."
 
 def _tool_reset(owner_email, text):
-    slots = _slots_from_text(text)
-    accessible, denied = _filter_accessible_slots(owner_email, slots)
-    for slot in accessible:
-        _clear_slot(owner_email, slot)
-    parts = []
-    if accessible:
-        slots_str = ", ".join(str(s) for s in accessible)
-        parts.append(f"🗑️ Mémoire effacée (slot{'s' if len(accessible) > 1 else ''} {slots_str}).")
-    if denied:
-        denied_str = ", ".join(str(s) for s in denied)
-        parts.append(f"🔒 Slot(s) {denied_str} réservé(s) aux sociétaires "
-                      f"({_ACCESS_LEVEL_LABEL[ACCESS_LEVEL_SATELLITE]}).")
-    return "\n".join(parts) if parts else "⚠️ Aucun slot accessible."
+    _clear_memory(owner_email)
+    return "🗑️ Mémoire effacée."
 
 def _tool_pref(owner_email, text):
     """#pref history : liste les dernières mises à jour de .Preferences.md.
@@ -425,21 +356,17 @@ def _tool_pref(owner_email, text):
             "#pref rollback <n> (annuler les n dernières, défaut 1)")
 
 def _tool_rec(owner_email, text):
-    slots = _slots_from_text(text)
-    # Texte à mémoriser : le message débarrassé des tags #rec/#N eux-mêmes.
-    content = re.sub(r"#rec\b", "", text, flags=re.IGNORECASE)
-    content = re.sub(r"#\d{1,2}\b", "", content).strip()
+    # Texte à mémoriser : le message débarrassé du tag #rec lui-même.
+    content = re.sub(r"#rec\b", "", text, flags=re.IGNORECASE).strip()
     if not content:
         return "🤔 Dites-moi quoi mémoriser, par exemple « #rec j'aime le jardinage »."
-    ok = all(_persist_slot_content(owner_email, slot, content) for slot in slots)
+    ok = _persist_memory(owner_email, content)
     if ok:
         # Biographie auto-mutative : ce souvenir modifie-t-il potentiellement
         # l'identité durable de l'utilisateur ? Évalué en tâche détachée,
         # jamais synchrone avec cette réponse (voir _dispatch_identity_update_check).
         _dispatch_identity_update_check(owner_email, content)
-    slots_str = ", ".join(str(s) for s in slots)
-    return f"✅ Noté dans le slot{'s' if len(slots) > 1 else ''} {slots_str}." if ok else \
-        "⚠️ Échec de la mémorisation (Qdrant indisponible ?)."
+    return "✅ Noté." if ok else "⚠️ Échec de la mémorisation (Qdrant indisponible ?)."
 
 def _tool_scraper(owner_email, text):
     domain = _extract_scraper_domain(owner_email, text)
@@ -464,11 +391,8 @@ def _tool_opendata(owner_email, text):
         return "⚠️ data.gouv.fr indisponible pour l'instant, réessayez plus tard."
     return f"📊 {result}"
 
-ACCESS_LEVEL_ATOME = 2       # profil atom4love (craft, rec:<skill>, mem:<skill>)
-
-ACCESS_LEVEL_SATELLITE = 3   # sociétaire satellite ou + (badge)
-
-ACCESS_LEVEL_CAPITAINE = 5   # = bro_tools.ACCESS_CAPTAIN, cf. bro_user_level.py
+ACCESS_LEVEL_CAPITAINE = 5   # = bro_tools.ACCESS_CAPTAIN, cf. bro_user_level.py — rôle
+                             # administratif unique (mod_skill/rm_skill), jamais un palier payant
 
 def _owner_access_level(owner_email):
     """Niveau BRO réel du propriétaire (0-5), voir bro_user_level.py. 0 si
@@ -478,7 +402,9 @@ def _owner_access_level(owner_email):
     sinon DEFAULT_RELAY) — un profil atom4love (Kind 30078) est le plus
     souvent publié sur le relay de la station d'accueil, pas forcément sur le
     relay public par défaut ; même logique que _CONSTELLATION_RELAY côté
-    bro_dm_daemon.sh."""
+    bro_dm_daemon.sh. Ne sert plus qu'au filtre d'affichage de l'aide
+    (bro_watch_core.py::_is_captain check) depuis le retrait du gating
+    économique (craft/badge/rec:<skill>/mem:<skill>, 2026-10-14)."""
     if not bro_user_level:
         return 0
     hex_ = _owner_hex(owner_email)
@@ -489,23 +415,6 @@ def _owner_access_level(owner_email):
     except Exception as e:
         print(f"[BRO_WATCH] _owner_access_level indisponible : {e}")
         return 0
-
-_ACCESS_LEVEL_LABEL = {
-    ACCESS_LEVEL_ATOME: "un profil atom4love (créez-le sur atomic.html)",
-    ACCESS_LEVEL_SATELLITE: "une souscription ẐEN satellite ou constellation "
-                             "(https://opencollective.com/monnaie-libre/contribute)",
-}
-
-def _make_gated_handler(tag_name, min_level, real_handler):
-    """Vérifie le niveau réel avant d'exécuter real_handler — mêmes seuils et
-    même esprit que bro_dm_daemon.sh (canal DM-to-NODE), pour que la réponse
-    au propriétaire ne dépende pas du canal utilisé pour la poser."""
-    def _handler(owner_email, text):
-        if _owner_access_level(owner_email) < min_level:
-            requirement = _ACCESS_LEVEL_LABEL.get(min_level, "un niveau d'accès supérieur")
-            return f"🔒 #{tag_name} nécessite {requirement}."
-        return real_handler(owner_email, text)
-    return _handler
 
 def _tool_craft(owner_email, text):
     """Valide et LANCE en tâche détachée l'analyse d'un tutoriel — jamais
@@ -691,40 +600,33 @@ def _register_system_tools():
                        "montre-moi les statistiques officielles de", "trouve-moi un jeu de données data.gouv"),
         ))
     bro_tools.register(bro_tools.Tool(
-        name="craft", tags=("craft",), min_access=ACCESS_LEVEL_ATOME,
-        handler=_make_gated_handler("craft", ACCESS_LEVEL_ATOME, _tool_craft),
-        description="« #craft <url> » : décompose un tutoriel en recette WoTx² (niveau atom4love requis).",
+        name="craft", tags=("craft",), handler=_tool_craft,
+        description="« #craft <url> » : décompose un tutoriel en recette WoTx².",
         examples=("décompose ce tutoriel en recette", "transforme ce lien en étapes"),
     ))
     bro_tools.register(bro_tools.Tool(
-        name="badge", tags=("badge",), min_access=ACCESS_LEVEL_SATELLITE,
-        handler=_make_gated_handler("badge", ACCESS_LEVEL_SATELLITE, _tool_badge),
-        description="« #badge <compétence> » : génère une image de badge de compétence via ComfyUI "
-                     "(niveau satellite ẐEN requis).",
+        name="badge", tags=("badge",), handler=_tool_badge,
+        description="« #badge <compétence> » : génère une image de badge de compétence via ComfyUI.",
         examples=("génère un badge pour cette compétence", "crée mon badge de compétence"),
     ))
-    # #rec:<skill> (écriture, niveau 3 — sociétaire satellite) / #mem:<skill>
-    # (lecture, niveau 2 — profil atom4love). Écriture relevée à SATELLITE :
-    # ATOME (profil atom4love) est trivialement obtenable, ce qui rendait
-    # l'empoisonnement de la mémoire collective (#rec:<skill>) peu coûteux
-    # pour un attaquant — SATELLITE introduit une friction économique réelle
-    # (cotisation ẐEN) sans fermer la fonctionnalité collaborative. Voir aussi
+    # #rec:<skill> (écriture) / #mem:<skill> (lecture) — accessibles à tous
+    # désormais (simplification 2026-10-14, décision capitaine : plus de
+    # palier économique pour l'accès à BRO). La friction anti-poisoning qui
+    # relevait #rec:<skill> à SATELLITE est abandonnée : la modération a
+    # posteriori du Capitaine (#mod:<skill>/#rm:<skill> ci-dessous, toujours
+    # gatés) reste le filet de sécurité réel. Voir aussi
     # skill_flashmem.format_context() pour l'isolation anti-injection du
     # contenu au moment de la lecture. Enregistrés avec tags=() : détectés via
     # _detect_skill_tag (syntaxe à deux-points), pas le matcher générique
     # #tag\b, pour ne pas collisionner avec #rec/#mem simples.
     bro_tools.register(bro_tools.Tool(
-        name="rec_skill", tags=(), min_access=ACCESS_LEVEL_SATELLITE,
-        handler=_make_gated_handler("rec:<skill>", ACCESS_LEVEL_SATELLITE, _tool_rec_skill),
-        description="« #rec:<skill> NOTE » : contribue à la mémoire partagée d'une compétence "
-                     "(niveau satellite ẐEN requis).",
+        name="rec_skill", tags=(), handler=_tool_rec_skill,
+        description="« #rec:<skill> NOTE » : contribue à la mémoire partagée d'une compétence.",
         advertise=False,  # syntaxe #rec:<skill> non couverte par la description générique de #rec
     ))
     bro_tools.register(bro_tools.Tool(
-        name="mem_skill", tags=(), min_access=ACCESS_LEVEL_ATOME,
-        handler=_make_gated_handler("mem:<skill>", ACCESS_LEVEL_ATOME, _tool_mem_skill),
-        description="« #mem:<skill> » : lit la mémoire partagée d'une compétence "
-                     "(niveau atom4love requis).",
+        name="mem_skill", tags=(), handler=_tool_mem_skill,
+        description="« #mem:<skill> » : lit la mémoire partagée d'une compétence.",
         advertise=False,
     ))
     # #mod:<skill>/#rm:<skill> <n> — modération a posteriori des contributions

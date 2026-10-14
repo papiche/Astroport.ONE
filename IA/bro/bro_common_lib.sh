@@ -389,30 +389,6 @@ bro_user_language() {
 }
 
 ########################################################################
-# bro_check_slot_access EMAIL [SLOT]
-#   Retourne 0 si accès autorisé au slot (0=public, 1-12=sociétaires).
-#   Slot 0 : toujours autorisé. Slots 1-12 : niveau BRO réel ≥ 3 (satellite,
-#   voir bro_user_level.py) via bro_user_level() — MÊME source de vérité que
-#   #craft/#badge (bro_dm_daemon.sh) et bro/tools.py::_owner_access_level
-#   (canal self-DM BRO). Avant ce fix, ce garde-fou se contentait de vérifier
-#   qu'un compte MULTIPASS existait sur la station (aucune vérification de
-#   statut sociétaire réel) — n'importe quel utilisateur, payant ou non,
-#   passait. Compat ascendante : ~/.zen/game/players/ (ancien système
-#   pré-MULTIPASS) reste accepté sans appel réseau.
-########################################################################
-bro_check_slot_access() {
-    local _email="$1" _slot="${2:-0}"
-    [[ "$_slot" == "0" ]] && return 0
-    [[ -d "$HOME/.zen/game/players/$_email" ]] && return 0
-    local _hex
-    _hex=$(bro_resolve_hex "$_email")
-    [[ -z "$_hex" ]] && return 1
-    local _lvl
-    _lvl=$(bro_user_level "$_hex")
-    [[ "$_lvl" -ge 3 ]]
-}
-
-########################################################################
 # bro_udrive_type_dir FILETYPE
 #   Mappe un type MIME simplifié vers le sous-dossier uDRIVE.
 #   image→Images  video→Videos  audio→Music  *→Documents

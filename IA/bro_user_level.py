@@ -40,9 +40,10 @@ LEVEL_TTL  = 300    # 5 min cache niveau global
 # complet (constellation=4) sauf mention contraire. Absents de cette table
 # avant ce fix, ils tombaient à 0 alors que UPlanet_IA_Responder.sh (même
 # notion de "sociétaire", cf. is_societaire_from_did) les acceptait déjà —
-# divergence corrigée ici, source unique désormais pour les 3 canaux BRO/
-# NODE/LOVE (bro_common_lib.sh::bro_check_slot_access, bro/tools.py::
-# _owner_access_level).
+# divergence corrigée ici. Depuis 2026-10-14, ce niveau ne gate plus l'usage
+# de BRO (accessible à tous) — il ne sert plus qu'au filtre d'affichage de
+# l'aide (bro/tools.py::_owner_access_level) et au rôle administratif unique
+# du Capitaine (niveau 5, #mod:<skill>/#rm:<skill>/#arbor).
 _CONTRACT_LEVEL = {
     "astroport_captain":                 5,
     "cooperative_member_constellation":  4,

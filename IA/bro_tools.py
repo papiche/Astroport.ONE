@@ -29,13 +29,13 @@ import re
 from dataclasses import dataclass, field
 
 # Même échelle 0-5 que IA/bro_user_level.py::get_user_level (anonyme … locataire
-# … atome … satellite … constellation … capitaine) — un SEUL barème d'accès
-# dans tout le registre, qu'un outil vérifie son niveau via bro_user_level.py
-# (craft/badge/rec:<skill>/mem:<skill>) ou via une vérification plus simple
-# (ex: _is_captain() pour #arbor). Les paliers intermédiaires (atome=2,
-# satellite=3, constellation=4) sont définis côté bro_watch_core.py
-# (ACCESS_LEVEL_ATOME, ACCESS_LEVEL_SATELLITE) — seuls les deux bornes sont
-# nécessaires ici, pour le filtre générique d'affichage de l'aide.
+# … atome … satellite … constellation … capitaine). Simplification 2026-10-14
+# (décision capitaine, "tout le monde a accès à BRO") : les paliers
+# intermédiaires économiques (atome=2, satellite=3, constellation=4) ont été
+# retirés du gating réel partout (bro/tools.py, bro_dm_daemon.sh) — seules les
+# deux bornes restent utilisées : ACCESS_ANY (défaut de tout outil) et
+# ACCESS_CAPTAIN (réservé au rôle administratif unique du Capitaine, ex:
+# #mod:<skill>/#rm:<skill>, #arbor — jamais un palier payant).
 ACCESS_ANY = 0
 ACCESS_CAPTAIN = 5
 

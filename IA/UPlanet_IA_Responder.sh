@@ -41,10 +41,11 @@
 # - #image : Générer une image avec ComfyUI
 # - #music : Générer une musique avec ComfyUI (#parole pour les paroles)
 # - #youtube : Télécharger une vidéo (YouTube, Rumble, Vimeo, etc.) (720p max) #mp3 pour convertir en audio
-# - #mem [#1..#12|#all] : Afficher la mémoire (slot 0 par défaut ; #all = résumé tous slots)
-# - #rec <texte> [#1..#12] : Enregistrer le message dans la mémoire IA (slot 0 par défaut)
+# - #mem : Afficher les mémoires récentes (mémoire unique par MULTIPASS,
+#   retrouvée par pertinence sémantique Qdrant — plus de slots numérotés)
+# - #rec <texte> : Enregistrer le message dans la mémoire IA
 # - #rec2 : Enregistrer automatiquement la réponse du bot dans la mémoire IA
-# - #reset [#1..#12|#all] : Effacer la mémoire (slot 0 par défaut ; #all = tous les slots)
+# - #reset : Effacer la mémoire
 # - #pierre : Synthèse vocale avec la voix Pierre (Orpheus TTS)
 # - #amelie : Synthèse vocale avec la voix Aurélie (Orpheus TTS)
 # - #plantnet : Reconnaissance de plantes avec PlantNet (image requise)
@@ -59,8 +60,6 @@
 # - #url : Fetch URL(s) from message, extract main content, then answer with Ollama (link understanding)
 # - #status : Show system status (Ollama, ComfyUI, Vane, Orpheus ports)
 # - #whoami : Show sender identity (PUBKEY / KNAME)
-# - #all : modifie #mem/#reset pour viser tous les slots (0-12) au lieu du
-#   seul slot 0 par défaut
 ###################################################################
 PUBKEY="$1"
 EVENT="$2"
@@ -402,7 +401,8 @@ TAGS[youtube]=false
 TAGS[pierre]=false
 TAGS[amelie]=false
 TAGS[rec2]=false
-TAGS[all]=false
+# TAGS[all] supprimé (simplification 2026-10) — plus de slots 1-12 à viser
+# "tous ensemble", une seule mémoire par MULTIPASS désormais.
 TAGS[plantnet]=false
 TAGS[cookie]=false
 TAGS[inventory]=false
@@ -433,7 +433,6 @@ if [[ "$message_text" =~ \#youtube ]]; then TAGS[youtube]=true; fi
 if [[ "$message_text" =~ \#pierre ]]; then TAGS[pierre]=true; fi
 if [[ "$message_text" =~ \#amelie ]]; then TAGS[amelie]=true; fi
 if [[ "$message_text" =~ \#rec2 ]]; then TAGS[rec2]=true; fi
-if [[ "$message_text" =~ \#all ]]; then TAGS[all]=true; fi
 if [[ "$message_text" =~ \#plantnet ]]; then TAGS[plantnet]=true; fi
 if [[ "$message_text" =~ \#cookie ]]; then TAGS[cookie]=true; fi
 if [[ "$message_text" =~ \#inventory ]]; then TAGS[inventory]=true; fi
@@ -478,53 +477,9 @@ fi
 ## relai roaming équivalent pour le canal self-DM reste intact et actif :
 ## bro_dm_daemon.sh::_handle_self_dm_event (bro_is_roaming()).
 
-# Detect memory slot once
-memory_slot=0
-for i in {1..12}; do
-    if [[ "$message_text" =~ \#${i}([[:space:]]|$) ]]; then
-        memory_slot=$i
-        echo "DEBUG: Detected memory slot $i in message: $message_text" >&2
-        break
-    fi
-done
-echo "DEBUG: Final memory_slot value: $memory_slot" >&2
-
 # Optimisation: Set user_id once
 user_id="$KNAME"
 [[ -z "$user_id" ]] && user_id="$PUBKEY"
-
-# Wrapper → bro_common_lib.sh (factorisation) : même seuil (niveau BRO ≥ 3,
-# sociétaire satellite ou +, via bro_user_level.py) que le canal NODE
-# (bro_dm_daemon.sh::_check_slot_access) et le canal self-DM BRO
-# (bro/tools.py::_owner_access_level) — auparavant une 3e implémentation
-# indépendante ici (is_societaire_from_did, requête strfry directe),
-# supprimée pour ne plus jamais diverger des deux autres.
-check_memory_slot_access() { bro_check_slot_access "$@"; }
-
-# Function to send memory access denied message (DM privé, signé NODE)
-send_memory_access_denied() {
-    local pubkey="$1"
-    local event_id="$2"
-    local slot="$3"
-
-    (
-    source $HOME/.zen/Astroport.ONE/tools/my.sh
-    if [[ "$pubkey" != "$NODE_HEX" && -n "$NODE_NSEC" ]]; then
-        DENIED_MSG="⚠️ Accès refusé aux slots de mémoire 1-12.
-
-Pour utiliser les slots de mémoire 1-12, vous devez être sociétaire CopyLaRadio et posséder une ZenCard.
-
-Le slot 0 reste accessible pour tous les utilisateurs autorisés.
-
-Pour devenir sociétaire : https://opencollective.com/monnaie-libre/contribute
-
-Votre Station.
-#CopyLaRadio #mem"
-
-        python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py" "$NODE_NSEC" "$pubkey" "$DENIED_MSG" "$myRELAY" >/dev/null 2>&1
-    fi
-    ) &
-}
 
 # Function to format PlantNet JSON result as text
 format_plantnet_json_to_text() {
@@ -980,161 +935,39 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
     fi
 
     # Optimisation: Handle memory operations first
+    # Simplification 2026-10 : mémoire unique par MULTIPASS (plus de slots
+    # #1-#12/#all) — Qdrant seule source de vérité, même mécanisme que
+    # bro_dm_daemon.sh::_handle_reset/_handle_mem/_handle_rec. Aligne ce canal
+    # roaming sur les deux autres (NODE, self-DM).
     if [[ -n "$KeyANSWER" ]]; then
         : # #mem:<skill>/#rec:<skill> déjà traité ci-dessus
     elif [[ "${TAGS[reset]}" == true ]]; then
-        # Memory reset logic
-        reset_slot=0
-        [[ $memory_slot -gt 0 ]] && reset_slot=$memory_slot
-        
-        if [[ "${TAGS[all]}" == true ]]; then
-            # Reset all slots (0-12) — filtré par accès (un seul appel à
-            # check_memory_slot_access, le niveau BRO ne dépend pas du numéro
-            # de slot, voir bro_dm_daemon.sh::_handle_reset pour le même
-            # correctif). Avant ce fix, #reset #all effaçait TOUT sans
-            # vérifier l'accès aux slots 1-12.
-            user_dir="$HOME/.zen/flashmem/${user_id}"
-            if [[ -d "$user_dir" ]]; then
-                has_soc_access=false
-                check_memory_slot_access "$user_id" "1" && has_soc_access=true
-                cleared_slots=""
-                rm -f "$user_dir/slot0.json" 2>/dev/null && cleared_slots="0"
-                if [[ "$has_soc_access" == true ]]; then
-                    for s in $(seq 1 12); do
-                        if [[ -f "$user_dir/slot${s}.json" ]]; then
-                            rm -f "$user_dir/slot${s}.json"
-                            cleared_slots="${cleared_slots:+$cleared_slots, }$s"
-                        fi
-                    done
-                fi
-                echo "Memory slots reset for USER: $user_id (cleared: ${cleared_slots:-none})"
-                KeyANSWER="Mémoires effacées (slots ${cleared_slots:-aucun}). Utilisez #reset #N pour réinitialiser un slot spécifique, ou #reset pour réinitialiser le slot 0."
-            else
-                echo "No memory directory found for USER: $user_id"
-                KeyANSWER="Aucune mémoire trouvée."
-            fi
-        elif [[ $reset_slot -gt 0 ]]; then
-            # Check memory slot access for reset
-            if check_memory_slot_access "$user_id" "$reset_slot"; then
-                slot_file="$HOME/.zen/flashmem/${user_id}/slot${reset_slot}.json"
-                if [[ -f "$slot_file" ]]; then
-                    rm -f "$slot_file"
-                    echo "Memory reset for USER: $user_id, SLOT: $reset_slot"
-                    KeyANSWER="Mémoire slot $reset_slot réinitialisée."
-                else
-                    echo "No memory file found for USER: $user_id, SLOT: $reset_slot"
-                    KeyANSWER="Pas de mémoire trouvée pour le slot $reset_slot."
-                fi
-            else
-                echo "Memory access denied for reset - USER: $user_id, SLOT: $reset_slot"
-                send_memory_access_denied "$PUBKEY" "$EVENT" "$reset_slot"
-                KeyANSWER="Accès refusé au slot $reset_slot. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12."
-            fi
-        else
-            # Reset only slot 0 (default behavior)
-            slot_file="$HOME/.zen/flashmem/${user_id}/slot0.json"
-            if [[ -f "$slot_file" ]]; then
-                rm -f "$slot_file"
-                echo "Memory reset for USER: $user_id, SLOT: 0"
-                KeyANSWER="Mémoire slot 0 réinitialisée."
-            else
-                echo "No memory file found for USER: $user_id, SLOT: 0"
-                KeyANSWER="Pas de mémoire trouvée pour le slot 0."
-            fi
-        fi
+        $MY_PATH/memory_manager.py delete-slot --user-id "$user_id" --slot 0 >/dev/null 2>&1
+        rm -f "$HOME/.zen/flashmem/${user_id}/slot0.json" 2>/dev/null
+        echo "Memory reset for USER: $user_id"
+        KeyANSWER="🗑️ Mémoire effacée."
     elif [[ "${TAGS[mem]}" == true ]]; then
-        # Memory display logic
-        mem_slot=0
-        [[ $memory_slot -gt 0 ]] && mem_slot=$memory_slot
-
-        if [[ "${TAGS[all]}" == true ]]; then
-            # #mem #all — résumé de tous les slots accessibles (même
-            # convention que bro_dm_daemon.sh::_handle_mem et
-            # bro/tools.py::_slots_from_text). Filtré par accès AVANT lecture,
-            # jamais après (un slot non autorisé n'apparaît même pas dans le
-            # résumé). Un seul appel à check_memory_slot_access (le niveau BRO
-            # ne dépend pas du numéro de slot) plutôt qu'un par slot.
-            user_dir="$HOME/.zen/flashmem/${user_id}"
-            mem_summary="🧠 Mémoires enregistrées :"
-            mem_found=false
-            has_soc_access=false
-            check_memory_slot_access "$user_id" "1" && has_soc_access=true
-            for s in $(seq 0 12); do
-                [[ $s -gt 0 && "$has_soc_access" != true ]] && continue
-                slot_file="$user_dir/slot${s}.json"
-                [[ -f "$slot_file" ]] || continue
-                last_msg=$(jq -r '.messages[-1].content // ""' "$slot_file" 2>/dev/null | cut -c1-80)
-                msg_count=$(jq -r '.messages | length' "$slot_file" 2>/dev/null)
-                [[ -z "$last_msg" ]] && continue
-                mem_summary="${mem_summary}
-  Slot $s (${msg_count} msg) : ${last_msg}…"
-                mem_found=true
-            done
-            if [[ "$mem_found" == false ]]; then
-                KeyANSWER="Aucune mémoire enregistrée. Utilisez #rec <texte> pour mémoriser."
-            else
-                KeyANSWER="$mem_summary"
-            fi
-        elif [[ $mem_slot -gt 0 ]]; then
-            # Check memory slot access for display
-            if check_memory_slot_access "$user_id" "$mem_slot"; then
-                slot_file="$HOME/.zen/flashmem/${user_id}/slot${mem_slot}.json"
-                if [[ -f "$slot_file" ]]; then
-                    echo "Returning memory content for USER: $user_id, SLOT: $mem_slot"
-                    temp_mem_file="$HOME/.zen/tmp/memory_${user_id}_slot${mem_slot}.txt"
-                    echo "📝 Historique (#mem slot $mem_slot)" > "$temp_mem_file"
-                    echo "========================" >> "$temp_mem_file"
-                    jq -r '.messages | to_entries | .[-30:] | .[] | "📅 \(.value.timestamp | sub("\\.[0-9]+Z$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | strftime("%d/%m/%Y %H:%M"))\n💬 \(.value.content | sub("#BOT "; "") | sub("#BRO "; "") | sub("#bot "; "") | sub("#bro "; ""))\n---"' "$slot_file" >> "$temp_mem_file"
-                    KeyANSWER=$(cat "$temp_mem_file")
-                    rm -f "$temp_mem_file"
-                else
-                    echo "No memory file found for USER: $user_id, SLOT: $mem_slot"
-                    KeyANSWER="Aucune mémoire trouvée pour le slot $mem_slot."
-                fi
-            else
-                echo "Memory access denied for display - USER: $user_id, SLOT: $mem_slot"
-                send_memory_access_denied "$PUBKEY" "$EVENT" "$mem_slot"
-                KeyANSWER="Accès refusé au slot $mem_slot. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12."
-            fi
+        recent_json=$($MY_PATH/memory_manager.py recent-slot --user-id "$user_id" --slot 0 --limit 5 2>/dev/null)
+        if [[ -z "$recent_json" || "$recent_json" == "[]" ]]; then
+            KeyANSWER="Aucune mémoire enregistrée. Utilisez #rec <texte> pour mémoriser."
         else
-            # Show default slot (0) memory
-            slot_file="$HOME/.zen/flashmem/${user_id}/slot0.json"
-            if [[ -f "$slot_file" ]]; then
-                echo "Returning memory content for USER: $user_id, SLOT: 0"
-                temp_mem_file="$HOME/.zen/tmp/memory_${user_id}_slot0.txt"
-                echo "📝 Historique (#mem slot 0)" > "$temp_mem_file"
-            echo "========================" >> "$temp_mem_file"
-                jq -r '.messages | to_entries | .[-30:] | .[] | "📅 \(.value.timestamp | sub("\\.[0-9]+Z$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | strftime("%d/%m/%Y %H:%M"))\n💬 \(.value.content | sub("#BOT "; "") | sub("#BRO "; "") | sub("#bot "; "") | sub("#bro "; ""))\n---"' "$slot_file" >> "$temp_mem_file"
-            KeyANSWER=$(cat "$temp_mem_file")
-            rm -f "$temp_mem_file"
-        else
-                echo "No memory file found for USER: $user_id, SLOT: 0"
-                KeyANSWER="Aucune mémoire trouvée."
-            fi
+            mem_lines=$(echo "$recent_json" | jq -r '.[] | "  [\(.payload.timestamp[0:10] // "?")] \(.payload.content // "" | .[0:120])"' 2>/dev/null)
+            KeyANSWER="🧠 Mémoires récentes :
+${mem_lines}"
         fi
     elif [[ "${TAGS[rec]}" == true ]]; then
         # Mémorise le message de L'UTILISATEUR (jamais la réponse du bot — voir
         # #rec2 pour ça) : même sémantique que bro_watch_core.py::_tool_rec et
         # bro_dm_daemon.sh::_handle_rec, pour que "#rec" fasse la même chose
-        # quel que soit le canal utilisé pour le taper. Documenté depuis
-        # toujours dans build_bro_help_message() mais jamais implémenté ici
-        # jusqu'à ce correctif.
-        rec_slot=0
-        [[ $memory_slot -gt 0 ]] && rec_slot=$memory_slot
-        if check_memory_slot_access "$user_id" "$rec_slot"; then
-            rec_content=$(echo "$message_text" | sed -E 's/#BOT//g; s/#BRO//g; s/#rec\b//g; s/#[0-9]{1,2}\b//g' | xargs)
-            if [[ -n "$rec_content" ]]; then
-                rec_event_json=$(jq -n --arg pubkey "$PUBKEY" --arg content "$rec_content" '{"event":{"pubkey":$pubkey,"content":$content}}')
-                $MY_PATH/short_memory.py "$rec_event_json" "$LAT" "$LON" "$rec_slot" "$user_id"
-                echo "Memory #rec saved for USER: $user_id, SLOT: $rec_slot"
-                KeyANSWER="💾 Mémorisé dans le slot $rec_slot (${#rec_content} caractères)."
-            else
-                KeyANSWER="🤔 Dites-moi quoi mémoriser, par exemple « #BRO #rec j'aime le jardinage »."
-            fi
+        # quel que soit le canal utilisé pour le taper.
+        rec_content=$(echo "$message_text" | sed -E 's/#BOT//g; s/#BRO//g; s/#rec\b//g' | xargs)
+        if [[ -n "$rec_content" ]]; then
+            rec_event_json=$(jq -n --arg pubkey "$PUBKEY" --arg content "$rec_content" '{"event":{"pubkey":$pubkey,"content":$content}}')
+            $MY_PATH/short_memory.py "$rec_event_json" "$LAT" "$LON" "0" "$user_id"
+            echo "Memory #rec saved for USER: $user_id"
+            KeyANSWER="💾 Mémorisé (${#rec_content} caractères)."
         else
-            echo "Memory access denied for #rec - USER: $user_id, SLOT: $rec_slot"
-            send_memory_access_denied "$PUBKEY" "$EVENT" "$rec_slot"
-            KeyANSWER="Accès refusé au slot $rec_slot. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12."
+            KeyANSWER="🤔 Dites-moi quoi mémoriser, par exemple « #BRO #rec j'aime le jardinage »."
         fi
     fi
 
@@ -1192,10 +1025,10 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 $MY_PATH/bro_url_content.py "$cleaned_text" 2>/dev/null > "$URL_CONTENT_FILE"
                 if [[ -s "$URL_CONTENT_FILE" ]]; then
                     printf 'Context from URL(s) (main content extracted):\n\n%s\n\n---\nUser message: %s\n\nAnswer based on the URL content above. If the user asks a question, answer it concisely.' "$(cat "$URL_CONTENT_FILE")" "$cleaned_text" > "$URL_PROMPT_FILE"
-                    if [[ -n "$user_id" ]] && check_memory_slot_access "$user_id" "$memory_slot"; then
+                    if [[ -n "$user_id" ]]; then
                         KeyANSWER="$($MY_PATH/question.py --prompt-file "$URL_PROMPT_FILE" \
                             --model gemma3:latest --ctx 8192 --max-tokens 2048 \
-                            --user-id "${user_id}" --slot ${memory_slot} 2>/dev/null)"
+                            --user-id "${user_id}" 2>/dev/null)"
                     else
                         KeyANSWER="$($MY_PATH/question.py --prompt-file "$URL_PROMPT_FILE" \
                             --model gemma3:latest --ctx 8192 --max-tokens 2048 \
@@ -1961,16 +1794,9 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
                 _fallback_t0=$(date +%s.%N)
                 _fallback_category="ok"
                 if [[ -n "$user_id" ]]; then
-                    if check_memory_slot_access "$user_id" "$memory_slot"; then
-                        KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" \
-                            --model gemma3:latest --ctx 8192 --max-tokens 1024 \
-                            --user-id "${user_id}" --slot ${memory_slot})"
-                    else
-                        echo "Memory access denied for AI question - USER: $user_id, SLOT: $memory_slot"
-                        send_memory_access_denied "$PUBKEY" "$EVENT" "$memory_slot"
-                        KeyANSWER="Accès refusé au slot $memory_slot pour l'IA. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12. Utilisez le slot 0 ou devenez sociétaire."
-                        _fallback_category="access_denied"
-                    fi
+                    KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" \
+                        --model gemma3:latest --ctx 8192 --max-tokens 1024 \
+                        --user-id "${user_id}")"
                 else
                 KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" \
                     --model gemma3:latest --ctx 8192 --max-tokens 1024 \
@@ -2225,15 +2051,10 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
         fi
         
         ## AUTO-RECORD BOT RESPONSE if #rec2 is present
-        if [[ "${TAGS[rec2]}" == true ]]; then
-            if check_memory_slot_access "$user_id" "$memory_slot"; then
-                echo "Auto-recording bot response for USER: $user_id, SLOT: $memory_slot"
-                bot_event_json='{"event":{"id":"dm_bot_response_'$CURRENT_TIMESTAMP'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$CURRENT_TIMESTAMP'}}'
-                $MY_PATH/short_memory.py "$bot_event_json" "$LAT" "$LON" "$memory_slot" "$user_id"
-            else
-                echo "Memory access denied for auto-recording - USER: $user_id, SLOT: $memory_slot"
-                send_memory_access_denied "$PUBKEY" "$EVENT" "$memory_slot"
-            fi
+        if [[ "${TAGS[rec2]}" == true && -n "$user_id" ]]; then
+            echo "Auto-recording bot response for USER: $user_id"
+            bot_event_json='{"event":{"id":"dm_bot_response_'$CURRENT_TIMESTAMP'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$CURRENT_TIMESTAMP'}}'
+            $MY_PATH/short_memory.py "$bot_event_json" "$LAT" "$LON" "0" "$user_id"
         fi
     fi
 fi
