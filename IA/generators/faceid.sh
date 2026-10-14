@@ -138,8 +138,10 @@ else
         ## un vrai nom de fichier local.
         _basename="decrypted_${_basename%.uenc}"
         _img="$_tmp_dir/$_basename"
-        if ! python3 "$_UENC_CODEC" decrypt "$DECRYPTION_KEY" \
-            < "$_fetched" > "$_img" 2>/tmp/faceid_decrypt_err.$$; then
+        ## --key-stdin : la clé ne transite jamais en argv (invisible dans /proc/<pid>/cmdline)
+        if ! { printf '%s\n' "$DECRYPTION_KEY"; cat "$_fetched"; } | \
+            python3 "$_UENC_CODEC" decrypt --key-stdin \
+            > "$_img" 2>/tmp/faceid_decrypt_err.$$; then
             echo "ERROR:faceid:decrypt_failed:$(cat /tmp/faceid_decrypt_err.$$ 2>/dev/null)" >&2
             rm -f "/tmp/faceid_decrypt_err.$$"
             exit 1

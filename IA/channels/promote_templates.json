@@ -1,0 +1,8 @@
+{
+  "_comment": "Textes d'auto-promotion marketing — à éditer librement (ton, accroches, appels à l'action). Un texte est choisi au hasard à chaque exécution 'marketing'. Placeholders disponibles : {hostname} {domain}",
+  "marketing": [
+    "🐉 {hostname} est une station Astroport.ONE : stockage, identité et paiements souverains sur IPFS + NOSTR + Ğ1. Zéro cloud propriétaire, 100% logiciel libre AGPL. Créez votre MULTIPASS : https://astroport.one",
+    "🔐 Vos photos, vos données, votre identité numérique — chez vous, chiffrées, jamais chez un tiers. C'est ce que fait une station UPlanet comme {hostname}. Rejoignez la constellation : https://astroport.one",
+    "🌍 Internet décentralisé, ça existe déjà : {domain} tourne depuis cette machine, sans dépendre d'un GAFAM. Web3 souverain, économie coopérative Ğ1/ẐEN. Pour comprendre : https://astroport.one"
+  ]
+}

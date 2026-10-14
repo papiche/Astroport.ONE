@@ -983,6 +983,19 @@ else
 fi
 
 ########################################################################
+## AUTO-PROMOTION MULTICANAL (Mastodon, Telegram) — alternance stats/marketing
+## No-op total si aucun canal n'est configuré (.env vide).
+########################################################################
+PROMOTE_STATION="${MY_PATH}/RUNTIME/promote_station.sh"
+if [[ -x "$PROMOTE_STATION" ]]; then
+    bash "$PROMOTE_STATION" >> "$LOG_FILE" 2>&1 \
+        && echo "✅ promote_station.sh OK" \
+        || echo "⚠️  promote_station.sh échoué (non bloquant)"
+else
+    echo "ℹ️  promote_station.sh introuvable ou non exécutable — skip auto-promotion"
+fi
+
+########################################################################
 ## BRO PROACTIF — balayage quotidien de tous les comptes locaux.
 ## check_proactive_alerts() (goal_drift, low_g1_balance) et
 ## _resume_pending_algorithm_plan() ne se déclenchent normalement qu'en

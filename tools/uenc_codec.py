@@ -13,6 +13,11 @@ Usage CLI (pour appel depuis bash sans dépendance FastAPI) :
     uenc_codec.py decrypt <key_hex> < payload.uenc > plain
 Sortie sur stderr + exit code != 0 en cas d'erreur (clé invalide, magic
 incorrect, tag d'authentification invalide).
+
+Mode --key-stdin (clé jamais en argv, invisible dans /proc/<pid>/cmdline,
+même convention que --nsec-stdin ailleurs dans ce dépôt) :
+    { printf '%s\n' "$key_hex"; cat payload.uenc; } | uenc_codec.py decrypt --key-stdin > plain
+La première ligne de stdin est la clé hex, le reste (binaire) est la donnée.
 """
 
 import sys
@@ -63,11 +68,29 @@ def decrypt_aes256gcm(payload: bytes, key_hex: str) -> bytes:
 
 
 def _cli() -> int:
-    if len(sys.argv) != 3 or sys.argv[1] not in ("encrypt", "decrypt"):
-        print("Usage: uenc_codec.py {encrypt|decrypt} <key_hex>   (data on stdin, result on stdout)", file=sys.stderr)
-        return 2
-    mode, key_hex = sys.argv[1], sys.argv[2]
-    data = sys.stdin.buffer.read()
+    args = sys.argv[1:]
+    key_stdin = "--key-stdin" in args
+    if key_stdin:
+        args = [a for a in args if a != "--key-stdin"]
+
+    if key_stdin:
+        if len(args) != 1 or args[0] not in ("encrypt", "decrypt"):
+            print("Usage: uenc_codec.py {encrypt|decrypt} --key-stdin   (key_hex + data on stdin: first line = key, rest = data)", file=sys.stderr)
+            return 2
+        mode = args[0]
+        raw = sys.stdin.buffer.read()
+        nl = raw.find(b"\n")
+        if nl < 0:
+            print("ERROR:uenc_codec:missing_key_line", file=sys.stderr)
+            return 2
+        key_hex = raw[:nl].decode().strip()
+        data = raw[nl + 1:]
+    else:
+        if len(args) != 2 or args[0] not in ("encrypt", "decrypt"):
+            print("Usage: uenc_codec.py {encrypt|decrypt} <key_hex>   (data on stdin, result on stdout)", file=sys.stderr)
+            return 2
+        mode, key_hex = args[0], args[1]
+        data = sys.stdin.buffer.read()
     try:
         if mode == "encrypt":
             payload, _iv_hex = encrypt_aes256gcm(data, key_hex)

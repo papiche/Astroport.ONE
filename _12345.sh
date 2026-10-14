@@ -997,6 +997,10 @@ NODE12345="{
         fi
     fi
 
+    ## Watchdog ponts Web2 (Telegram, Mastodon) — no-op total si aucun canal
+    ## n'est configuré (.env vide), cf. IA/channels/channels_watchdog.sh
+    bash "${HOME}/.zen/Astroport.ONE/IA/channels/channels_watchdog.sh" 2>/dev/null
+
     ## Watchdog IPFS daemon — ne pas attendre le cron 20h12 (jusqu'à 24h de coupure sinon)
     LOWMODE_IPFS=$(sudo systemctl status ipfs 2>/dev/null | grep "preset: disabled")
     [[ ! $isLAN || -n "${zipit:-}" ]] && LOWMODE_IPFS="" ## LOWMODE ONLY FOR LAN STATION

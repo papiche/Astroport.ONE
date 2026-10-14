@@ -40,6 +40,8 @@ if os.path.exists(venv_path):
 import ollama
 import argparse
 import json
+import time
+import subprocess
 
 MY_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, MY_DIR)
@@ -157,6 +159,114 @@ def filter_think_tags(text):
     # re.sub supprime déjà toutes les occurrences de <think>...</think>
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     return text.strip()
+
+
+## ── IA personnelle (Anthropic/Gemini) — « bring your own key » ─────────────
+## Par défaut, BRO répond via Ollama fourni gratuitement par les stations
+## DRAGON de la constellation (comportement INCHANGÉ pour tout appelant sans
+## user_id, ou dont l'utilisateur n'a rien configuré — l'immense majorité).
+## Un MULTIPASS peut configurer SA PROPRE clé Anthropic/Gemini via cookie.html
+## (onglet "API officielle", vault chiffré UPassport/services/api_access_store.py,
+## kind NOSTR 31904) pour que SES questions soient traitées par ce modèle précis.
+_API_ACCESS_CLI = os.path.expanduser("~/.zen/UPassport/api_access_cli.py")
+_LLM_OVERRIDE_CACHE_TTL = 300  # secondes — évite de re-sonder le vault à chaque question
+_llm_override_cache: dict = {}  # user_id -> (timestamp, override_dict_or_None)
+
+
+def _user_llm_override(user_id: str) -> dict | None:
+    """Vérifie si cet utilisateur a configuré sa propre clé Anthropic/Gemini.
+    Défensif par construction : toute erreur (CLI absent, timeout, JSON invalide)
+    retombe silencieusement sur None → Ollama par défaut. Un « bring your own
+    key » cassé ne doit JAMAIS empêcher BRO de répondre."""
+    if not user_id:
+        return None
+    cached = _llm_override_cache.get(user_id)
+    if cached and (time.time() - cached[0]) < _LLM_OVERRIDE_CACHE_TTL:
+        return cached[1]
+
+    override = None
+    if os.path.isfile(_API_ACCESS_CLI):
+        for provider in ("anthropic", "gemini"):
+            try:
+                r = subprocess.run(
+                    [sys.executable, _API_ACCESS_CLI, "get", user_id, provider],
+                    capture_output=True, text=True, timeout=10,
+                )
+                if r.returncode != 0:
+                    continue
+                values = json.loads(r.stdout.strip() or "{}")
+                if values.get("api_key"):
+                    override = {"provider": provider, **values}
+                    break
+            except Exception as e:
+                print(f"[question.py] _user_llm_override({provider}): {e}", file=sys.stderr)
+                continue
+
+    _llm_override_cache[user_id] = (time.time(), override)
+    return override
+
+
+def get_anthropic_answer(prompt: str, system_prompt: str, api_key: str,
+                         model: str = "claude-sonnet-5", max_tokens: int = None,
+                         temperature: float = None) -> str | None:
+    """Messages API Anthropic — REST simple, pas de SDK requis."""
+    import requests
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+    body = {
+        "model": model,
+        "max_tokens": max_tokens or 1024,
+        "system": system_prompt,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if temperature is not None:
+        body["temperature"] = temperature
+    try:
+        r = requests.post("https://api.anthropic.com/v1/messages",
+                          headers=headers, json=body, timeout=60)
+        if r.status_code == 200:
+            parts = r.json().get("content", [])
+            text = "".join(p.get("text", "") for p in parts if p.get("type") == "text").strip()
+            return filter_think_tags(text) if text else None
+        print(f"[question.py] Erreur Anthropic: http_{r.status_code}: {r.text[:200]}", file=sys.stderr)
+    except Exception as e:
+        print(f"[question.py] Erreur Anthropic: {e}", file=sys.stderr)
+    return None
+
+
+def get_gemini_answer(prompt: str, system_prompt: str, api_key: str,
+                      model: str = "gemini-2.0-flash", max_tokens: int = None,
+                      temperature: float = None) -> str | None:
+    """generateContent REST Gemini — pas de SDK requis."""
+    import requests
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    gen_config = {}
+    if max_tokens:
+        gen_config["maxOutputTokens"] = max_tokens
+    if temperature is not None:
+        gen_config["temperature"] = temperature
+    body = {
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "systemInstruction": {"parts": [{"text": system_prompt}]},
+    }
+    if gen_config:
+        body["generationConfig"] = gen_config
+    try:
+        r = requests.post(url, json=body, timeout=60)
+        if r.status_code == 200:
+            candidates = r.json().get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                text = "".join(p.get("text", "") for p in parts).strip()
+                return filter_think_tags(text) if text else None
+            return None
+        print(f"[question.py] Erreur Gemini: http_{r.status_code}: {r.text[:200]}", file=sys.stderr)
+    except Exception as e:
+        print(f"[question.py] Erreur Gemini: {e}", file=sys.stderr)
+    return None
 
 
 def get_ollama_answer(prompt: str, model_name: str = "gemma3:12b",
@@ -287,14 +397,36 @@ def answer_question(question_text: str, model_name: str = "gemma3:12b",
         skill_tag = f"[skill:{skill}] " if skill else ""
         lf.write(f"{npub_tag}{skill_tag}{final_prompt}\n")
 
-    # ── Réponse Ollama ────────────────────────────────────────────────────────
-    answer = get_ollama_answer(final_prompt, model_name, system_prompt,
-                               temperature=temperature,
-                               num_ctx=ctx,
-                               num_predict=max_tokens,
-                               top_p=top_p,
-                               repeat_penalty=repeat_penalty,
-                               format_json=format_json)
+    # ── Réponse : IA personnelle si configurée (Anthropic/Gemini), sinon
+    # Ollama DRAGON par défaut — jamais de changement de comportement pour un
+    # appelant sans user_id ou dont l'utilisateur n'a rien configuré. ────────
+    answer = None
+    override = _user_llm_override(user_id) if user_id else None
+    if override:
+        provider = override["provider"]
+        if provider == "anthropic":
+            answer = get_anthropic_answer(
+                final_prompt, system_prompt, override["api_key"],
+                model=override.get("model") or "claude-sonnet-5",
+                max_tokens=max_tokens, temperature=temperature,
+            )
+        elif provider == "gemini":
+            answer = get_gemini_answer(
+                final_prompt, system_prompt, override["api_key"],
+                model=override.get("model") or "gemini-2.0-flash",
+                max_tokens=max_tokens, temperature=temperature,
+            )
+        if answer is None:
+            print(f"[question.py] IA personnelle ({provider}) en échec pour {user_id} — repli Ollama", file=sys.stderr)
+
+    if answer is None:
+        answer = get_ollama_answer(final_prompt, model_name, system_prompt,
+                                   temperature=temperature,
+                                   num_ctx=ctx,
+                                   num_predict=max_tokens,
+                                   top_p=top_p,
+                                   repeat_penalty=repeat_penalty,
+                                   format_json=format_json)
 
     if answer:
         with open(log_file_path, "a") as lf:

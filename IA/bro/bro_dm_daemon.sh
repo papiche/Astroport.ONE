@@ -417,8 +417,10 @@ _handle_bro_image() {
     fi
 
     ## Déchiffrement AES-GCM — format UENC, via le codec partagé (tools/uenc_codec.py)
-    if ! ~/.astro/bin/python3 "$HOME/.zen/Astroport.ONE/tools/uenc_codec.py" decrypt "$enc_key" \
-        < "$tmp_enc" > "$tmp_img" 2>/dev/null; then
+    ## --key-stdin : la clé ne transite jamais en argv (invisible dans /proc/<pid>/cmdline)
+    if ! { printf '%s\n' "$enc_key"; cat "$tmp_enc"; } | \
+        ~/.astro/bin/python3 "$HOME/.zen/Astroport.ONE/tools/uenc_codec.py" decrypt --key-stdin \
+        > "$tmp_img" 2>/dev/null; then
         _log "WARN: déchiffrement AES-GCM échoué pour CID ${cid:0:12}…"
         _send_dm "$sender" "❌ Échec du déchiffrement de l'image." "${_RELAYS[0]}"
         rm -f "$tmp_enc" "$tmp_img"
@@ -1822,8 +1824,10 @@ _handle_nip17_file_message() {
 
     ## Déchiffrement AES-256-GCM via le codec partagé (tools/uenc_codec.py) —
     ## même format UENC que les images du chat BRO et de media_upload.py.
-    if ! ~/.astro/bin/python3 "$HOME/.zen/Astroport.ONE/tools/uenc_codec.py" decrypt "$_key" \
-            < "$_tmp_enc" > "$_tmp_clear" 2>>"$LOG_FILE"; then
+    ## --key-stdin : la clé ne transite jamais en argv (invisible dans /proc/<pid>/cmdline)
+    if ! { printf '%s\n' "$_key"; cat "$_tmp_enc"; } | \
+            ~/.astro/bin/python3 "$HOME/.zen/Astroport.ONE/tools/uenc_codec.py" decrypt --key-stdin \
+            > "$_tmp_clear" 2>>"$LOG_FILE"; then
         _log "WARN: 🎁 kind15 ${email}: déchiffrement UENC échoué (clé/nonce invalides ?)"
         _nip17_cleanup; return
     fi
@@ -2034,7 +2038,7 @@ _process_event() {
     ## jamais par un humain en chat — donc aucune entrée correspondante dans le
     ## `case` soumis au niveau d'abonnement MULTIPASS plus bas, contrairement à
     ## comfyui_job qui, lui, est aussi accessible à l'utilisateur.
-    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_job|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result|ucloud_share|ucloud_share_ack)$ ]]; then
+    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result|ucloud_share|ucloud_share_ack)$ ]]; then
         if ! _is_swarm_node "$sender"; then
             _log "WARN: canal inter-NODE '$channel' de ${sender:0:12}... non reconnu comme NODE swarm — ignoré"
             return
@@ -2044,7 +2048,6 @@ _process_event() {
             vocals)                  _handle_vocals "$payload" ;;
             webcam)                  _handle_webcam "$payload" ;;
             zen_like)                _handle_zen_like "$payload" ;;
-            comfyui_job)             _handle_comfyui_job "$payload" "$sender" ;;
             comfyui_result)          _handle_comfyui_result "$payload" ;;
             self_command_relay)      _handle_self_command_relay "$payload" ;;
             vision_analysis_job)     _handle_vision_analysis_job "$payload" "$sender" ;;
@@ -2052,6 +2055,19 @@ _process_event() {
             ucloud_share)            _handle_ucloud_share "$payload" "--receive" ;;
             ucloud_share_ack)        _handle_ucloud_share "$payload" "--ack" ;;
         esac
+        return
+    fi
+
+    ## ── Canal "comfyui_job" : double origine, routage spécial ───────────
+    ## Contrairement aux canaux ci-dessus, comfyui_job peut être émis SOIT par
+    ## un NODE swarm (délégation inter-station, bypass niveau — traité ici),
+    ## SOIT directement par un utilisateur final (gated par _USER_LEVEL ≥ 4,
+    ## traité plus bas dans le case général). Avant ce correctif (2026-10), le
+    ## filtre regex ci-dessus interceptait TOUJOURS ce canal et rejetait tout
+    ## expéditeur non-NODE — rendant l'entrée "comfyui_job" du case général
+    ## définitivement inatteignable pour une requête utilisateur directe.
+    if [[ "$channel" == "comfyui_job" ]] && _is_swarm_node "$sender"; then
+        _handle_comfyui_job "$payload" "$sender"
         return
     fi
 
@@ -2200,36 +2216,19 @@ _process_event() {
         udrive)
             _handle_udrive "$payload"
             ;;
-        vocals)
-            _handle_vocals "$payload"
-            ;;
-        webcam)
-            _handle_webcam "$payload"
-            ;;
-        zen_like)
-            _handle_zen_like "$payload"
-            ;;
         love)
             _handle_love "$payload" "$sender"
             ;;
-        bro_ia)
-            _handle_bro_ia "$payload"
-            ;;
         comfyui_job)
-            ## comfyui_job — requiert Level ≥ 4 (constellation avec IA)
+            ## comfyui_job — requiert Level ≥ 4 (constellation avec IA).
+            ## N'est atteint ici QUE pour une requête directe d'un utilisateur
+            ## final (sender non reconnu comme NODE swarm) — le cas inter-NODE
+            ## est intercepté plus haut, avant le calcul de _USER_LEVEL.
             if [[ "$_USER_LEVEL" -lt 4 ]]; then
                 _send_dm "$sender" "🔒 ComfyUI nécessite une souscription constellation (avec IA).\nhttps://opencollective.com/monnaie-libre/contribute"
                 return
             fi
             _handle_comfyui_job "$payload" "$sender"
-            ;;
-        comfyui_result)
-            _handle_comfyui_result "$payload"
-            ;;
-        nostr_delete)
-            ## Traité avant le check de niveau (inter-NODE) — normalement jamais
-            ## atteint ici car _is_swarm_node retourne true mais au cas où:
-            _log "WARN: nostr_delete arrivé dans le case — expéditeur refusé (non swarm NODE)"
             ;;
         *)
             _log "Canal inconnu '$channel' de ${sender:0:12}... — ignoré"
