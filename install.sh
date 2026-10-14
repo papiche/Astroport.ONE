@@ -5,6 +5,13 @@ umask 077
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 {
+## Ignorer SIGHUP : un upgrade lancé via une session SSH tunnelée par CETTE
+## station elle-même (IPFS P2P) peut voir sa propre session coupée en cours
+## de route (ex: redémarrage du daemon IPFS). Sans ce trap, la coupure tue
+## install.sh à mi-chemin (sudoers/bashrc déjà réappliqués, mais firewall/
+## tunnel P2P pas forcément relancés) — incident du 2026-10 (bulma-39).
+trap '' HUP
+
 ## Détection emplacement script et initialisation "MY_PATH"
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -997,11 +1004,6 @@ echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
 bash "${MY_PATH}/install/install_mcp_venv.sh" 2>> "$_ERROR_LOG" \
     && echo "✅ venv mcp (~/.astro-mcp) prêt — #opendata disponible dans BRO" \
     || echo "⚠️  venv mcp install FAILED — #opendata restera indisponible (voir ~/.zen/log/install.errors.log)"
-## Garde-fou post-install : détecte un venv ~/.astro cassé (conflit de deps,
-## UPassport qui n'importe plus) AVANT le prochain redémarrage du service,
-## plutôt que de le découvrir en pleine nuit (incident du 2026-07-28).
-bash "${MY_PATH}/admin/system/verify_upassport_health.sh" 2>> "$_ERROR_LOG" \
-    || echo "⚠️  Vérification santé UPassport EN ÉCHEC — voir ci-dessus avant de redémarrer upassport"
 
 
 ####################################################################
@@ -1097,6 +1099,16 @@ fi
 echo "######### UPASSPORT ##############"
 echo "INSTALL UPASSPORT : http://localhost:54321"
 ~/.zen/Astroport.ONE/install/install_upassport.sh
+
+## Garde-fou post-install : détecte un venv ~/.astro cassé (conflit de deps,
+## UPassport qui n'importe plus) APRÈS install_upassport.sh — donc APRÈS le
+## pip install -r requirements.txt qui fournit les dépendances propres à
+## UPassport (ex: a2wsgi). Lancé trop tôt, ce check remontait un faux échec
+## à chaque upgrade ajoutant une dépendance pip côté UPassport (incident du
+## 2026-10-14 : a2wsgi absent du venv au moment du check, installé 100 lignes
+## plus tard).
+bash "${MY_PATH}/admin/system/verify_upassport_health.sh" 2>> "$_ERROR_LOG" \
+    || echo "⚠️  Vérification santé UPassport EN ÉCHEC — voir ci-dessus avant de redémarrer upassport"
 
 ## NIP-101 strfry NOSTR relay
 echo "######### NIP-101 strfry NOSTR relay ##############"

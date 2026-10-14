@@ -1824,7 +1824,7 @@ ${tva_result}"
         if [[ -s "$_SU" ]]; then
             if [[ "$(jq -r '.over // false' "$_SU" 2>/dev/null)" == "true" ]]; then
                 _last_letter=$(cat "$_GRACE_MARK" 2>/dev/null); [[ "$_last_letter" =~ ^[0-9]+$ ]] || _last_letter=0
-                if (( $(date +%s) - _last_letter > 30 * 86400 )); then
+                if (( $(date +%s) - _last_letter > 7 * 86400 )); then
                     _g_tmp=$(mktemp)
                     _g_go() { echo "scale=1; $1 / 1000000000" | bc | sed 's/^\./0./'; }
                     sed -e "s~_PLAYER_~${PLAYER}~g" \

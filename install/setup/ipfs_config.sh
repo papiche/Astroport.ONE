@@ -5,7 +5,17 @@
 MY_PATH="`dirname \"$0\"`"
 source "$MY_PATH/../../tools/my.sh"
 
-sudo systemctl stop ipfs
+## Garde identique à ipfs_setup.sh:31-37 — si la session courante transite par
+## le tunnel SSH-P2P de CETTE station (upgrade distant via IPFS), stopper le
+## daemon ici coupe la session avant d'atteindre le "systemctl start" plus bas
+## (script tué par SIGHUP), laissant IPFS mort indéfiniment (Restart=on-failure
+## ne se déclenche pas sur un arrêt volontaire). Incident du 2026-10 (bulma-39).
+if [[ "${_IPFS_TUNNEL_SSH:-false}" == "true" ]]; then
+    echo "⏭️  IPFS stop/restart — ignoré (tunnel SSH-P2P actif). Config appliquée à chaud,"
+    echo "   effective au prochain redémarrage manuel : sudo systemctl restart ipfs"
+else
+    sudo systemctl stop ipfs
+fi
 
 # 1. DÉTECTION DE L'ACCESSIBILITÉ
 # Si ♥Box est présent, on récupère l'IP publique
@@ -71,5 +81,9 @@ while read -r bootnode; do
     ipfs bootstrap add "$bootnode"
 done < <(grep -Ev "^#" "$BOOTSTRAP_FILE")
 
-sudo systemctl start ipfs
+if [[ "${_IPFS_TUNNEL_SSH:-false}" == "true" ]]; then
+    echo "⏭️  IPFS start — ignoré (tunnel SSH-P2P actif, daemon jamais arrêté ci-dessus)."
+else
+    sudo systemctl start ipfs
+fi
 echo "✅ Configuration IPFS (v0.3) terminée."
