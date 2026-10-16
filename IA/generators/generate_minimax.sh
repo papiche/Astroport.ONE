@@ -197,9 +197,13 @@ update_workflow() {
   [ -n "$UPSCALE" ] && add_upscale
 }
 
-# $1 fichier local → nom du fichier dans ComfyUI/input
+# $1 fichier local → nom du fichier dans ComfyUI/input. Le nom est propre au CONTENU (ref_<empreinte>.<ext>) : avec le nom d'origine,
+# deux acteurs (« portrait.png » / « voice.wav » chacun) s'écrasaient dans ComfyUI/input (overwrite=true) et les deux références
+# lisaient le dernier fichier envoyé — même visage et même voix pour tout le monde.
 upload_input() {
-  curl -s -F "image=@$1" -F "overwrite=true" "$COMFYUI_URL/upload/image" | jq -r '.name // empty'
+  local h ext="${1##*.}"
+  h=$(sha256sum "$1" | cut -c1-16)
+  curl -s -F "image=@$1;filename=ref_${h}.${ext}" -F "overwrite=true" "$COMFYUI_URL/upload/image" | jq -r '.name // empty'
 }
 
 # ref2va (template ComfyUI video_minimax_h3_r2v) : modèle ref2va et node

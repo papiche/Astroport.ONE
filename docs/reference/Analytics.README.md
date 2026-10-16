@@ -8,7 +8,7 @@ The UPlanet Analytics System (`astro.js`) provides a standardized way to collect
 
 **Related NIPs:**
 
-* [NIP-10000: UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) - Analytics events use **kind 10600** (encrypted/non-encrypted determined by content). Kind 10000 is reserved by [NIP-51](https://nips.nostr.com/51) for mute lists.
+* [NIP-10600: UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10600-analytics-extension.md) - Analytics events use **kind 10600** (encrypted/non-encrypted determined by content). Kind 10000 is reserved by [NIP-51](https://nips.nostr.com/51) for mute lists.
 * Note: Kind 10001 is reserved for NIP-51 pin list
 
 ***
@@ -131,7 +131,7 @@ When `astro.js` is loaded **after** `common.js`, it gains NOSTR integration capa
   * Requires: `common.js` loaded + NOSTR connected
   * Falls back to HTTP `/ping` if NOSTR unavailable
   * Returns `Promise<boolean>`
-  * **See:** [NIP-10000](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md)
+  * **See:** [NIP-10600](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10600-analytics-extension.md)
 * **`uPlanetAnalytics.smartSend(data, includeContext, preferNostr, preferEncrypted, preferIPFS)`**
   * Automatically selects best available method
   * Tries encrypted NOSTR → unencrypted NOSTR → HTTP `/ping`
@@ -202,7 +202,7 @@ NO → Fallback to HTTP POST /ping
 }
 ```
 
-**See:** [NIP-10000: UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/nostr-nips/10000-analytics-extension.md)
+**See:** [NIP-10600: UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/nostr-nips/10600-analytics-extension.md)
 
 ***
 
@@ -221,7 +221,7 @@ When `astro.js` is loaded **after** `common.js` and `nostr.bundle.js`, it gains 
   * Uses NIP-44 encryption (ChaCha20-Poly1305)
   * Only user can decrypt their own analytics
   * Returns `Promise<boolean>`
-  * **See:** [NIP-10000](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md)
+  * **See:** [NIP-10600](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10600-analytics-extension.md)
 * **`uPlanetAnalytics.sendEncryptedAsNostrEventWithIPFS(data, includeContext)`**
   * Uploads analytics to IPFS, encrypts only CID
   * Useful for large data (> 50 KB)
@@ -297,7 +297,7 @@ Only user can decrypt (with their private key)
 * Same technique as [NIP-A0 Encryption Extension](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/A0-encryption-extension.md)
 * Ultra-fast decryption (CID only)
 
-**See:** [NIP-10000: UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) (encrypted/non-encrypted determined by content)
+**See:** [NIP-10600: UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10600-analytics-extension.md) (encrypted/non-encrypted determined by content)
 
 ***
 
@@ -449,7 +449,7 @@ All analytics data follows this structure:
 ## References
 
 * **Implementation**: `UPlanet/astro.js`
-* **NIP-10000**: [UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) (supports both encrypted and unencrypted analytics)
+* **NIP-10600**: [UPlanet Analytics Events](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/10600-analytics-extension.md) (supports both encrypted and unencrypted analytics)
 * **NIP-A0**: [Encryption Extension](https://github.com/papiche/Astroport.ONE/blob/master/papiche/nostr-nips/blob/NIP-101/A0-encryption-extension.md) (uses same IPFS+CID technique)
 
 ***

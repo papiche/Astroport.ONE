@@ -755,6 +755,25 @@ python3 $MY_PATH/nostr_send_note.py \
 
 rm "$TMP_KEYFILE"
 
+## 1.6. CAPTAIN UNFOLLOWS the destroyed MULTIPASS
+# make_NOSTRCARD.sh fait suivre tout nouveau MULTIPASS par le Capitaine : le
+# retirer ici, sinon sa liste kind 3 garde un follow vers une identité disparue.
+# (ignoré si le MULTIPASS détruit est celui du Capitaine lui-même)
+if [[ -n "${CAPTAINEMAIL:-}" && "$player" != "$CAPTAINEMAIL" && -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
+    CAPTAINNSEC=$(grep -oP 'NSEC=\K[^;]+' ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr)
+    if [[ -n "$CAPTAINNSEC" ]]; then
+        echo "👥 CAPTAIN ${CAPTAINEMAIL} unfollowing ${player} (${hex})"
+        NOSTR_NSEC="$CAPTAINNSEC" ${MY_PATH}/nostr_unfollow.sh - "$hex" "ws://127.0.0.1:7777" \
+            && echo "✅ CAPTAIN no longer follows ${player}" \
+            || echo "⚠️  Failed to remove CAPTAIN follow (will continue with destruction)"
+        unset CAPTAINNSEC
+    else
+        echo "⚠️  CAPTAIN NSEC not found - follow not removed"
+    fi
+else
+    echo "ℹ️  No CAPTAIN follow to remove (captain secret missing or player is captain)"
+fi
+
 ## 2. CASH BACK
 # resolve_player_dunikey (tools/my.sh) essaie PEPPER_UPLANET_SALT puis PEPPER
 # seul, et ne garde que la formule qui reproduit g1pubnostr (le wallet

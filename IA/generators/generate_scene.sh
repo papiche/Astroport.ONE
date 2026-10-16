@@ -69,7 +69,9 @@
 #   {"prompt": "..."}                                      text-to-video
 #   {"image_prompt": "...", "prompt": "..."}               image générée (generate_image.sh) puis animée
 #   {"image": "/chemin.png" | "ipfs://CID/nom.png", "prompt": "..."}   image fournie, animée
-#   {"continue": true, "prompt": "..."}                    repart de la dernière image du plan précédent
+#   {"continue": true, "prompt": "..."}                    repart de la dernière image du plan précédent (image de fin du plan
+#                      N = image de début du plan N+1). Avec "cast"/"decor" (ref2va, sans image de départ) cette image devient une
+#                      référence de plus : même lieu, lumière, cadre, tenue et pose (reprise proche, pas au pixel près)
 #   {"cast": ["lea"], "prompt": "Lea ... says: \"...\""}   acteur(s) — un seul par plan conseillé
 #   {"decor": "$SCENES_DIR/decor/decor.jpg", "cast": ["lea"], "prompt": "..."}   DÉCOR imposé : l'image est ajoutée comme
 #                      référence supplémentaire (ref2va « visage/décor repris », 9 images max) et le prompt la cite comme le lieu,
@@ -446,6 +448,7 @@ for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
   if [ "$refresh" != "true" ]; then
     if [ -s "$bdir/portrait.png" ] && [ ! -s "$cdir/portrait.png" ] && ! jq -e '.image' <<< "$actor" > /dev/null; then
       cp "$bdir/portrait.png" "$cdir/portrait.png"
+      for extra in "$bdir"/portrait_[2-9].png; do [ -s "$extra" ] && cp "$extra" "$cdir/"; done     # photos supplémentaires (facultatives)
       echo "Acteur $name : portrait repris de la banque ($bdir)" >&2
     fi
     if [ -s "$bdir/voice.wav" ] && [ ! -s "$cdir/voice.wav" ] && ! jq -e '.voice' <<< "$actor" > /dev/null; then
@@ -457,6 +460,8 @@ for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
   if [ ! -s "$cdir/portrait.png" ]; then
     if jq -e '.image' <<< "$actor" > /dev/null; then
       cp "$(jq -r '.image' <<< "$actor")" "$cdir/portrait.png" || exit 1
+      # Autres photos du personnage (portrait_2.png… rangées à côté de l'image par le Studio) : références de visage supplémentaires
+      for extra in "$(dirname "$(jq -r '.image' <<< "$actor")")"/portrait_[2-9].png; do [ -s "$extra" ] && cp "$extra" "$cdir/"; done
     elif jq -e '.image_prompt' <<< "$actor" > /dev/null; then
       echo "Acteur $name : portrait (Z-Image)" >&2
       gen_image "$(jq -r '.image_prompt' <<< "$actor"), head and shoulders portrait, plain neutral light grey studio background, soft even lighting, looking at the camera" \
@@ -500,6 +505,8 @@ for name in $(jq -r '.cast // {} | keys[]' "$STORYBOARD"); do
   # Alimente la banque pour les prochains storyboards (portrait et voix définitifs)
   cp "$cdir/portrait.png" "$bdir/portrait.png"
   cp "$cdir/voice.wav" "$bdir/voice.wav"
+  rm -f "$bdir"/portrait_[2-9].png      # la banque reflète exactement les photos du plan de travail (pas d'anciennes vues restées)
+  for extra in "$cdir"/portrait_[2-9].png; do [ -s "$extra" ] && cp "$extra" "$bdir/"; done
   # Mémorise la définition d'origine, sauf reprise pure d'un personnage déjà en banque
   if jq -e '.image_prompt or .image or .voice_line or .voice' <<< "$actor" > /dev/null 2>&1; then
     jq -c 'del(.refresh)' <<< "$actor" > "$bdir/character.json" 2>/dev/null || true
@@ -514,27 +521,56 @@ if [ "$CAST_ONLY" -eq 1 ]; then
   exit 0
 fi
 
-# Décor imposé du plan ($1 = JSON du plan, $2 = nombre d'images de référence déjà ajoutées par cast_refs) : une image de référence
-# de plus (-R), citée dans le préambule. Sans effet si le plan n'a pas de "decor". Chemin local seulement (jamais d'URL).
+# Nombre d'images de référence (-R) déjà ajoutées au plan (cast_refs, decor_ref, continue_ref) : ref2va en accepte 9 au plus.
+REF_N=0
+ref_add() {   # $1 fichier image : ajoute -R et incrémente REF_N ; refuse au-delà de 9
+  if [ "$REF_N" -ge 9 ]; then echo "Attention : plus de 9 images de référence, $(basename "$1") ignorée" >&2; return 1; fi
+  REF_ARGS+=(-R "$1"); REF_N=$((REF_N + 1))
+}
+
+# Décor imposé du plan ($1 = JSON du plan) : une image de référence de plus (-R), citée dans le préambule.
+# Sans effet si le plan n'a pas de "decor". Chemin local seulement (jamais d'URL).
 decor_ref() {
   local d
   d=$(jq -r '.decor // empty' <<< "$1")
   [ -z "$d" ] && return 0
   [[ "$d" == *://* ]] && { echo "Erreur : decor doit être un fichier local, pas une URL ($d)" >&2; exit 1; }
   [ -s "$d" ] || { echo "Erreur : décor introuvable : $d" >&2; exit 1; }
-  REF_ARGS+=(-R "$d")
-  REF_INTRO+="Use <Picture $(( $2 + 1 ))> as the setting of the scene: keep its location, lighting and atmosphere as the background. "
+  ref_add "$d" && REF_INTRO+="Use <Picture $REF_N> as the setting of the scene: keep its location, lighting and atmosphere as the background. "
+}
+
+# Continuité ($1 = JSON du plan, $2 = index du plan) : un plan "continue": true repart de la DERNIÈRE IMAGE du plan précédent.
+# Avec acteur ou décor (ref2va, qui n'accepte pas d'image de départ) elle devient une référence de plus : le modèle reprend
+# le lieu, la lumière, le cadre, la tenue et la pose de cet instant précis. Sans effet pour le premier plan ou si l'image manque.
+continue_ref() {
+  jq -e '.continue == true' <<< "$1" > /dev/null || return 0
+  local last="$WORK_DIR/last_$(printf "%02d" $(($2 - 1))).png" prev="$WORK_DIR/shot_$(printf "%02d" $(($2 - 1))).mp4"
+  # Plan précédent déjà rendu (cache) mais image finale absente : on la relit dans la vidéo
+  [ "$2" -ge 1 ] && [ ! -s "$last" ] && [ -s "$prev" ] && "$FFMPEG" -v error -y -sseof -0.1 -i "$prev" -update 1 -frames:v 1 "$last"
+  if [ "$2" -lt 1 ] || [ ! -s "$last" ]; then
+    echo "Attention : plan $(($2 + 1)) \"continue\" mais pas d'image finale du plan précédent : départ libre" >&2
+    return 0
+  fi
+  ref_add "$last" && REF_INTRO+="Use <Picture $REF_N> as the exact previous moment of the same scene: the new shot continues directly from it, same place, lighting, camera position, clothing and pose, as one continuous take. "
 }
 
 # $1 JSON array de noms → arguments -R/-A et préambule du prompt (variables globales)
 cast_refs() {
-  REF_ARGS=()
+  REF_ARGS=(); REF_N=0
   # ref2va dérive parfois vers l'illustration ou une dominante de couleur : on l'ancre
   REF_INTRO="Photorealistic live-action video footage with natural colors and lighting, not an illustration, not a cartoon, not a poster. "
-  local k=1 name
+  local k=1 name first extra extras
   for name in $(jq -r '.[]' <<< "$1"); do
-    REF_ARGS+=(-R "$WORK_DIR/cast/$name/portrait.png" -A "$WORK_DIR/cast/$name/voice.wav")
-    REF_INTRO+="Use <Picture $k> as the reference for ${name^}'s face, hair and clothing, and <Audio $k> as the reference for ${name^}'s voice. "
+    ref_add "$WORK_DIR/cast/$name/portrait.png"; first=$REF_N
+    REF_ARGS+=(-A "$WORK_DIR/cast/$name/voice.wav")
+    REF_INTRO+="Use <Picture $first> as the reference for ${name^}'s face, hair and clothing, and <Audio $k> as the reference for ${name^}'s voice. "
+    # Autres photos de la même personne (portrait_2.png, portrait_3.png… : autre angle, autre lumière) : MiniMax H3 accepte jusqu'à 9
+    # images de référence ; elles précisent le visage sans changer la tenue ni la pose demandées.
+    extras=""
+    for extra in "$WORK_DIR/cast/$name/portrait_"[2-9].png; do
+      [ -s "$extra" ] && ref_add "$extra" && extras+="<Picture $REF_N>, "
+    done
+    [ -n "$extras" ] && REF_INTRO+="${extras%, } show the same person ${name^} from other angles: use them only to keep the face identical. "
     k=$((k + 1))
   done
 }
@@ -778,13 +814,15 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
 
   if jq -e '.cast' <<< "$shot" > /dev/null; then
     cast_refs "$(jq -c '.cast' <<< "$shot")"
-    decor_ref "$shot" "$(jq '.cast | length' <<< "$shot")"
+    decor_ref "$shot"
+    continue_ref "$shot" "$i"
     args+=("${REF_ARGS[@]}" -s "$REF_STEPS")
     prompt="${REF_INTRO}${prompt}"
   elif jq -e '.decor' <<< "$shot" > /dev/null; then
     # Décor sans acteur : ref2va avec la seule image du lieu
     cast_refs "[]"
-    decor_ref "$shot" 0
+    decor_ref "$shot"
+    continue_ref "$shot" "$i"
     args+=("${REF_ARGS[@]}" -s "$REF_STEPS")
     prompt="${REF_INTRO}${prompt}"
   elif jq -e '.continue == true' <<< "$shot" > /dev/null; then

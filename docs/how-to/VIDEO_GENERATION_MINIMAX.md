@@ -89,6 +89,18 @@ de voix (`voice_line`). Au premier rendu, `generate_scene.sh` :
 2. fait dire `voice_line` au portrait par MiniMax (i2v, 1:1, 0,25 MP, 8 s), puis
    extrait la piste audio en `voice.wav` (mono, 48 kHz).
 
+**Plusieurs photos d'un acteur.** `cast/<nom>/portrait.png` est la photo principale ; `portrait_2.png` … `portrait_9.png`
+(facultatives, 3 usuelles) sont d'autres vues de la même personne : `cast_refs` les passe toutes en `-R` (MiniMax H3 ref2va :
+9 images de référence au total, décor et image de continuité comprises) avec « <Picture 2>, <Picture 3> show the same person from other angles ».
+La banque et le paquet du Studio les conservent.
+
+**Les plans se suivent.** `{"continue": true}` : le plan repart de la dernière image du précédent. Sans acteur : image de départ
+(fl2va, au pixel près). Avec acteur ou décor : ref2va n'accepte pas d'image de départ, la dernière image devient une référence de plus
+(« même lieu, lumière, cadre, tenue, pose »). L'assistant du Studio l'applique seul à chaque plan IA qui en suit un autre.
+
+**Noms de fichiers dans ComfyUI/input.** `generate_minimax.sh` envoie chaque référence sous un nom propre à son contenu
+(`ref_<empreinte>.<ext>`) : avant, deux acteurs (`portrait.png` / `voice.wav` chacun) s'écrasaient et partageaient le même visage et la même voix.
+
 **Voix distinctes.** Sans précision, la voix de référence venait de MiniMax avec la même
 graine pour tous : les acteurs finissaient avec des voix voisines. Ajouter `voice_design`
 (description du timbre, de l'âge, du ton, en anglais) pour que Qwen3-TTS VoiceDesign invente
