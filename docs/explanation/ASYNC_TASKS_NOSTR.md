@@ -39,7 +39,6 @@ Chaque "channel" est un type de tâche. Le payload est un objet JSON chiffré av
 | `comfyui_job`    | Client → Brain    | Délégation génération vidéo/image ComfyUI            |
 | `comfyui_result` | Brain → Client    | CID IPFS du résultat vidéo                           |
 | `udrive`         | Nœud → Nœud       | Sync fichier IPFS vers uDRIVE distant                |
-| `bro_ia`         | Roaming → Home    | Requête BRO depuis station visitée, réponse chez soi |
 | `zen_like`       | Station → Station | Paiement ẐEN relayé (roaming)                        |
 | `vocals`         | Client → Station  | Publication kind 1222/1244 (message vocal)           |
 | `webcam`         | Client → Station  | Publication kind 21/22 (vidéo live)                  |

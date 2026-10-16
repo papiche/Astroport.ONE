@@ -97,29 +97,12 @@ chat_call() {
     | jq -r '.message.content // empty'
 }
 
-SYSTEM_PROMPT=$(cat <<EOF
-Tu es un scénariste qui aide, PAR LA DISCUSSION, à concevoir un storyboard vidéo pour un
-générateur IA (MiniMax H3 + Z-Image). Réponds en français, de façon concise et conversationnelle.
-
-PENDANT LA DISCUSSION (tant que l'utilisateur n'a pas tapé "go") :
-- Ne produis JAMAIS de JSON. Discute normalement.
-- Si le sujet est encore flou, pose UNE ou DEUX questions courtes à la fois (jamais un long
-  questionnaire d'un coup) : sujet précis, ton/ambiance, format (16:9 paysage / 9:16 vertical /
-  1:1 carré), style (net ou "vhs" cassette), personnages qui parlent, voix-off de narrateur,
-  carton final avec un lien.
-- Dès que tu as une idée du sujet, propose 2 ou 3 PISTES DE SCÉNARIO différentes, numérotées,
-  en une ou deux phrases chacune (angle, nombre de plans approximatif, ton). Demande laquelle
-  retenir, ou si l'utilisateur veut en combiner/ajuster.
-- Affine la piste retenue à chaque message suivant, en tenant compte de tous les retours.
-- Reste bref : pas de longs pavés, l'utilisateur doit pouvoir répondre vite.
-
-PERSONNAGES DÉJÀ DISPONIBLES (les proposer activement si pertinent ; les réutiliser SANS
-changer leur apparence) :$EXISTING_CAST
-
-Quand l'utilisateur tape "go", tu recevras une demande explicite de produire le JSON final —
-pas avant.
-EOF
-)
+# Consignes de l'assistant : UNE seule source, lib/storyboard_prompts.json, lue aussi par l'assistant du Studio web
+# (UPassport/services/story_assistant.py) — sinon les deux copies divergent. {{CAST}} = personnages disponibles.
+PROMPTS="$MY_PATH/lib/storyboard_prompts.json"
+[ -s "$PROMPTS" ] || { echo "Erreur : $PROMPTS introuvable (installation incomplète)" >&2; exit 1; }
+SYSTEM_PROMPT=$(jq -r '.system' "$PROMPTS") || { echo "Erreur : $PROMPTS illisible" >&2; exit 1; }
+SYSTEM_PROMPT="${SYSTEM_PROMPT//\{\{CAST\}\}/$EXISTING_CAST}"
 add_msg system "$SYSTEM_PROMPT"
 
 echo >&2
@@ -162,23 +145,7 @@ RAW=$(mktemp)
 CLEAN=$(mktemp)
 trap 'rm -f "$RAW" "$CLEAN"' EXIT
 
-add_msg user "Parfait, génère maintenant le storyboard JSON final de ce qu'on vient de définir.
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans texte autour — rien d'autre
-que le JSON. Schéma strict, aucun champ en dehors :
-{\"ratio\": \"16:9\", \"style\": \"clean\",
- \"cast\": {\"nom\": {\"image_prompt\": \"...\", \"voice_line\": \"...\"}},
- \"shots\": [
-   {\"cast\": [\"nom\"], \"duration\": 7,
-    \"prompt\": \"description en anglais, finissant par : Nom says in French: \\\"réplique exacte en français\\\"\"},
-   {\"prompt\": \"plan muet ou d'ambiance en anglais, décrit aussi le son\", \"duration\": 5}
- ]}
-Un personnage déjà existant (voir liste donnée plus haut) s'écrit \"nom\": {} (objet VIDE),
-jamais avec image_prompt/voice_line. Une réplique tient ~2,5 mots/s. Un seul personnage par
-plan qui parle. Le premier plan ne peut pas avoir \"continue\": true. \"cast\" en haut doit
-lister exactement les personnages utilisés dans \"shots\", ni plus ni moins. N'ajoute un plan
-\"card\" (carton + liens) que si on en a explicitement discuté — sinon aucun carton, n'en
-invente pas. Pour tout paramètre non discuté (format, style...), choisis une valeur par défaut
-raisonnable sans redemander."
+add_msg user "$(jq -r '.final' "$PROMPTS")"
 
 ATTEMPT=1
 ERR=""

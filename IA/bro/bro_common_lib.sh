@@ -19,7 +19,6 @@
 #     channel "vocals"    → publication kind 1222/1244 vocal
 #     channel "webcam"    → publication webcam
 #     channel "zen_like"  → paiement G1 cooperatif
-#     channel "bro_ia"    → relay BRO depuis station visiteur (roaming)
 #     channel "comfyui_job"    → délégation génération vidéo au Brain
 #     channel "comfyui_result" → résultat Brain → home station
 #
@@ -40,7 +39,6 @@ BRO_SCRIPT_ID="${BRO_SCRIPT_ID:-bro}"
 # ── Chemins outils ──────────────────────────────────────────────────
 BRO_NOSTR2HEX="${_BRO_ASTRO_TOOLS}/nostr2hex.py"
 BRO_SECURE_DM="${_BRO_ASTRO_TOOLS}/nostr_send_secure_dm.py"
-BRO_INTERCOM="${_BRO_ASTRO_TOOLS}/nostr_node_intercom.py"
 BRO_MAILJET="${_BRO_ASTRO_TOOLS}/mailjet.sh"
 BRO_USER_LEVEL="${_BRO_LIB_MY_PATH}/../bro_user_level.py"
 _BRO_ALERT_LOCK="$HOME/.zen/flashmem/bro_alert.lock"
@@ -417,33 +415,6 @@ bro_send_dm() {
 }
 
 ########################################################################
-# bro_send_intercom TO_HEX CHANNEL PAYLOAD [TTL] [RELAY]
-#   Envoie un DM inter-node NIP-44 via nostr_node_intercom.py.
-#   Requiert que bro_load_node_keys() ait été appelé (BRO_NODE_NSEC).
-#   TTL défaut : 3600s
-########################################################################
-bro_send_intercom() {
-    local _to_hex="$1" _channel="$2" _payload="$3"
-    local _ttl="${4:-3600}" _relay="${5:-$BRO_PUBLIC_RELAY}"
-    if [[ ! -x "$BRO_INTERCOM" ]]; then
-        bro_log "WARN: bro_send_intercom: nostr_node_intercom.py introuvable"
-        return 1
-    fi
-    if [[ -z "${BRO_NODE_NSEC:-}" ]]; then
-        bro_log "WARN: bro_send_intercom: BRO_NODE_NSEC non chargé — appeler bro_load_node_keys()"
-        return 1
-    fi
-    printf '%s\n' "$BRO_NODE_NSEC" | python3 "$BRO_INTERCOM" send \
-        --nsec-stdin \
-        --to      "$_to_hex" \
-        --channel "$_channel" \
-        --payload "$_payload" \
-        --ttl     "$_ttl" \
-        --relays  "$_relay" \
-        2>/dev/null
-}
-
-########################################################################
 # bro_payload_get JSON_STRING FIELD [FIELD2 ...]
 #   Parse un payload JSON et exporte _FIELD (majuscules) pour chaque champ.
 #   Exemple : bro_payload_get "$payload" email cid → $_EMAIL $_CID
@@ -465,68 +436,6 @@ for field in sys.argv[1:]:
     sys.stdout.buffer.write(f"_{field.upper()}".encode() + b'\x00' + str(val).encode() + b'\x00')
 PYEOF
     )
-}
-
-########################################################################
-# bro_relay_bro_ia_to_home EMAIL PUBKEY EVENT_ID LAT LON MESSAGE URL KNAME
-#   Relaie une commande BRO (kind 1 roaming) vers la home station du joueur.
-#   Cherche le NODE HEX de la home station dans 12345.json du swarm.
-#   Retourne 0 si le DM intercom a été envoyé, 1 si home station introuvable.
-########################################################################
-bro_relay_bro_ia_to_home() {
-    local _email="$1" _pubkey="$2" _event_id="$3" _lat="$4" _lon="$5"
-    local _message="$6" _url="${7:-}" _kname="${8:-}"
-
-    # Chercher la home station dans le swarm
-    local _home_hex=""
-    for _j in "$HOME/.zen/tmp/swarm/"*/12345.json; do
-        [[ ! -f "$_j" ]] && continue
-        local _is_home _h
-        _is_home=$(python3 -c "
-import json, sys
-try:
-    d = json.load(open(sys.argv[1]))
-    players = d.get('players', {})
-    if sys.argv[2] in players and not players[sys.argv[2]].get('roaming', True):
-        print('yes')
-except Exception: pass
-" "$_j" "$_email" 2>/dev/null)
-        if [[ "$_is_home" == "yes" ]]; then
-            _home_hex=$(python3 -c "
-import json, sys
-try:
-    d = json.load(open(sys.argv[1]))
-    print(d.get('NODEHEX', ''))
-except Exception: pass
-" "$_j" 2>/dev/null)
-            break
-        fi
-    done
-
-    if [[ -z "$_home_hex" || ${#_home_hex} -ne 64 ]]; then
-        bro_log "WARN: bro_relay_bro_ia_to_home: home station HEX introuvable pour $_email"
-        return 1
-    fi
-
-    bro_load_node_keys || return 1
-
-    local _payload
-    _payload=$(python3 -c "
-import json, sys
-print(json.dumps({
-    'email':    sys.argv[1],
-    'pubkey':   sys.argv[2],
-    'event_id': sys.argv[3],
-    'lat':      sys.argv[4],
-    'lon':      sys.argv[5],
-    'message':  sys.argv[6],
-    'url':      sys.argv[7],
-    'kname':    sys.argv[8],
-}))
-" "$_email" "$_pubkey" "$_event_id" "$_lat" "$_lon" "$_message" "$_url" "$_kname" 2>/dev/null)
-
-    bro_log "✈️ bro_relay_bro_ia_to_home: relay BRO vers ${_home_hex:0:12}... pour $_email"
-    bro_send_intercom "$_home_hex" "bro_ia" "$_payload" 3600 "$BRO_PUBLIC_RELAY"
 }
 
 ########################################################################

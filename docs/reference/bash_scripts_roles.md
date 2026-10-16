@@ -94,7 +94,7 @@ Les scripts IA sont nombreux (50+). Seuls les scripts structurants sont listés 
 
 | Script | Rôle | Mode |
 |--------|------|------|
-| `bro_dm_daemon.sh` | Daemon DM NOSTR NIP-44 — traite `bro_ia`, `udrive`, `comfyui_job/result` en temps réel via inotifywait | Lancé par `_12345.sh`, watchdog 300s |
+| `bro_dm_daemon.sh` | Daemon DM NOSTR NIP-44 — traite `udrive`, `comfyui_job/result` en temps réel via inotifywait | Lancé par `_12345.sh`, watchdog 300s |
 | `UPlanet_IA_Responder.sh` | Responder IA : BRO, image, vidéo, musique — dispatche vers le module correct | À la demande |
 | `nostr_node_intercom.py` | Canal inter-NODE NIP-44 : send/receive/decrypt entre stations | Démon |
 

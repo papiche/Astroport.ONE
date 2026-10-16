@@ -9,12 +9,10 @@
 #   4. Génération  — question.py (gemma3:latest ou premier modèle dispo)
 #   5. Multilang   — réponse en français, filtre <think> tags
 #   6. Vision      — moondream/llava sur image IPFS (si modèle vision dispo)
-#   7. Canal DM    — bro_ia #IA via nostr_node_intercom (--with-dm)
 #
 # Usage :
 #   ./tests/test_ollama.sh                   # génération texte si Ollama dispo
 #   ./tests/test_ollama.sh --verbose         # output complet
-#   ./tests/test_ollama.sh --with-dm         # + test canal DM bro_ia (async)
 #   ./tests/test_ollama.sh --model qwen3:14b # forcer un modèle spécifique
 ################################################################################
 
@@ -25,10 +23,9 @@ ASTROPORT_PATH="$(cd "$MY_PATH/.." && pwd)"
 [[ ! -s ~/.zen/Astroport.ONE/tools/my.sh ]] && echo "ERROR: Astroport.ONE manquant" >&2 && exit 1
 source ~/.zen/Astroport.ONE/tools/my.sh
 
-VERBOSE=false; WITH_DM=false; FORCE_MODEL=""; QUICK=false
+VERBOSE=false; FORCE_MODEL=""; QUICK=false
 for _arg in "$@"; do
     [[ "$_arg" == "--verbose" ]] && VERBOSE=true
-    [[ "$_arg" == "--with-dm" ]] && WITH_DM=true
     [[ "$_arg" == "--quick"   ]] && QUICK=true
     [[ "$_arg" =~ ^--model=(.+)$ ]] && FORCE_MODEL="${BASH_REMATCH[1]}"
     [[ "$_arg" == "--model" ]] && _NEXT_MODEL=true && continue
@@ -342,94 +339,3 @@ except:
     fi
 fi
 
-## ─────────────────────────────────────────────────────────────────────────────
-section "7. Canal DM bro_ia — #IA via intercom (--with-dm)"
-## ─────────────────────────────────────────────────────────────────────────────
-
-if ! $WITH_DM; then
-    skip "Test canal DM bro_ia (ajouter --with-dm pour activer)"
-    echo -e "  ${YELLOW}ℹ${NC} Ce test envoie #IA ping au NODE et attend la réponse via DM NIP-44"
-else
-    _COUCOU_NSEC=$(~/.zen/Astroport.ONE/tools/keygen -t nostr -s "coucou" "coucou" 2>/dev/null)
-    _COUCOU_HEX=$(~/.zen/Astroport.ONE/tools/keygen -t nostr "coucou" "coucou" 2>/dev/null \
-        | xargs -I{} python3 "${ASTROPORT_PATH}/tools/nostr2hex.py" {} 2>/dev/null)
-
-    _NODE_HEX=""
-    if [[ -s "$HOME/.zen/game/secret.nostr" ]]; then
-        source "$HOME/.zen/game/secret.nostr"
-        _NODE_HEX="${HEX:-}"
-        unset NSEC NPUB HEX
-    fi
-
-    _RELAY_DM="ws://localhost:7777"
-    nc -z -w2 localhost 7777 2>/dev/null || _RELAY_DM="${myRELAY:-wss://relay.copylaradio.com}"
-
-    if [[ -z "$_NODE_HEX" ]]; then
-        skip "DM bro_ia : secret.nostr NODE absent"
-    elif ! $_OLLAMA_OK; then
-        skip "DM bro_ia : Ollama inaccessible — UPlanet_IA_Responder répondrait 'Ollama offline'"
-    else
-        _BRO_PAYLOAD=$(python3 -c "
-import json
-print(json.dumps({
-    'pubkey':   '${_COUCOU_HEX}',
-    'event_id': 'test_ollama_$(date +%s)',
-    'lat':      '0.00',
-    'lon':      '0.00',
-    'message':  '#IA Quelle est la capitale de la France ? Réponds en une phrase.',
-    'kname':    'coucou@test',
-    'email':    'support+coucou@qo-op.com',
-}))
-" 2>/dev/null)
-
-        echo -e "  ${YELLOW}▸${NC} Envoi bro_ia #IA → NODE ${_NODE_HEX:0:12}..."
-        if python3 "$INTERCOM" send \
-                --nsec    "$_COUCOU_NSEC" \
-                --to      "$_NODE_HEX" \
-                --channel "bro_ia" \
-                --payload "$_BRO_PAYLOAD" \
-                --ttl     3600 \
-                --relays  "$_RELAY_DM" \
-                2>/dev/null; then
-            ok "bro_ia envoyé (TTL=1h) — attente réponse Ollama..."
-        else
-            fail "bro_ia DM : send échoué"
-        fi
-
-        ## Polling 30s pour voir le traitement dans le log daemon
-        _BRO_ANSWERED=false
-        for _i in $(seq 1 6); do
-            sleep 5
-            if grep -q "bro_ia.*Quelle\|bro_ia.*#IA\|KeyANSWER" "$HOME/.zen/tmp/bro_dm_daemon.log" 2>/dev/null \
-               || grep -q "UPlanet_IA_Responder" "$HOME/.zen/tmp/bro_dm_daemon.log" 2>/dev/null; then
-                _BRO_ANSWERED=true
-                break
-            fi
-            vlog "Attente réponse bro_ia... ${_i}/6 ($((_i*5))s)"
-        done
-
-        if $_BRO_ANSWERED; then
-            ok "bro_ia traité par le daemon → UPlanet_IA_Responder appelé"
-        else
-            skip "bro_ia non vu dans le log en 30s (daemon actif ? inotifywait traitement en cours)"
-        fi
-    fi
-fi
-
-## ─────────────────────────────────────────────────────────────────────────────
-echo -e "\n${BOLD}═══════════════════════════════════════════${NC}"
-if [[ -n "$_MODEL_TEXT" ]]; then
-    echo -e "${BOLD}  Modèle texte  : $_MODEL_TEXT${NC}"
-fi
-if [[ -n "$_MODEL_VISION" ]]; then
-    echo -e "${BOLD}  Modèle vision : $_MODEL_VISION${NC}"
-fi
-echo ""
-if [[ $FAIL -eq 0 ]]; then
-    echo -e "${GREEN}  PERFECT — $PASS tests OK${NC}${SKIP:+ ($SKIP skipped)}"
-else
-    echo -e "${RED}  $FAIL ÉCHEC(S)${NC} / ${GREEN}$PASS OK${NC}${SKIP:+ / $SKIP skipped}"
-fi
-echo -e "${BOLD}═══════════════════════════════════════════${NC}"
-
-[[ $FAIL -eq 0 ]]

@@ -81,4 +81,3 @@ Ces commandes arrivent automatiquement depuis les apps UPlanet (pas en tapant du
 | `webcam` | Application UPlanet | Publication flux webcam |
 | `zen_like` | Kind 7 NOSTR | Paiement ẐEN via réaction |
 | `love` | cabine-33 / atomic.html | Rencontre ATOM4LOVE (matching phi2x) |
-| `bro_ia` | Usage interne | Pipeline IA directe |

@@ -8,7 +8,7 @@
 #   ./test.sh g1           → Tests couche G1/Duniter v2
 #   ./test.sh primal       → Tests contrôle primal wallets
 #   ./test.sh systems      → Tests systèmes UPlanet (DID, Oracle, ORE...)
-#   ./test.sh intercom     → Canal inter-NODE DM (NIP-44, bro_ia, Ollama, ComfyUI)
+#   ./test.sh intercom     → Canal inter-NODE DM (NIP-44, Ollama, ComfyUI)
 #   ./test.sh wotx2        → Demo WoTx2 Skills+Craft (coucou/toto/jean)
 #   ./test.sh multipass    → Chaîne MULTIPASS (keygen → NOSTR → ẐEN ORIGIN)
 #   ./test.sh ollama       → Pipeline Ollama (texte + vision llama3.2-vision)
@@ -89,7 +89,7 @@ show_menu() {
     echo "  2) g1        Couche G1/Duniter v2 (keygen, squid, gcli, PAYforSURE)"
     echo "  3) primal    Controle primal wallets (v1->SS58, squid, intrusion)"
     echo "  4) systems   Systemes UPlanet (DID, Oracle, WoTx2, ORE, Badge)"
-    echo "  6) intercom  Canal inter-NODE DM (zen_like, bro_ia, loopback, Ollama, ComfyUI)"
+    echo "  6) intercom  Canal inter-NODE DM (zen_like, loopback, Ollama, ComfyUI)"
     echo "  7) wotx2     Demo WoTx2 Skills+Craft (coucou/toto/jean, backfill N² sync)"
     echo "  8) multipass Chaîne MULTIPASS (keygen → NOSTR → ẐEN ORIGIN)"
     echo "  9) ollama    Pipeline Ollama (texte + vision llama3.2-vision:11b)"
@@ -182,7 +182,7 @@ case "$CHOICE" in
         echo "  g1         Couche G1/Duniter v2 (keygen, squid GraphQL, gcli, PAYforSURE)"
         echo "  primal     Contrôle primal wallets (v1→SS58, squid, intrusion)"
         echo "  systems    Systèmes UPlanet (DID, Oracle, WoTx2, ORE, Badge)"
-        echo "  intercom   Canal inter-NODE DM NIP-44 (zen_like, bro_ia, loopback, Ollama, ComfyUI)"
+        echo "  intercom   Canal inter-NODE DM NIP-44 (zen_like, loopback, Ollama, ComfyUI)"
         echo "  wotx2      Démo WoTx2 Skills+Craft (coucou/toto/jean, backfill N² sync)"
         echo "  multipass  Chaîne MULTIPASS complète (keygen → NOSTR → ẐEN ORIGIN)"
         echo "  ollama     Pipeline Ollama (texte + vision llama3.2-vision:11b)"

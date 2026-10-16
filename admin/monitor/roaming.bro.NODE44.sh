@@ -12,7 +12,6 @@
 #   vocals        → publication kind 1222/1244 (vocal) via home station
 #   webcam        → publication kind 21/22 (vidéo) via home station
 #   zen_like      → paiement ZEN/G1 relayé depuis station visiteur
-#   bro_ia        → commande BRO relayée depuis station visiteur (roaming)
 #   comfyui_job   → job génération vidéo délégué à un Brain GPU
 #   comfyui_result → résultat renvoyé par le Brain
 #
@@ -173,7 +172,6 @@ raw = os.environ.get('BRO_DISPLAY_DATA', '')
 
 CHAN_COLOR = {
     "plain":          "\033[0;36m",
-    "bro_ia":         "\033[1;33m",
     "udrive":         "\033[0;34m",
     "vocals":         "\033[0;35m",
     "webcam":         "\033[0;35m",
@@ -183,7 +181,6 @@ CHAN_COLOR = {
 }
 ICONS = {
     "plain":          "🧠",
-    "bro_ia":         "✈️ ",
     "udrive":         "📁",
     "vocals":         "🎤",
     "webcam":         "🎥",
@@ -225,9 +222,6 @@ def preview(ch, p):
                 f" → {p.get('zen_amount','?')}Ẑ"
                 f" → {p.get('g1pub_dest','?')[:14]}…"
                 f" {'(CF)' if p.get('is_crowdfunding') else ''}")
-    elif ch == "bro_ia":
-        return (f"{p.get('pubkey','?')[:12]}… ({p.get('kname','?')})"
-                f" | {p.get('message','?')[:80]}")
     elif ch == "comfyui_job":
         return (f"mode={p.get('mode','t2v')} job={str(p.get('job_id','?'))[:10]}"
                 f" | {p.get('prompt','?')[:60]}")
@@ -373,7 +367,6 @@ _run_test() {
         "🎨  plain    — #badge docker"
         "🔨  plain    — #craft <url> (recette MineLife)"
         "🎓  plain    — [ctx:python:2] question pédagogique"
-        "✈️   bro_ia   — commande BRO relayée depuis station visiteur"
         "📁  udrive   — sync fichier document → uDRIVE"
         "🎤  vocals   — publication audio kind 1222 (vocal)"
         "🎥  webcam   — publication vidéo kind 21 (webcam)"
@@ -382,7 +375,7 @@ _run_test() {
     local -a _CHANNELS=(
         "plain" "plain" "plain" "plain" "plain"
         "plain" "plain" "plain" "plain" "plain"
-        "bro_ia" "udrive" "vocals" "webcam" "zen_like"
+        "udrive" "vocals" "webcam" "zen_like"
     )
     # Payloads dynamiques : $_sender_hex, $_sender_email, $_dest_hex injectés
     local -a _PAYLOADS=(
@@ -396,7 +389,6 @@ _run_test() {
         '{"text":"#badge docker"}'
         '{"text":"#craft https://instructables.com/Arduino-TV-B-Gone/"}'
         '{"text":"[ctx:python:2] Comment utiliser les list comprehensions en Python ?"}'
-        "{\"pubkey\":\"${_sender_hex}\",\"message\":\"Quels services IA sont disponibles ?\",\"kname\":\"test-monitor\",\"lat\":\"48.85\",\"lon\":\"2.35\",\"event_id\":\"\"}"
         "{\"email\":\"${_sender_email}\",\"cid\":\"QmTestCID123456789\",\"filename\":\"test_monitor.txt\",\"filetype\":\"document\"}"
         "{\"email\":\"${_sender_email}\",\"cid\":\"QmAudioTestCID111\",\"filename\":\"vocal_test.webm\",\"filetype\":\"audio\",\"mime_type\":\"audio/webm\",\"duration\":\"12\",\"title\":\"Test vocal monitor\",\"kind\":\"1222\"}"
         "{\"email\":\"${_sender_email}\",\"cid\":\"QmVideoTestCID222\",\"filename\":\"webcam_test.webm\",\"filetype\":\"video\",\"mime_type\":\"video/webm\",\"duration\":\"5\",\"title\":\"Test webcam monitor\",\"dimensions\":\"640x480\",\"file_size\":\"102400\"}"

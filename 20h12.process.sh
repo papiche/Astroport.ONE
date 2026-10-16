@@ -74,7 +74,7 @@ if [[ -f "$_CONST_ERR_LOG" ]] && [[ $(stat -c%s "$_CONST_ERR_LOG" 2>/dev/null ||
 fi
 ## Journaux persistants hors ~/.zen/tmp/ (jamais purgés par le nettoyage
 ## quotidien), écrits en ajout pur sans plafond :
-##  - flashmem/*.log : uMARKET (aggregator/monitor/deploy), skill_conflicts
+##  - flashmem/*.log : uMARKET (aggregator/monitor/deploy)
 ##  - flashmem/bro_tool_requests.jsonl : corpus de mining d'arbor_self_improve.py
 ##    (une entrée par demande BRO) — on garde les 5000 plus récentes
 ##  - tmp/$IPFSNODEID/_timings : exclu de la purge et publié sur IPNS

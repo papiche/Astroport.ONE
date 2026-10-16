@@ -165,7 +165,6 @@ Le nom du sous-dossier est la valeur du tag `t` dans le Kind 30504 généré.
 
 | Canal            | TTL      | Raison                                       |
 | ---------------- | -------- | -------------------------------------------- |
-| `bro_ia`         | 3 600 s  | Commande traitée immédiatement ou abandonnée |
 | `comfyui_job`    | 7 200 s  | Fenêtre GPU max                              |
 | `comfyui_result` | 3 600 s  | Récupération avant expiration                |
 | `udrive`         | 86 400 s | Sync fichier moins urgent                    |

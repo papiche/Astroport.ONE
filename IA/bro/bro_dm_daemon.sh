@@ -894,41 +894,6 @@ _handle_zen_like() {
     fi
 }
 
-## ── Canal "bro_ia" : commande BRO relayée depuis station visiteur (roaming) ─
-## La station visiteur (B) a reçu un kind 1 #BRO pour un utilisateur .roaming
-## et le relaie ici (home station A) via DM NIP-44. On appelle directement
-## UPlanet_IA_Responder.sh avec les paramètres reconstruits depuis le payload.
-_handle_bro_ia() {
-    local payload="$1"
-    _payload_get "$payload" pubkey event_id lat lon message url kname skill
-    [[ -z "$_PUBKEY" || -z "$_MESSAGE" ]] && \
-        _log "WARN: ✈️ bro_ia: payload incomplet (pubkey ou message manquant)" && return
-
-    ## Extraire [ctx:<skill>] du message si non fourni explicitement dans le payload
-    local _skill="${_SKILL:-}"
-    if [[ -z "$_skill" && "$_MESSAGE" =~ ^\[ctx:([a-z0-9_-]+)(:[0-9]+)?\][[:space:]]*(.*) ]]; then
-        _skill="${BASH_REMATCH[1]}"
-        _MESSAGE="${BASH_REMATCH[3]}"
-    fi
-
-    _log "✈️ bro_ia: BRO roaming de ${_PUBKEY:0:12}... (${_KNAME:-?}) skill=${_skill:-none}: ${_MESSAGE:0:60}"
-
-    if [[ -n "$_skill" ]]; then
-        ## Réponse pédagogique directe via question.py (avec flashmem+Qdrant)
-        _handle_bro_skill "$_PUBKEY" "$_MESSAGE" "$_skill"
-    else
-        bash "$MY_PATH/../UPlanet_IA_Responder.sh" \
-            "$_PUBKEY" \
-            "${_EVENT_ID:-}" \
-            "${_LAT:-0.00}" \
-            "${_LON:-0.00}" \
-            "$_MESSAGE" \
-            "${_URL:-}" \
-            "${_KNAME:-}" \
-            2>/dev/null
-    fi
-}
-
 ## ── check-commands verrouillé par email ─────────────────────────────
 ## Plusieurs déclenchements peuvent arriver quasi simultanément pour le même
 ## propriétaire (event dupliqué sur plusieurs relais, inotify + sweep
@@ -1547,7 +1512,7 @@ Ma clé de contact : ${NODE_NPUB:-NODE}
 ## juste l'email depuis le sender hex, puis :
 ##   • local ici           → check-commands direct (fetch+déchiffrement propres)
 ##   • roaming ici (visitor)→ relais NODE-to-NODE vers la home station
-##     (même schéma que UPlanet_IA_Responder.sh pour bro_ia — cf. home.station)
+##     (cf. home.station)
 ##   • inconnu ici          → ignoré silencieusement
 _handle_self_dm_event() {
     local event_file="$1"
@@ -1967,8 +1932,8 @@ _process_event() {
     fi
 
     ## ── Canaux inter-NODE : authentification par swarm (bypass level MULTIPASS) ──
-    ## bro_ia/vocals/webcam/zen_like/comfyui_* sont émis exclusivement par un NODE
-    ## constellation via bro_send_intercom(). Le sender est le NODEHEX de la station
+    ## vocals/webcam/zen_like/comfyui_* sont émis exclusivement par un NODE
+    ## constellation via nostr_node_intercom.py send. Le sender est le NODEHEX de la station
     ## émettrice, pas un MULTIPASS utilisateur — bro_user_level() retournerait 0.
     ## On vérifie sa présence dans ~/.zen/tmp/swarm/*/HEX (même mécanisme que nostr_delete).
     ##
@@ -1978,13 +1943,12 @@ _process_event() {
     ## jamais par un humain en chat — donc aucune entrée correspondante dans le
     ## `case` soumis au niveau d'abonnement MULTIPASS plus bas, contrairement à
     ## comfyui_job qui, lui, est aussi accessible à l'utilisateur.
-    if [[ "$channel" =~ ^(bro_ia|vocals|webcam|zen_like|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result|ucloud_share|ucloud_share_ack|arbor_baton)$ ]]; then
+    if [[ "$channel" =~ ^(vocals|webcam|zen_like|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result|ucloud_share|ucloud_share_ack|arbor_baton)$ ]]; then
         if ! _is_swarm_node "$sender"; then
             _log "WARN: canal inter-NODE '$channel' de ${sender:0:12}... non reconnu comme NODE swarm — ignoré"
             return
         fi
         case "$channel" in
-            bro_ia)                  _handle_bro_ia "$payload" ;;
             vocals)                  _handle_vocals "$payload" ;;
             webcam)                  _handle_webcam "$payload" ;;
             zen_like)                _handle_zen_like "$payload" ;;

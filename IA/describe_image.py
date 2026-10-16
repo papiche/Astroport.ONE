@@ -26,6 +26,7 @@ import argparse
 import json
 import subprocess
 import socket
+import time
 
 HOME_DIR = os.path.expanduser("~")
 
@@ -176,16 +177,31 @@ def ensure_ollama_connection(output_json=False):
             print(f"Error while calling ollama.me.sh: {e}")
         return False
 
-def describe_image_from_ipfs(image_source, ollama_model="minicpm-v4.6:latest", output_json=False, custom_prompt=None):
+_VERBOSE = int(os.environ.get("FACECLOUD_VERBOSE", "0") or 0)
+
+
+def _vlog(msg, lvl=1):
+    """Suivi horodaté sur stderr (même format que UPassport/services/trace.py) quand FACECLOUD_VERBOSE >= lvl."""
+    if _VERBOSE >= lvl:
+        import time as _t
+        now = _t.time()
+        print(f"[{_t.strftime('%H:%M:%S', _t.localtime(now))}.{int((now % 1) * 1000):03d}] describe_image: {msg}", file=sys.stderr, flush=True)
+
+
+def describe_image_from_ipfs(image_source, ollama_model="minicpm-v4.6:latest", output_json=False, custom_prompt=None,
+                             gen_options=None):
     """
     Describes an image using Ollama. Sends image bytes directly to avoid 
     remote filesystem path resolution issues.
     """
+    _vlog(f"modèle={ollama_model} options={gen_options or {}} source={image_source}", 2)
+    _t_conn = time.time()
     if not ensure_ollama_connection(output_json):
         if not output_json:
             print("Warning: Could not establish Ollama connection. Attempting anyway...")
     
     try:
+        _vlog(f"connexion Ollama vérifiée en {time.time() - _t_conn:.2f}s", 2)
         image_bytes = None
         
         # Determine if image_source is a URL or a local file
@@ -218,11 +234,14 @@ def describe_image_from_ipfs(image_source, ollama_model="minicpm-v4.6:latest", o
         if not output_json:
             print(f"Sending image data to remote Ollama model '{ollama_model}'...")
 
+        _vlog(f"image {len(image_bytes) // 1024} Ko, prompt {len(prompt)} caractères → Ollama")
+        _t_chat = time.time()
+
         def _ollama_chat():
             return ollama.chat(
                 model=ollama_model,
                 messages=[{'role': 'user', 'content': prompt, 'images': [image_bytes]}],
-                options={'repeat_penalty': 1.4, 'num_predict': 600, 'temperature': 0.3}
+                options=dict({'repeat_penalty': 1.4, 'num_predict': 600, 'temperature': 0.3}, **(gen_options or {}))
             )
 
         # Retry once if connection is reset (tunnel may have dropped)
@@ -242,7 +261,20 @@ def describe_image_from_ipfs(image_source, ollama_model="minicpm-v4.6:latest", o
             else:
                 raise
 
-        description = _deduplicate_sentences(ai_response['message']['content'])
+        def _field(name):
+            try:
+                return ai_response[name]
+            except Exception:
+                return getattr(ai_response, name, None)
+        _ns = lambda v: f"{v / 1e9:.2f}s" if isinstance(v, (int, float)) else "?"
+        _vlog(f"réponse en {time.time() - _t_chat:.2f}s : chargement modèle {_ns(_field('load_duration'))}, "
+              f"lecture image+prompt {_field('prompt_eval_count') or '?'} jetons {_ns(_field('prompt_eval_duration'))}, "
+              f"génération {_field('eval_count') or '?'} jetons {_ns(_field('eval_duration'))}, fin={_field('done_reason') or '?'}")
+        _raw = ai_response['message']['content']
+        _vlog(f"réponse brute ({len(_raw)} caractères) : {_raw!r}", 2)
+        description = _deduplicate_sentences(_raw)
+        if description != _raw:
+            _vlog(f"dédoublonnage de phrases : {len(_raw)} → {len(description)} caractères", 2)
         if not output_json:
             print("Ollama description received.")
 
@@ -274,6 +306,9 @@ if __name__ == "__main__":
     parser.add_argument("image_source", help="Either an IPFS URL (http://...) or a local file path.")
     parser.add_argument("-m", "--model", dest="ollama_model_name", default="minicpm-v4.6:latest", help="The name of the Ollama model to use (default: minicpm-v4.6:latest — meilleur ratio performance/taille que llama3.2-vision:11b).")
     parser.add_argument("--json", action="store_true", help="Output description in JSON format.")
+    parser.add_argument("--repeat-penalty", type=float, default=None, help="Défaut 1.4 (trop fort pour le français : mots inventés ; vision_describe.py passe 1.05)")
+    parser.add_argument("--temperature", type=float, default=None)
+    parser.add_argument("--num-predict", type=int, default=None)
     parser.add_argument("-p", "--prompt", dest="custom_prompt", default=None, help="Custom prompt to send to the AI (default: 'Décris précisément cette image...').")
     parser.add_argument("--publish", dest="publish_email", nargs="?", const="__captainemail__",
                         metavar="EMAIL",
@@ -281,7 +316,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    description_output = describe_image_from_ipfs(args.image_source, args.ollama_model_name, args.json, args.custom_prompt)
+    gen = {}
+    if args.repeat_penalty is not None: gen["repeat_penalty"] = args.repeat_penalty
+    if args.temperature is not None: gen["temperature"] = args.temperature
+    if args.num_predict is not None: gen["num_predict"] = args.num_predict
+    description_output = describe_image_from_ipfs(args.image_source, args.ollama_model_name, args.json, args.custom_prompt, gen)
 
     if description_output:
         if args.json:

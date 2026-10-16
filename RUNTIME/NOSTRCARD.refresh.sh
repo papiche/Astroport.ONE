@@ -1731,9 +1731,20 @@ ${tva_result}"
                     BRO_WATCH_CORE="${IA_DIR}/bro_watch_core.py"
                     SCRAPER_ENABLED="true"
                     if [[ -f "$BRO_WATCH_CORE" ]]; then
-                        SCRAPER_ENABLED=$(python3 "$BRO_WATCH_CORE" is-enabled "$PLAYER" "$DOMAIN" 2>/dev/null)
+                        # Les erreurs de bro_watch_core.py sont DITES (jamais /dev/null) : un crash du garde ne doit pas
+                        # ressembler à « scraper désactivé ». Réponse invalide ou code ≠ 0 → scraper non lancé, par prudence.
+                        _sc_err=$(mktemp)
+                        SCRAPER_ENABLED=$(python3 "$BRO_WATCH_CORE" is-enabled "$PLAYER" "$DOMAIN" 2>"$_sc_err")
+                        _sc_rc=$?
+                        if [[ $_sc_rc -ne 0 || ( "$SCRAPER_ENABLED" != "true" && "$SCRAPER_ENABLED" != "false" ) ]]; then
+                            log "WARN" "⚠️ bro_watch_core.py is-enabled en échec pour ${PLAYER}/${DOMAIN} (code ${_sc_rc}, sortie « ${SCRAPER_ENABLED} ») : $(tail -c 400 "$_sc_err" | tr '\n' ' ') — scraper non lancé par prudence"
+                            SCRAPER_ENABLED="error"
+                        fi
+                        rm -f "$_sc_err"
                     fi
-                    if [[ "$SCRAPER_ENABLED" != "true" ]]; then
+                    if [[ "$SCRAPER_ENABLED" == "error" ]]; then
+                        continue
+                    elif [[ "$SCRAPER_ENABLED" != "true" ]]; then
                         log "DEBUG" "${DOMAIN} scraper désactivé via /mailjet pour ${PLAYER} — skip"
                         continue
                     fi
@@ -1744,18 +1755,12 @@ ${tva_result}"
                     DOMAIN_SYNC_LOG="$HOME/.zen/tmp/${DOMAIN}_sync_${PLAYER}.log"
                     mkdir -p "$(dirname "$DOMAIN_SYNC_LOG")"
 
-                    # Launch domain-specific script in background
-                    (
-                        "${DOMAIN_SCRIPT}" "${PLAYER}" "$COOKIE_FILE" > "$DOMAIN_SYNC_LOG" 2>&1
-                        sync_exit_code=$?
-                        if [[ $sync_exit_code -eq 0 ]]; then
-                            log "INFO" "✅ ${DOMAIN} scraper completed successfully for ${PLAYER}"
-                        else
-                            log "WARN" "⚠️ ${DOMAIN} scraper completed with exit code $sync_exit_code for ${PLAYER}"
-                        fi
-                        # Sauvegarde chiffrée du log dans le manifest cookie (IPFS) — best-effort
-                        [[ -f "$BRO_WATCH_CORE" ]] && python3 "$BRO_WATCH_CORE" store-log "$PLAYER" "$DOMAIN" "$DOMAIN_SYNC_LOG" >/dev/null 2>&1
-                    ) 200>&- &
+                    # Scraper lancé en PROCESSUS AUTONOME (tools/domain_scraper_run.sh, setsid) — JAMAIS en sous-shell
+                    # « ( … ) & » : il garderait la ligne de commande de ce script pendant des heures et _12345.sh
+                    # (pgrep -f NOSTRCARD.refresh.sh) ne relancerait plus aucun rafraîchissement des autres MULTIPASS.
+                    LOGFILE="$LOGFILE" setsid nohup bash "${MY_PATH}/../tools/domain_scraper_run.sh" \
+                        "${PLAYER}" "${DOMAIN}" "${DOMAIN_SCRIPT}" "$COOKIE_FILE" "$DOMAIN_SYNC_LOG" "$BRO_WATCH_CORE" \
+                        >> "$HOME/.zen/tmp/domain_scraper_run.log" 2>&1 < /dev/null 200>&- &
                     DOMAIN_SYNC_PID=$!
                     
                     log "INFO" "${DOMAIN} scraper started for ${PLAYER} (PID: $DOMAIN_SYNC_PID, log: $DOMAIN_SYNC_LOG)"
@@ -1805,6 +1810,8 @@ ${tva_result}"
         #     kind 30078 d=facecloud:backup chiffré pour soi-même ; rien de
         #     republié si rien n'a changé. APRÈS l'import, pour que la
         #     sauvegarde du jour contienne les photos importées du jour.
+        #  Ces étapes sont pilotées par UPassport/ucloud_daily.py (import → enrich →
+        #  describe → embed → backup) : voir plus bas.
         # nostr_DESTROY_TW.sh ne tourne qu'à la désactivation d'un compte : la
         # sauvegarde régulière vit ICI (et une sauvegarde finale synchrone est
         # faite juste avant toute destruction, cf. ucloud_final_backup).
@@ -1850,28 +1857,28 @@ ${tva_result}"
         fi
         FACECLOUD_TODAY_FILE="$HOME/.zen/tmp/facecloud_daily_${PLAYER}_${TODATE}.done"
         WEBDAV_SOURCES_FILE="$PLAYER_DIR/.ucloud/webdav_sources.json"
-        WEBDAV_IMPORT_PY="${HOME}/.zen/UPassport/webdav_import.py"
-        UCLOUD_BACKUP_PY="${HOME}/.zen/UPassport/ucloud_backup.py"
+        UCLOUD_DAILY_PY="${HOME}/.zen/UPassport/ucloud_daily.py"
         if [[ -s "$PLAYER_DIR/.ucloud/ucloud.db" || -s "$PLAYER_DIR/.ucloud/index.json" || -s "$WEBDAV_SOURCES_FILE" ]] && [[ ! -f "$FACECLOUD_TODAY_FILE" ]]; then
-            (
-                if [[ -s "$WEBDAV_SOURCES_FILE" && -f "$WEBDAV_IMPORT_PY" ]]; then
-                    if python3 "$WEBDAV_IMPORT_PY" "${PLAYER}" > "$HOME/.zen/tmp/webdav_import_${PLAYER}.log" 2>&1; then
-                        log "INFO" "✅ webdav_import terminé pour ${PLAYER}"
-                    else
-                        log "WARN" "⚠️ webdav_import en échec pour ${PLAYER} (cf. webdav_import_${PLAYER}.log)"
-                    fi
-                fi
-                if [[ -f "$UCLOUD_BACKUP_PY" && ( -s "$PLAYER_DIR/.ucloud/ucloud.db" || -s "$PLAYER_DIR/.ucloud/index.json" ) ]]; then
-                    if python3 "$UCLOUD_BACKUP_PY" snapshot "${PLAYER}" > "$HOME/.zen/tmp/ucloud_backup_${PLAYER}.log" 2>&1; then
-                        log "INFO" "☁️ sauvegarde FaceCloud à jour pour ${PLAYER}"
-                    else
-                        log "WARN" "⚠️ sauvegarde FaceCloud en échec pour ${PLAYER} (cf. ucloud_backup_${PLAYER}.log)"
-                    fi
-                fi
-            ) 200>&- &
-            log "INFO" "☁️ FaceCloud quotidien lancé pour ${PLAYER} (PID: $!)"
-            log_metric "FACECLOUD_DAILY_PID" "$!" "${PLAYER}"
-            touch "$FACECLOUD_TODAY_FILE"
+            touch "$FACECLOUD_TODAY_FILE"        # d'abord : un traitement long ou planté ne se relance pas dans la journée
+            ## Traitement quotidien COMPLET du .ucloud (UPassport/ucloud_daily.py), étapes isolées et non bloquantes :
+            ##   import WebDAV → dates/lieux/empreintes manquants → descriptions IA (budget GPU quotidien de la station)
+            ##   → vecteurs de recherche par le sens → sauvegarde chiffrée EN DERNIER (elle emporte les descriptions du jour).
+            ## Journal : ~/.zen/tmp/ucloud_daily_<compte>.log (une ligne « ucloud_daily: [étape] … » par étape).
+            ##
+            ## ⚠️ NE DOIT JAMAIS BLOQUER LES AUTRES MULTIPASS NI LE DÉMON : _12345.sh relance ce script toutes les heures
+            ## SAUF si `pgrep -f NOSTRCARD.refresh.sh` trouve un processus. Un sous-shell « ( … ) & » garderait la ligne de
+            ## commande de ce script pendant des heures (import + descriptions) et gèlerait tous les rafraîchissements.
+            ## D'où : processus autonome (setsid, ligne de commande « python3 …/ucloud_daily.py », sans rapport avec ce
+            ## script), détaché du terminal et sans le verrou 200 hérité (200>&-). Ce script se termine aussitôt.
+            if [[ -f "$UCLOUD_DAILY_PY" ]]; then
+                setsid nohup python3 "$UCLOUD_DAILY_PY" "${PLAYER}" >> "$HOME/.zen/tmp/ucloud_daily_${PLAYER}.log" 2>&1 < /dev/null 200>&- &
+                log "INFO" "☁️ traitement quotidien du .ucloud lancé pour ${PLAYER} (PID: $!, journal ucloud_daily_${PLAYER}.log)"
+                log_metric "FACECLOUD_DAILY_PID" "$!" "${PLAYER}"
+            else
+                ## Défaut d'installation d'Astroport.ONE/UPassport : on le DIT (pas de repli silencieux).
+                log "ERROR" "❌ ${UCLOUD_DAILY_PY} introuvable : installation UPassport incomplète, traitement du .ucloud de ${PLAYER} IMPOSSIBLE (relancez l'installation / mettez UPassport à jour)"
+                echo "ERROR: ${UCLOUD_DAILY_PY} introuvable — installation UPassport incomplète" >&2
+            fi
         fi
     else
         echo "IPNS update skipped for ${PLAYER} (no refresh needed)"

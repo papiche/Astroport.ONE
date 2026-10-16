@@ -74,8 +74,7 @@ Trajet d'un DM `channel="plain"` depuis un utilisateur local ou en roaming.
     ▼
 [ HOME STATION ]
   ├─ Local   : déchiffré par NODE_NSEC
-  └─ Roaming : reçu via bro_send_intercom canal "bro_ia"
-               (NODE visiteur → NODE home, auth par swarm HEX)
+  └─ Roaming : self-DM relayé par la station visiteuse (canal self_command_relay)
     │
     ▼
   bro_user_level HEX RELAY  →  { "level": 0-5, "email": "…" }
@@ -133,21 +132,7 @@ Le propriétaire pilote BRO via son canal privé NIP-44 (envoyé à sa propre cl
 ## Flux — roaming (relay inter-NODE)
 
 ```
-[ Utilisateur ROAMING sur station B ]
-    │  publie kind 1 : "#BRO #youtube https://…"
-    │  sur relay constellation, signé MULTIPASS
-    ▼
-[ STATION B ]  UPlanet_IA_Responder.sh
-    ├─ Détecte #BRO #youtube dans kind 1
-    ├─ Cherche home station dans swarm/*.json
-    └─ Introuvable localement → bro_relay_bro_ia_to_home
-    │
-    ▼
-[ STATION A — HOME ]  via bro_send_intercom canal "bro_ia"
-    └─ _handle_bro_ia() [bro_dm_daemon.sh]
-        ├─ Reconstruction paramètres depuis payload intercom
-        ├─ Appel UPlanet_IA_Responder.sh avec EMAIL/PUBKEY/MESSAGE
-        └─ Exécution commande BRO avec identité locale
+_(Le relais kind 1 `#BRO` vers la home station — canal `bro_ia` — a été supprimé en 2026-10 avec le déclencheur kind-1 ; le roaming passe par `self_command_relay`.)_
 ```
 
 ---
@@ -187,7 +172,6 @@ Déterminé par `bro_user_level.py` — lecture `contractStatus` (DID cache) + v
 |-----------|----------|-------------------|
 | `plain` | Utilisateur | Question IA — RAG Qdrant + Ollama |
 | `self_command_relay` | NODE visiteur | Relay SELF DM roaming → home station |
-| `bro_ia` | NODE visiteur | Relay kind 1 #BRO #tag depuis roaming |
 | `udrive` | Utilisateur | Sync fichier IPFS → `APP/uDRIVE` |
 | `vocals` / `webcam` | Utilisateur | Publication kind 1222 / 1244 (audio / vidéo) |
 | `zen_like` | Station roaming | Paiement G1 coopératif (ZEN → G1) |

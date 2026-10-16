@@ -253,7 +253,7 @@ if [[ -s ~/.zen/game/secret.june ]]; then
     echo $hex > ~/.zen/tmp/${IPFSNODEID}/HEX
 fi
 
-## Lancer le daemon DM NODE (bro_ia, udrive, comfyui_job/result) au démarrage
+## Lancer le daemon DM NODE (udrive, comfyui_job/result) au démarrage
 _DM_PID_FILE="${HOME}/.zen/tmp/bro_dm_daemon.pid"
 _dm_is_alive() {
     [[ -f "$_DM_PID_FILE" ]] || return 1

@@ -183,41 +183,56 @@ Liste des amis directs (Network Level 1).
 
 Kind 4 est utilisé comme **bus de messages chiffré** entre stations Astroport. Le payload est un objet JSON chiffré NIP-44. Le `channel` indique le type de tâche.
 
-**Channels gérés par `bro_dm_daemon.sh` :**
+**Enveloppe (émise par `tools/nostr_node_intercom.py send --to <HEX NODE> --channel <nom> --payload '<JSON>' --relays … [--ttl s]`)** : `{"channel": "<nom>", "payload": {…}}`, chiffrée NIP-44, expiration NIP-40 (`--ttl`, 86400 s par défaut). Les canaux marqués « NODE » ne sont acceptés que d'un NODE du swarm (`_is_swarm_node` : HEX dans `~/.zen/tmp/swarm/*/HEX`, ou NODE local) ; le récepteur vérifie en plus que le compte visé est hébergé localement (`bro_user_is_local`). Il n'y a **pas d'accusé applicatif général** : seul `ucloud_share_ack` (hérité) en est un ; l'expiration (TTL) est le seul garde-fou.
 
-| Channel          | Direction              | Rôle                                           |
-| ---------------- | ---------------------- | ---------------------------------------------- |
-| `plain`          | Client → BRO           | Question langage naturel (RAG Qdrant + Ollama) |
-| `comfyui_job`    | Client → Brain-Node    | Génération vidéo/image ComfyUI déléguée        |
-| `comfyui_result` | Brain-Node → Client    | CID IPFS du résultat vidéo                     |
-| `udrive`         | Nœud → Nœud            | Sync fichier IPFS vers uDRIVE distant          |
-| `bro_ia`         | Station visitée → Home | Requête BRO en roaming                         |
-| `zen_like`       | Station → Station      | Paiement ẐEN relayé (roaming)                  |
-| `vocals`         | Client → Station       | Publication kind 1222/1244 (message vocal)     |
-| `webcam`         | Client → Station       | Publication kind 21/22 (vidéo live)            |
+**Canaux gérés par `bro_dm_daemon.sh` :**
 
-**Structure du payload chiffré (NIP-44) :**
+| Canal | Émetteur → récepteur | Champs du payload | TTL | Rôle |
+| ----- | -------------------- | ----------------- | --- | ---- |
+| `plain` | Client → BRO | texte | — | Question langage naturel (RAG Qdrant + Ollama) |
+| `comfyui_job` | Utilisateur / test → Brain | `email, prompt, mode (t2v/i2v), source_url, reply_node_hex, reply_pubkey, job_id` | 24 h | Génération ComfyUI déléguée (aucun émetteur de production à ce jour ; le Studio parle à ComfyUI directement par le tunnel P2P `comfyui.me.sh`) |
+| `comfyui_result` | Brain → NODE | `job_id, email, result_url, status (ok/failed), reply_pubkey, mode` | 24 h | Résultat (CID) ou échec (verrou GPU 5 min dépassé, ComfyUI absent) |
+| `vision_analysis_job` | NODE (`tools/trigger_bro_vision_analysis.sh`) → Brain | `email, owner_hex, path, ipfs_link, reply_node_hex` + `decryption_key`, `task` (`describe`), `target_pubkey/target_name` | 30 min | Analyse de visages / description d'une image du cloud chiffré FaceCloud |
+| `vision_analysis_result` | Brain → NODE | `email, owner_hex, path, ipfs_link, status, faces[]` ou `description, model, error` | 24 h | Réponse (traitée par `satellite_face_matcher.py` ou `ucloud_describe.py --apply`) |
+| `ucloud_share` | NODE → NODE (`UPassport/services/node_share.py`) | `to_email, to_hex, from_hex, from_name, reply_node_hex, owner_email, items[{cid,key,sha,name,mime}]` (≤ 100), `face_ref` (1er message), `face_ref_revoke` | 7 j | Partage de photos de station à station : même bloc chiffré et même clé, le CID est épinglé chez le destinataire |
+| `ucloud_share_ack` | NODE → NODE | `owner_email, cids[]` | 7 j | Accusé hérité (désépingle les copies temporaires) ; le flux actuel n'en dépend plus |
+| `udrive` | NODE → NODE | `email, cid, filename, filetype` | 24 h | Sync fichier IPFS vers uDRIVE distant |
+| `self_command_relay` | Station visitée → Home | `email` | 24 h | Relais d'un self-DM de commande d'un utilisateur roaming |
+| `zen_like` | Station → Home | `email, sender_pubkey, event_id, reacted_event_id, reacted_author_pubkey, zen_amount, comment, g1pub_dest, …` | 24 h | Paiement ẐEN relayé (roaming) |
+| `vocals` | Client → Station | `email, cid, filename, mime_type, duration, …` | 24 h | Publication kind 1222/1244 (message vocal) |
+| `webcam` | Client → Station | `email, cid, filename, mime_type, duration, dimensions, …` | 24 h | Publication kind 21/22 (vidéo live) |
+| `nostr_delete` | NODE → NODE (`UPassport/routers/nostr.py`) | `authors` (CSV), `kind` | 24 h | Suppression d'événements sur chaque station du swarm |
+| `arbor_baton` | NODE → NODE (`IA/arbor_baton.sh`) | `action:"offer", from_hex, since` | 24 h | Passation du bâton ARBOR ; prévient seulement le capitaine, aucun état modifié |
+
+**Routage « home station »** : `~/.zen/game/nostr/<email>/home.station` contient `IPFSNODEID:NODEHEX` (écrit par `make_NOSTRCARD.sh`, régénéré par `kin.verify.sh`) ; les relayeurs (`bro_dm_daemon.sh`, `filter/7.sh`, `media_upload.py`) adressent le canal au `NODEHEX`.
+
+**Structure du message (après déchiffrement NIP-44) :**
 
 ```json
 {
   "channel": "comfyui_job",
-  "job_id": "abc123",
-  "email": "user@example.com",
-  "prompt": "A forest at dawn, cinematic",
-  "mode": "t2v",
-  "reply_pubkey": "<hex_pubkey_du_client>"
+  "payload": {
+    "job_id": "abc123",
+    "email": "user@example.com",
+    "prompt": "A forest at dawn, cinematic",
+    "mode": "t2v",
+    "reply_pubkey": "<hex_pubkey_du_client>"
+  }
 }
 ```
 
-**Réponse (channel `comfyui_result`) :**
+**Réponse (canal `comfyui_result`) :**
 
 ```json
 {
-  "job_id": "abc123",
-  "email": "user@example.com",
-  "result_url": "ipfs://QmXxx...",
-  "status": "done",
-  "mode": "t2v"
+  "channel": "comfyui_result",
+  "payload": {
+    "job_id": "abc123",
+    "email": "user@example.com",
+    "result_url": "ipfs://QmXxx...",
+    "status": "ok",
+    "mode": "t2v"
+  }
 }
 ```
 

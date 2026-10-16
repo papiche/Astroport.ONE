@@ -7,7 +7,6 @@ permettant à un NODE de router les messages sans ambiguïté :
   udrive      — sync de fichier uDRIVE depuis une station visiteur
   vocals      — publication kind 1222/1244 (vocal) via home station
   webcam      — publication kind 21/22 (vidéo) via home station
-  bro_ia      — commande BRO relayée depuis station visiteur
   zen_like    — paiement ZEN/G1 relayé depuis station visiteur
   comfyui_job    — job vidéo délégué à un Brain GPU
   comfyui_result — résultat renvoyé par le Brain au satellite

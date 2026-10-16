@@ -40,7 +40,7 @@ Suite de tests complète pour valider tous les sous-systèmes UPlanet.
 
 | Script | `--system` | Ce qui est testé |
 |--------|-----------|-----------------|
-| `test_intercom.sh` | `intercom` | Imports Python `nostr_node_intercom.py`, payload zen_like, daemon `bro_dm_daemon.sh`, loopback coucou→toto (TTL 300s), `bro_ia #IA`, ComfyUI job |
+| `test_intercom.sh` | `intercom` | Imports Python `nostr_node_intercom.py`, payload zen_like, daemon `bro_dm_daemon.sh`, loopback coucou→toto (TTL 300s), ComfyUI job |
 | `test_multipass_create.sh` | `create` | Chaîne complète MULTIPASS : keygen→NOSTR→ẐEN pour 3 comptes déterministes, vérif Kind 0 relay, solde G1 |
 
 > `--quick` disponible sur ces deux tests pour n'exécuter que les assertions réseau-free.
@@ -56,7 +56,7 @@ Suite de tests complète pour valider tous les sous-systèmes UPlanet.
 
 | Script | `--system` | Ce qui est testé |
 |--------|-----------|-----------------|
-| `test_ollama.sh` | `ollama` | Connexion `ollama.me.sh` (local→SSH→IPFS P2P), `/api/tags`, génération texte (`question.py`), multilingue, vision (moondream/llava), canal DM `bro_ia` |
+| `test_ollama.sh` | `ollama` | Connexion `ollama.me.sh` (local→SSH→IPFS P2P), `/api/tags`, génération texte (`question.py`), multilingue, vision (moondream/llava) |
 | `test_comfyui.sh` | `comfyui` | Connexion `comfyui.me.sh`, `/system_stats`, queue depth, VRAM, workflow `FluxImage.json`, génération image, CID IPFS, canal DM `comfyui_job` |
 
 ---

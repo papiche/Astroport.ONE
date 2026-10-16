@@ -466,15 +466,9 @@ if [[ "${TAGS[BRO]}" != true && "${TAGS[BOT]}" != true ]]; then
     exit 0
 fi
 
-## Note (simplification 2026-10) : le bloc de détection roaming qui occupait
-## cet emplacement (forward DM "bro_ia" vers la home station si $KNAME est
-## marqué .roaming ICI) est devenu du code mort suite à la suppression du
-## déclencheur kind-1 dans NIP-101/filter/1.sh. Ce script n'est plus invoqué
-## que par bro_dm_daemon.sh::_handle_bro_ia (ligne ~1003), lui-même exécuté
-## SUR la home station d'un utilisateur en roaming (c'est elle qui reçoit le
-## forward, pas la station visiteuse) — le marqueur .roaming local à CETTE
-## station n'est donc par construction jamais vrai pour ce KNAME ici. Le
-## relai roaming équivalent pour le canal self-DM reste intact et actif :
+## Note (simplification 2026-10) : l'ancien relais roaming (forward DM « bro_ia »
+## vers la home station) a été supprimé avec le déclencheur kind-1 de
+## NIP-101/filter/1.sh. Le relai roaming du canal self-DM reste actif :
 ## bro_dm_daemon.sh::_handle_self_dm_event (bro_is_roaming()).
 
 # Optimisation: Set user_id once

@@ -9,7 +9,6 @@
 #   4. Daemon bro_dm_daemon.sh : PID, queue directory
 #   5. Cohérence filter/7.sh : _relay_zen_payment_to_home (shellcheck)
 #   6. Loopback coucou→toto + toto→coucou (comptes test déterministes, TTL=300)
-#   7. Service Ollama : accessibilité + envoi bro_ia #IA depuis coucou
 #   8. Service ComfyUI : accessibilité + envoi comfyui_job image depuis coucou
 #
 # Usage: ./tests/test_intercom.sh [--quick]
@@ -133,10 +132,10 @@ else
     fail "canal zen_like ABSENT de bro_dm_daemon.sh"
 fi
 
-if grep -q "bro_ia)" "$DAEMON" 2>/dev/null; then
-    ok "canal bro_ia présent dans bro_dm_daemon.sh"
+if grep -q "ucloud_share)" "$DAEMON" 2>/dev/null; then
+    ok "canal ucloud_share présent dans bro_dm_daemon.sh"
 else
-    fail "canal bro_ia ABSENT de bro_dm_daemon.sh"
+    fail "canal ucloud_share ABSENT de bro_dm_daemon.sh"
 fi
 
 ## ─────────────────────────────────────────────────────────────────────────────
@@ -208,7 +207,7 @@ else
     _TMPFILE=$(mktemp /tmp/intercom_test_XXXXXX.json)
     _SINCE=$(date +%s)
 
-    ## ── coucou → toto : bro_ia avec TTL=300 ─────────────────────────────────
+    ## ── coucou → toto : canal de test avec TTL=300 ─────────────────────────────────
     _PAYLOAD_BRO=$(python3 -c "
 import json
 print(json.dumps({'pubkey':'${_TOTO_HEX}','event_id':'test','lat':'0.00',
@@ -218,14 +217,14 @@ print(json.dumps({'pubkey':'${_TOTO_HEX}','event_id':'test','lat':'0.00',
     if python3 "$INTERCOM" send \
             --nsec    "$_COUCOU_NSEC" \
             --to      "$_TOTO_HEX" \
-            --channel "bro_ia" \
+            --channel "intercom_test" \
             --payload "$_PAYLOAD_BRO" \
             --ttl     300 \
             --relays  "$_RELAY_URL" \
             > "$_TMPFILE" 2>/dev/null; then
-        ok "bro_ia coucou→toto : send OK (TTL=300s)"
+        ok "intercom_test coucou→toto : send OK (TTL=300s)"
     else
-        fail "bro_ia coucou→toto : send FAILED"
+        fail "intercom_test coucou→toto : send FAILED"
     fi
 
     ## ── toto → coucou : zen_like avec TTL=300 ────────────────────────────────
@@ -254,13 +253,13 @@ print(json.dumps({'email':'captain@intercom.test','sender_pubkey':'${_TOTO_HEX}'
     ## ── toto reçoit depuis coucou (receive + decrypt) ────────────────────────
     _RECV=$(python3 "$INTERCOM" receive \
             --nsec    "$_TOTO_NSEC" \
-            --channel "bro_ia" \
+            --channel "intercom_test" \
             --since   "$_SINCE" \
             --relays  "$_RELAY_URL" \
             2>/dev/null || echo "[]")
     _COUNT=$(echo "$_RECV" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo 0)
     if [[ "$_COUNT" -gt 0 ]]; then
-        ok "toto reçoit $_COUNT message(s) bro_ia de coucou"
+        ok "toto reçoit $_COUNT message(s) intercom_test de coucou"
     else
         skip "receive : aucun message (latence relay ou TTL expiré)"
     fi
@@ -277,55 +276,6 @@ import sys; sys.exit(0)
     fi
 
     rm -f "$_TMPFILE"
-fi
-
-## ─────────────────────────────────────────────────────────────────────────────
-section "7. Service Ollama (IA) — envoi bro_ia #IA depuis coucou"
-## ─────────────────────────────────────────────────────────────────────────────
-
-_OLLAMA_OK=false
-curl -s --max-time 3 "http://localhost:11434/api/tags" -o /dev/null 2>/dev/null \
-    && _OLLAMA_OK=true
-
-if ! $_OLLAMA_OK; then
-    skip "Ollama inaccessible (localhost:11434)"
-else
-    _OLLAMA_MODELS=$(curl -s --max-time 5 "http://localhost:11434/api/tags" 2>/dev/null \
-        | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('models',[])))" 2>/dev/null || echo 0)
-    ok "Ollama accessible — $_OLLAMA_MODELS modèle(s) disponible(s)"
-
-    ## Charger NODE_HEX depuis secret.nostr
-    _NODE_HEX_OLLAMA=""
-    if [[ -s "$HOME/.zen/game/secret.nostr" ]]; then
-        source "$HOME/.zen/game/secret.nostr"
-        _NODE_HEX_OLLAMA="${HEX:-}"
-        _NODE_NSEC_OLLAMA="${NSEC:-}"
-        unset NSEC NPUB HEX
-    fi
-
-    if [[ -z "$_NODE_HEX_OLLAMA" || ${#_COUCOU_NSEC} -lt 10 ]]; then
-        skip "envoi bro_ia→NODE : secret.nostr absent ou clés coucou invalides"
-    elif ! $_relay_ok; then
-        skip "envoi bro_ia→NODE : relay inaccessible"
-    else
-        _PAYLOAD_IA=$(python3 -c "
-import json
-print(json.dumps({'pubkey':'${_COUCOU_HEX}','event_id':'test_ollama','lat':'0.00',
-    'lon':'0.00','message':'#IA ping test intercom coucou','url':'','kname':'coucou@test'}))
-" 2>/dev/null)
-        if python3 "$INTERCOM" send \
-                --nsec    "$_COUCOU_NSEC" \
-                --to      "$_NODE_HEX_OLLAMA" \
-                --channel "bro_ia" \
-                --payload "$_PAYLOAD_IA" \
-                --ttl     300 \
-                --relays  "$_RELAY_URL" \
-                2>/dev/null; then
-            ok "bro_ia #IA coucou→NODE envoyé (TTL=300s) — daemon traitera en async"
-        else
-            fail "bro_ia #IA coucou→NODE : send FAILED"
-        fi
-    fi
 fi
 
 ## ─────────────────────────────────────────────────────────────────────────────

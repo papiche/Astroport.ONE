@@ -94,38 +94,11 @@ python3 tools/nostr_node_intercom.py send \
 | `udrive`   | `email`, `cid`, `filename`, `filetype`                                                                                                                                  | Sync fichier uDRIVE visiteur → home                                                |
 | `vocals`   | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`, `kind`                                                                                        | Publication kind 1222/1244 (vocal) via home                                        |
 | `webcam`   | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`                                                                                                | Publication kind 21/22 (vidéo) via home                                            |
-| `bro_ia`   | `pubkey`, `event_id`, `lat`, `lon`, `message`, `url`, `kname`                                                                                                           | Commande BRO (#BRO kind 1) relayée depuis visiteur                                 |
 | `zen_like` | `email`, `sender_pubkey`, `event_id`, `reacted_event_id`, `reacted_author_pubkey`, `zen_amount`, `comment`, `g1pub_dest`, `is_crowdfunding`, `project_id`, `bien_g1pub` | Paiement ZEN/G1 (kind 7) relayé depuis visiteur — **seulement si zen\_amount > 0** |
 
 _(Extensible : `did_update`, `zen_payment`, `alert`, …)_
 
-### Canal `bro_ia` — Relay des commandes BRO pour utilisateurs en roaming
-
-Quand un MULTIPASS en roaming envoie un message kind 1 `#BRO` sur le relay de la station visiteur, `UPlanet_IA_Responder.sh` (station B) détecte le marker `.roaming`, lit `home.station` pour obtenir le NODE\_HEX de la home station, puis envoie un DM NIP-44 canal `bro_ia` plutôt que de traiter la commande localement.
-
-```
-Station B (visiteur) — UPlanet_IA_Responder.sh :
-  1. Reçoit kind 1 #BRO de fred@example.com
-  2. Détecte ~/.zen/game/nostr/fred@example.com/.roaming
-  3. Lit home.station → HOME_NODE_HEX (64 hex)
-  4. Construit payload bro_ia : {pubkey, event_id, lat, lon, message, url, kname}
-  5. nostr_node_intercom.py send --channel bro_ia → DM NIP-44 → relay
-  6. exit 0 (pas de traitement local)
-
-Station A (home) — bro_dm_daemon.sh :
-  1. inotifywait reçoit le fichier JSON dans bro_dm_queue/
-  2. déchiffre via nostr_node_intercom.py decrypt
-  3. channel == "bro_ia" → _handle_bro_ia()
-  4. Appelle UPlanet_IA_Responder.sh avec les paramètres reconstruits
-  5. Traitement complet avec les vraies clés joueur et le vrai uDRIVE
-```
-
-**Avantages** :
-
-* La home station a les clés du joueur et accès à son uDRIVE/APP
-* L'IPNS n'est publié que par la home station (source de vérité)
-* Les ressources IA (Ollama, ComfyUI) de la home station sont utilisées
-* La station visiteur reste légère (pas de traitement IA lourd)
+> Le canal `bro_ia` (relais des commandes kind 1 `#BRO` vers la home station) a été supprimé en 2026-10 avec le déclencheur kind-1 ; le roaming des commandes passe par `self_command_relay`.
 
 ### Résolution `home_node_hex` pour AMIS\_ROAMING
 
@@ -174,5 +147,3 @@ La station visiteur lit `home.station` depuis le répertoire local ou l'IPNS du 
 * `NOSTRCARD.refresh.sh` — DM listener (ligne \~325), PULL roaming (ligne \~1686)
 * `NIP-101/relay.writePolicy.plugin/filter/22242.sh` — Création répertoire roaming éphémère
 * `tools/make_NOSTRCARD.sh` — Écriture de `home.station` lors de la création MULTIPASS
-* `IA/UPlanet_IA_Responder.sh` — Détection `.roaming` → DM channel `bro_ia` vers home station
-* `IA/bro_dm_daemon.sh` — Canal `bro_ia` : `_handle_bro_ia()` appelle UPlanet\_IA\_Responder localement

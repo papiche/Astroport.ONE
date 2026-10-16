@@ -71,6 +71,9 @@
 #   {"image": "/chemin.png" | "ipfs://CID/nom.png", "prompt": "..."}   image fournie, animée
 #   {"continue": true, "prompt": "..."}                    repart de la dernière image du plan précédent
 #   {"cast": ["lea"], "prompt": "Lea ... says: \"...\""}   acteur(s) — un seul par plan conseillé
+#   {"decor": "$SCENES_DIR/decor/decor.jpg", "cast": ["lea"], "prompt": "..."}   DÉCOR imposé : l'image est ajoutée comme
+#                      référence supplémentaire (ref2va « visage/décor repris », 9 images max) et le prompt la cite comme le lieu,
+#                      la lumière et l'ambiance de la scène. Avec ou sans "cast". Fichier local sous $SCENES_DIR (pas d'URL).
 #   {"screen": "https://…", "presenter": "lea", "prompt": "Lea says: \"...\""}
 #                      capture d'écran nette (défilement/zoom) + présentateur en incrustation ronde
 #   {"screen": "https://…", "record": {"actions": [...], "wait": 4000}}
@@ -511,6 +514,18 @@ if [ "$CAST_ONLY" -eq 1 ]; then
   exit 0
 fi
 
+# Décor imposé du plan ($1 = JSON du plan, $2 = nombre d'images de référence déjà ajoutées par cast_refs) : une image de référence
+# de plus (-R), citée dans le préambule. Sans effet si le plan n'a pas de "decor". Chemin local seulement (jamais d'URL).
+decor_ref() {
+  local d
+  d=$(jq -r '.decor // empty' <<< "$1")
+  [ -z "$d" ] && return 0
+  [[ "$d" == *://* ]] && { echo "Erreur : decor doit être un fichier local, pas une URL ($d)" >&2; exit 1; }
+  [ -s "$d" ] || { echo "Erreur : décor introuvable : $d" >&2; exit 1; }
+  REF_ARGS+=(-R "$d")
+  REF_INTRO+="Use <Picture $(( $2 + 1 ))> as the setting of the scene: keep its location, lighting and atmosphere as the background. "
+}
+
 # $1 JSON array de noms → arguments -R/-A et préambule du prompt (variables globales)
 cast_refs() {
   REF_ARGS=()
@@ -763,6 +778,13 @@ for ((i = SHOT_START; i <= SHOT_END; i++)); do
 
   if jq -e '.cast' <<< "$shot" > /dev/null; then
     cast_refs "$(jq -c '.cast' <<< "$shot")"
+    decor_ref "$shot" "$(jq '.cast | length' <<< "$shot")"
+    args+=("${REF_ARGS[@]}" -s "$REF_STEPS")
+    prompt="${REF_INTRO}${prompt}"
+  elif jq -e '.decor' <<< "$shot" > /dev/null; then
+    # Décor sans acteur : ref2va avec la seule image du lieu
+    cast_refs "[]"
+    decor_ref "$shot" 0
     args+=("${REF_ARGS[@]}" -s "$REF_STEPS")
     prompt="${REF_INTRO}${prompt}"
   elif jq -e '.continue == true' <<< "$shot" > /dev/null; then
