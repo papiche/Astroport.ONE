@@ -90,17 +90,6 @@ if ! flock -n 9; then
     exit 75
 fi
 
-# Environnement complet de la station (CAPTAINEMAIL notamment) — jamais
-# disponible sous uvicorn, requis pour toute notification capitaine.
-source "${ZEN_HOME}/Astroport.ONE/tools/my.sh" >/dev/null 2>&1 || true
-
-# Le mode forge invoque `claude` (CLI Claude Code) en sous-processus depuis
-# arbor_tool_forge.py — installé typiquement dans ~/.local/bin/claude, absent
-# du PATH restreint d'un service systemd (constaté : PATH sans ~/.local/bin
-# sous le service upassport). Sans cette ligne, claude_available() renverrait
-# faux même avec un compte parfaitement configuré.
-export PATH="${HOME}/.local/bin:${PATH}"
-
 RUN_ID="$(date +%s)-$$"
 NOW_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 LOG_FILE="${ZEN_HOME}/tmp/arbor_run.${RUN_ID}.log"
@@ -114,6 +103,47 @@ cat > "$STATE_FILE" <<EOF
 EOF
 
 printf '%s\n' "{\"event\":\"start\",\"run_id\":\"${RUN_ID}\",\"mode\":$(_json_str "$MODE"),\"origin\":$(_json_str "$ORIGIN"),\"captain_hex\":$(_json_str "$CAPTAIN_HEX"),\"at\":$(_json_str "$NOW_ISO")}" >> "$AUDIT_FILE"
+
+_log() { printf '[%s] [arbor_run] %s\n' "$(date +%H:%M:%S)" "$*" >> "$LOG_FILE"; }
+
+# Filet de sécurité : si le script meurt AVANT la finalisation normale (source
+# my.sh, interpréteur introuvable, signal…), l'état passe à "failed" — l'UI
+# l'affiche avec le journal, au lieu d'un run silencieusement disparu.
+FINALIZED=0
+_on_exit() {
+    local rc=$?
+    [[ $FINALIZED -eq 1 ]] && return
+    [[ $rc -eq 0 ]] && rc=1
+    local fin; fin="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    _log "ERREUR : arrêt anormal du script (rc=${rc}) avant la fin du run"
+    cat > "$STATE_FILE" <<EOS
+{"status":"failed","run_id":"${RUN_ID}","mode":$(_json_str "$MODE"),"origin":$(_json_str "$ORIGIN"),"rc":${rc},"branch":"","finished_at":$(_json_str "$fin"),"log":$(_json_str "$LOG_FILE")}
+EOS
+    printf '%s\n' "{\"event\":\"end\",\"run_id\":\"${RUN_ID}\",\"mode\":$(_json_str "$MODE"),\"rc\":${rc},\"branch\":\"\",\"duration_s\":0,\"at\":$(_json_str "$fin")}" >> "$AUDIT_FILE"
+}
+trap _on_exit EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+_log "run ${RUN_ID} démarré — mode=${MODE} origin=${ORIGIN} owner=${OWNER_EMAIL:-—} domain=${DOMAIN:-—}"
+
+# Environnement complet de la station (CAPTAINEMAIL notamment) — jamais
+# disponible sous uvicorn, requis pour toute notification capitaine.
+# my.sh référence des variables non définies (__CACHE_HOSTNAME, VIRTUAL_ENV…) :
+# sous `set -u`, l'erreur "unbound variable" TUE le script appelant (le
+# `|| true` n'y change rien) avant l'écriture de l'état/audit — run silencieusement
+# mort, rien d'affiché dans l'UI. nounset est donc suspendu le temps du source.
+_log "chargement de my.sh…"
+set +u
+source "${ZEN_HOME}/Astroport.ONE/tools/my.sh" >/dev/null 2>&1 || true
+set -u
+
+# Le mode forge invoque `claude` (CLI Claude Code) en sous-processus depuis
+# arbor_tool_forge.py — installé typiquement dans ~/.local/bin/claude, absent
+# du PATH restreint d'un service systemd (constaté : PATH sans ~/.local/bin
+# sous le service upassport). Sans cette ligne, claude_available() renverrait
+# faux même avec un compte parfaitement configuré.
+export PATH="${HOME}/.local/bin:${PATH}"
+_log "my.sh chargé (CAPTAINEMAIL=${CAPTAINEMAIL:-non défini})"
 
 PYTHON_BIN="${HOME}/.astro/bin/python3"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN="python3"
@@ -139,10 +169,14 @@ esac
 [[ -n "$MODEL" ]] && [[ "$MODE" != "forge" ]] && [[ "$MODE" != "forge-scraper" ]] && ARBOR_PY_ARGS+=(--model "$MODEL")
 
 START_TS=$(date +%s)
-"$PYTHON_BIN" "$ARBOR_SCRIPT" "${ARBOR_PY_ARGS[@]}" >> "$LOG_FILE" 2>&1
+_log "lancement : $(basename "$ARBOR_SCRIPT") ${ARBOR_PY_ARGS[*]}"
+# -u : sans cela, stdout redirigé vers un fichier est tamponné par blocs et le
+# journal (affiché en direct dans l'UI) resterait vide jusqu'à la fin du run.
+PYTHONUNBUFFERED=1 "$PYTHON_BIN" -u "$ARBOR_SCRIPT" "${ARBOR_PY_ARGS[@]}" >> "$LOG_FILE" 2>&1
 RC=$?
 END_TS=$(date +%s)
 DURATION=$(( END_TS - START_TS ))
+_log "terminé rc=${RC} en ${DURATION}s"
 
 # Branche produite (si apply/forge/forge-scraper a réussi) — best-effort, ne
 # bloque jamais la finalisation de l'état même si git échoue.
@@ -157,6 +191,7 @@ if [[ "$MODE" == "apply" || "$MODE" == "forge" || "$MODE" == "forge-scraper" ]] 
 fi
 
 FINISHED_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+FINALIZED=1
 cat > "$STATE_FILE" <<EOF
 {"status":"done","run_id":"${RUN_ID}","mode":$(_json_str "$MODE"),"origin":$(_json_str "$ORIGIN"),"rc":${RC},"branch":$(_json_str "$BRANCH"),"finished_at":$(_json_str "$FINISHED_ISO"),"log":$(_json_str "$LOG_FILE")}
 EOF

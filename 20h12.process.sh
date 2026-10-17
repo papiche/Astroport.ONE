@@ -689,6 +689,11 @@ sudo systemctl restart upassport
 sudo systemctl restart astroport
 echo "UPassport & Astroport processes systemd restart"
 
+## VISITS COUNTER : totaux de visites et de clics signés par la clé NODE ; la station bootstrap publie aussi la parole de l'essaim
+## (UPassport/services/visits.py, compteur POST /visit). Sans visite enregistrée, rien n'est publié.
+[[ -s ~/.zen/UPassport/services/visits.py ]] \
+&& (cd ~/.zen/UPassport && python3 -m services.visits station; python3 -m services.visits swarm) 2>&1 | tail -4
+
 
 ## Wait for _12345.sh to be ready and trigger immediate publication
 echo "Waiting for _12345.sh to start..."

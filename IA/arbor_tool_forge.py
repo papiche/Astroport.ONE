@@ -206,28 +206,111 @@ def claude_available():
     return which("claude") is not None
 
 
-def _ask_claude(prompt, timeout=180):
+def _ask_claude(prompt, timeout=180, label=None):
     """Appelle Claude Code CLI en mode non-interactif (claude -p) — voir
     IA/code_assistant.py::call_claude_cli, même pattern. Réservé à la
     génération de CODE (spec, outil, test, résumé) : Ollama reste le backend
-    du conversationnel BRO (question.py), volontairement séparé."""
+    du conversationnel BRO (question.py), volontairement séparé.
+
+    Le flux stream-json est RELAYÉ sur stdout (donc dans le journal ARBOR
+    affiché par l'UI) : début de réponse, avancement toutes les 15 s
+    (caractères reçus), outils utilisés, coût/durée finaux. Sans cela l'appel
+    (plusieurs minutes) restait muet. Retour inchangé : le texte final.
+    Relais actif seulement si `label` est fourni : les appelants qui lisent
+    stdout comme un résultat (arbor_chat.py) restent silencieux."""
+    import threading
+    import time
+    start = time.time()
+    verbose = label is not None
+    label = label or "Claude"
+    _say = print if verbose else (lambda *a, **k: None)
     try:
-        result = subprocess.run(
-            ["claude", "-p", prompt], capture_output=True, text=True, timeout=timeout,
+        proc = subprocess.Popen(
+            ["claude", "-p", prompt, "--output-format", "stream-json",
+             "--verbose", "--include-partial-messages"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
         )
-        if result.returncode != 0 and not result.stdout.strip():
-            print(f"⚠️ Claude CLI erreur (code {result.returncode}) : {result.stderr[:300]}")
-            return ""
-        return result.stdout.strip()
     except FileNotFoundError:
         print("⚠️ claude CLI introuvable — voir claude.vscodium.setup.sh (setup/migrate) à la racine du dépôt.")
-        return ""
-    except subprocess.TimeoutExpired:
-        print(f"⚠️ Timeout Claude CLI ({timeout}s)")
         return ""
     except Exception as e:
         print(f"⚠️ Appel Claude CLI échoué : {e}")
         return ""
+
+    state = {"chars": 0, "thinking": 0, "timed_out": False, "stderr": ""}
+    done = threading.Event()
+
+    def _watchdog():
+        last = -1
+        while not done.wait(15):
+            elapsed = int(time.time() - start)
+            if elapsed >= timeout:
+                state["timed_out"] = True
+                proc.kill()
+                return
+            if state["chars"] != last or state["thinking"]:
+                _say(f"   ⏳ {label} : {elapsed}s — {state['chars']} car. rédigés"
+                      + (f", {state['thinking']} car. de réflexion" if state["thinking"] else ""))
+                last = state["chars"]
+            else:
+                _say(f"   ⏳ {label} : {elapsed}s — en attente de la réponse…")
+
+    def _drain_stderr():
+        try:
+            state["stderr"] = proc.stderr.read() or ""
+        except Exception:
+            pass
+
+    threading.Thread(target=_watchdog, daemon=True).start()
+    threading.Thread(target=_drain_stderr, daemon=True).start()
+
+    final_text, is_error, started_text = "", False, False
+    try:
+        for line in proc.stdout:
+            try:
+                ev = json.loads(line)
+            except Exception:
+                continue
+            kind = ev.get("type")
+            if kind == "stream_event":
+                inner = ev.get("event", {})
+                if inner.get("type") == "content_block_delta":
+                    delta = inner.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        if not started_text:
+                            started_text = True
+                            _say(f"   ✍️ {label} : rédaction de la réponse…")
+                        state["chars"] += len(delta.get("text", ""))
+                    elif delta.get("type") == "thinking_delta":
+                        state["thinking"] += len(delta.get("thinking", ""))
+            elif kind == "assistant":
+                for block in ev.get("message", {}).get("content", []):
+                    if block.get("type") == "tool_use":
+                        _say(f"   🔧 {label} utilise l'outil {block.get('name')}")
+            elif kind == "result":
+                final_text = (ev.get("result") or "").strip()
+                is_error = bool(ev.get("is_error"))
+                cost = ev.get("total_cost_usd")
+                _say(f"   ✅ {label} terminé en {int(ev.get('duration_ms', 0) / 1000)}s"
+                      f" — {len(final_text)} car."
+                      + (f", {cost:.4f} $" if isinstance(cost, (int, float)) else ""))
+        proc.wait(timeout=10)
+    except Exception as e:
+        print(f"⚠️ Lecture du flux Claude CLI échouée : {e}")
+        proc.kill()
+    finally:
+        done.set()
+
+    if state["timed_out"]:
+        print(f"⚠️ Timeout Claude CLI ({timeout}s)")
+        return ""
+    if proc.returncode != 0 and not final_text:
+        print(f"⚠️ Claude CLI erreur (code {proc.returncode}) : {state['stderr'][:300]}")
+        return ""
+    if is_error:
+        print(f"⚠️ Claude CLI a renvoyé une erreur : {final_text[:300]}")
+        return ""
+    return final_text
 
 
 def _extract_json(text):
@@ -275,7 +358,7 @@ def generate_spec(need_description):
         "triviales du même mot-à-mot — varie la structure de phrase, le niveau de langue, "
         "les mots utilisés)."
     )
-    return _extract_json(_ask_claude(prompt, timeout=60))
+    return _extract_json(_ask_claude(prompt, timeout=60, label="Spécification"))
 
 
 _TOOL_CONSTRAINTS = (
@@ -322,7 +405,7 @@ def generate_tool_code(spec, previous_code=None, error_output=None):
             f"{_TOOL_CONSTRAINTS}\n"
             "Réponds avec le code Python dans un bloc ```python ... ```."
         )
-    return _extract_code(_ask_claude(prompt, timeout=120))
+    return _extract_code(_ask_claude(prompt, timeout=120, label="Code de l'outil"))
 
 
 def generate_test_code(spec, tool_module):
@@ -340,7 +423,7 @@ def generate_test_code(spec, tool_module):
         "que le message d'erreur retourné est une chaîne non vide plutôt qu'une exception.\n\n"
         "Réponds avec le code Python du test dans un bloc ```python ... ```."
     )
-    return _extract_code(_ask_claude(prompt, timeout=90))
+    return _extract_code(_ask_claude(prompt, timeout=90, label="Tests"))
 
 
 def _bwrap_available():
@@ -361,6 +444,32 @@ def _prlimit_available():
 # service systemd --user (souvent absent sur nœuds légers / conteneurs).
 _SANDBOX_MEM_LIMIT_BYTES = 512 * 1024 * 1024
 _SANDBOX_NPROC_LIMIT = 64
+
+
+def _sandbox_nproc_limit(margin=_SANDBOX_NPROC_LIMIT):
+    """Plafond RLIMIT_NPROC pour le sandbox = tâches DÉJÀ présentes pour cet
+    utilisateur + `margin`. RLIMIT_NPROC compte TOUS les processus/threads du
+    même UID, pas seulement ceux du sandbox : une valeur absolue de 64 est
+    déjà dépassée sur une station active (plus d'un millier de tâches) et
+    bwrap échoue alors avec "Creating new namespace failed: Resource
+    temporarily unavailable" avant même de lancer pytest. Le plafond relatif
+    garde la protection anti fork-bomb (le sandbox ne peut créer que `margin`
+    tâches de plus)."""
+    uid = os.getuid()
+    count = 0
+    try:
+        for entry in os.scandir("/proc"):
+            if not entry.name.isdigit():
+                continue
+            try:
+                if entry.stat().st_uid != uid:
+                    continue
+                count += len(os.listdir(f"/proc/{entry.name}/task"))
+            except OSError:
+                continue
+    except OSError:
+        pass
+    return count + margin
 
 
 def _run_pytest_in_worktree(worktree_path, test_file_abs, extra_pythonpath):
@@ -408,7 +517,7 @@ def _run_pytest_in_worktree(worktree_path, test_file_abs, extra_pythonpath):
     mem_capped = _prlimit_available()
     if mem_capped:
         cmd = ["prlimit", f"--as={_SANDBOX_MEM_LIMIT_BYTES}",
-               f"--nproc={_SANDBOX_NPROC_LIMIT}", "--"] + cmd
+               f"--nproc={_sandbox_nproc_limit()}", "--"] + cmd
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, env=env)
         output = result.stdout + result.stderr
@@ -431,7 +540,7 @@ def _generate_ai_summary(spec, need_description, code, test_code, iterations, ma
         f"Code (extrait) :\n```python\n{code[:1500]}\n```\n\n"
         f"Test (extrait) :\n```python\n{test_code[:600]}\n```"
     )
-    return _ask_claude(prompt, timeout=60) or "(résumé indisponible)"
+    return _ask_claude(prompt, timeout=60, label="Résumé") or "(résumé indisponible)"
 
 
 def _write_tool_manifest(manifest_path, tool_module, spec, need_description, summary, attempts, max_iterations=MAX_ITERATIONS):

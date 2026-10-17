@@ -68,7 +68,7 @@ from arbor_tool_forge import (
     _bwrap_available, _prlimit_available,
     _FORBIDDEN_CALL_NAMES, _FORBIDDEN_IMPORT_MODULES, _FORBIDDEN_OS_ATTRS,
     _FORBIDDEN_DUNDER_NAMES, _attr_root_name, _collect_import_aliases,
-    _SANDBOX_MEM_LIMIT_BYTES, _SANDBOX_NPROC_LIMIT, CODE_BLOCK_RE,
+    _SANDBOX_MEM_LIMIT_BYTES, _SANDBOX_NPROC_LIMIT, _sandbox_nproc_limit, CODE_BLOCK_RE,
 )
 
 MAX_ITERATIONS = 3
@@ -393,7 +393,7 @@ def _run_pytest_scraper_in_worktree(worktree_path, test_file_abs, extra_pythonpa
     if mem_capped:
         cmd = [
             "prlimit", f"--as={_SANDBOX_MEM_LIMIT_BYTES}",
-            f"--nproc={_SANDBOX_NPROC_LIMIT}", "--",
+            f"--nproc={_sandbox_nproc_limit(256)}", "--",
         ] + cmd
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=env)
@@ -441,7 +441,7 @@ def generate_scraper_code(domain, target_url, html_context, previous_code=None, 
             f"{_SCRAPER_CONSTRAINTS}\n"
             "Réponds avec le code Python dans un bloc ```python ... ```."
         )
-    return _extract_code(_ask_claude(prompt, timeout=180))
+    return _extract_code(_ask_claude(prompt, timeout=180, label="Code du scraper"))
 
 
 def generate_scraper_test(domain, module_name, cookie_file_path=None):
@@ -469,7 +469,7 @@ def generate_scraper_test(domain, module_name, cookie_file_path=None):
         "5. Ne jamais échouer sur une liste vide\n\n"
         "Réponds avec le code du test dans un bloc ```python ... ```."
     )
-    return _extract_code(_ask_claude(prompt, timeout=90))
+    return _extract_code(_ask_claude(prompt, timeout=90, label="Tests du scraper"))
 
 
 # ─── URL par défaut pour les domaines courants ─────────────────────────────
@@ -787,19 +787,25 @@ def main():
                         help="Envoie un DM NODE au capitaine (succès ou échec)")
     args = parser.parse_args()
 
+    # Code de sortie fiable (comme arbor_tool_forge.py::main) : forge_scraper()
+    # /heal_scraper() ne lèvent pas, elles renvoient None en cas d'échec — sans
+    # sys.exit, arbor_run.sh enregistrait « terminé rc=0 » (✅ vert dans l'UI)
+    # pour un run dont les 3 tentatives avaient échoué.
     if args.heal:
-        heal_scraper(
+        result = heal_scraper(
             args.owner_email, args.heal,
             error_output=args.error,
             target_url=args.url,
             notify_captain=args.notify_captain,
         )
+        sys.exit(0 if result else 1)
     elif args.domain:
-        forge_scraper(
+        result = forge_scraper(
             args.owner_email, args.domain,
             target_url=args.url,
             notify_captain=args.notify_captain,
         )
+        sys.exit(0 if result else 1)
     else:
         parser.print_help()
         sys.exit(1)

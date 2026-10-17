@@ -504,6 +504,7 @@ EOFGOALS
   "nostrns": "${NOSTRNS}",
   "salt": "${SALT}",
   "pepper": "${PEPPER}",
+  "pepper_g1": "${PEPPER}_${UPLANET_SALT}",
   "email": "${EMAIL}",
   "lat": "${ZLAT}",
   "lon": "${ZLON}",
