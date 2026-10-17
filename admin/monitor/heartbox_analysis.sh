@@ -462,14 +462,22 @@ get_fast_capacities() {
     local gpu_name=""
     if command -v nvidia-smi >/dev/null 2>&1; then
         local raw_vram
-        raw_vram=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
+        raw_vram=$(timeout 10 nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
             | awk '{sum+=$1} END {printf "%.0f", sum/1024}')
         if [[ -n "$raw_vram" && "$raw_vram" -gt 0 ]]; then
             vram_gb=$raw_vram
             gpu_detected="true"
             gpu_vendor="nvidia"
-            gpu_name=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | xargs)
+            gpu_name=$(timeout 10 nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | xargs)
         fi
+    fi
+    ## GPU NVIDIA tombé du bus (Xid 79) : visible en PCI mais nvidia-smi échoue → reboot requis
+    local gpu_lost="false"
+    if [[ "$gpu_detected" == "false" ]] && command -v lspci >/dev/null 2>&1 \
+       && lspci 2>/dev/null | grep -iE 'VGA|3D' | grep -qi nvidia; then
+        gpu_lost="true"
+        gpu_vendor="nvidia"
+        gpu_name="$(lspci 2>/dev/null | grep -iE 'VGA|3D' | grep -i nvidia | head -1 | sed 's/^.*: //' | xargs) (LOST)"
     fi
     ## AMD discrete / Intel Arc : sysfs mem_info_vram_total (fonctionne sans driver propriétaire)
     if [[ "$gpu_detected" == "false" ]]; then
@@ -649,6 +657,12 @@ get_fast_capacities() {
         provider_tier="standard"
     fi
 
+    ## GPU perdu : la station ne doit plus recevoir de travaux IA (Ollama retombe sur CPU)
+    if [[ "$gpu_lost" == "true" ]]; then
+        provider_ready="false"
+        provider_tier="gpu-lost"
+    fi
+
     ## storage_ready = vrai si le nœud peut héberger des données pour la constellation
     ## Seuil : ≥1 slot ZenCard (≥128 Go NextCloud) OU ≥10 slots NOSTR (≥100 Go IPFS)
     local storage_ready="false"
@@ -694,6 +708,7 @@ get_fast_capacities() {
     "storage_ready": ${storage_ready:-false},
     "gpu": {
         "detected": ${gpu_detected:-false},
+        "lost": ${gpu_lost:-false},
         "vram_gb": ${vram_gb:-0},
         "name": "${gpu_name:-}",
         "vendor": "${gpu_vendor:-none}"
