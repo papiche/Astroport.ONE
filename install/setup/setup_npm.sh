@@ -433,7 +433,7 @@ else
 fi
 
 ## ai.DOMAIN -> :8010 (Dify Workflow)
-if docker ps --format '{{.Names}}' | grep -q 'docker-nginx-1\|dify-nginx'; then
+if docker ps --format '{{.Names}}' | grep -q 'dify-nginx'; then
     npm_create_proxy "dify" "${FORWARD_HOST}" 8010 "http" "false"
 else
     echo "  SKIP dify.${DOMAIN} (Dify.ai non démarré)"

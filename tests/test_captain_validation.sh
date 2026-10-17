@@ -610,7 +610,10 @@ test_trigger_credential_issuance() {
         test_log_info "Calling API to issue credential..."
         local api_url="http://127.0.0.1:54321/api/permit/issue/$request_d_tag"
         local api_response
-        api_response=$(curl -s -X POST "$api_url" 2>&1)
+        # /api/permit/issue exige une signature NIP-98 de la station (nœud ou Capitaine)
+        local api_auth
+        api_auth=$("$(dirname "${BASH_SOURCE[0]}")/../tools/nostr_nip98_sign.py" "$HOME/.zen/game/secret.nostr" POST "$api_url" 2>/dev/null)
+        api_response=$(curl -s -X POST -H "Authorization: $api_auth" "$api_url" 2>&1)
         
         local api_exit=$?
         

@@ -6,6 +6,7 @@
 MY_PATH="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
 . "${MY_PATH}/../tools/my.sh" 2>/dev/null || true
+. "${MY_PATH}/../tools/astro_compose.sh"
 
 COMPOSE_FILE="${MY_PATH}/../docker/docker-compose.yml"
 GPU_OVERLAY="${MY_PATH}/../docker/docker-compose.gpu.yml"
@@ -19,12 +20,16 @@ _require_docker() {
     docker info >/dev/null 2>&1 || { echo "❌ Docker daemon non accessible"; exit 1; }
 }
 
-_gpu_flag() {
-    if docker info 2>/dev/null | grep -q 'nvidia'; then
-        echo "-f $COMPOSE_FILE -f $GPU_OVERLAY"
-    else
-        echo "-f $COMPOSE_FILE"
-    fi
+# Tous les profils : indispensable pour nommer un service (qdrant, open-webui…) ; on ne démarre jamais
+# « tout » — chaque appel cible des services explicites ou déjà créés.
+_ac() { COMPOSE_PROFILES="ai,cloud,dev,updates,full" astro_compose "$@"; }
+# Garde-fou : une liste de services vide ferait agir compose sur TOUS les profils
+_need_svcs() { [[ ${#_svcs[@]} -gt 0 ]] || { _log "ℹ️  Aucun service Astroport installé — rien à faire"; return 1; }; }
+
+# Services de la pile principale ayant déjà un conteneur (les profils non installés ne sont jamais touchés)
+_existing_services() {
+    docker ps -a --filter "label=com.docker.compose.project.working_dir=$(dirname "$ASTRO_COMPOSE_FILE")" \
+        --format '{{.Label "com.docker.compose.service"}}' | sort -u
 }
 
 # ── status ────────────────────────────────────────────────────────────────────
@@ -50,9 +55,11 @@ cmd_pull() {
     _require_docker
     _log "Pull images${service:+ ($service)}..."
     if [[ -n "$service" ]]; then
-        docker compose $(_gpu_flag) pull "$service" && _log "✅ $service mis à jour"
+        _ac pull "$service" && _log "✅ $service mis à jour"
     else
-        docker compose $(_gpu_flag) pull && _log "✅ Toutes les images à jour"
+        mapfile -t _svcs < <(_existing_services)
+        _need_svcs || return 0
+        _ac pull "${_svcs[@]}" && _log "✅ Toutes les images à jour"
     fi
 }
 
@@ -64,13 +71,15 @@ cmd_update() {
 
     if [[ -n "$service" ]]; then
         _log "Pull $service..."
-        docker compose $(_gpu_flag) pull "$service"
+        _ac pull "$service"
         _log "Redémarrage $service..."
-        docker compose $(_gpu_flag) up -d --no-deps "$service"
+        _ac up -d --no-deps "$service"
         _log "✅ $service redémarré"
     else
         _log "Pull toutes les images..."
-        docker compose $(_gpu_flag) pull
+        mapfile -t _svcs < <(_existing_services)
+        _need_svcs || return 0
+        _ac pull "${_svcs[@]}"
 
         # Identifie les conteneurs avec image mise à jour
         local updated=()
@@ -90,7 +99,7 @@ cmd_update() {
         fi
 
         _log "Conteneurs à redémarrer : ${updated[*]}"
-        docker compose $(_gpu_flag) up -d --remove-orphans
+        _ac up -d --no-deps "${_svcs[@]}"
         _log "✅ Mise à jour terminée"
 
         # Nettoyage images obsolètes
@@ -104,11 +113,11 @@ cmd_restart() {
     _require_docker
     if [[ -n "$service" ]]; then
         _log "Redémarrage $service..."
-        docker compose $(_gpu_flag) restart "$service"
+        _ac restart "$service"
         _log "✅ $service redémarré"
     else
         _log "Redémarrage complet de la stack..."
-        docker compose $(_gpu_flag) restart
+        mapfile -t _svcs < <(_existing_services); _need_svcs && _ac restart "${_svcs[@]}"
         _log "✅ Stack redémarrée"
     fi
 }
@@ -117,16 +126,16 @@ cmd_restart() {
 cmd_logs() {
     local service="${1:-astroport}"
     _require_docker
-    docker compose $(_gpu_flag) logs --tail=100 -f "$service"
+    _ac logs --tail=100 -f "$service"
 }
 
 # ── clean ─────────────────────────────────────────────────────────────────────
 cmd_clean() {
     _require_docker
-    _log "Nettoyage images et volumes orphelins..."
+    _log "Nettoyage des images obsolètes..."
     docker image prune -f
-    docker volume prune -f
-    docker network prune -f
+    # Volontairement ni « volume prune » ni « network prune » : un volume de pile arrêtée
+    # (Qdrant, Open WebUI…) ou dragon-net (réseau externe) serait détruit.
     _log "✅ Nettoyage terminé"
 }
 
@@ -137,11 +146,11 @@ cmd_watchtower() {
     case "$action" in
         start)
             _log "Démarrage Watchtower (auto-update labelisés)..."
-            docker compose $(_gpu_flag) --profile updates up -d watchtower
+            _ac up -d watchtower
             _log "✅ Watchtower actif"
             ;;
         stop)
-            docker compose $(_gpu_flag) stop watchtower
+            _ac stop watchtower
             _log "Watchtower arrêté"
             ;;
         status)
@@ -158,6 +167,33 @@ cmd_watchtower() {
     esac
 }
 
+# ── doctor ────────────────────────────────────────────────────────────────────
+# Diagnostic lecture seule : collisions de projets, secrets, doublons, volumes orphelins.
+cmd_doctor() {
+    _require_docker
+    local bad=0 dir; dir="$(dirname "$ASTRO_COMPOSE_FILE")"
+    echo "── Projets compose (un dossier = un projet ; deux dossiers sous le même nom = collision)"
+    docker ps -a --format '{{.Label "com.docker.compose.project"}}|{{.Label "com.docker.compose.project.working_dir"}}' \
+        | grep -v '^|' | sort -u | awk -F'|' '{n[$1]++; d[$1]=d[$1]" "$2} END{for(p in n) print (n[p]>1?"❌":"✅"), p, "→", d[p]}' | tee /tmp/.astro_doctor.$$
+    grep -q '^❌' /tmp/.astro_doctor.$$ && { bad=1; echo "   → relancer : install/migrate-dify-project.sh --yes"; }
+    rm -f /tmp/.astro_doctor.$$
+    echo "── Secrets IA"
+    if [[ -s "$ASTRO_AI_DIR/.env" ]]; then
+        astro_compose_sync_env && echo "✅ $dir/.env synchronisé avec $ASTRO_AI_DIR/.env"
+        local k run; k=$(grep '^QDRANT_API_KEY=' "$ASTRO_AI_DIR/.env" | cut -d= -f2)
+        run=$(docker inspect astroport-qdrant --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep '^QDRANT__SERVICE__API_KEY=' | cut -d= -f2)
+        if [[ -n "$run" && "$run" != "$k" ]]; then echo "❌ astroport-qdrant tourne avec une AUTRE clé que le .env (recréé sans secrets ?)"; bad=1; fi
+    else
+        echo "ℹ️  Pas de secrets IA ($ASTRO_AI_DIR/.env) — pile IA non installée"
+    fi
+    echo "── Doublons connus"
+    docker ps -a --format '{{.Names}}' | grep -qx qdrant && { echo "❌ conteneur « qdrant » isolé (sans clé API) en doublon de astroport-qdrant → docker rm qdrant"; bad=1; }
+    docker ps -a --format '{{.Names}}' | grep -qx ai-company-webui && { echo "❌ ai-company-webui (ancien compose) en doublon de astroport-webui, même port 8000"; bad=1; }
+    echo "── Volumes sans conteneur (informatif, jamais supprimés automatiquement)"
+    docker volume ls -qf dangling=true | sed 's/^/   /'
+    [[ $bad -eq 0 ]] && echo "✅ Rien à signaler" || return 1
+}
+
 # ── help ──────────────────────────────────────────────────────────────────────
 cmd_help() {
     cat << EOF
@@ -169,7 +205,8 @@ Commandes :
   update [service]    Pull + redémarre (uniquement les conteneurs mis à jour)
   restart [service]   Redémarre un ou tous les services
   logs   [service]    Affiche les logs en temps réel (défaut: astroport)
-  clean               Supprime images et volumes orphelins
+  clean               Supprime les images obsolètes (jamais les volumes)
+  doctor              Diagnostic (collisions de projets, secrets, doublons)
   watchtower [action] Gère Watchtower : start | stop | status
 
 Exemples :
@@ -192,6 +229,7 @@ case "${1:-help}" in
     restart)    cmd_restart "${2:-}" ;;
     logs)       cmd_logs   "${2:-astroport}" ;;
     clean)      cmd_clean ;;
+    doctor)     cmd_doctor ;;
     watchtower) cmd_watchtower "${2:-status}" ;;
     help|--help|-h) cmd_help ;;
     *)          echo "Commande inconnue: $1"; cmd_help; exit 1 ;;

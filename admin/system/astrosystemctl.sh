@@ -1039,8 +1039,10 @@ _local_uninstall_service() {
             for cf in "${cdir}/docker-compose.yml" "${cdir}/docker-compose.yaml" "${cdir}/compose.yml"; do
                 [[ -f "$cf" ]] || continue
                 grep -q "${svc}" "$cf" 2>/dev/null || continue
-                docker compose -f "$cf" stop  "${svc}" 2>/dev/null
-                docker compose -f "$cf" rm -f "${svc}" 2>/dev/null
+                local _pflag=()
+                [[ "$cdir" == */dify/docker ]] && _pflag=(-p dify --project-directory "$cdir")
+                docker compose "${_pflag[@]}" -f "$cf" stop  "${svc}" 2>/dev/null
+                docker compose "${_pflag[@]}" -f "$cf" rm -f "${svc}" 2>/dev/null
                 [[ "$purge" == "--purge" ]] && docker volume ls -q --filter "name=${svc}" 2>/dev/null \
                     | xargs -r docker volume rm 2>/dev/null
                 echo "✅ ${svc} désinstallé (compose : ${cf})"
@@ -1121,7 +1123,8 @@ _local_start_service() {
                 [[ -f "$cf" ]] || continue
                 grep -q "${svc}" "$cf" 2>/dev/null || continue
                 echo "  Compose : ${cf}"
-                docker compose -f "$cf" up -d "$svc" \
+                local _pf=(); [[ "$cdir" == */dify/docker ]] && _pf=(-p dify --project-directory "$cdir")
+                docker compose "${_pf[@]}" -f "$cf" up -d "$svc" \
                     && echo "✅ ${svc} démarré via docker compose" && return 0
             done
         done

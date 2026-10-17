@@ -751,9 +751,13 @@ else
                             # Build progression rules (always continue to next level)
                             next_next_level=$((next_level + 1))
                             
-                            create_next_result=$(curl -s -X POST "${ORACLE_BASE}/api/permit/define" \
+                            # Signature NIP-98 de la clé du NŒUD de cette station (~/.zen/game/secret.nostr) :
+                            # l'ancien « npub dans le corps + présence NIP-42 » n'est plus accepté par UPassport.
+                            _define_url="${ORACLE_BASE}/api/permit/define"
+                            _define_auth=$("${MY_PATH}/../tools/nostr_nip98_sign.py" "$HOME/.zen/game/secret.nostr" POST "$_define_url" 2>/dev/null)
+                            create_next_result=$(curl -s -X POST "$_define_url" \
                                 -H "Content-Type: application/json" \
-                                -H "X-Nostr-Auth: ${UPLANETNAME_G1_NPUB:-}" \
+                                -H "Authorization: ${_define_auth}" \
                                 -d "{
                                     \"permit\": {
                                         \"id\": \"${next_permit_id}\",

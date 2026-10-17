@@ -1345,7 +1345,7 @@ case "${INSTALL_PROFILE}" in
         ## Qdrant VectorDB — base vectorielle souveraine de la station
         ## Légère (~200Mo RAM), utile dès ⚡ Standard pour les embeddings locaux
         if [[ $_SCORE -gt 10 ]] && command -v docker >/dev/null 2>&1; then
-            _QDRANT_STATE=$(docker inspect -f '{{.State.Status}}' qdrant 2>/dev/null)
+            _QDRANT_STATE=$(docker inspect -f '{{.State.Status}}' astroport-qdrant 2>/dev/null)
             if [[ "$_QDRANT_STATE" == "running" ]]; then
                 echo "   ✅ Qdrant déjà actif."
             elif [[ "$(getconf PAGESIZE 2>/dev/null)" != "4096" ]]; then
@@ -1357,21 +1357,16 @@ case "${INSTALL_PROFILE}" in
                 ## juste de laisser le conteneur redémarrer indéfiniment pour rien.
                 echo "   ⚠️  Qdrant désactivé : pages mémoire $(getconf PAGESIZE 2>/dev/null) (jemalloc exige 4096)"
                 echo "      → Incompatibilité connue qdrant/qdrant sur ce noyau ($(uname -r))"
-                docker stop qdrant >/dev/null 2>&1
-                docker rm qdrant >/dev/null 2>&1
+                docker stop astroport-qdrant >/dev/null 2>&1
+                docker rm astroport-qdrant >/dev/null 2>&1
             else
                 echo "   ⚡ Score ${_SCORE} ≥ 11 — démarrage Qdrant VectorDB (port 6333)..."
-                ## dragon-net déjà créé juste après l'install Docker (voir plus haut)
-                docker rm -f qdrant >/dev/null 2>&1   # nettoie un éventuel conteneur mort/planté
-                docker run -d \
-                    --name qdrant \
-                    --restart unless-stopped \
-                    --network dragon-net \
-                    -p 127.0.0.1:6333:6333 \
-                    -v qdrant_storage:/qdrant/storage \
-                    qdrant/qdrant:latest \
+                ## Une seule définition de Qdrant : le compose (astroport-qdrant, clé API, volume
+                ## docker_qdrant_storage). Plus de « docker run » isolé : sans clé API et avec un
+                ## second volume, il faisait doublon avec celui de la section IA plus bas.
+                ASTRO_YES=1 ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh qdrant \
                     && echo "✅ Qdrant démarré (http://localhost:6333)" \
-                    || echo "⚠️  Qdrant — erreur de démarrage"
+                    || echo "⚠️  Qdrant — erreur de démarrage (voir: admin/docker.sh doctor)"
             fi
         elif [[ $_SCORE -le 10 ]]; then
             echo "   🌿 Score ${_SCORE} — Qdrant non installé (nécessite ⚡ Standard, score ≥ 11)"
@@ -1657,12 +1652,12 @@ if [[ $_SCORE -gt 10 ]] && command -v docker >/dev/null 2>&1; then
     ##
     echo "⚡ Power-Score ${_SCORE} (${_TIER}) + Docker → installation Qdrant locale"
     _ASTRO_COMPOSE="$HOME/.zen/Astroport.ONE/docker/docker-compose.yml"
-    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'qdrant'; then
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx 'astroport-qdrant'; then
         echo "✅ Qdrant déjà actif"
         _QDRANT_INSTALLED=true
     elif [[ -f "$_ASTRO_COMPOSE" ]]; then
         echo "⏳ Démarrage Qdrant (docker compose --profile ai)..."
-        if docker compose -f "$_ASTRO_COMPOSE" --profile ai up -d qdrant 2>/dev/null; then
+        if ( . ~/.zen/Astroport.ONE/tools/astro_compose.sh && COMPOSE_PROFILES=ai astro_compose up -d qdrant ); then
             _QDRANT_INSTALLED=true
             echo "✅ Qdrant local démarré (port 6333)"
         else

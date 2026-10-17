@@ -219,7 +219,7 @@ get_fast_service_status() {
     local dify_active="false"
     local dify_source="none"
 
-    ## Dify utilise son propre docker-compose (dify/docker/) → containers : docker-api-1, docker-nginx-1
+    ## Dify utilise son propre docker-compose (dify/docker/) → containers : dify-api-1, dify-nginx-1
     ## Détection fiable : image langgenius/dify ou nom contenant "dify"
     if command -v docker >/dev/null 2>&1 && \
        docker ps --format '{{.Names}}\t{{.Image}}' 2>/dev/null | grep -qi 'dify'; then

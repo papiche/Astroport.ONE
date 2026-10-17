@@ -166,20 +166,21 @@ get_player_npub() {
     grep -oP 'NPUB=\K[^;]+' "$d/.secret.nostr" 2>/dev/null | head -1
 }
 
-# Call UPassport DELETE /cookie/{domain}?npub=...
+# Call UPassport DELETE /cookie/{domain} — signé NIP-98 par la clé du joueur (lue localement dans
+# son .secret.nostr). L'ancien appel `?npub=` sans signature n'est plus accepté par le serveur :
+# l'npub est public, ce n'était pas une preuve de possession.
 api_delete_cookie() {
     local email="$1"
     local domain="$2"
-    local npub
-    npub=$(get_player_npub "$email")
-    if [[ -z "$npub" ]]; then
-        log_error "Impossible de trouver le npub pour $email"
+    local enc url auth resp rc
+    enc=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$domain" 2>/dev/null) || enc="$domain"
+    url="${UPASSPORT_API}/cookie/${enc}"
+    auth=$("${MY_PATH}/../tools/nostr_nip98_sign.py" "$email" DELETE "$url") || {
+        log_error "Signature NIP-98 impossible pour $email (clé .secret.nostr absente ?)"
         return 1
-    fi
-    local url="${UPASSPORT_API}/cookie/$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$domain" 2>/dev/null || echo "$domain")?npub=${npub}"
-    local resp
-    resp=$(curl -sf -X DELETE "$url" 2>/dev/null)
-    local rc=$?
+    }
+    resp=$(curl -sf -X DELETE -H "Authorization: $auth" "$url")
+    rc=$?
     if [[ $rc -eq 0 ]]; then
         echo "$resp" | jq -e '.success' >/dev/null 2>&1 && return 0
     fi

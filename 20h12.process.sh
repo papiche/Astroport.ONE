@@ -571,6 +571,10 @@ fi
 
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 
+## Paiements ẐEN roaming (Kind 7) qui n'avaient pas pu être relayés à la home station : on les rejoue
+## (alerte Capitaine après 7 jours) — rien ne se perd en silence. Cf. tools/zen_like_retry.sh
+${MY_PATH}/tools/zen_like_retry.sh
+
 ########################################################################
 ## MULTIPASS LEGACY CHECK — détecte les comptes créés avant l'évolution du
 ## stockage nostr/email/* (.multipass.json, DID kind 30800, home.station

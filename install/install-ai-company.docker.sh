@@ -25,6 +25,17 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 INSTALL_DIR="$HOME/.zen/ai-company"
 PORT_WEBUI=${PORT_WEBUI:-8000}
 PORT_DIFY=${PORT_DIFY:-8010}
+# Dify est une stack indépendante : projet compose dédié "dify" (sinon le projet
+# prend le nom du dossier "docker" et collisionne avec Astroport.ONE/docker).
+DIFY_PROJECT="dify"
+DIFY_DIR="$INSTALL_DIR/dify/docker"
+_dify_compose() {
+    local f
+    for f in docker-compose.yaml docker-compose.yml; do
+        [[ -f "$DIFY_DIR/$f" ]] && { $DOCKER_CMD -p "$DIFY_PROJECT" --project-directory "$DIFY_DIR" -f "$DIFY_DIR/$f" "$@"; return; }
+    done
+    echo "ERROR:dify compose introuvable dans $DIFY_DIR" >&2; return 1
+}
 PORT_QDRANT=${PORT_QDRANT:-6333}
 PORT_MIROFISH=${PORT_MIROFISH:-5050}
 PORT_VANE=${PORT_VANE:-3002}
@@ -82,13 +93,13 @@ HELP
         if [[ "$2" == "--purge" ]]; then
             $DOCKER_CMD -f "$_ASTRO_COMPOSE" --profile ai down -v 2>/dev/null || true
             [[ -d "$INSTALL_DIR/dify/docker" ]] && \
-                { $DOCKER_CMD -f "$INSTALL_DIR/dify/docker/docker-compose.yml" down -v 2>/dev/null || true; }
+                { _dify_compose down -v || true; }
             rm -rf "$INSTALL_DIR"
             echo -e "${GREEN}✅ Stack et volumes supprimés.${NC}"
         else
             $DOCKER_CMD -f "$_ASTRO_COMPOSE" --profile ai down 2>/dev/null || true
             [[ -d "$INSTALL_DIR/dify/docker" ]] && \
-                { $DOCKER_CMD -f "$INSTALL_DIR/dify/docker/docker-compose.yml" down 2>/dev/null || true; }
+                { _dify_compose down || true; }
             echo -e "${GREEN}✅ Containers arrêtés (volumes préservés).${NC}"
             echo    "   Pour tout supprimer : $0 --uninstall --purge"
         fi
@@ -150,17 +161,9 @@ for _def in "${_ai_env_defaults[@]}"; do
     fi
 done
 
-# Injecte les secrets dans le .env du compose principal (créé si absent)
-_DOCKER_ENV="$(dirname "$_ASTRO_COMPOSE")/.env"
-touch "$_DOCKER_ENV"
-for _var in WEBUI_SECRET_KEY QDRANT_API_KEY MIROFISH_MODEL; do
-    _val="${!_var}"
-    if grep -q "^${_var}=" "$_DOCKER_ENV" 2>/dev/null; then
-        sed -i "s|^${_var}=.*|${_var}=${_val}|" "$_DOCKER_ENV"
-    else
-        echo "${_var}=${_val}" >> "$_DOCKER_ENV"
-    fi
-done
+# Secrets : source unique $INSTALL_DIR/.env ; docker/.env en est un lien (voir tools/astro_compose.sh)
+. "$MY_PATH/../tools/astro_compose.sh"
+astro_compose_sync_env || exit 1
 
 # --- VÉRIFICATION MATÉRIELLE (non bloquante) ---
 _CACHE="$HOME/.zen/tmp/$(ipfs id -f '<id>' 2>/dev/null)/heartbox_analysis.json"
@@ -169,8 +172,12 @@ _SCORE=0
 if [[ ${_SCORE:-0} -lt 11 ]]; then
     echo -e "${YELLOW}⚠️  Power-Score faible (${_SCORE}/10) — stack IA lourde pour cette machine.${NC}"
     echo -e "   Utilisez ${BOLD}$0 --check${NC} pour le détail."
-    read -r -p "   Continuer quand même ? [y/N] " _CONFIRM
-    [[ "$_CONFIRM" != "y" && "$_CONFIRM" != "Y" ]] && exit 1
+    if [[ -n "$ASTRO_YES" || ! -t 0 ]]; then
+        echo "   (mode non interactif — on continue)"
+    else
+        read -r -p "   Continuer quand même ? [y/N] " _CONFIRM
+        [[ "$_CONFIRM" != "y" && "$_CONFIRM" != "Y" ]] && exit 1
+    fi
 fi
 if ! ss -tln 2>/dev/null | grep -qE ':11434\b'; then
     echo -e "${YELLOW}⚠️  Ollama inactif sur :11434 — les services IA ne fonctionneront pas sans LLM local.${NC}"
@@ -209,7 +216,7 @@ fi
 
 if [[ " ${ALL_TARGETS[*]} " == *" all "* || " ${ALL_TARGETS[*]} " == *" dify "* ]]; then
     echo -e "⏳ Démarrage de l'orchestrateur Dify.ai (peut prendre quelques minutes)..."
-    $DOCKER_CMD -f "$INSTALL_DIR/dify/docker/docker-compose.yml" up -d
+    _dify_compose up -d
 fi
 
 # --- RÉCAPITULATIF ---

@@ -123,7 +123,7 @@ if command -v docker >/dev/null 2>&1; then
             docker run -d \
                 --name "$BGUTIL_CONTAINER" \
                 --restart always \
-                -p "${BGUTIL_PORT}:${BGUTIL_PORT}" \
+                -p "127.0.0.1:${BGUTIL_PORT}:${BGUTIL_PORT}" \
                 "$BGUTIL_IMAGE" >/dev/null 2>&1 \
             && echo "[install_yt_dlp_ejs_node][$(timestamp)] ✅ bgutil-provider started (port ${BGUTIL_PORT}, restart=always)." >&2 \
             || echo "[install_yt_dlp_ejs_node][$(timestamp)] ⚠️  Failed to start bgutil-provider container." >&2
@@ -134,7 +134,7 @@ if command -v docker >/dev/null 2>&1; then
 else
     echo "[install_yt_dlp_ejs_node][$(timestamp)] Docker not found — bgutil PO token provider will not be started." >&2
     echo "[install_yt_dlp_ejs_node][$(timestamp)] To install Docker: https://docs.docker.com/engine/install/" >&2
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] Then run manually: docker run -d --restart always -p 4416:4416 --name bgutil-provider brainicism/bgutil-ytdlp-pot-provider" >&2
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Then run manually: docker run -d --restart always -p 127.0.0.1:4416:4416 --name bgutil-provider brainicism/bgutil-ytdlp-pot-provider" >&2
 fi
 
 # Default YouTube player_client: android_vr first (no JS runtime needed, gets full format list), then tv/tv_embedded (no PO token)

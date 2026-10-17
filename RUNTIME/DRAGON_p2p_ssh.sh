@@ -615,14 +615,26 @@ generate_ssh_service() {
 # (my.sh source déjà .env, donc DRAGON_PRIVATE_SERVICES est disponible ici)
 _is_private_service() {
     local _slug="$1"
+    # grep -F (pas -w) : avec -w, un motif " ssh " exige que le caractère SUIVANT soit
+    # non-alphanumérique alors que l'espace final du motif est déjà consommé — le test échouait
+    # pour tout slug suivi d'un autre (donc « privé » n'était jamais détecté).
     [[ -n "${DRAGON_PRIVATE_SERVICES:-}" ]] && \
-        echo " ${DRAGON_PRIVATE_SERVICES} " | grep -qw " ${_slug} "
+        echo " ${DRAGON_PRIVATE_SERVICES} " | grep -qF " ${_slug} "
+}
+
+# Un service privé ne doit pas seulement ne plus être (re)publié : son tunnel déjà ouvert et son
+# script x_<slug>.sh (diffusé dans la balise IPNS) doivent disparaître aussi.
+_unpublish_service() {
+    local _slug="$1"
+    ipfs p2p close -p "/x/${_slug}-${IPFSNODEID}" 2>/dev/null
+    rm -f "${HOME}/.zen/tmp/${IPFSNODEID}/x_${_slug}.sh" 2>/dev/null
 }
 
 publish_service() {
     local _slug="$2"
     if _is_private_service "${_slug}"; then
         echo "SKIP ${_slug} (privé — DRAGON_PRIVATE_SERVICES)"
+        _unpublish_service "${_slug}"
         return 0
     fi
     generate_p2p_service "$@"
@@ -634,8 +646,7 @@ SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' |
 [[ -z "$SSHPORT" ]] && SSHPORT=22
 if _is_private_service "ssh"; then
     echo "SKIP ssh (privé — DRAGON_PRIVATE_SERVICES)"
-    ipfs p2p close -p "/x/ssh-${IPFSNODEID}" 2>/dev/null
-    rm -f ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh 2>/dev/null
+    _unpublish_service "ssh"
 else
     generate_ssh_service "$SSHPORT"
 fi

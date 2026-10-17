@@ -208,6 +208,11 @@ Labels utilisés :
 - `astroport.monitor=true` → diffuse la santé au swarm (astrosystemctl)
 - `com.centurylinklabs.watchtower.enable=true` → mis à jour par Watchtower
 
+Gestion : `admin/docker.sh [status|pull|update|restart|logs|clean|doctor|watchtower]` (via `tools/astro_compose.sh`).
+- Les secrets IA vivent dans `~/.zen/ai-company/.env` ; `astro_compose` les recopie dans `docker/.env` (sans eux, compose retombe sur `changeme-…` et un `up` recréerait Qdrant avec une autre clé).
+- Dify = pile indépendante, projet compose **`dify`** (`-p dify`, jamais le nom de dossier `docker`) ; migration d'une station existante : `install/migrate-dify-project.sh --yes`.
+- Qdrant n'a qu'une définition : le compose (`astroport-qdrant`, volume `docker_qdrant_storage`). Jamais de `--remove-orphans`, `volume prune` ni `network prune` : voir `admin/docker.sh doctor`.
+
 GPU overlay : `docker/docker-compose.gpu.yml` — ajoute `deploy.resources.reservations` NVIDIA sur `open-webui`.
 
 ## Deployment Modes

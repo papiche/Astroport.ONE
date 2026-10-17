@@ -54,7 +54,7 @@ source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../swarm_connector_lib.sh"
 check_local_service() {
     local silent="${1:-false}"
     if docker ps 2>/dev/null | grep -q "dify-nginx" || \
-       docker ps 2>/dev/null | grep -q "docker-nginx-1"; then
+       docker ps 2>/dev/null | grep -q "dify-nginx-1"; then
         [[ "$silent" != "true" ]] && print_status "OK" "Local Dify service detected"
         return 0
     fi

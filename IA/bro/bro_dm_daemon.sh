@@ -870,9 +870,33 @@ _handle_zen_like() {
 
     bro_user_is_local "$_EMAIL" || { _log "WARN: ✈️ zen_like: $_EMAIL non hébergé ou en roaming — paiement ignoré"; return; }
 
+    ## ── Revérification COMPLÈTE avant tout paiement ─────────────────────────────────────────────
+    ## Le message vient d'un autre nœud (authentifié comme nœud de la constellation, rien de plus) et
+    ## porte montant + destination : on ne le croit pas. tools/zen_like_verify.py contrôle l'événement
+    ## Kind 7 SIGNÉ joint (signature, signataire = ce compte, montant tiré de son contenu, destination
+    ## recalculée ici) et réserve l'événement (anti-rejeu : un Kind 7 ne paie qu'une fois).
+    local _VERIFY _VRC
+    _VERIFY=$(printf '%s' "$payload" | python3 "$HOME/.zen/Astroport.ONE/tools/zen_like_verify.py" 2>&1)
+    _VRC=$?
+    if [[ $_VRC -ne 0 ]]; then
+        local _VREASON; _VREASON=$(jq -r '.reason // "vérification impossible"' <<< "$_VERIFY" 2>/dev/null || echo "$_VERIFY")
+        if [[ "$(jq -r '.replay // false' <<< "$_VERIFY" 2>/dev/null)" == "true" ]]; then
+            _log "INFO: ✈️ zen_like: rejeu ignoré pour $_EMAIL (événement déjà payé)"
+        else
+            _log "WARN: ✈️ zen_like REFUSÉ pour $_EMAIL : $_VREASON"
+            _alert_captain "$(printf "zen_like REFUSÉ pour %s\n%s\nMontant annoncé : %sẐ → %s...\nÉmetteur : station visiteuse (message d'un autre nœud — possible tentative de fraude si la raison évoque signature/destination)" \
+                "$_EMAIL" "$_VREASON" "$_ZEN_AMOUNT" "${_G1PUB_DEST:0:12}")"
+        fi
+        return
+    fi
+
+    local _EVID; _EVID=$(jq -r '.event_id // ""' <<< "$_VERIFY" 2>/dev/null)
     local _DUNIKEY="$HOME/.zen/game/nostr/${_EMAIL}/.secret.dunikey"
-    [[ ! -s "$_DUNIKEY" ]] && \
-        _log "WARN: ✈️ zen_like: .secret.dunikey absent pour $_EMAIL" && return
+    if [[ ! -s "$_DUNIKEY" ]]; then
+        _log "WARN: ✈️ zen_like: .secret.dunikey absent pour $_EMAIL — réservation levée, le paiement pourra être rejoué"
+        [[ "$_EVID" =~ ^[0-9a-f]{64}$ ]] && rm -f "$HOME/.zen/game/zen_like_done/$_EVID"
+        return
+    fi
 
     local _AMOUNT
     _AMOUNT=$(awk -v v="${_ZEN_AMOUNT}" 'BEGIN{printf "%.2f", v * 0.1}')
@@ -885,7 +909,7 @@ _handle_zen_like() {
     local _RC=$?
     if [[ $_RC -eq 0 ]]; then
         _log "✈️ zen_like OK: ${_ZEN_AMOUNT}Ẑ envoyés pour $_EMAIL"
-        [[ "$_IS_CROWDFUNDING" == "True" && -n "$_PROJECT_ID" ]] && \
+        [[ "${_IS_CROWDFUNDING,,}" == "true" && -n "$_PROJECT_ID" ]] && \
             _log "✈️ zen_like CF: contribution $_PROJECT_ID enregistrée (via prochain cycle relay)"
     else
         _log "WARN: ✈️ zen_like FAILED (rc=$_RC) pour $_EMAIL"

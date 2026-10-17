@@ -63,10 +63,7 @@ Tous les routers sont montés à la racine (pas de préfixe path). Les routes so
 | `GET` | `/check_revenue` | Aucune | Chiffre d'affaires ZENCOIN (param `year=YYYY` optionnel) |
 | `GET` | `/check_impots` | Aucune | Provisions fiscales TVA + IS (wallet UPLANET.IMPOT) |
 | `POST` | `/oc_webhook` | Signature OC | Webhook OpenCollective → émission ẐEN (transactions coopératives) |
-| `POST` | `/zen_send` | NIP-42 | ~~Envoyer ẐEN~~ **DÉPRÉCIÉ** — utiliser Kind 7 (relay 7.sh) |
-| `POST` | `/coinflip/start` | Token | Démarrer partie CoinFlip (token issu de `/zen_send`) |
-| `POST` | `/coinflip/flip` | Token | Lancer un flip (Heads → pot×2, Tails → fin) |
-| `POST` | `/coinflip/payout` | Token | Encaisser les gains (`2^(consecutive-1)` ẐEN) |
+| `POST` | `/zen_send` | — | ~~Envoyer ẐEN~~ **RETIRÉ (410)** — utiliser Kind 7 (relay 7.sh) |
 
 ---
 
