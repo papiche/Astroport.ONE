@@ -97,7 +97,7 @@ CRON_EXISTS=$(grep -F "$CRON_JOB_NAME" /tmp/mycron)
 awk '!index($0,"SHELL=") && !index($0,"USER=") && !index($0,"PATH=")' \
     /tmp/mycron > /tmp/mycron.tmp && mv /tmp/mycron.tmp /tmp/mycron
 
-grep -v "$CRON_JOB_NAME" /tmp/mycron > /tmp/mycron.clean
+grep -v "$CRON_JOB_NAME" /tmp/mycron | grep -v "DRAGON_p2p_ssh.sh" > /tmp/mycron.clean
 mv /tmp/mycron.clean /tmp/mycron
 
 build_cron_header() {
@@ -115,6 +115,13 @@ add_20h12_cron() {
     ## risque de double envoi car 20h12.process.sh ignore un second appel du
     ## jour si une exécution a déjà réussi (garde "EXECUTION TERMINÉE").
     echo "@reboot   sleep 180 && $CRON_JOB_CMD >> ${CRON_LOG_FILE} 2>&1" >> /tmp/newcron
+    ## DRAGON (tunnels IPFS P2P + SSH authorized_keys) : relancé à chaque démarrage,
+    ## indépendamment de 20h12.process.sh (garde "déjà exécuté") et du service astroport
+    ## (absent en mode LOW). Attend le daemon IPFS (max ~5 min) ; le lock
+    ## /tmp/dragon_swarm.lock évite tout doublon avec _12345.sh.
+    if [[ "$IS_PICOPORT" == 0 ]]; then
+        echo "@reboot   for i in \$(seq 1 30); do pgrep -f 'ipfs daemon' >/dev/null && break; sleep 10; done; sleep 20; /bin/bash $MY_PATH/../../RUNTIME/DRAGON_p2p_ssh.sh >> ${HOME}/.zen/log/dragon.log 2>&1" >> /tmp/newcron
+    fi
 }
 
 manage_service() {
