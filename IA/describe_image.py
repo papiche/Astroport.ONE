@@ -241,7 +241,8 @@ def describe_image_from_ipfs(image_source, ollama_model="minicpm-v4.6:latest", o
             return ollama.chat(
                 model=ollama_model,
                 messages=[{'role': 'user', 'content': prompt, 'images': [image_bytes]}],
-                options=dict({'repeat_penalty': 1.4, 'num_predict': 600, 'temperature': 0.3}, **(gen_options or {}))
+                options=dict({'repeat_penalty': 1.4, 'num_predict': 600, 'temperature': 0.3, 'num_ctx': 4096}, **(gen_options or {})),
+                keep_alive='30m'
             )
 
         # Retry once if connection is reset (tunnel may have dropped)
@@ -309,6 +310,7 @@ if __name__ == "__main__":
     parser.add_argument("--repeat-penalty", type=float, default=None, help="Défaut 1.4 (trop fort pour le français : mots inventés ; vision_describe.py passe 1.05)")
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--num-predict", type=int, default=None)
+    parser.add_argument("--num-ctx", type=int, default=None, help="Contexte Ollama (défaut 4096 : le défaut du modèle, 32768, déborde la VRAM et bascule sur le CPU)")
     parser.add_argument("-p", "--prompt", dest="custom_prompt", default=None, help="Custom prompt to send to the AI (default: 'Décris précisément cette image...').")
     parser.add_argument("--publish", dest="publish_email", nargs="?", const="__captainemail__",
                         metavar="EMAIL",
@@ -320,6 +322,7 @@ if __name__ == "__main__":
     if args.repeat_penalty is not None: gen["repeat_penalty"] = args.repeat_penalty
     if args.temperature is not None: gen["temperature"] = args.temperature
     if args.num_predict is not None: gen["num_predict"] = args.num_predict
+    if args.num_ctx is not None: gen["num_ctx"] = args.num_ctx
     description_output = describe_image_from_ipfs(args.image_source, args.ollama_model_name, args.json, args.custom_prompt, gen)
 
     if description_output:
