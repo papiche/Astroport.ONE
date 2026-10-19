@@ -127,7 +127,7 @@ cmd_report() {
     journalctl -k --since "2 days ago" --no-pager 2>/dev/null | grep -E "Xid|fallen off" | cut -c1-200 | tail -15
     echo "== Dernières secondes de télémétrie avant perte :"
     grep -vi "lost" "$DIR/dmon.csv" 2>/dev/null | tail -8 | cut -c12-
-    echo "== gpu_watch (5 s) :"; grep -B3 GPU_LOST "$HOME/.zen/tmp/gpu_watch.csv" 2>/dev/null | head -6
+    echo "== gpu_watch (5 s) :"; grep -B3 GPU_LOST "$HOME/.zen/log/gpu_watch.csv" 2>/dev/null | head -6
     echo "== powerjoular :"; tail -3 /var/lib/powerjoular/power_24h.csv 2>/dev/null
 }
 
