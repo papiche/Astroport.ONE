@@ -1009,6 +1009,9 @@ NODE12345="{
         sudo systemctl restart ipfs 2>/dev/null
     fi
 
+    ## Watchdog GPU NVIDIA — reboot si le GPU disparaît (Xid 79), avec garde-fous anti-boucle
+    bash "${HOME}/.zen/Astroport.ONE/admin/monitor/gpu_guard.sh" >> "${HOME}/.zen/log/gpu_guard.log" 2>&1
+
     # Sleep to prevent busy loop (replacing nc -l wait)
     # Wait 300 seconds before checking if update is needed
     sleep 300
