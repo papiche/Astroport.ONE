@@ -1747,13 +1747,8 @@ ${URL:+Source: $URL
                 && echo "✅ Kind 30504 publié — skill '$SKILL_TAG' alimenté dans MineLife" \
                 || echo "⚠️  Publication kind 30504 échouée"
 
-            # Indexation Qdrant via knowledge_index.sh (si disponible)
-            KI_SCRIPT="${MY_PATH}/admin/ia_db/knowledge_index.sh"
-            if [[ -f "$KI_SCRIPT" && -n "$ANALYSIS_TEXT" ]]; then
-                echo "$ANALYSIS_TEXT" | "$KI_SCRIPT" --stdin --tag "${SKILL_TAG:-media}" 2>/dev/null \
-                    && echo "✅ Qdrant: texte indexé" \
-                    || true
-            fi
+            # (L'indexation Qdrant « knowledge » a été RETIRÉE le 2026-10-19, en attendant une meilleure spécification de
+            #  l'UX et du code qui s'en chargera : le kind 30504 publié ci-dessus reste la source de vérité.)
         else
             echo "⚠️  Clef NOSTR ou nostr_send_note.py absent — publication ignorée"
         fi

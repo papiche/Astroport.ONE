@@ -82,7 +82,7 @@ Trajet d'un DM `channel="plain"` depuis un utilisateur local ou en roaming.
     ├── level 0  →  ignoré silencieusement
     └── level ≥1  →  _handle_bro()
           │
-          ├─ Slots mémoire  →  short_memory.py  (contexte #0…#12)
+          ├─ Mémoire        →  memory_manager.py (Qdrant : souvenirs actifs du compte, par pertinence)
           ├─ RAG Qdrant     →  nextcloud_bro_sync.sh --query "…"
           └─ Ollama local   →  gemma3 / qwen3 (réponse)
                 │
@@ -194,7 +194,7 @@ Déterminé par `bro_user_level.py` — lecture `contractStatus` (DID cache) + v
 | `IA/bro/tools.py` | — | Registre déclaratif des outils `#tag` (`bro_tools.py`) — une source de vérité par outil, jamais de commande annoncée qui ne soit pas réellement exécutable |
 | `IA/mcp_client.py` | — | Client MCP (Model Context Protocol) en Streamable HTTP — outil `#opendata` (data.gouv.fr), venv isolé |
 | `tools/nostr_node_intercom.py` | — | Transport DM NIP-44 inter-NODE (encrypt / decrypt) |
-| `IA/short_memory.py` | — | Slots mémoire personnelle (0-12) — `~/.zen/flashmem/EMAIL/` |
+| `IA/memory_manager.py` / `memory_writer.py` | — | Mémoire personnelle (Qdrant `memory_<hex>`) — plus de fichier local |
 | `IA/question.py` | — | Interface Ollama + Qdrant pour questions RAG |
 
 `bro_user_level` est une fonction bash définie dans `bro_common_lib.sh` (pas un fichier séparé).

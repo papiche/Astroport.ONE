@@ -8,8 +8,7 @@
 #   • Si un run précédent existe (cache JSON) → AUTO-RESET automatique :
 #       - Kind 5 (deletion) pour les Kind 7 non-remplaçables
 #       - Republication de tout le scénario (events 30xxx s'auto-remplacent)
-#   • Les données servent de formation P2P : elles enrichissent le relay
-#     et la collection Qdrant "knowledge" pour BRO.
+#   • Les données servent de formation P2P : elles enrichissent le relay.
 #
 # VISION : chaque nouveau capitaine apporte ses compétences, ses toiles de
 #   confiance et ses crafts (ORE, WoTx2, P2P, MineLife) → plateforme de
@@ -295,8 +294,7 @@ fi
 ## ─────────────────────────────────────────────────────────────────────────────
 section "3. Formation Kind 30504 — analytics_uplanet_toto.md (BRO memory)"
 ## ─────────────────────────────────────────────────────────────────────────────
-## Ce document est la mémoire de l'IA : BRO interroge Qdrant "knowledge"
-## pour vérifier le passage de connaissance analytics au Capitaine.
+## Ce document est la formation publiée (kind 30504) que le Capitaine peut consulter.
 
 _EV_FORMATION=""
 _ANALYTICS_CID=$(_cache_get "analytics_ipfs_cid")
@@ -339,21 +337,6 @@ open('${FIXTURES}/.ipfs_cids','w').writelines(lines)
         --content "{\"description\":\"Guide complet analytics UPlanet : Kind 10600, smartSend, NIP-44. Mémoire BRO pour examen du Capitaine.\",\"skill\":\"analytics-uplanet\",\"resource_url\":\"/ipfs/$_ANALYTICS_CID\",\"resource_type\":\"document\",\"author\":\"toto\"}" \
         --relays "$_TOTO_RELAY")
 
-    ## Indexer dans Qdrant si disponible
-    if [[ -n "$_ANALYTICS_CID" ]] && command -v curl >/dev/null 2>&1; then
-        _QDRANT_UP=$(curl -sf "http://localhost:6333/collections/knowledge" 2>/dev/null | \
-            python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('result',{}).get('status','nok'))" 2>/dev/null)
-        if [[ "$_QDRANT_UP" == "green" ]]; then
-            KNOWLEDGE_INDEX="${ASTROPORT_PATH}/admin/ia_db/knowledge_index.sh"
-            if [[ -x "$KNOWLEDGE_INDEX" ]]; then
-                "$KNOWLEDGE_INDEX" "analytics-uplanet" \
-                    "${FIXTURES}/analytics_uplanet_toto.md" \
-                    "$_ANALYTICS_CID" "$_TOTO_HEX" >/dev/null 2>&1 \
-                    && ok "Qdrant 'knowledge' : analytics-uplanet indexé pour BRO" \
-                    || skip "Qdrant indexation analytics échouée"
-            fi
-        fi
-    fi
 fi
 
 ## ─────────────────────────────────────────────────────────────────────────────
@@ -633,22 +616,7 @@ else
     fi
 fi
 
-## ─────────────────────────────────────────────────────────────────────────────
-section "11. Qdrant — vérification indexation BRO"
-## ─────────────────────────────────────────────────────────────────────────────
-
-if command -v curl >/dev/null 2>&1; then
-    _QDRANT=$(curl -sf "http://localhost:6333/collections/knowledge" 2>/dev/null | \
-        python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('result',{}).get('status','nok'))" 2>/dev/null)
-    if [[ "$_QDRANT" == "green" ]]; then
-        ok "Qdrant collection 'knowledge' disponible"
-        info "BRO peut répondre : 'Quel Kind pour analytics UPlanet ?' → Kind 10600"
-    else
-        skip "Qdrant non disponible (docker --profile ai requis pour BRO)"
-    fi
-else
-    skip "curl absent — Qdrant non vérifié"
-fi
+## (Section « Qdrant — indexation knowledge » retirée le 2026-10-19 : l'indexation `knowledge` n'existe plus.)
 
 ## ─────────────────────────────────────────────────────────────────────────────
 section "12. Résumé du scénario"

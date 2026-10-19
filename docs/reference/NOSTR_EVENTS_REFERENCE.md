@@ -612,7 +612,7 @@ Ressource multimédia liée à un skill WoTx2. Publiée par tout utilisateur MUL
 }
 ```
 
-**Payload Qdrant (collection `knowledge`) :**
+**Payload Qdrant de l'ancienne indexation `knowledge` (RETIRÉE le 2026-10-19, en attendant une spécification de l'UX) :**
 
 ```json
 {
@@ -639,7 +639,7 @@ Ressource multimédia liée à un skill WoTx2. Publiée par tout utilisateur MUL
 └── ...
 ```
 
-**Scripts :** `admin/ia_db/knowledge_index.sh`, `admin/ia_db/knowledge_index.py` **Interface :** MineLife onglet Formation — bouton "Mes médias" (mode édition) **BRO :** commande `#rec <skill>` via DM Kind 4
+**Interface :** MineLife onglet Formation — bouton "Mes médias" (mode édition) **BRO :** commande `#rec <skill>` via DM Kind 4
 
 ***
 

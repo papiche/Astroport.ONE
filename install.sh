@@ -1629,7 +1629,7 @@ echo "## QDRANT — VectorDB IA apprenante pour MULTIPASS ##########"
 ##   Score ≤ 10 (Light/PiZero/picoport)   → tunnel IPFS P2P vers nœud swarm
 ##
 ## Dans les deux cas : QDRANT_URL=http://127.0.0.1:6333 dans .env
-## Ce QDRANT_URL active BRO/nextcloud_bro_sync.sh, memory_manager, short_memory
+## Ce QDRANT_URL active BRO/nextcloud_bro_sync.sh, memory_manager, memory_writer
 ## pour les MULTIPASS hébergés sur ce nœud — même sur un Pi Zero 2W (picoport).
 ##
 ## TODO (davfs) : sur nœud Léger avec ZenCard, monter le Nextcloud de la constellation

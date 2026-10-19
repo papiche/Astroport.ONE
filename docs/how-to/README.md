@@ -23,7 +23,6 @@ ce guide lui dit comment le faire.
 | [PLANTNET_SYSTEM.md](PLANTNET_SYSTEM.md) | Cataloguer la biodiversité et les ressources locales |
 | [MINELIFE.md](MINELIFE.md) | Crafting décentralisé de compétences WoTx2 |
 | [CODEBASE_EMBEDDINGS.md](CODEBASE_EMBEDDINGS.md) | Indexer le code source dans Qdrant (recherche sémantique) |
-| [KNOWLEDGE_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md) | Indexer les docs WoTx2 dans Qdrant (Kind 30504, uDRIVE, Nextcloud) |
 | [GRIMOIRE_LIVE.md](GRIMOIRE_LIVE.md) | Générer des vidéos WoTx2 et faire du live streaming (NIP-53) |
 | [VIDEO_GENERATION_MINIMAX.md](VIDEO_GENERATION_MINIMAX.md) | Produire une vidéo explicative (acteurs, écrans, storyboard, MiniMax H3) |
 | [IMAGE_TO_3D_SCENE.md](IMAGE_TO_3D_SCENE.md) | Transformer une photo en scène 3D GLB pour Blender (objets séparés) |

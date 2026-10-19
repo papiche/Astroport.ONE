@@ -78,7 +78,6 @@
     * [🐉 DRAGONS & TUNNELS — Système de Services P2P Astroport](docs/how-to/DRAGONS_and_TUNNELS.md)
     * [Grimoire Vidéo & LIVE UPLANET](docs/how-to/GRIMOIRE_LIVE.md)
     * [Activer ses compétences après l'installation](docs/how-to/INSTALL_CRAFT.md)
-    * [Mémoire vectorielle des connaissances WoTx2 — Recettes](docs/how-to/KNOWLEDGE_EMBEDDINGS.md)
     * [Commandes du Capitaine — \~/.local/bin](docs/how-to/LOCAL_BIN_SYMLINKS.md)
     * [MineLife — Guide d'utilisation de l'interface WoTx2](docs/how-to/MINELIFE.md)
     * [📡 nostr\_get\_events.sh - NOSTR Event Query Tool](docs/how-to/NOSTR_GET_EVENTS.md)

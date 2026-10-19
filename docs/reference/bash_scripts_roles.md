@@ -172,7 +172,6 @@ Scripts déplacés hors de `tools/` pour séparer les outils du Capitaine des bi
 | Script | Rôle | Symlink |
 |--------|------|---------|
 | `codebase_index.sh` | Indexe le code source Astroport.ONE dans Qdrant via `nomic-embed-text`. `--incremental` pour mise à jour | `codebase_index.sh` |
-| `knowledge_index.sh` | Indexe connaissances (.md/.pdf/NOSTR/uDRIVE) dans Qdrant. `--search`, `--stats`, `--reset` | `knowledge_index.sh` |
 
 ### admin/docker.sh
 

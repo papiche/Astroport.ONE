@@ -189,7 +189,7 @@ Le titre du voeu (`CopierYoutube`) peut porter le nom d'une compétence cible. A
 
 1. **Analyser la vidéo** — Ollama (`question.py`) pour transcrire ou décrire le contenu
 2. **Extraire les concepts** liés à la compétence du voeu
-3. **Publier kind 30504** (knowledge content) avec la vidéo comme source, indexé par `knowledge_index.sh` dans Qdrant
+3. **Publier kind 30504** (knowledge content) avec la vidéo comme source
 4. **Alimenter MineLife** — la compétence devient cherchable dans le catalogue Qdrant
 5. **Déclencher Grimoire** — après validation WoTx2 (craft success), générer un kind 22 vidéo résumé
 
@@ -198,12 +198,12 @@ voeu CopierYoutube "Permaculture"
   └─ G1CopierYoutube.sh télécharge la chaîne
        └─ [futur] analyser_media.sh :
             ├─ Ollama analyse contenu → mots-clefs
-            ├─ NIP kind 30504 (knowledge) → Qdrant
+            ├─ NIP kind 30504 (knowledge)
             └─ MineLife : skill "Permaculture" enrichi
                  └─ craft validé → Grimoire kind 22
 ```
 
-→ Voir [MINELIFE.md](MINELIFE.md), [GRIMOIRE\_LIVE.md](GRIMOIRE_LIVE.md), [KNOWLEDGE\_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md)
+→ Voir [MINELIFE.md](MINELIFE.md), [GRIMOIRE\_LIVE.md](GRIMOIRE_LIVE.md)
 
 ***
 

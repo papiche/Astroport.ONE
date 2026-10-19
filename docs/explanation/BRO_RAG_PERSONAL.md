@@ -24,7 +24,7 @@ Le tout repose sur Ollama (LLM souverain) et Qdrant (base vectorielle locale). A
 │  Via DM au NODE     :  #rec Mon projet est une ferme bio        │
 │       │                                                         │
 │       ▼                                                         │
-│  short_memory.py <event_json> <lat> <lon> <user_id>             │
+│  memory_writer.py (apprentissage) / memory_manager.py (#rec)    │
 │       │                                                         │
 │       └──► Qdrant : collection memory_{user_hex[:16]}           │
 └─────────────────────────────────────────────────────────────────┘
@@ -216,7 +216,7 @@ Si `NC_PASSWORD` n'est pas configuré, `nextcloud_bro_sync.sh` **indexe automati
 |---------|------|
 | `IA/nextcloud_bro_sync.sh` | Sync NextCloud/docs → Qdrant + requête RAG combinée |
 | `IA/bro_dm_daemon.sh` | Daemon DM kind 4 : `#rec`, `#mem`, `#reset`, BRO |
-| `IA/short_memory.py` | Capture `#rec` → Qdrant |
+| `IA/memory_writer.py` | BRO écrit sa mémoire seul (faits tirés des échanges, consentement par source) ; `#rec` écrit directement un souvenir |
 | `IA/memory_manager.py` | Interface Qdrant unifiée (upsert/search/delete/recent, compression RÊVE) |
 | `NIP-101/filter/4.sh` | Filtre strfry kind 4, enqueue DMs adressés au NODE |
 
@@ -225,7 +225,7 @@ Si `NC_PASSWORD` n'est pas configuré, `nextcloud_bro_sync.sh` **indexe automati
 | Collection | Portée | Source | Accès |
 |------------|--------|--------|-------|
 | `nextcloud_kb` | **Partagée** — une seule pour toute la station | NextCloud WebDAV ou `docs/*.md` | Tous les MULTIPASS |
-| `memory_{user_hex[:16]}` | **Privée** — une par MULTIPASS hébergé | `short_memory.py` via `#rec` | NODE seul (DM chiffré) |
+| `memory_{user_hex[:16]}` | **Privée** — une par MULTIPASS hébergé | `memory_writer.py` (apprentissage) et `#rec` | NODE seul (DM chiffré) |
 
 Chaque MULTIPASS a donc **sa propre collection Qdrant** nommée d'après les 16 premiers caractères de sa clé publique NOSTR hexadécimale. Ces collections sont créées à la demande lors du premier `#rec` et ne sont jamais partagées entre utilisateurs.
 

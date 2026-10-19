@@ -291,7 +291,6 @@ Les 6 personas partagent des objets, co-signent des crafts et s'attestent mutuel
 * [**KIND\_30506\_JUSTICE.md**](KIND_30506_JUSTICE.md) — Spec médiation : dossier, actes, assurance mutualiste
 * [**how-to/MINELIFE.md**](../how-to/MINELIFE.md) — Utiliser l'interface
 * [**how-to/REPORT\_FRICTION.md**](../how-to/REPORT_FRICTION.md) — Déclarer une friction et suivre la médiation
-* [**how-to/KNOWLEDGE\_EMBEDDINGS.md**](../how-to/KNOWLEDGE_EMBEDDINGS.md) — Indexer les ressources
 * [**explanation/minelife\_wikipedia\_wot.md**](../explanation/minelife_wikipedia_wot.md) — Philosophie WoT
 * [**explanation/WOTX2\_MEDIATION.md**](../explanation/WOTX2_MEDIATION.md) — Philosophie de l'assurance mutualiste WoT
 * [**tutorials/WOTX2\_DEMO\_SCENARIO.md**](../tutorials/WOTX2_DEMO_SCENARIO.md) — Scénario de démo complet (6 personas)

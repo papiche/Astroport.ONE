@@ -82,7 +82,7 @@ Sans arguments : mode interactif complet (zenity GUI).
 ```
 - Analyse via Ollama (si disponible) : description du contenu
 - Publication NOSTR kind 30504 (MineLife/Grimoire knowledge)
-- Indexation Qdrant via `admin/ia_db/knowledge_index.sh`
+- (indexation Qdrant `knowledge` retirée le 2026-10-19, en attendant une spécification de l'UX)
 - `$4` = tag de compétence (ex: "Électronique", "Permaculture")
 
 ### `uDRIVE` — Ouvrir l'espace de stockage personnel
@@ -145,5 +145,4 @@ ajouter_media.sh
 ## Voir aussi
 
 - [`docs/reference/UPlanet_FILE_CONTRACT.md`](../reference/UPlanet_FILE_CONTRACT.md) — contrat de fichier UPlanet
-- [`docs/how-to/KNOWLEDGE_EMBEDDINGS.md`](KNOWLEDGE_EMBEDDINGS.md) — indexation IA kind 30504
 - `UPassport/routers/media_upload.py` — endpoint `/api/fileupload`

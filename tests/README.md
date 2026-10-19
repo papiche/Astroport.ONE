@@ -65,7 +65,6 @@ Suite de tests complète pour valider tous les sous-systèmes UPlanet.
 
 | Script | `--system` | Ce qui est testé |
 |--------|-----------|-----------------|
-| `test_knowledge_demo.sh` | `knowledge` | Publication Kind 30504 sur relay NOSTR, indexation Qdrant collection "knowledge", recherche sémantique par skill |
 | `test_minelife_captain.sh` | `minelife` | Scénario MineLife complet : coucou+jean+toto → Capitaine obtient "analytics-uplanet" |
 | `test_wotx2_demo.sh` | `wotx2demo` | Dataset démo WoTx2 (Skills+Craft) : 3 comptes déterministes, toutes les fonctions `minelife.html` |
 | `test_umap_cities.sh` | `umap` | Activation UMAP sur grandes villes françaises, récup opportunités G1+Leboncoin, articles Kind 30023 |

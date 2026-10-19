@@ -1,5 +1,9 @@
 # Transformer sa station en Centre d'Apprentissage IA avec Nextcloud
 
+> ⚠️ **Retiré le 2026-10-19.** L'indexation Qdrant `knowledge` (`knowledge_index.sh`) a été supprimée en attendant une meilleure
+> spécification de l'UX et du code qui s'en chargera. Ce document est conservé pour mémoire ; ses commandes ne fonctionnent plus.
+
+
 **Public :** Capitaine ayant installé Astroport.ONE avec les profils `nextcloud` et `ai-company`.
 **Résultat :** Les documents déposés dans Nextcloud sont interrogeables par `#BRO #rec <skill>` depuis n'importe quel client NOSTR de la constellation.
 
@@ -165,5 +169,4 @@ Votre station est maintenant un **hub de savoir souverain** :
 ## Étapes suivantes
 
 - [Comprendre la philosophie MineLife](../explanation/minelife_wikipedia_wot.md)
-- [Publier des ressources Kind 30504 pour la constellation](../how-to/KNOWLEDGE_EMBEDDINGS.md)
 - [Utiliser l'interface MineLife pour certifier des compétences](../how-to/MINELIFE.md)

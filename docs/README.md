@@ -53,7 +53,6 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 | [MINELIFE.md](how-to/MINELIFE.md)                                           | Crafting décentralisé des compétences WoTx2 (interface Minecraft)                               |
 | [REPORT\_FRICTION.md](how-to/REPORT_FRICTION.md)                            | Déclarer une friction WoTx² et suivre la médiation N1/N2                                        |
 | [CODEBASE\_EMBEDDINGS.md](how-to/CODEBASE_EMBEDDINGS.md)                    | Mémoire vectorielle du code (Qdrant + nomic-embed-text + snapshot IPFS)                         |
-| [KNOWLEDGE\_EMBEDDINGS.md](how-to/KNOWLEDGE_EMBEDDINGS.md)                  | Mémoire vectorielle des connaissances WoTx2 (.md/.pdf depuis Kind 30504, uDRIVE, Nextcloud)     |
 | [GRIMOIRE\_LIVE.md](how-to/GRIMOIRE_LIVE.md)                                | Vidéo WoTx2 : génération automatique + live streaming (vdo.ninja, NIP-53)                       |
 | [VIDEO\_GENERATION\_MINIMAX.md](how-to/VIDEO_GENERATION_MINIMAX.md)        | Vidéos explicatives IA : acteurs, écrans, storyboard JSON → `generate_scene.sh` (MiniMax H3)    |
 | [IMAGE\_TO\_3D\_SCENE.md](how-to/IMAGE_TO_3D_SCENE.md)                      | Photo → scène 3D GLB pour Blender : objets séparés (SAM3 + MoGe + Pixal3D), `generate_3dscene.sh` |

@@ -176,10 +176,7 @@ python3 tools/nostr_node_intercom.py publish \
     --relays "ws://localhost:7777"
 ```
 
-Puis indexer pour BRO :
-```bash
-./admin/ia_db/knowledge_index.sh --index-nostr
-```
+(L'indexation Qdrant pour BRO a été retirée le 2026-10-19, en attendant une spécification de l'UX.)
 
 ---
 
@@ -317,14 +314,12 @@ badge + narration → MP4 Ken Burns → IPFS → Kind 22
 | `Astroport.ONE/tools/oracle_init_captain_wotx2.sh` | Bootstrap Kind 30500 capitaines |
 | `Astroport.ONE/RUNTIME/ORACLE.refresh.sh` | Émet Kind 30503 Oracle (cron) |
 | `Astroport.ONE/IA/bro_dm_daemon.sh` | Daemon Kind 4 BRO |
-| `Astroport.ONE/admin/ia_db/knowledge_index.sh` | Index vectoriel Qdrant |
 
 ---
 
 ## Voir aussi
 
 - [GRIMOIRE_LIVE.md](GRIMOIRE_LIVE.md) — architecture Grimoire vidéo et LIVE en détail
-- [KNOWLEDGE_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md) — indexer les ressources dans Qdrant
 - [tutorials/setup_learning_hub.md](../tutorials/setup_learning_hub.md) — configurer sa station hub
 - [explanation/minelife_wikipedia_wot.md](../explanation/minelife_wikipedia_wot.md) — la philosophie WoT
 - [reference/NOSTR_EVENTS_REFERENCE.md](../reference/NOSTR_EVENTS_REFERENCE.md) — spec Kind 30500–30504
