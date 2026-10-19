@@ -147,6 +147,134 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 - **`specs/`** - ShellSpec test specs
 - **`tests/`** - Integration test scripts
 
+### Mémoire de BRO, embeddings et mémoire d'ARBOR (`IA/`, depuis 2026-10-19)
+
+**Un seul modèle d'embedding** : `IA/embed_config.py` (`bge-m3`, 1024 d) porte le modèle ET les seuils mesurés
+(`threshold("recall"|"topic"|"intent_margin"|"cluster"|"doc")`). Ne jamais coder un modèle, une dimension ou un
+seuil en dur ; un autre modèle exige de re-mesurer. Collections reconstructibles (routage, rubriques, index) : recréées
+seules si la dimension diffère ; la mémoire des utilisateurs et `arbor_memory` (historique) : jamais, elles lèvent.
+
+**Mémoire personnelle** (`memory_manager.py`, collection `memory_<hex16>` par MULTIPASS) : schéma `kind`
+(fact|episode|trait|person) · `source` · `visibility` (private|love) · `confidence` · `status`
+(active|superseded|deleted). Plus de slots numérotés (`SLOT_SCHEMA` traduit les anciens appels). Id = hash du contenu :
+écrire deux fois = un seul point. `unstorable_reason()` refuse tout secret (clé, mot de passe) — appelée aussi par le
+journal des demandes d'ARBOR.
+
+**Apprentissage** (`memory_writer.py` + `memory_sources.py`) : BRO écrit sa mémoire seul (extraction de faits par LLM,
+décision ADD/UPDATE/DELETE, demandes « oublie… »). Consentement PAR SOURCE dans NOSTR (kind 31903 `d=memory_sources`,
+chiffré NIP-44 pour soi) : chat (défaut) · love_dm · nostr_public · mastodon · agenda · contact ; les photos seulement
+sur geste dans FaceCloud (`/api/cloud/memory/remember`). **N'apprendre que de canaux AUTHENTIFIÉS** (DM déchiffré,
+self-DM) — jamais Telegram, Mastodon ou roaming (n'importe qui peut y écrire). Agenda et contacts : texte
+déterministe, jamais de téléphone/e-mail/adresse. LOVE : souvenirs `visibility=love` seulement, comparaison entre deux
+comptes de CETTE station (la synchro N² ne constitue aucune base globale). Interface : Mon compte › « Ce que BRO sait de moi ».
+
+**Mémoire d'ARBOR** (`arbor_memory.py`, `code_chunker.py`) : l'index du code (`admin/ia_db/codebase_index.sh`) a UN
+vecteur par fonction/classe/bloc (avec lignes) ; il cherche chaque projet sous plusieurs racines (dépôt de travail
+`~/workspace/AAA/*` OU station `~/.zen/{Astroport.ONE,UPassport}` + `~/.zen/workspace/{NIP-101,UPlanet}`). ARBOR (dialogue
+`arbor_chat`, forges `arbor_tool_forge`/`arbor_scraper_forge`, `arbor_self_improve`) retrouve le code pertinent
+(lecture seule) et ses tentatives passées (collection `arbor_memory` : but, résultat, CAUSE de l'échec) et les enregistre.
+Chaque appel est entouré d'un try/except qui DIT l'échec : jamais de repli muet.
+
+**Qualité et garde-fous de l'apprentissage** (2026-10-19) : `IA/eval_memory.py` (jeu `IA/tests/eval_memory_cases.json`,
+compte jetable) MESURE rappel hit@3, faux rappels hors-sujet, fuite de souvenirs obsolètes, oubli durable, protections,
+secrets, extraction par le LLM (faux souvenirs) et corrections — à rejouer après tout changement de modèle d'embedding,
+de seuil ou de consigne (sans option : embeddings seuls, ~2 s ; `--llm` ajoute extraction et corrections, ≈ 10-15 appels
+espacés — le GPU est partagé ; code 1 sous un seuil). Garde-fous : supprimer un souvenir
+(écran Mon compte ou « oublie… » dit à BRO) EFFACE le texte mais laisse une pierre tombale (`status=deleted`,
+`deleted_by=user`, vecteur sans contenu) : seules les sources passives sont bloquées (exact ET reformulé, cosinus ≥
+`TOMBSTONE_MIN` 0,85), le canal « chat » peut toujours se reprendre ; un souvenir écrit ou corrigé par la personne
+(`origin=user`, `edited`, source manual/rec — `mm.is_pinned`) n'est ni remplacé ni supprimé par une source passive et
+sa visibilité survit à la relecture (`upsert_memory(auto=True)`) ; confiance minimale 0,6 (chat) / 0,7 (autres) ;
+demande d'oubli honorée seulement depuis le chat, bornée à 3 souvenirs (sinon « trop vague », rien d'effacé) ; les
+épisodes (hors photos) perdent jusqu'à 0,08 de score en un an (classement seulement) ; secrets : mots de passe, PIN,
+IBAN, cartes, NIR, clés d'API en plus de nsec/key_hex. BRO dit « je me souviens que… » quand un souvenir nourrit sa
+réponse (`question.py`). Tests : `IA/tests/test_memory_guards.py`.
+
+**GPU partagé (RTX 3090, Ollama + ComfyUI par ipfs p2p)** : `IA/gpu_headroom.py ensure(modèle)` se place AVANT tout appel
+Ollama qui peut charger un modèle. Voie rapide : modèle déjà chargé (`/api/ps`, cache 3 s) ; sinon poids × 1,1 + marge
++ réserve ComfyUI comparés à la VRAM libre de la carte (`/system_stats` de ComfyUI) + modèles Ollama déchargeables ;
+insuffisant et ComfyUI inactif → `/free` ; ComfyUI occupé → attente puis `GpuBusy` (message explicite, jamais de repli
+silencieux ; ComfyUI injoignable = on passe et on journalise). Branché (sens Ollama) sur `question.py`, `memory_manager` (_embed, résumé RÊVE), `embed_config.embed`, `embed.py`,
+`describe_image.py` (attente 300 s), `inventory_recognition`, `bro/tools.py`, `code_assistant`, `a_quoi_ca_sert`,
+`admin/ia_db/codebase_index.py`, `UPassport/services/{ucloud_embed,story_assistant}.py` et les `curl` bash
+(`generate_storyboard.sh`, `bro/nextcloud_bro_sync.sh`, `bro/love_handler.sh`, via `gpu_headroom.py check --model M`,
+code 3 = occupé). SENS INVERSE (`make_room_for_comfy` / `gpu_headroom.py comfy-room --need-gb N`, bash :
+`IA/generators/lib/gpu_room.sh::gpu_make_room N étiquette`) avant tout `POST /prompt` : VRAM totale − VRAM résidente
+d'Ollama ≥ besoin + réserve, sinon les modèles Ollama sont déchargés du plus gros au plus petit (`keep_alive: 0`, après
+leurs requêtes en cours) ; branché sur `generate_image` (12 Go), `generate_video` et `image_to_video` (20), `generate_music`
+(8), `generate_minimax` (2), `apply_lipsync` (10), `generate_transcription` (4), `faceid.sh` (3, revérifié toutes les 30 s
+en lot), `image_to_3dscene.py` (10). ⚠️ Ces besoins sont des estimations PRUDENTES NON MESURÉES (`GPU_NEED_OVERRIDE=<Go>`
+pour un lancement) ; `generate_scene.sh` s'appuie sur ces sous-scripts. Réglages : `GPU_HEADROOM_WAIT/RESERVE_GB/
+MARGIN_GB/ALLOW_COMFY_FREE/ALLOW_OLLAMA_UNLOAD`, `GPU_HEADROOM_OFF=1`. Les `curl` restants non branchés : `ollama.me.sh`
+(c'est lui qui décharge) et tout nouvel appelant — le réflexe : `gpu_headroom.ensure(modèle)` avant d'appeler Ollama,
+`gpu_make_room` avant de soumettre à ComfyUI. **Instrumentation des appels au GPU** (2026-10-20) : `IA/ollama_metrics.py` écrit UNE ligne JSON par appel Ollama dans
+`~/.zen/log/ollama_calls_AAAAMMJJ.jsonl` (gzip > 2 j, purge > 30 j par `20h12.process.sh`) : source (`OLLAMA_SOURCE`, sinon
+contexte `with source(...)`, sinon le script), type (chat|generate|embed|vision|gpu_wait|gpu_busy|comfy_room), modèle, durées
+(`wall_ms`, `load_ms` = chargement du modèle : > 0,5 s = démarrage à froid), jetons, jet/s, contexte, erreur — JAMAIS de
+contenu. Branché sur TOUS les appelants Ollama : `question.py`, `memory_manager`, `embed_config.embed`, `embed.py`,
+`describe_image.py`, `inventory_recognition`, `bro/tools.py`, `code_assistant`, `a_quoi_ca_sert` (ces quatre via
+`ollama_metrics.chat(**kwargs)` = garde-fou VRAM + mesure), `admin/ia_db/codebase_index.py`,
+`UPassport/services/{ucloud_embed,story_assistant}.py`, les scripts bash (`generate_storyboard.sh`,
+`bro/nextcloud_bro_sync.sh` : CLI `python3 IA/ollama_metrics.py record --kind K --model M --wall-ms N --source S <<< "$réponse"`,
+une réponse vide = échec ; `bro/love_handler.sh` : dans son Python) et les évènements de `gpu_headroom` (attente de VRAM, refus,
+déchargements d'Ollama pour ComfyUI). Lecture : `python3 IA/ollama_stats.py [--days N] [--json] [--include-tests]`.
+**Rendu status.html (carte « 🎮 Usage du GPU partagé »)**, mêmes couches que Solaire/Consommation : (1) `20h12.process.sh`
+lance `ollama_stats.py record-daily` (agrège les 3 derniers jours des journaux dans l'historique PERMANENT
+`~/.zen/game/gpu/gpu_history.json`, idempotent) ; (2) `ollama_stats.py publish-cid` épingle l'historique et n'écrit que le CID dans
+`~/.zen/tmp/$IPFSNODEID/GPU/gpu_history.json.ipfs` ; (3) `_12345.sh` expose l'instantané léger `gpu_usage` (jour, 7 jours,
+heures de pointe — `ollama_stats.py gpu-stats`, erreurs dans `~/.zen/log/gpu_stats_12345.log`) et l'intègre au fingerprint
+`NODE_STATE` ; (4) `templates/status.html::renderGpu` : 4 chiffres, graphique par jour (Appels / À froid / Latence / Attentes
+VRAM × 7/30/90/Tout), histogramme des heures d'usage, détail (modèle et source principaux, places faites pour ComfyUI).
+Chaque station n'y voit que SES appels. **Jobs ComfyUI** (kind `comfy`, 2026-10-20) : `gpu_comfy_watch <étiquette> <prompt_id>`
+(`generators/lib/gpu_room.sh`, juste après la soumission à `/prompt`) lance un observateur DÉTACHÉ (`ollama_metrics.py comfy`) qui
+suit `/history/<id>` puis enregistre `exec_ms` (début→fin), `queue_ms` (création→début : l'attente derrière les autres jobs de la
+carte), `wall_ms`, nodes, erreur (`oom: true` si mémoire saturée), `queue_ahead` et `vram_free_gb` au départ — durées issues des
+horodatages du SERVEUR (`create_time`, `execution_start/success`), aucun écart d'horloge. Branché sur `generate_image|video|music|
+minimax`, `image_to_video`, `apply_lipsync`, `generate_transcription`, `image_to_3dscene.py` ; `faceid.sh` (des milliers de jobs de
+~0,35 s) enregistre en ligne par jq (`gpu_comfy_record_inline`, sans processus Python par photo). Erreurs des observateurs :
+`~/.zen/log/comfy_watch.log`. Un job qui n'apparaît jamais est enregistré comme ÉCHEC. La carte affiche jobs, échecs, durée et
+attente en file ; `ollama_stats.py` détaille par étiquette. Un job soumis HORS de ces scripts n'est pas compté. Tests : `IA/tests/test_ollama_metrics.py`,
+`tests/smoke_status_gpu.py` (Playwright, sans GPU). Les tests unitaires posent `OLLAMA_METRICS_OFF=1` : ils n'écrivent
+JAMAIS dans le vrai journal. Premier relevé réel
+(nœud nexus) : démarrage à froid de `bge-m3` ≈ 2,0 s et de `gemma3:12b` ≈ 4,0 s (modèle déchargé après 5 min d'inactivité),
+contre 20 ms et 0,25 s à chaud. Tests : `IA/tests/test_ollama_metrics.py`.
+
+**Contexte et cache KV** : `ensure(modèle, ctx=…)` compte aussi le cache KV du contexte demandé (2 × couches × têtes KV ×
+dimension × 2 octets × jetons, lu dans `/api/show` ; qwen2.5-coder:14b ≈ 192 Ko/jeton → 32 768 jetons ≈ +6 Go sur 9 Go de poids) ;
+un modèle déjà chargé avec un contexte plus petit que celui demandé est RECHARGÉ par Ollama (donc contrôlé, pas la voie
+rapide). `question.py` transmet son `num_ctx`. **`commit.sh`** : appelle `question.py` (donc le garde-fou) avec qwen2.5-coder:14b
+et `AI_CTX=32768` ; un pré-vol unique et visible (`gpu_headroom.py check --ctx`) réduit le contexte à 16 384 puis 8 192 si la
+carte partagée est chargée, ou renonce à l'IA pour l'exécution (message jaune) — sans lui, le refus serait muet (`timeout`
+25-35 s, `2>/dev/null`).
+
+**Même GPU ou non** : le contrôle croisé n'a de sens que si Ollama et ComfyUI sont servis par la MÊME machine. `same_gpu()`
+identifie la machine derrière chaque URL (pair `ipfs p2p` du tunnel via l'API IPFS, sinon cible ssh, sinon « local », sinon
+l'hôte de l'URL) ; machines différentes (stations distinctes de l'essaim) → `ensure`, `make_room_for_comfy` et `wait_idle`
+s'abstiennent. Identité non déterminable → supposé partagé (`GPU_ASSUME_SHARED=0` pour l'inverse) ; déclaration explicite :
+`GPU_SAME_HOST=1|0`, `GPU_OLLAMA_HOST`, `GPU_COMFYUI_HOST`. **Tests et mesures sur GPU partagé** : appels au LLM opt-in
+(`--llm`), un à la fois, espacés (`--pace`, 3 s), seulement si ComfyUI est au repos (`gpu_headroom.paced` / `wait_idle`) ; jamais
+de requêtes parallèles ni de boucles ; les tests unitaires simulent la carte (aucun appel GPU).
+Journal permanent : `~/.zen/log/gpu_headroom_AAAAMMJJ.log`. `gpu_headroom.py status` = VRAM, ComfyUI, modèles chargés.
+Tests : `IA/tests/test_gpu_headroom.py` (cartes simulées).
+
+**Chronométrage** : `IA/bench_memory.py [-n N] [--llm] [--json]` mesure (médiane et p95, en ms) l'écran mémoire, un message
+à BRO, `#rec`, l'apprentissage, le refresh géo et la partie CPU des contacts, en sous-processus (comme UPassport) ET en
+processus ; chaque passage s'ajoute à `~/.zen/log/bench_memory.jsonl` (rotation : 500 lignes, par `20h12.process.sh`)
+pour comparer avant/après. Journaux PERMANENTS : `~/.zen/log/` (jamais `~/.zen/tmp/`, purgé chaque nuit) ; le
+refresh géo écrit `geo_memory_AAAAMMJJ.log` (gzip > 2 j, purge > 30 j).
+
+**Mémoire géolocalisée** (`IA/geo_memory.py`, collection `uplanet_geo`) : simple INDEX reconstruit depuis NOSTR à chaque
+refresh de 20h12 (lancé détaché par `20h12.process.sh`). Publications géolocalisées (kinds 1/1222/1244, tags
+latitude/longitude ou `g`) selon leurs likes distincts hors auteur : ≥1 UMAP, ≥3 SECTOR, ≥12 REGION ; chiffrées, sans
+texte ou contenant un secret = exclues. Aucun fichier local (`short_memory.py` supprimé) ; la collection `knowledge`
+(formation/WoTx²) est retirée en attendant une spécification UX (récupérable via l'historique git).
+`#rec`/`#mem`/`#reset` passent par `memory_manager.py` (upsert-memory / list-memories / delete-all).
+
+Pièges : un import de `bro.*` ou `arbor_chat` relance le process dans le venv (`execv`) — un script lu sur stdin perd
+son entrée, les effets de bord de sa première moitié sont rejoués ; `~/.astro` embarque un vieux `argparse.py` qui masque
+la stdlib (importer `argparse` AVANT `memory_manager`/`question`). Tests : `IA/tests/test_memory_v2.py`,
+`test_embed_config.py`, `test_arbor_memory.py`, `test_geo_memory.py` (`python3 -m unittest tests.<nom>` depuis `IA/`).
+
 ### Data Directory (`~/.zen/`)
 All runtime data lives under `~/.zen/` (not in the repo):
 - `~/.zen/game/players/` - Player data and keys
