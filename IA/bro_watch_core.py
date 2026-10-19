@@ -204,15 +204,15 @@ def learn_personality_from_posts(owner_email, posts, source_label="réseau socia
         _check_and_update_identity(owner_email, content)
         sync_love_profile_from_identity(owner_email)
 
-    # Mémoire sémantique LOVE (love_{hex16}) — matière brute pour le matching
-    # MUSE (résonance poétique, cf. memory_manager.py::love_resonance) et la
-    # recherche contextuelle (_love_query). Ceci reste un JOURNAL de recherche,
-    # pas un profil structuré : aucune duplication avec identity ci-dessus.
-    for text in sample[:5]:  # borné : pas plus de 5 upserts Qdrant par run
-        try:
-            mm.upsert_love_mem(owner_email, text[:400])
-        except Exception:
-            pass
+    # Mémoire sémantique : les posts passent par memory_writer (extraction de souvenirs
+    # atomiques, source « mastodon », toujours PRIVÉS — jamais « love » : la résonance LOVE
+    # cite des extraits à l'autre personne, cf. love_handler.sh). Le run quotidien exige que la
+    # source soit cochée ; le bouton « Régénérer » (force=True) est un geste explicite.
+    try:
+        import memory_writer as _mw
+        _mw.ingest(owner_email, sample[:PERSONALITY_MAX_POSTS], source="mastodon", force=force)
+    except Exception as e:
+        print(f"[BRO_WATCH] Apprentissage mémoire (Mastodon) indisponible pour {owner_email} : {e}")
 
     _save_personality_seen(owner_email, seen)
 
@@ -865,15 +865,34 @@ def _trigger_arbor_self_improve(owner_email):
 
 TOOL_REQUESTS_LOG = os.path.expanduser("~/.zen/flashmem/bro_tool_requests.jsonl")
 
+def _loggable_tool_request(text, reply):
+    """Un message n'entre dans le corpus partagé des demandes (analysé par ARBOR, lisible station-wide) QUE s'il
+    ne contient aucun secret et n'est pas un message machine. Constaté le 2026-10-19 : 24 messages « STORY_KEY_BACKUP »
+    (clé AES en clair) y avaient été journalisés, parce que tout message non reconnu l'était."""
+    try:
+        import memory_manager as _mm
+    except Exception as e:
+        print(f"[BRO_WATCH] garde anti-secret indisponible ({e}) — demande NON journalisée par prudence")
+        return False
+    for t in (text, reply):
+        if t and _mm.unstorable_reason(t):
+            return False
+    head = (text or "").lstrip()
+    return not (head.startswith("{") and head.rstrip().endswith("}"))      # message machine JSON
+
 def _log_tool_request(owner_email, text, reply):
     import time as _time
+    if not _loggable_tool_request(text, reply):
+        return
     entry = {"ts": int(_time.time()), "owner": owner_email, "text": text, "reply": reply}
     try:
         os.makedirs(os.path.dirname(TOOL_REQUESTS_LOG), exist_ok=True)
-        with open(TOOL_REQUESTS_LOG, "a", encoding="utf-8") as f:
+        # 0600 : ce corpus agrège les messages bruts de TOUS les propriétaires de la station
+        fd = os.open(TOOL_REQUESTS_LOG, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        with os.fdopen(fd, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[BRO_WATCH] demande non journalisée : {e}")
 
 _load_arbor_tools_into_registry()
 

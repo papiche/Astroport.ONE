@@ -371,7 +371,9 @@ _handle_bro() {
 
     local -a _cmd=("$MY_PATH/../question.py" "$question"
         --model "gemma3:latest" --ctx 8192 --max-tokens 1024 --npub "$sender")
-    [[ -n "$email" ]] && _cmd+=(--user-id "$email")
+    ## --learn : le DM est déchiffré, l'expéditeur est authentifié → ses mots alimentent SA mémoire
+    ## (source « chat », consentement vérifié par memory_writer.py). Pas sur Telegram/Mastodon/roaming.
+    [[ -n "$email" ]] && _cmd+=(--user-id "$email" --learn)
 
     local answer
     answer=$(python3 "${_cmd[@]}" 2>/dev/null)
@@ -604,7 +606,7 @@ _handle_bro_skill() {
     email=$(_sender_email "$sender")
     local -a _cmd=("$MY_PATH/../question.py" "$question"
         --model "gemma3:latest" --ctx 8192 --max-tokens 2048 --skill "$skill" --npub "$sender")
-    [[ -n "$email" ]] && _cmd+=(--user-id "$email")
+    [[ -n "$email" ]] && _cmd+=(--user-id "$email" --learn)
 
     local answer
     answer=$(python3 "${_cmd[@]}" 2>/dev/null)
@@ -645,14 +647,17 @@ _handle_rec() {
     fi
     _log "💾 #rec DM de ${sender:0:12}... ($email) : ${content:0:60}"
 
-    ## Construire l'event JSON minimal pour short_memory.py
-    local event_json
-    event_json=$(jq -n --arg pub "$sender" --arg msg "$content" '{event: {pubkey: $pub, content: $msg}}')
-
-    if [[ -n "$event_json" ]]; then
-        python3 "$MY_PATH/../short_memory.py" "$event_json" "0" "0" "0" "$email" 2>/dev/null \
-            && _log "💾 Mémorisé ($email)" \
-            || _log "WARN: échec short_memory.py pour $email"
+    ## Directement dans Qdrant (memory_manager, comme bro/tools.py::_persist_memory) : plus de short_memory.py ni de fichier
+    ## local. Refus (mot de passe, clé) ou panne : DITS à l'utilisateur, jamais « Mémorisé » à tort.
+    local rec_out
+    if rec_out=$(python3 "$MY_PATH/../memory_manager.py" upsert-memory --user-id "$email" --content "$content" --kind fact --source rec 2>&1); then
+        _log "💾 Mémorisé ($email)"
+    else
+        _log "WARN: #rec non mémorisé pour $email : ${rec_out: -200}"
+        _send_dm "$sender" \
+            "⚠️ Je n'ai pas pu le mémoriser (refusé s'il ressemble à un mot de passe ou à une clé, ou mémoire indisponible)." \
+            "${_RELAYS[0]}" 2>/dev/null
+        return
     fi
 
     _send_dm "$sender" \
@@ -678,7 +683,8 @@ _handle_mem() {
     fi
 
     local recent_json
-    recent_json=$(python3 "$MY_PATH/../memory_manager.py" recent-slot --user-id "$email" --slot 0 --limit 5 2>/dev/null)
+    ## Tous les souvenirs ACTIFS (appris tout seul + #rec), les plus récents d'abord — pas seulement les #rec (ancien « slot 0 »)
+    recent_json=$(python3 "$MY_PATH/../memory_manager.py" list-memories --user-id "$email" 2>/dev/null | jq -c '.[:8]' 2>/dev/null)
 
     local reply
     if [[ -z "$recent_json" || "$recent_json" == "[]" ]]; then
@@ -710,10 +716,10 @@ _handle_reset() {
         return
     fi
 
-    python3 "$MY_PATH/../memory_manager.py" delete-slot --user-id "$email" --slot 0 >/dev/null 2>&1
-    ## Cache local historique (pré-simplification) — nettoyage défensif, ce
-    ## fichier ne devrait plus jamais être recréé par short_memory.py.
-    rm -f "$HOME/.zen/flashmem/$email/slot0.json" 2>/dev/null
+    ## TOUTE la mémoire du compte (ce que BRO a appris tout seul comme les #rec) — « oublie tout » doit vouloir dire tout.
+    ## Le consentement par source (NOSTR kind 31903) est conservé : seule la mémoire est effacée.
+    python3 "$MY_PATH/../memory_manager.py" delete-all --user-id "$email" >/dev/null \
+        || _log "WARN: #reset incomplet pour $email (voir l'erreur ci-dessus)"
 
     _log "🗑️ #reset ($email)"
     _send_dm "$sender" "🗑️ Mémoire effacée." "${_RELAYS[0]}" 2>/dev/null
@@ -1616,6 +1622,27 @@ _handle_love_dm_event() {
     sender=$(jq -r '.sender // ""' <<< "$decoded" 2>/dev/null)
     payload=$(jq -c '.payload // {}' <<< "$decoded" 2>/dev/null)
     [[ -z "$sender" ]] && return
+
+    ## Apprentissage de la mémoire (source « love_dm », cochée dans Mon compte → NOSTR kind 31903
+    ## d=memory_sources). UNIQUEMENT les mots du PROPRIÉTAIRE : sur une clé LOVE l'expéditeur peut être
+    ## n'importe qui (un candidat à la rencontre) — ses phrases ne sont jamais attribuées à ce compte.
+    ## Le propriétaire s'exprime avec sa clé MULTIPASS (HEX) OU sa clé LOVE (HEX_LOVE) : la clé LOVE est une
+    ## identité fiable (dérivée de la naissance, signée par son porteur) ; l'information qu'elle porte reste un
+    ## espace RELATIF à cette clé sur cette station (la synchro N² ne constitue aucune base globale).
+    ## Seule l'action « ask » (conversation libre) : #rec est déjà mémorisé tel quel par _handle_love_rec.
+    ## memory_writer.py décide seul (consentement, secrets, extraction) ; un refus normal sort en 0.
+    local _owner_hex _owner_love _l_action _l_text
+    _owner_hex=$(cat "$HOME/.zen/game/nostr/${email}/HEX" 2>/dev/null | tr -d '[:space:]')
+    _owner_love=$(cat "$HOME/.zen/game/nostr/${email}/HEX_LOVE" 2>/dev/null | tr -d '[:space:]')
+    ## EN PAUSE (décision de Fred, 2026-10-19 : BRO et ARBOR d'abord) : réactiver avec BRO_LEARN_LOVE_DM=1
+    ## (et MEMORY_ENABLE_LOVE_DM=1 pour memory_writer.py, qui refuse sinon).
+    if [[ "${BRO_LEARN_LOVE_DM:-0}" == "1" && -n "$sender" && ( ( -n "$_owner_hex" && "$sender" == "$_owner_hex" ) || ( -n "$_owner_love" && "$sender" == "$_owner_love" ) ) ]]; then
+        IFS=$'\t' read -r _l_action _l_text <<< "$(jq -r '[.action//"ask", .text//""] | @tsv' <<< "$payload" 2>/dev/null)"
+        if [[ ( -z "$_l_action" || "$_l_action" == "ask" || "$_l_action" == "null" ) && -n "$_l_text" ]]; then
+            timeout 30 python3 "$MY_PATH/../memory_writer.py" enqueue "$email" --source love_dm --text "$_l_text" >/dev/null \
+                || _log "WARN: apprentissage mémoire love_dm échoué pour ${email} (code $?)"
+        fi
+    fi
 
     _LOVE_REPLY_AS="$email"
     _handle_love "$payload" "$sender"

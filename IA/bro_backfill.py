@@ -27,6 +27,9 @@ import hashlib
 import argparse
 import subprocess
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import embed_config   # modèle d'embedding UNIQUE de la plateforme (bge-m3)
+
 BRO_IA_PATH  = os.path.expanduser("~/.zen/Astroport.ONE/IA")
 TOOLS_PATH   = os.path.expanduser("~/.zen/Astroport.ONE/tools")
 NOSTR_DIR    = os.path.expanduser("~/.zen/game/nostr")
@@ -40,8 +43,8 @@ PYTHON_BIN = (os.path.expanduser("~/.astro/bin/python3")
               else "python3")
 
 QDRANT_NETWORK_COLLECTION = "uplanet_network"
-QDRANT_EMBED_MODEL        = "nomic-embed-text"
-QDRANT_VECTOR_SIZE        = 768
+QDRANT_EMBED_MODEL        = embed_config.MODEL
+QDRANT_VECTOR_SIZE        = embed_config.DIM
 QDRANT_HOST               = "localhost"
 QDRANT_PORT               = 6333
 
@@ -107,19 +110,24 @@ def _qdrant_client():
 
 
 def _embed(text):
-    import ollama
-    return ollama.embeddings(model=QDRANT_EMBED_MODEL, prompt=text)["embedding"]
+    return embed_config.embed(text)
 
 
 def _ensure_network_collection():
     from qdrant_client.models import Distance, VectorParams
     client = _qdrant_client()
     existing = [c.name for c in client.get_collections().collections]
-    if QDRANT_NETWORK_COLLECTION not in existing:
-        client.create_collection(
-            collection_name=QDRANT_NETWORK_COLLECTION,
-            vectors_config=VectorParams(size=QDRANT_VECTOR_SIZE, distance=Distance.COSINE),
-        )
+    if QDRANT_NETWORK_COLLECTION in existing:
+        have = client.get_collection(QDRANT_NETWORK_COLLECTION).config.params.vectors.size
+        if have == QDRANT_VECTOR_SIZE:
+            return
+        # Reconstructible (le backfill la régénère depuis les relais) : on la recrée plutôt que de mélanger
+        print(f"[BACKFILL] {QDRANT_NETWORK_COLLECTION} : {have} d ≠ {QDRANT_VECTOR_SIZE} d — recréée")
+        client.delete_collection(QDRANT_NETWORK_COLLECTION)
+    client.create_collection(
+        collection_name=QDRANT_NETWORK_COLLECTION,
+        vectors_config=VectorParams(size=QDRANT_VECTOR_SIZE, distance=Distance.COSINE),
+    )
 
 
 # ─── 1. Fetch own NOSTR posts + reaction counts ────────────────────────────

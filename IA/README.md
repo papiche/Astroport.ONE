@@ -61,7 +61,7 @@ The **#BRO** (or **#BOT**) tag triggers the `UPlanet_IA_Responder.sh` script. On
 
 #### 1. **Input and Setup**
 - The script receives: `pubkey`, `event_id` (trigger message), coordinates, content, optional image URL, KNAME (NOSTR email).
-- It parses all **#tags** once (`#search`, `#image`, `#video`, `#mem`, `#reset`, `#rec2`, `#plantnet`, `#inventory`, `#cookie`, `#pierre`, `#amelie`, `#N` for memory slot, etc.).
+- It parses all **#tags** once (`#search`, `#image`, `#video`, `#mem`, `#reset`, `#plantnet`, `#inventory`, `#cookie`, `#pierre`, `#amelie`, etc.).
 - If an image is attached (URL or event `imeta` tag), a description is generated via `describe_image.py` (LLaVA/MiniCPM-V) and provided to the IA.
 
 #### 2. **Building the Question for the IA**
@@ -93,7 +93,7 @@ The **memory slot** `#N` (1–12) is detected in the message; when present and t
 - **NOSTR reply tags** (content publications only):
   - If the **trigger message is ephemeral** (NIP-40 `expiration` tag): the bot **does not** add an `e` link to that message (it will be deleted). If the trigger is part of a **thread** (root/reply), the `e` tag points to the thread root or parent so the reply stays in the same thread.
   - Otherwise: `e` = trigger event id, `p` = author. Error messages get an `expiration` tag (1h TTL).
-- **#rec2**: When present, the bot’s reply is automatically recorded into the current memory slot.
+- ~~#rec2~~ : supprimé (voir la note plus bas).
 
 #### 5. **Summary**
 - **#BRO** activates the full IA pipeline (memory, search, image, video, music, YouTube, PlantNet, inventory, cookie, TTS, or default conversation).
@@ -106,8 +106,6 @@ The **memory slot** `#N` (1–12) is detected in the message; when present and t
 |---------|-------------|---------|---------|
 | `#rec` | Record message in memory | `#rec #3 Meeting notes` | All users |
 | `#rec #N` | Record in specific slot (1-12) | `#rec #5 Personal reminder` | Sociétaires only |
-| `#rec2` | Auto-record bot response | `#rec2 #3 Ask about meeting` | All users |
-| `#rec2 #N` | Auto-record bot response in slot | `#rec2 #5 Ask for reminder` | Sociétaires only |
 | `#mem` | Show slot 0 memory | `#mem` | All users |
 | `#mem #N` | Show specific slot memory | `#mem #3` | Sociétaires only |
 | `#reset` | Clear slot 0 | `#reset` | All users |
@@ -204,7 +202,7 @@ All AI replies are now sent as private NIP-44 DMs by default (see §4 above) —
         │   ├─► #N → Display slot N               │                                            │   └─► Workflow engine
         │   └─► (default) → Display slot 0        ├─► #image                                   │
         │                                          │   └─► ComfyUI generate_image.sh           ├─► #pierre / #amelie
-        └─► #rec2                                  │       └─► → IPFS URL                      │   └─► Orpheus TTS
+        └─► (#rec2 supprimé)                       │       └─► → IPFS URL                      │   └─► Orpheus TTS
             └─► Auto-save bot response            │                                            │       └─► → Audio URL
                 in memory                          ├─► #video ─────────────────────┐           │
                                                    │                               │           └─► (default)
@@ -264,7 +262,6 @@ All AI replies are now sent as private NIP-44 DMs by default (see §4 above) —
 | `#reset` | Clear slot 0 memory | - | Confirmation | - |
 | `#reset #N` | Clear slot N memory | - | Confirmation | Sociétaire (1-12) |
 | `#reset #all` | Clear all slots (0-12) | - | Confirmation | Sociétaire |
-| `#rec2` | Auto-save bot response | `short_memory.py` | - | - |
 | `#cookie` | uDRIVE/Cookies delegation | MiroFish / Dify | Message uDRIVE path | - |
 | `#secret` | Also hide trigger message from public relay | - | - | - |
 | `#N` (1-12) | Use memory slot N | - | Context | Sociétaire |
@@ -379,6 +376,11 @@ The 12-slot system allows you to organize conversations by context:
 - **Slot 10**: Financial planning - **Sociétaires only**
 - **Slot 11**: Family matters - **Sociétaires only**
 - **Slot 12**: Hobbies & interests - **Sociétaires only**
+
+> **2026-10-19 — `#rec2` et `short_memory.py` sont SUPPRIMÉS.** BRO ne mémorise jamais ses propres réponses (une hallucination
+> mémorisée devient un « souvenir » que le modèle répète), et plus rien n'est écrit sur le disque local : la mémoire personnelle est dans
+> Qdrant (`memory_<hex>`), apprise automatiquement (`memory_writer.py`) ; `#rec <texte>` écrit directement un souvenir. Les passages
+> ci-dessous sur `#rec2` et les slots numérotés sont historiques.
 
 ### Memory Recording Types
 

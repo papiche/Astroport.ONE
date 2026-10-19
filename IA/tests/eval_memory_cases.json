@@ -1,0 +1,299 @@
+{
+  "seed": [
+    {
+      "id": "noix",
+      "text": "Est allergique aux noix",
+      "kind": "fact"
+    },
+    {
+      "id": "camille",
+      "text": "Sa fille Camille a 8 ans et adore dessiner",
+      "kind": "person"
+    },
+    {
+      "id": "antoine",
+      "text": "Son frère Antoine vit à Montréal",
+      "kind": "person"
+    },
+    {
+      "id": "jazz",
+      "text": "Aime le jazz manouche et joue de la guitare",
+      "kind": "trait"
+    },
+    {
+      "id": "velo",
+      "text": "Se déplace à vélo pour aller travailler",
+      "kind": "fact"
+    },
+    {
+      "id": "conf",
+      "text": "Prépare une conférence sur les monnaies libres pour mars",
+      "kind": "episode",
+      "age_days": 20
+    },
+    {
+      "id": "vieux",
+      "text": "A visité Lisbonne pendant une semaine",
+      "kind": "episode",
+      "age_days": 700
+    },
+    {
+      "id": "potager",
+      "text": "Cultive des tomates et des courgettes dans son potager",
+      "kind": "fact"
+    },
+    {
+      "id": "tutoie",
+      "text": "Préfère être tutoyé et aime les réponses courtes",
+      "kind": "trait"
+    },
+    {
+      "id": "nounou",
+      "text": "Cherche une nounou pour le mercredi",
+      "kind": "fact"
+    }
+  ],
+  "obsolete": [
+    {
+      "text": "Habite à Lyon",
+      "status": "superseded"
+    },
+    {
+      "text": "Travaille chez un opérateur télécom comme comptable",
+      "status": "superseded"
+    },
+    {
+      "text": "Possède un chien nommé Rex",
+      "status": "deleted"
+    }
+  ],
+  "recall": [
+    {
+      "q": "Qu'est-ce que je ne dois pas manger ?",
+      "expect": [
+        "noix"
+      ]
+    },
+    {
+      "q": "Quel âge a ma fille ?",
+      "expect": [
+        "camille"
+      ]
+    },
+    {
+      "q": "Mon frère habite où déjà ?",
+      "expect": [
+        "antoine"
+      ]
+    },
+    {
+      "q": "Quelle musique me ferait plaisir pour mon anniversaire ?",
+      "expect": [
+        "jazz"
+      ]
+    },
+    {
+      "q": "Comment je vais au bureau ?",
+      "expect": [
+        "velo"
+      ]
+    },
+    {
+      "q": "Où en est la préparation de mon intervention publique ?",
+      "expect": [
+        "conf"
+      ]
+    },
+    {
+      "q": "Quels légumes pousseraient bien chez moi ?",
+      "expect": [
+        "potager"
+      ]
+    },
+    {
+      "q": "Comment veux-tu que tu me parles ?",
+      "expect": [
+        "tutoie"
+      ]
+    },
+    {
+      "q": "Qui peut garder les enfants en semaine ?",
+      "expect": [
+        "nounou",
+        "camille"
+      ]
+    },
+    {
+      "q": "Où suis-je allé en voyage ?",
+      "expect": [
+        "vieux"
+      ]
+    }
+  ],
+  "off_topic": [
+    "Quelle est la capitale de l'Australie ?",
+    "Écris un poème sur la mer",
+    "Comment fonctionne un moteur à explosion ?",
+    "Traduis « bonjour » en japonais"
+  ],
+  "must_not_return": [
+    "Habite à Lyon",
+    "opérateur télécom",
+    "chien nommé Rex"
+  ],
+  "tombstone": {
+    "forgotten": "Sa fille Camille a peur des araignées",
+    "paraphrases": [
+      "Camille, sa fille, a la phobie des araignées",
+      "Sa fille Camille craint les araignées"
+    ],
+    "unrelated_same_person": [
+      "Sa fille Camille adore dessiner",
+      "Son frère Antoine vit à Montréal",
+      "Est allergique aux noix"
+    ]
+  },
+  "secrets": {
+    "refuse": [
+      "Mon mot de passe est Tr0ub4dor&3xx",
+      "mdp : azerty123456",
+      "Le code PIN de ma carte est 4821",
+      "Mon IBAN est FR76 3000 6000 0112 3456 7890 189",
+      "Ma carte bancaire : 4532 0151 1283 0366",
+      "Mon numéro de sécu est 2 85 03 75 116 214 32",
+      "nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+      "STORY_KEY_BACKUP:{\"key_hex\":\"ab12\"}",
+      "-----BEGIN PRIVATE KEY----- MIIEvQIBADANBg",
+      "Ma clé d'API est sk-abcdefghijklmnopqrstuvwx",
+      "the password is hunter2hunter2"
+    ],
+    "accept": [
+      "Est allergique aux noix",
+      "A rendez-vous le 2026-10-23 à 14h chez le dentiste",
+      "Habite au 12 rue des Lilas",
+      "Son numéro de téléphone fixe ne change jamais, elle déteste les mots de passe compliqués",
+      "Aime les secrets de famille racontés en soirée",
+      "A couru 21 kilomètres en 1 h 50",
+      "Fête ses 40 ans le 12 mars 2027"
+    ]
+  },
+  "extraction": [
+    {
+      "name": "préférences et proches",
+      "source": "chat",
+      "messages": [
+        "Je suis végétarien depuis 5 ans et ma sœur Léa vient dîner samedi",
+        "Ma fille Inès a une allergie aux arachides"
+      ],
+      "expect_any": [
+        [
+          "végétarien"
+        ],
+        [
+          "Léa"
+        ],
+        [
+          "Inès",
+          "arachides"
+        ]
+      ],
+      "forbid": []
+    },
+    {
+      "name": "questions et demandes ponctuelles",
+      "source": "chat",
+      "messages": [
+        "Quel temps fera-t-il demain à Paris ?",
+        "Traduis cette phrase en anglais : le chat dort",
+        "Merci beaucoup, c'est gentil"
+      ],
+      "expect_any": [],
+      "forbid": [
+        "Paris",
+        "chat",
+        "anglais",
+        "Merci"
+      ]
+    },
+    {
+      "name": "secret dans un message",
+      "source": "chat",
+      "messages": [
+        "Note pour plus tard : mon mot de passe wifi est Kiwi-Banane-2026-xyz et je suis allergique aux crevettes"
+      ],
+      "expect_any": [
+        [
+          "crevette"
+        ]
+      ],
+      "forbid": [
+        "Kiwi",
+        "Banane",
+        "mot de passe"
+      ]
+    },
+    {
+      "name": "tiers et rumeurs",
+      "source": "chat",
+      "messages": [
+        "Mon voisin dit que le maire est corrompu, je ne sais pas si c'est vrai"
+      ],
+      "expect_any": [],
+      "forbid": [
+        "corrompu"
+      ]
+    },
+    {
+      "name": "publication passive peu informative",
+      "source": "nostr_public",
+      "messages": [
+        "gm ☕ belle journée à tous, que la force soit avec vous !"
+      ],
+      "expect_any": [],
+      "forbid": [
+        "gm",
+        "force"
+      ]
+    }
+  ],
+  "corrections": [
+    {
+      "name": "déménagement",
+      "seed": "Habite à Lyon",
+      "message": "Non, je n'habite plus à Lyon, j'habite à Bordeaux maintenant",
+      "expect_active": [
+        "Bordeaux"
+      ],
+      "expect_inactive": [
+        "Lyon"
+      ]
+    },
+    {
+      "name": "oubli demandé",
+      "seed": "Sa fille Camille a peur des araignées",
+      "message": "Oublie ce que je t'ai dit sur la peur des araignées de Camille",
+      "expect_active": [
+        "noix",
+        "nounou",
+        "Bordeaux"
+      ],
+      "expect_inactive": [
+        "araignées"
+      ],
+      "note": "aucun dégât collatéral : seule la peur des araignées disparaît"
+    }
+  ],
+  "thresholds": {
+    "recall_hit_at_3": 0.85,
+    "off_topic_false_recall": 0.1,
+    "obsolete_leaks": 0,
+    "tombstone_paraphrase_blocked": 1.0,
+    "tombstone_unrelated_blocked": 0.0,
+    "secrets_refused": 1.0,
+    "secrets_false_positive": 0.0,
+    "protection_checks": 1.0,
+    "extraction_expected_found": 0.8,
+    "extraction_false_memories": 0,
+    "corrections_ok": 1.0
+  }
+}

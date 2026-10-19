@@ -44,7 +44,7 @@
 # - #mem : Afficher les mémoires récentes (mémoire unique par MULTIPASS,
 #   retrouvée par pertinence sémantique Qdrant — plus de slots numérotés)
 # - #rec <texte> : Enregistrer le message dans la mémoire IA
-# - #rec2 : Enregistrer automatiquement la réponse du bot dans la mémoire IA
+# - (#rec2 supprimé : BRO ne mémorise JAMAIS ses propres réponses — une hallucination mémorisée devient un « souvenir »)
 # - #reset : Effacer la mémoire
 # - #pierre : Synthèse vocale avec la voix Pierre (Orpheus TTS)
 # - #amelie : Synthèse vocale avec la voix Aurélie (Orpheus TTS)
@@ -400,7 +400,6 @@ TAGS[music]=false
 TAGS[youtube]=false
 TAGS[pierre]=false
 TAGS[amelie]=false
-TAGS[rec2]=false
 # TAGS[all] supprimé (simplification 2026-10) — plus de slots 1-12 à viser
 # "tous ensemble", une seule mémoire par MULTIPASS désormais.
 TAGS[plantnet]=false
@@ -424,7 +423,7 @@ if [[ "$message_text" =~ \#reset ]]; then TAGS[reset]=true; fi
 # #mem mais pas #mem: (mémoire de compétence partagée — canal DM direct à
 # NODE via bro_dm_daemon.sh uniquement, pas ce script, voir plus bas)
 if [[ "$message_text" =~ \#mem([^:]|$) ]]; then TAGS[mem]=true; fi
-# #rec mais pas #rec2 (auto-record réponse bot) ni #rec: (idem #mem: ci-dessus)
+# #rec mais pas #rec: (idem #mem: ci-dessus)
 if [[ "$message_text" =~ \#rec([^0-9:]|$) ]]; then TAGS[rec]=true; fi
 if [[ "$message_text" =~ \#search ]]; then TAGS[search]=true; fi
 if [[ "$message_text" =~ \#image ]]; then TAGS[image]=true; fi
@@ -432,7 +431,6 @@ if [[ "$message_text" =~ \#music ]]; then TAGS[music]=true; fi
 if [[ "$message_text" =~ \#youtube ]]; then TAGS[youtube]=true; fi
 if [[ "$message_text" =~ \#pierre ]]; then TAGS[pierre]=true; fi
 if [[ "$message_text" =~ \#amelie ]]; then TAGS[amelie]=true; fi
-if [[ "$message_text" =~ \#rec2 ]]; then TAGS[rec2]=true; fi
 if [[ "$message_text" =~ \#plantnet ]]; then TAGS[plantnet]=true; fi
 if [[ "$message_text" =~ \#cookie ]]; then TAGS[cookie]=true; fi
 if [[ "$message_text" =~ \#inventory ]]; then TAGS[inventory]=true; fi
@@ -936,12 +934,12 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
     if [[ -n "$KeyANSWER" ]]; then
         : # #mem:<skill>/#rec:<skill> déjà traité ci-dessus
     elif [[ "${TAGS[reset]}" == true ]]; then
-        $MY_PATH/memory_manager.py delete-slot --user-id "$user_id" --slot 0 >/dev/null 2>&1
-        rm -f "$HOME/.zen/flashmem/${user_id}/slot0.json" 2>/dev/null
+        # TOUTE la mémoire du compte (apprise + #rec), comme les autres canaux
+        $MY_PATH/memory_manager.py delete-all --user-id "$user_id" >/dev/null || echo "WARN: #reset incomplet pour $user_id" >&2
         echo "Memory reset for USER: $user_id"
         KeyANSWER="🗑️ Mémoire effacée."
     elif [[ "${TAGS[mem]}" == true ]]; then
-        recent_json=$($MY_PATH/memory_manager.py recent-slot --user-id "$user_id" --slot 0 --limit 5 2>/dev/null)
+        recent_json=$($MY_PATH/memory_manager.py list-memories --user-id "$user_id" 2>/dev/null | jq -c '.[:8]' 2>/dev/null)
         if [[ -z "$recent_json" || "$recent_json" == "[]" ]]; then
             KeyANSWER="Aucune mémoire enregistrée. Utilisez #rec <texte> pour mémoriser."
         else
@@ -951,15 +949,20 @@ ${mem_lines}"
         fi
     elif [[ "${TAGS[rec]}" == true ]]; then
         # Mémorise le message de L'UTILISATEUR (jamais la réponse du bot — voir
-        # #rec2 pour ça) : même sémantique que bro_watch_core.py::_tool_rec et
+        # #rec2, supprimé) : même sémantique que bro_watch_core.py::_tool_rec et
         # bro_dm_daemon.sh::_handle_rec, pour que "#rec" fasse la même chose
         # quel que soit le canal utilisé pour le taper.
         rec_content=$(echo "$message_text" | sed -E 's/#BOT//g; s/#BRO//g; s/#rec\b//g' | xargs)
         if [[ -n "$rec_content" ]]; then
-            rec_event_json=$(jq -n --arg pubkey "$PUBKEY" --arg content "$rec_content" '{"event":{"pubkey":$pubkey,"content":$content}}')
-            $MY_PATH/short_memory.py "$rec_event_json" "$LAT" "$LON" "0" "$user_id"
-            echo "Memory #rec saved for USER: $user_id"
-            KeyANSWER="💾 Mémorisé (${#rec_content} caractères)."
+            # Directement dans Qdrant (memory_manager), comme bro/tools.py::_persist_memory : plus de short_memory.py ni de
+            # fichier local. Une erreur n'est jamais masquée : refus (secret) ou panne se disent à l'utilisateur.
+            if rec_out=$($MY_PATH/memory_manager.py upsert-memory --user-id "$user_id" --content "$rec_content" --kind fact --source rec 2>&1); then
+                echo "Memory #rec saved for USER: $user_id"
+                KeyANSWER="💾 Mémorisé (${#rec_content} caractères)."
+            else
+                echo "Memory #rec FAILED for USER: $user_id : $rec_out" >&2
+                KeyANSWER="⚠️ Je n'ai pas pu le mémoriser (refusé s'il ressemble à un mot de passe ou à une clé, ou mémoire indisponible)."
+            fi
         else
             KeyANSWER="🤔 Dites-moi quoi mémoriser, par exemple « #BRO #rec j'aime le jardinage »."
         fi
@@ -2042,13 +2045,6 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
                 echo "PlantNet: Cleaning up temporary UMAP keyfile: $UMAP_KEYFILE" >&2
                 rm -f "$UMAP_KEYFILE"
             fi
-        fi
-        
-        ## AUTO-RECORD BOT RESPONSE if #rec2 is present
-        if [[ "${TAGS[rec2]}" == true && -n "$user_id" ]]; then
-            echo "Auto-recording bot response for USER: $user_id"
-            bot_event_json='{"event":{"id":"dm_bot_response_'$CURRENT_TIMESTAMP'","content":"'"$KeyANSWER"'","pubkey":"'"$UMAPHEX"'","created_at":'$CURRENT_TIMESTAMP'}}'
-            $MY_PATH/short_memory.py "$bot_event_json" "$LAT" "$LON" "0" "$user_id"
         fi
     fi
 fi

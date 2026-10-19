@@ -1888,6 +1888,25 @@ ${tva_result}"
                 echo "ERROR: ${UCLOUD_DAILY_PY} introuvable — installation UPassport incomplète" >&2
             fi
         fi
+        ## ── Mémoire de BRO : sources passives (IA/memory_sources.py) ─────────────────────────────────────
+        ## Lit, SI la personne les a cochées (NOSTR kind 31903 d=memory_sources), ses publications NOSTR
+        ## (kinds 1 et 30023) et ses événements photo, et les met en file d'apprentissage (memory_writer.py).
+        ## Un passage par jour et par compte ; le script décide seul des sources actives (aucune cochée = sort aussitôt).
+        ## ⚠️ Même règle que ucloud_daily ci-dessus : processus AUTONOME (setsid, sans le verrou 200 hérité) —
+        ## jamais un sous-shell « ( … ) & » dont la ligne de commande garderait « NOSTRCARD.refresh.sh » des heures.
+        MEMORY_SOURCES_TODAY_FILE="$HOME/.zen/tmp/memory_sources_${PLAYER}_${TODATE}.done"
+        MEMORY_SOURCES_PY="${MY_PATH}/../IA/memory_sources.py"
+        if [[ ! -f "$MEMORY_SOURCES_TODAY_FILE" ]]; then
+            touch "$MEMORY_SOURCES_TODAY_FILE"        # d'abord : un traitement long ou planté ne se relance pas dans la journée
+            if [[ -f "$MEMORY_SOURCES_PY" ]]; then
+                setsid nohup python3 "$MEMORY_SOURCES_PY" all "${PLAYER}" >> "$HOME/.zen/tmp/memory_sources_${PLAYER}.log" 2>&1 < /dev/null 200>&- &
+                log "INFO" "🧠 sources de mémoire BRO lancées pour ${PLAYER} (PID: $!, journal memory_sources_${PLAYER}.log)"
+            else
+                ## Défaut d'installation : on le DIT (pas de repli silencieux).
+                log "ERROR" "❌ ${MEMORY_SOURCES_PY} introuvable : mémoire passive de BRO impossible pour ${PLAYER}"
+                echo "ERROR: ${MEMORY_SOURCES_PY} introuvable" >&2
+            fi
+        fi
     else
         echo "IPNS update skipped for ${PLAYER} (no refresh needed)"
     fi

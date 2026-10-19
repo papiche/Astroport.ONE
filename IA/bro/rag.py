@@ -27,11 +27,15 @@ QDRANT_PORT = 6333
 
 QDRANT_TOPICS_COLLECTION = "bro_watch_topics"
 
-QDRANT_EMBED_MODEL = "nomic-embed-text"
+import embed_config   # modèle + seuils UNIQUES de la plateforme (bge-m3, mesurés — voir embed_config.py)
 
-QDRANT_VECTOR_SIZE = 768
+QDRANT_EMBED_MODEL = embed_config.MODEL
 
-SEMANTIC_THRESHOLD = 0.70  # calibré empiriquement (nomic-embed-text a un plancher élevé ~0.5-0.6 même hors-sujet)
+QDRANT_VECTOR_SIZE = embed_config.DIM
+
+# Seuil rubrique de veille (texte d'un post ↔ mots-clés). L'ancien 0,70 (calibré pour nomic) ne retrouvait
+# que 4 posts pertinents sur 15 ; bge-m3 à 0,46 en retrouve 14 sur 15 (2 faux positifs sur 20).
+SEMANTIC_THRESHOLD = embed_config.threshold("topic")
 
 def _qdrant_client():
     import warnings
@@ -51,9 +55,23 @@ def _qdrant_client():
                              api_key=api_key, check_compatibility=False)
 
 def _qdrant_embed(text):
-    import ollama
-    resp = ollama.embeddings(model=QDRANT_EMBED_MODEL, prompt=text)
-    return resp["embedding"]
+    """Vecteur du texte (embed_config.embed) — lève une erreur claire plutôt qu'un vecteur vide ou de
+    mauvaise dimension (qui corromprait une collection ou donnerait un faux « aucun résultat »)."""
+    return embed_config.embed(text)
+
+def _ensure_derived_collection(client, name):
+    """Crée la collection ; si elle existe avec une AUTRE dimension (changement de modèle d'embedding), la
+    RECRÉE — réservé aux collections reconstructibles (routage d'intention, rubriques de veille), jamais à
+    la mémoire de l'utilisateur."""
+    from qdrant_client.models import Distance, VectorParams
+    if name in [c.name for c in client.get_collections().collections]:
+        have = client.get_collection(name).config.params.vectors.size
+        if have == QDRANT_VECTOR_SIZE:
+            return
+        print(f"[BRO_WATCH] collection {name} : {have} d ≠ {QDRANT_VECTOR_SIZE} d ({QDRANT_EMBED_MODEL}) — recréée (reconstructible)")
+        client.delete_collection(name)
+    client.create_collection(collection_name=name,
+                             vectors_config=VectorParams(size=QDRANT_VECTOR_SIZE, distance=Distance.COSINE))
 
 def _cosine(a, b):
     dot = sum(x * y for x, y in zip(a, b))
@@ -73,18 +91,13 @@ def semantic_match(owner_email, account, channel, entry, text, threshold=SEMANTI
     if not topic_text:
         return False
     try:
-        from qdrant_client.models import Distance, VectorParams, PointStruct
+        from qdrant_client.models import PointStruct
 
         client = _qdrant_client()
-        existing_collections = [c.name for c in client.get_collections().collections]
-        if QDRANT_TOPICS_COLLECTION not in existing_collections:
-            client.create_collection(
-                collection_name=QDRANT_TOPICS_COLLECTION,
-                vectors_config=VectorParams(size=QDRANT_VECTOR_SIZE, distance=Distance.COSINE),
-            )
+        _ensure_derived_collection(client, QDRANT_TOPICS_COLLECTION)
 
         point_id = _topic_point_id(owner_email, account, channel)
-        topic_hash = hashlib.sha256(topic_text.encode()).hexdigest()
+        topic_hash = hashlib.sha256(f"{QDRANT_EMBED_MODEL}:{topic_text}".encode()).hexdigest()
 
         existing = client.retrieve(collection_name=QDRANT_TOPICS_COLLECTION, ids=[point_id],
                                     with_payload=True, with_vectors=True)
@@ -111,7 +124,11 @@ def semantic_match(owner_email, account, channel, entry, text, threshold=SEMANTI
 
 QDRANT_INTENT_COLLECTION = "bro_intent_routing"
 
-INTENT_MARGIN_THRESHOLD = 0.05
+# Marge de routage (meilleur positif − meilleur négatif partagé). Mesuré sur 30 paraphrases + 30 phrases
+# courantes (dont des faux amis : « retiens la porte », « mes souvenirs d'enfance »…) : nomic au seuil
+# historique 0,05 = 13 commandes reconnues et 9 faux positifs ; bge-m3 à 0,13 = 21 reconnues, 3 faux positifs.
+# Les #tags explicites restent la voie fiable ; ceci n'est que le repli en langage naturel.
+INTENT_MARGIN_THRESHOLD = embed_config.threshold("intent_margin")
 
 INTENT_SHARED_NEGATIVES = [
     "à quels outils as-tu accès ?",
@@ -136,15 +153,10 @@ def _seed_intent_corpus():
     Appelé paresseusement au premier match_intent() — pas de coût au
     chargement du module, dégradation silencieuse si Qdrant/Ollama
     indisponible."""
-    from qdrant_client.models import Distance, VectorParams, PointStruct
+    from qdrant_client.models import PointStruct
 
     client = _qdrant_client()
-    existing_collections = [c.name for c in client.get_collections().collections]
-    if QDRANT_INTENT_COLLECTION not in existing_collections:
-        client.create_collection(
-            collection_name=QDRANT_INTENT_COLLECTION,
-            vectors_config=VectorParams(size=QDRANT_VECTOR_SIZE, distance=Distance.COSINE),
-        )
+    _ensure_derived_collection(client, QDRANT_INTENT_COLLECTION)
 
     points = []
     for target, ex in bro_tools.iter_examples():
@@ -207,24 +219,25 @@ BRO_PERSONA_SLOT = 14   # traits de style/expertise extraits par bro_backfill.py
 # (#love_rec), fusionnés dans cette même mémoire personnelle memory_{hex16}
 # plutôt qu'une collection dédiée, mais toujours filtrables séparément.
 
-PERSONA_RECALL_THRESHOLD = 0.65
+PERSONA_RECALL_THRESHOLD = embed_config.threshold("recall")   # inutilisé : memory_manager applique RECALL_THRESHOLD
 
 QDRANT_NETWORK_COLLECTION = "uplanet_network"
 
-NETWORK_RECALL_THRESHOLD = 0.60
+NETWORK_RECALL_THRESHOLD = embed_config.threshold("doc")
 
-MEMORY_RECALL_THRESHOLD = 0.72
+MEMORY_RECALL_THRESHOLD = embed_config.threshold("recall")   # inutilisé : memory_manager applique RECALL_THRESHOLD
 
 def _recall_relevant_memories(owner_email, text, limit=3):
-    """Recherche sémantique dans la mémoire self-DM (Qdrant, memory_manager.py).
-    Dégradation silencieuse (chaîne vide) si Qdrant/Ollama indisponible — ne
-    doit jamais bloquer la réponse à l'utilisateur."""
+    """Souvenirs actifs du compte proches de `text` (Qdrant, memory_manager.py) : faits,
+    épisodes, proches — pas les traits de style, servis à part par _recall_persona. Seuil =
+    RECALL_THRESHOLD du modèle d'embedding (bge-m3). Dégradation silencieuse (chaîne vide)
+    si Qdrant/Ollama indisponible — ne doit jamais bloquer la réponse à l'utilisateur."""
     try:
         import sys
         sys.path.insert(0, BRO_IA_PATH)
         import memory_manager as mm
-        results = mm.search_user_slot(owner_email, text, slots=[BRO_MEMORY_SLOT], limit=limit,
-                                       score_threshold=MEMORY_RECALL_THRESHOLD)
+        results = mm.search_user_slot(owner_email, text, limit=limit,
+                                       kinds=["fact", "episode", "person"])
     except Exception:
         return ""
     facts = [r.get("payload", {}).get("content", "") for r in results]
@@ -232,46 +245,29 @@ def _recall_relevant_memories(owner_email, text, limit=3):
     return "\n".join(f"- {f}" for f in facts)
 
 def _remember_exchange(owner_email, text, answer):
-    """Persiste EN MÉMOIRE UNIQUEMENT le message du propriétaire (fait
-    épisodique local + Qdrant sémantique — memory_manager.py, BRO_MEMORY_SLOT).
-    Ne mémorise volontairement PAS la réponse de BRO : un incident réel
-    (2026-07-03) a montré qu'une hallucination une fois répondue ("je ne
-    peux pas reconnaître d'images") devient, rappelée comme "souvenir
-    pertinent" au tour suivant, une fausse vérité que le LLM répète docilement
-    — même quand le contexte réel (ex: description d'image fraîche) est
-    présent dans le MÊME prompt juste après. Mémoriser uniquement ce que
-    l'utilisateur a dit élimine cette boucle de rétroaction. Déclenche le
-    cycle RÊVE (compression épisodique → sémantique) au-delà du seuil.
-    Dégradation silencieuse : ne doit jamais faire échouer la réponse.
-
-    Simplification 2026-10 : Qdrant seule source de vérité (plus de fichier
-    ~/.zen/flashmem/{owner_email}/slot{BRO_MEMORY_SLOT}.json local) — le
-    compte de points Qdrant remplace le compte de messages du JSON comme
-    garde avant d'invoquer le cycle RÊVE."""
+    """Met le message du propriétaire en file d'apprentissage (memory_writer.py) : un
+    process détaché en tire des souvenirs atomiques (faits, proches, projets), sans doublon
+    ni contradiction — plus de message brut stocké tel quel (un 'bonjour' ou un message
+    machine n'est pas un souvenir ; un STORY_KEY_BACKUP y avait fini avec sa clé AES).
+    Ne mémorise volontairement PAS la réponse de BRO : un incident réel (2026-07-03) a
+    montré qu'une hallucination mémorisée devient un « souvenir » que le LLM répète.
+    Source « chat » : cochée par défaut, décochable dans Mon compte. Jamais bloquant."""
     try:
-        from datetime import datetime
-        content = text
-        ts = datetime.utcnow().isoformat() + "Z"
-
         import sys
         sys.path.insert(0, BRO_IA_PATH)
-        import memory_manager as mm
-        ok = mm.upsert_user_slot(owner_email, BRO_MEMORY_SLOT, content, timestamp=ts)
-        if ok and mm.count_user_slot(owner_email, BRO_MEMORY_SLOT) >= 170:
-            mm.reve_compress_slot(owner_email, BRO_MEMORY_SLOT)
+        import memory_writer as mw
+        mw.ingest(owner_email, [text], source="chat")
     except Exception as e:
-        print(f"[BRO_WATCH] Mémoire self-DM indisponible pour {owner_email} : {e}")
+        print(f"[BRO_WATCH] Apprentissage mémoire indisponible pour {owner_email} : {e}")
 
 def _recall_persona(owner_email, query="style communication opinion expertise", limit=2):
-    """Recherche sémantique dans les traits de persona du propriétaire (slot 14,
-    alimenté par bro_backfill.py). Retourne une chaîne formatée ou '' si vide /
-    Qdrant indisponible."""
+    """Traits de style / d'expertise du propriétaire (souvenirs de type « trait »).
+    Retourne une chaîne formatée ou '' si vide / Qdrant indisponible."""
     try:
         import sys as _sys
         _sys.path.insert(0, BRO_IA_PATH)
         import memory_manager as mm
-        results = mm.search_user_slot(owner_email, query, slots=[BRO_PERSONA_SLOT],
-                                       limit=limit, score_threshold=PERSONA_RECALL_THRESHOLD)
+        results = mm.search_user_slot(owner_email, query, kinds=["trait"], limit=limit)
         traits = [r.get("payload", {}).get("content", "") for r in results]
         traits = [t for t in traits if t]
         return " | ".join(traits)
@@ -279,18 +275,22 @@ def _recall_persona(owner_email, query="style communication opinion expertise", 
         return ""
 
 def _recall_network_profile(username, limit=1):
-    """Recherche sémantique dans les fiches interlocuteurs (collection Qdrant
-    uplanet_network, alimentée par bro_backfill.py). Retourne la fiche texte
-    ou '' si pas de match / Qdrant indisponible."""
+    """Fiche d'un interlocuteur (collection Qdrant uplanet_network, alimentée par bro_backfill.py).
+    EXACT d'abord : le point a pour identifiant sha256("<pseudo>@nostr") (bro_backfill) — aucune
+    approximation quand le pseudo est connu. Repli sémantique seulement ensuite (la requête est mise au
+    même format que ce qui est stocké : « pseudo (nostr) »). '' si rien / Qdrant indisponible."""
     if not username:
         return ""
     clean = username.lstrip("@").split("@")[0]   # "alice" depuis "@alice@mastodon.social"
     try:
         client = _qdrant_client()
-        vec = _qdrant_embed(clean)
+        point_id = int(hashlib.sha256(f"{clean}@nostr".encode()).hexdigest()[:15], 16) % (2 ** 63)
+        found = client.retrieve(collection_name=QDRANT_NETWORK_COLLECTION, ids=[point_id], with_payload=True)
+        if found:
+            return found[0].payload.get("fiche", "")
         hits = client.query_points(
             collection_name=QDRANT_NETWORK_COLLECTION,
-            query=vec,
+            query=_qdrant_embed(f"{clean} (nostr)"),
             limit=limit,
             score_threshold=NETWORK_RECALL_THRESHOLD,
         ).points
@@ -301,15 +301,13 @@ def _recall_network_profile(username, limit=1):
     return ""
 
 def _forget_memory(owner_email):
-    """#oublie — efface la mémoire self-DM (points Qdrant du slot dédié,
-    seule source de vérité). Contrôle explicite de l'utilisateur sur sa
-    propre mémoire, symétrique au #reset de la mémoire personnelle
-    (bro_dm_daemon.sh)."""
+    """#oublie — efface ce que BRO a appris de ses échanges (souvenirs de source « chat » ;
+    le reste — posts, photos, LOVE — s'efface depuis « Ce que BRO sait de moi »)."""
     try:
         import sys
         sys.path.insert(0, BRO_IA_PATH)
         import memory_manager as mm
-        mm.delete_user_slot(owner_email, BRO_MEMORY_SLOT)
+        mm.delete_by_source(owner_email, "chat")
     except Exception:
         pass
     return "🗑️ Mémoire de nos échanges effacée."

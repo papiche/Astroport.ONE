@@ -294,7 +294,7 @@ cmd_list() {
         hex=$(cat "${NOSTR_DIR}/${email}/HEX" 2>/dev/null)
         if [[ -n "$hex" ]]; then
             local nostr_event
-            nostr_event=$(bash "$NOSTR_GET_EVENTS" --kind $COOKIE_KIND --author "$hex" --limit 1 2>/dev/null)
+            nostr_event=$(bash "$NOSTR_GET_EVENTS" --kind $COOKIE_KIND --tag-d cookies --author "$hex" --limit 1 2>/dev/null)
             if [[ -n "$nostr_event" && "$nostr_event" != "[]" ]]; then
                 echo -e "  ${GREEN}NOSTR kind 31903:${NC} ✅ manifest publié"
             else
@@ -372,7 +372,7 @@ cmd_stats() {
         local has_nostr=0
         if [[ -f "$NOSTR_GET_EVENTS" && -n "$hex" ]]; then
             local ev
-            ev=$(bash "$NOSTR_GET_EVENTS" --kind $COOKIE_KIND --author "$hex" --limit 1 2>/dev/null)
+            ev=$(bash "$NOSTR_GET_EVENTS" --kind $COOKIE_KIND --tag-d cookies --author "$hex" --limit 1 2>/dev/null)
             [[ -n "$ev" && "$ev" != "[]" ]] && has_nostr=1
         fi
 
@@ -586,7 +586,7 @@ cmd_browse() {
             local nostr_icon="⚠️"
             if [[ -f "$NOSTR_GET_EVENTS" && -n "$hex" ]]; then
                 local ev
-                ev=$(bash "$NOSTR_GET_EVENTS" --kind $COOKIE_KIND --author "$hex" --limit 1 2>/dev/null)
+                ev=$(bash "$NOSTR_GET_EVENTS" --kind $COOKIE_KIND --tag-d cookies --author "$hex" --limit 1 2>/dev/null)
                 [[ -n "$ev" && "$ev" != "[]" ]] && nostr_icon="📡"
             fi
             echo -e "  ${YELLOW}$idx.${NC} ${GREEN}$email${NC}  ${CYAN}(${count} cookies)${NC} $nostr_icon"

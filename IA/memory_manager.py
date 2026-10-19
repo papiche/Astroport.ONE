@@ -3,7 +3,7 @@
 memory_manager.py — Gestionnaire unifié de mémoire Qdrant pour UPlanet/Astroport
 
 Architecture des collections :
-  uplanet_geo       — mémoires de lieu (multi-utilisateurs, par coordonnée GPS)
+  uplanet_geo       — publications géolocalisées appréciées (1/3/12 likes = UMAP/SECTOR/REGION), index de NOSTR
   memory_{hex16}    — mémoires personnelles par slot (per-MULTIPASS) — MUSE/LOVE
                        (#love_rec) y a son propre slot (LOVE_MEMORY_SLOT=15,
                        cf. bro/rag.py BRO_MEMORY_SLOT=13/BRO_PERSONA_SLOT=14) :
@@ -25,7 +25,6 @@ Partage inter-node des skills :
 
 Usage bash :
   python3 memory_manager.py ensure-collections
-  python3 memory_manager.py upsert-geo   --lat 43.6 --lon 1.4 --content "..." --pubkey hex
   python3 memory_manager.py upsert-slot  --user-id email --slot 0 --content "..."
   python3 memory_manager.py upsert-love  --user-id email --content "..."
   python3 memory_manager.py search-love  --user-id email --query "café le matin"
@@ -35,7 +34,7 @@ Usage bash :
   python3 memory_manager.py delete-slot  --user-id email --slot 0
   python3 memory_manager.py count-slot   --user-id email --slot 0
   python3 memory_manager.py slot-counts  --user-id email --slots 0 13 14 15
-  python3 memory_manager.py reve-geo     --lat 43.6 --lon 1.4
+  python3 memory_manager.py search-geo   --lat 43.6 --lon 1.4 --query "marché bio"
   python3 memory_manager.py skill-hash   --skill devops
   python3 memory_manager.py backup       --output /tmp/qdrant_backup.json
 """
@@ -78,9 +77,16 @@ def _load_qdrant_api_key() -> str:
 QDRANT_URL     = os.environ.get("QDRANT_URL",     "http://127.0.0.1:6333")
 QDRANT_API_KEY = _load_qdrant_api_key()
 OLLAMA_URL     = os.environ.get("OLLAMA_URL",     "http://127.0.0.1:11434")
-EMBED_MODEL    = os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 OLLAMA_MODEL   = os.environ.get("OLLAMA_MODEL",       "llama3.2")
-VECTOR_SIZE    = int(os.environ.get("OLLAMA_EMBED_DIM", "768"))
+
+# ── Embeddings : config UNIQUE de la plateforme (embed_config.py, bge-m3 — mesures documentées là) ──────
+# MEMORY_EMBED_* / MEMORY_*_THRESHOLD restent acceptés (surcharge propre à la mémoire).
+import embed_config as _ec
+EMBED_MODEL    = os.environ.get("MEMORY_EMBED_MODEL", _ec.MODEL)
+VECTOR_SIZE    = int(os.environ.get("MEMORY_EMBED_DIM", _ec.DIM))
+RECALL_THRESHOLD = float(os.environ.get("MEMORY_RECALL_THRESHOLD", _ec.threshold("recall")))
+LOVE_RESONANCE_THRESHOLD = float(os.environ.get("MEMORY_LOVE_THRESHOLD", RECALL_THRESHOLD + 0.05))
+SCHEMA_VERSION = 2
 
 # Seuil de compression : ~2-3 mois d'activité quotidienne avant premier RÊVE
 # Après RÊVE : [1 résumé] + [80 récents] = 81 → prochain RÊVE à 150 de nouveau
@@ -89,7 +95,6 @@ REVE_KEEP      = 80
 
 FLASHMEM_BASE  = os.path.expanduser("~/.zen/flashmem")
 SKILLS_DIR     = os.path.join(FLASHMEM_BASE, "skills")
-GEO_DIR        = os.path.join(FLASHMEM_BASE, "uplanet_memory")
 
 
 # ─────────────────────────────── helpers ──────────────────────────────────────
@@ -133,7 +138,7 @@ def _auth_headers() -> dict:
     return {}
 
 
-def _curl(method: str, url: str, payload: dict = None) -> dict:
+def _curl(method: str, url: str, payload: dict = None, quiet: tuple = ()) -> dict:
     """Appel HTTP via urllib.request (stdlib) — plus de subprocess curl
     (2026-07-06) : évitait la dépendance qdrant_client, mais forker/exec un
     binaire externe à chaque appel (Qdrant ET Ollama, potentiellement
@@ -143,7 +148,7 @@ def _curl(method: str, url: str, payload: dict = None) -> dict:
 
     Échec BRUYANT sur stderr (toute panne — Qdrant down, Ollama down, auth
     invalide, timeout — remonte jusqu'à upsert_geo/upsert_user_slot puis
-    short_memory.py avec un détail exploitable dans les logs, jamais avalée
+    l'appelant avec un détail exploitable dans les logs, jamais avalée
     en silence)."""
     headers = {"Content-Type": "application/json"}
     headers.update(_auth_headers())
@@ -155,8 +160,9 @@ def _curl(method: str, url: str, payload: dict = None) -> dict:
             return json.loads(body) if body.strip() else {}
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", errors="replace")[:200]
-        print(f"[memory_manager] ⚠️ Échec {method} {url} (HTTP {e.code}) : {detail or '(pas de corps)'}",
-              file=sys.stderr)
+        if e.code not in quiet:       # `quiet` : un code ATTENDU (404 = « la collection n'existe pas encore »), pas une panne
+            print(f"[memory_manager] ⚠️ Échec {method} {url} (HTTP {e.code}) : {detail or '(pas de corps)'}",
+                  file=sys.stderr)
         return {}
     except urllib.error.URLError as e:
         print(f"[memory_manager] ⚠️ Échec {method} {url} : {e.reason}", file=sys.stderr)
@@ -166,15 +172,71 @@ def _curl(method: str, url: str, payload: dict = None) -> dict:
         return {}
 
 
+def _gpu_ensure(model: str):
+    """La 3090 est partagée avec ComfyUI : lève GpuBusy (RuntimeError) s'il n'y a pas la place de charger `model`.
+    Voie rapide : modèle déjà chargé = un GET de quelques ms."""
+    import gpu_headroom
+    gpu_headroom.ensure(model)
+
+
 def _embed(text: str) -> list:
-    r = _curl("POST", f"{OLLAMA_URL}/api/embeddings",
-              {"model": EMBED_MODEL, "prompt": text})
-    return r.get("embedding", [])
+    """Vecteur de `text` (/api/embed, l'ancien /api/embeddings est déprécié).
+    bge-m3 n'exige aucun préfixe de tâche. Vecteur de mauvaise dimension → [] +
+    erreur bruyante : jamais d'upsert qui corromprait silencieusement une collection."""
+    try:
+        _gpu_ensure(EMBED_MODEL)
+    except RuntimeError as e:
+        print(f"[memory_manager] ⛔ embedding refusé : {e}", file=sys.stderr)
+        return []
+    import ollama_metrics
+    _t0 = ollama_metrics.start()
+    r = _curl("POST", f"{OLLAMA_URL}/api/embed", {"model": EMBED_MODEL, "input": text})
+    ollama_metrics.record("embed", EMBED_MODEL, _t0, resp=r, ok=bool(r.get("embeddings")), n_inputs=1)
+    vecs = r.get("embeddings") or []
+    vec = vecs[0] if vecs else r.get("embedding", [])
+    if vec and len(vec) != VECTOR_SIZE:
+        print(f"[memory_manager] ❌ {EMBED_MODEL} renvoie {len(vec)} dimensions, "
+              f"{VECTOR_SIZE} attendues (MEMORY_EMBED_DIM) — vecteur refusé.", file=sys.stderr)
+        return []
+    return vec
+
+
+# ── Contenus qui ne doivent JAMAIS entrer dans la mémoire sémantique ─────────
+# Une mémoire est relue dans le prompt du LLM (et envoyée à un fournisseur tiers
+# si l'utilisateur a configuré sa propre clé Anthropic/Gemini). Constaté le
+# 2026-10-19 : des STORY_KEY_BACKUP (clé AES en clair) y avaient été stockés,
+# parce que tout self-DM était mémorisé tel quel.
+import re as _re
+_UNSTORABLE_PREFIXES = ("STORY_KEY_BACKUP:",)
+_UNSTORABLE_PATTERNS = (
+    (_re.compile(r'"key_hex"\s*:'),                        "clé de chiffrement (key_hex)"),
+    (_re.compile(r'nsec1[0-9a-z]{20,}'),                   "clé privée NOSTR (nsec)"),
+    (_re.compile(r'-----BEGIN [A-Z ]*PRIVATE KEY-----'),   "clé privée PEM"),
+    (_re.compile(r'(?i)\b(?:mot de passe|mdp|password|passphrase|secret|token|api[_ -]?key|code (?:pin|secret|d.acc[eè]s)|pin)\b'
+                 r'(?:\s+[\w\'’-]+){0,4}?\s*(?:est|is|c.est|:|=)\s*\S{4,}'),          "secret déclaré (mot de passe, token…)"),
+    (_re.compile(r'\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}(?:[ ]?[A-Z0-9]{1,4})?\b'), "IBAN"),
+    (_re.compile(r'\b(?:\d[ -]?){15}\d\b'),                "numéro de carte bancaire"),
+    (_re.compile(r'\b[12][ ]?\d{2}[ ]?(?:0[1-9]|1[0-2])[ ]?\d{2}[ ]?\d{3}[ ]?\d{3}(?:[ ]?\d{2})?\b'), "numéro de sécurité sociale"),
+    (_re.compile(r'\b(?:sk|pk|ghp|xox[bp])[-_][A-Za-z0-9_-]{16,}'), "clé d'API"),
+)
+
+
+def unstorable_reason(content: str) -> str:
+    """Raison pour laquelle `content` est refusé en mémoire ('' = stockable)."""
+    head = (content or "").lstrip()
+    for p in _UNSTORABLE_PREFIXES:
+        if head.startswith(p):
+            return f"message machine « {p} »"
+    for rx, why in _UNSTORABLE_PATTERNS:
+        if rx.search(content or ""):
+            return why
+    return ""
 
 
 def _qdrant_available() -> bool:
-    r = _curl("GET", f"{QDRANT_URL}/healthz")
-    return bool(r)
+    """Qdrant répond ET accepte notre clé. (Pas /healthz : il répond du texte brut, pas du JSON — _curl le prenait
+    toujours pour une panne.)"""
+    return "result" in _curl("GET", f"{QDRANT_URL}/collections")
 
 
 # ──────────────────────────── collections ─────────────────────────────────────
@@ -188,8 +250,16 @@ def ensure_collection(name: str, size: int = VECTOR_SIZE):
     une vraie panne en silence) — dans le cas ultra-majoritaire (collection
     déjà créée depuis longtemps), ce 409 n'est qu'un faux positif qui pollue
     les logs à CHAQUE upsert/search, sans jamais rien signaler d'utile."""
-    existing = _curl("GET", f"{QDRANT_URL}/collections/{name}")
+    existing = _curl("GET", f"{QDRANT_URL}/collections/{name}", quiet=(404,))
     if existing.get("result"):
+        # Garde-fou dimension : deux modèles de même taille se mélangeraient sans erreur ;
+        # une taille différente fait échouer Qdrant à chaque upsert avec un message obscur.
+        have = (existing["result"].get("config", {}).get("params", {})
+                .get("vectors", {}) or {}).get("size")
+        if have and have != size:
+            raise RuntimeError(
+                f"collection {name} : vecteurs de {have} dimensions, {size} attendues "
+                f"({EMBED_MODEL}) — migrer avec memory_migrate_v2.py, ne rien mélanger.")
         return
     _curl("PUT", f"{QDRANT_URL}/collections/{name}",
           {"vectors": {"size": size, "distance": "Cosine"}})
@@ -204,85 +274,209 @@ def ensure_all_collections(user_ids: list = None):
             ensure_collection(f"memory_{_user_hex(uid)}")
 
 
-# ──────────────────────────── geo memory ──────────────────────────────────────
+# ──────────────────────────── mémoire géolocalisée (UMAP) ─────────────────────
+# `uplanet_geo` = INDEX de recherche des publications géolocalisées APPRÉCIÉES, reconstruit depuis NOSTR (la source de
+# vérité : les évènements et leurs réactions, qui voyagent entre stations) — jamais depuis un fichier local. Chaque station
+# indexe ce que son relais connaît : aucune base globale, des espaces relatifs à chaque relais / station (stockage p2p).
+# Le NIVEAU d'une publication suit ses likes (mêmes seuils que NOSTR.UMAP.refresh.sh) :
+#   ≥ 1 like → UMAP (case 0,01°) · ≥ 3 → SECTOR (0,1°) · ≥ 12 → REGION (1°)
+# Alimenté par geo_memory.py (rafraîchissement de 20h12). Lecture : search_geo(lat, lon, question).
+GEO_COLLECTION = "uplanet_geo"
+GEO_LIKES = (("region", 12), ("sector", 3), ("umap", 1))        # du plus haut au plus bas
 
-def upsert_geo(lat: str, lon: str, content: str, pubkey: str = "",
-               timestamp: str = None, event_id: str = "", importance: int = 1) -> bool:
-    """Upsert un message géolocalisé dans la collection uplanet_geo."""
-    if not content.strip():
+
+def geo_level(likes: int):
+    """Niveau atteint par `likes` approbations (None si aucune)."""
+    for level, need in GEO_LIKES:
+        if likes >= need:
+            return level
+    return None
+
+
+def geo_keys(lat: float, lon: float) -> dict:
+    """Clés de case contenant (lat, lon), coin sud-ouest comme les UMAP : UMAP 0,01°, SECTOR 0,1°, REGION 1°."""
+    import math
+    cell = lambda v, step: math.floor(round(v / step, 6)) * step
+    return {"umap": f"{cell(lat, 0.01):.2f}_{cell(lon, 0.01):.2f}",
+            "sector": f"{cell(lat, 0.1):.1f}_{cell(lon, 0.1):.1f}",
+            "region": f"{int(math.floor(lat))}_{int(math.floor(lon))}"}
+
+
+def upsert_geo_event(event: dict, lat: float, lon: float, likes: int) -> bool:
+    """Indexe (ou met à jour) UNE publication géolocalisée. Identifiant = celui de l'évènement NOSTR : relire la même
+    publication met son nombre de likes et son niveau à jour, sans doublon. Refuse (et le dit) un contenu secret."""
+    content = (event.get("content") or "").strip()
+    level = geo_level(likes)
+    if not content or level is None:
         return False
-    vec = _embed(content)
+    why = unstorable_reason(content)
+    if why:
+        print(f"[memory_manager] 🚫 publication {event.get('id', '')[:12]} non indexée : {why}", file=sys.stderr)
+        return False
+    vec = _embed(content[:3000])
     if not vec:
         return False
-    ts     = timestamp or datetime.utcnow().isoformat() + "Z"
-    doc_id = _stable_id(lat, lon, ts, pubkey)
-    ensure_collection("uplanet_geo")
-    r = _curl("PUT", f"{QDRANT_URL}/collections/uplanet_geo/points", {
-        "points": [{
-            "id": doc_id,
-            "vector": vec,
-            "payload": {
-                "latitude": lat, "longitude": lon,
-                "coord_key": f"{lat}_{lon}",
-                "pubkey": pubkey, "event_id": event_id,
-                "content": content, "timestamp": ts,
-                "season": _season(ts), "importance": importance,
-            }
-        }]
-    })
+    ensure_collection(GEO_COLLECTION)
+    ts = datetime.utcfromtimestamp(int(event.get("created_at", 0))).isoformat() + "Z"
+    payload = {"event_id": event["id"], "pubkey": event.get("pubkey", ""), "kind": event.get("kind", 1),
+               "content": content[:3000], "latitude": lat, "longitude": lon, **{f"{k}_key": v for k, v in geo_keys(lat, lon).items()},
+               "level": level, "likes": likes, "created_at": int(event.get("created_at", 0)), "timestamp": ts,
+               "season": _season(ts), "importance": likes, "embed_model": EMBED_MODEL, "schema": SCHEMA_VERSION, "source": "nostr"}
+    r = _curl("PUT", f"{QDRANT_URL}/collections/{GEO_COLLECTION}/points",
+              {"points": [{"id": int(event["id"][:15], 16), "vector": vec, "payload": payload}]})
     return bool(r)
 
 
-def search_geo(lat: str, lon: str, query: str, limit: int = 5,
-              season: str = None) -> list:
-    """Recherche sémantique dans les mémoires d'une coordonnée, filtrable par
-    saison (ex: season="hiver" pour ignorer les habitudes estivales)."""
+def delete_geo_events(event_ids: list) -> bool:
+    ids = [int(e[:15], 16) for e in event_ids]
+    return _delete_points(GEO_COLLECTION, ids) if ids else True
+
+
+def geo_indexed(since_ts: int = 0) -> list:
+    """Publications déjà indexées depuis `since_ts` : [{id, event_id, likes, level, created_at}] (pour recompter leurs likes)."""
+    out, offset = [], None
+    while True:
+        body = {"limit": 500, "with_payload": ["event_id", "likes", "level", "created_at"], "with_vector": False,
+                "filter": {"must": [{"key": "created_at", "range": {"gte": since_ts}}]}}
+        if offset:
+            body["offset"] = offset
+        r = _curl("POST", f"{QDRANT_URL}/collections/{GEO_COLLECTION}/points/scroll", body, quiet=(404,)).get("result", {})   # 404 = index pas encore créé : normal
+        out += [dict(p.get("payload", {}), id=p["id"]) for p in r.get("points", [])]
+        offset = r.get("next_page_offset")
+        if not offset:
+            return out
+
+
+def search_geo(lat, lon, query: str, limit: int = 5, season: str = None) -> list:
+    """Publications appréciées PERTINENTES pour la position (lat, lon) : celles de MA case UMAP (≥ 1 like), celles de mon
+    SECTOR qui ont atteint ≥ 3 likes, celles de ma REGION qui ont atteint ≥ 12 likes — le niveau d'une publication est le
+    périmètre sur lequel elle compte. Classées par sens (score ≥ RECALL_THRESHOLD)."""
+    try:
+        k = geo_keys(float(lat), float(lon))
+    except (TypeError, ValueError):
+        return []
     vec = _embed(query)
     if not vec:
         return []
-    filters = [{"key": "coord_key", "match": {"value": f"{lat}_{lon}"}}]
+    ensure_collection(GEO_COLLECTION)
+    flt = {"should": [
+        {"must": [{"key": "umap_key", "match": {"value": k["umap"]}}]},
+        {"must": [{"key": "sector_key", "match": {"value": k["sector"]}}, {"key": "level", "match": {"any": ["sector", "region"]}}]},
+        {"must": [{"key": "region_key", "match": {"value": k["region"]}}, {"key": "level", "match": {"value": "region"}}]},
+    ]}
     if season:
-        filters.append({"key": "season", "match": {"value": season}})
-    r = _curl("POST", f"{QDRANT_URL}/collections/uplanet_geo/points/search", {
-        "vector": vec,
-        "limit": limit,
-        "score_threshold": 0.3,
-        "filter": {"must": filters},
-    })
+        flt["must"] = [{"key": "season", "match": {"value": season}}]
+    r = _curl("POST", f"{QDRANT_URL}/collections/{GEO_COLLECTION}/points/search",
+              {"vector": vec, "limit": limit, "score_threshold": RECALL_THRESHOLD, "with_payload": True, "filter": flt})
     return r.get("result", [])
 
 
 # ──────────────────────────── user slot memory ────────────────────────────────
 
-def upsert_user_slot(user_id: str, slot: int, content: str,
-                     timestamp: str = None, event_id: str = "",
-                     importance: int = 1) -> bool:
-    """Upsert une entrée dans la mémoire personnelle d'un MULTIPASS.
-    importance : 1 pour un message individuel ; passer le nombre de messages
-    condensés pour un résumé RÊVE (cf. reve_compress_slot), afin qu'un souvenir
-    qui en synthétise beaucoup pèse plus qu'un message isolé."""
-    if not content.strip():
+# ── Schéma v2 : UNE mémoire par MULTIPASS, des champs plutôt que des tiroirs ──
+#   kind        fact (« allergique aux noix ») · episode (« a vu X mardi ») ·
+#               trait (style, opinions, centres d'intérêt) · person (un proche)
+#   source      chat · rec · mastodon · nostr_public · nostr_dm · photo · agenda · contact · reve
+#   visibility  private (défaut) · love (cité à une rencontre — décision de l'utilisateur) · public
+#   confidence  0..1 (1 = dit explicitement par la personne)
+#   status      active · superseded (remplacé par un fait plus récent) · deleted
+# Les numéros de slot restent acceptés par tous les appelants historiques : ils sont
+# traduits ici (SLOT_SCHEMA) et conservés dans le payload (`slot`) pour compatibilité.
+SLOT_SCHEMA = {
+    0:  {"kind": "fact",    "source": "rec",  "visibility": "private"},  # #rec
+    13: {"kind": "episode", "source": "chat", "visibility": "private"},  # échanges avec BRO
+    14: {"kind": "trait",   "source": "chat", "visibility": "private"},  # persona / style
+    15: {"kind": "episode", "source": "nostr_dm", "visibility": "love"},  # LOVE (messagerie privée)
+}
+_NOT_ACTIVE = [{"key": "status", "match": {"any": ["superseded", "deleted"]}}]
+
+
+def _slot_must(slot: int) -> list:
+    """Conditions Qdrant équivalentes à l'ancien « slot N » (les souvenirs v2 n'ont plus de
+    champ `slot`) : 0 = #rec · 13 = échanges (source chat) · 14 = traits · 15 = LOVE."""
+    return {0:  [{"key": "source",     "match": {"value": "rec"}}],
+            13: [{"key": "source",     "match": {"value": "chat"}}],
+            14: [{"key": "kind",       "match": {"value": "trait"}}],
+            15: [{"key": "visibility", "match": {"value": "love"}}]
+            }.get(slot, [{"key": "slot", "match": {"value": slot}}])
+
+
+def _content_hash(content: str) -> str:
+    return hashlib.sha256(" ".join(content.split()).lower().encode()).hexdigest()[:16]
+
+
+def is_pinned(payload: dict) -> bool:
+    """Souvenir ÉCRIT ou CORRIGÉ par la personne (écran Mon compte, #rec) : une extraction automatique ne le
+    remplace ni ne le supprime — sa parole l'emporte sur ce que BRO a cru comprendre."""
+    return (payload.get("origin") == "user" or bool(payload.get("edited"))
+            or payload.get("source") in ("manual", "rec"))
+
+
+def upsert_memory(user_id: str, content: str, kind: str = "fact", source: str = "chat",
+                  visibility: str = "private", confidence: float = 1.0,
+                  slot: int = None, timestamp: str = None, event_id: str = "",
+                  importance: int = 1, extra: dict = None, auto: bool = False) -> bool:
+    """Écrit UN souvenir (schéma v2). Idempotent : l'identifiant dérive de
+    (utilisateur, contenu normalisé) — réécrire le même souvenir (ex. relire les
+    mêmes posts Mastodon) met à jour le point au lieu d'en ajouter un doublon.
+    Refuse (et le dit sur stderr) tout contenu secret, cf. unstorable_reason.
+
+    `auto=True` : écriture par l'APPRENTISSAGE automatique (jamais un geste de la personne). Elle respecte alors
+    les choix déjà faits : un souvenir que la personne a OUBLIÉ n'est pas ressuscité, un souvenir qu'elle a écrit
+    ou corrigé n'est pas écrasé, la visibilité qu'elle a choisie est conservée. Seul le canal « chat » (ce que la
+    personne dit elle-même à BRO, maintenant) peut revenir sur un oubli ; les sources passives (publications relues,
+    agenda, contacts…) ne le peuvent pas."""
+    if not content or not content.strip():
+        return False
+    why = unstorable_reason(content)
+    if why:
+        print(f"[memory_manager] 🚫 souvenir refusé pour {user_id} : {why}", file=sys.stderr)
         return False
     vec = _embed(content)
     if not vec:
         return False
-    cname  = f"memory_{_user_hex(user_id)}"
-    ts     = timestamp or datetime.utcnow().isoformat() + "Z"
-    doc_id = _stable_id(user_id, ts)
+    cname = f"memory_{_user_hex(user_id)}"
+    ts    = timestamp or datetime.utcnow().isoformat() + "Z"
+    chash = _content_hash(content)
+    payload = {
+        "user_id": user_id, "content": content, "timestamp": ts,
+        "event_id": event_id, "season": _season(ts), "importance": importance,
+        "kind": kind, "source": source, "visibility": visibility,
+        "confidence": confidence, "status": "active",
+        "embed_model": EMBED_MODEL, "schema": SCHEMA_VERSION, "content_hash": chash,
+        "origin": "auto" if auto else "user",
+    }
+    if slot is not None:
+        payload["slot"] = slot
+    if extra:
+        payload.update(extra)
     ensure_collection(cname)
+    pid = _stable_id(user_id, chash)
+    if auto:
+        prev = get_memory(user_id, pid).get("payload") or {}
+        if prev.get("status") == "deleted" and prev.get("deleted_by") == "user" and source != "chat":
+            print(f"[memory_manager] ⛔ « {content[:60]} » : oublié par la personne, non réécrit", file=sys.stderr)
+            return False
+        if prev.get("status", "active") == "active" and prev:
+            if is_pinned(prev):
+                return True                      # déjà là, écrit/corrigé par la personne : intact
+            payload["visibility"] = prev.get("visibility", payload["visibility"])   # son choix (ex. 💞) survit à la relecture
     r = _curl("PUT", f"{QDRANT_URL}/collections/{cname}/points", {
-        "points": [{
-            "id": doc_id,
-            "vector": vec,
-            "payload": {
-                "user_id": user_id, "slot": slot,
-                "content": content, "timestamp": ts,
-                "event_id": event_id, "source": "nostr_rec",
-                "season": _season(ts), "importance": importance,
-            }
-        }]
+        "points": [{"id": pid, "vector": vec, "payload": payload}]
     })
     return bool(r)
+
+
+def upsert_user_slot(user_id: str, slot: int, content: str,
+                     timestamp: str = None, event_id: str = "",
+                     importance: int = 1, source: str = None) -> bool:
+    """Compatibilité : écrit un souvenir identifié par son ancien numéro de slot
+    (0 = #rec, 13 = échanges, 14 = persona, 15 = LOVE), traduit en schéma v2.
+    importance : nombre de messages condensés pour un résumé RÊVE."""
+    sch = SLOT_SCHEMA.get(slot, {"kind": "fact", "source": "chat", "visibility": "private"})
+    return upsert_memory(user_id, content, kind=sch["kind"], source=source or sch["source"],
+                         visibility=sch["visibility"], slot=slot, timestamp=timestamp,
+                         event_id=event_id, importance=importance)
 
 
 def _delete_points(collection: str, ids: list) -> bool:
@@ -304,22 +498,26 @@ def delete_user_slot(user_id: str, slot: int) -> bool:
     affectés — filtrage strict par le champ payload 'slot')."""
     cname = f"memory_{_user_hex(user_id)}"
     r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/delete", {
-        "filter": {"must": [{"key": "slot", "match": {"value": slot}}]}
+        "filter": {"must": _slot_must(slot)}
     })
     return bool(r)
 
 
 def search_user_slot(user_id: str, query: str, slots: list = None,
-                     limit: int = 5, score_threshold: float = 0.3,
-                     season: str = None) -> list:
-    """Recherche sémantique dans les slots mémoire d'un utilisateur, filtrable
-    par saison (season="hiver"/"printemps"/"ete"/"automne") pour des
-    rapprochements conscients du temps (ex: distinguer une habitude hivernale
-    d'une habitude estivale sans mélanger les deux)."""
+                     limit: int = 5, score_threshold: float = None,
+                     season: str = None, kinds: list = None,
+                     visibility: str = None) -> list:
+    """Recherche sémantique dans la mémoire d'un utilisateur (souvenirs actifs
+    seulement). Filtrable par saison, par type (`kinds`) ou par visibilité ; `slots`
+    reste accepté pour les appelants historiques. score_threshold par défaut =
+    RECALL_THRESHOLD du modèle d'embedding (l'ancien 0,3 laissait tout passer)."""
+    if score_threshold is None:
+        score_threshold = RECALL_THRESHOLD
     vec = _embed(query)
     if not vec:
         return []
     cname = f"memory_{_user_hex(user_id)}"
+    ensure_collection(cname)       # compte neuf : pas de 404 bruyant, et contrôle de dimension
     body: dict = {"vector": vec, "limit": limit, "score_threshold": score_threshold,
                   "with_payload": True}
     filters = []
@@ -327,10 +525,190 @@ def search_user_slot(user_id: str, query: str, slots: list = None,
         filters.append({"key": "slot", "match": {"any": slots}})
     if season:
         filters.append({"key": "season", "match": {"value": season}})
+    if kinds:
+        filters.append({"key": "kind", "match": {"any": kinds}})
+    if visibility:
+        filters.append({"key": "visibility", "match": {"value": visibility}})
+    flt: dict = {"must_not": _NOT_ACTIVE}
     if filters:
-        body["filter"] = {"must": filters}
+        flt["must"] = filters
+    body["filter"] = flt
     r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/search", body)
-    return r.get("result", [])
+    return _age_rank(r.get("result", []))
+
+
+EPISODE_DECAY = float(os.environ.get("MEMORY_EPISODE_DECAY", "0.08"))   # malus de score atteint à 1 an
+
+
+def _age_rank(hits: list, now: datetime = None) -> list:
+    """Un ÉVÈNEMENT vieillit, un fait ou un goût non : le score d'un épisode (hors photos, datées par nature et
+    cherchées pour leur date) perd jusqu'à EPISODE_DECAY au bout d'un an. Ce n'est qu'un CLASSEMENT — aucun souvenir
+    n'est exclu pour son âge, il passe simplement après un fait aussi pertinent."""
+    now = now or datetime.utcnow()
+    for h in hits:
+        pl = h.get("payload", {})
+        if pl.get("kind") != "episode" or pl.get("source") == "photo":
+            continue
+        try:
+            age = (now - datetime.fromisoformat(pl.get("timestamp", "").rstrip("Z"))).days
+        except ValueError:
+            continue
+        h["score"] = h.get("score", 0) - EPISODE_DECAY * max(0.0, min(1.0, age / 365))
+    return sorted(hits, key=lambda h: h.get("score", 0), reverse=True)
+
+
+def list_memories(user_id: str, kinds: list = None, source: str = None,
+                  include_inactive: bool = False, limit: int = 1000) -> list:
+    """Tous les souvenirs d'un utilisateur, récents d'abord — alimente l'écran
+    « Ce que BRO sait de moi ». Les vecteurs ne sont jamais renvoyés."""
+    cname = f"memory_{_user_hex(user_id)}"
+    ensure_collection(cname)
+    must = []
+    if kinds:
+        must.append({"key": "kind", "match": {"any": kinds}})
+    if source:
+        must.append({"key": "source", "match": {"value": source}})
+    flt: dict = {}
+    if must:
+        flt["must"] = must
+    if not include_inactive:
+        flt["must_not"] = _NOT_ACTIVE
+    points: list = []
+    offset = None
+    while len(points) < limit:
+        body: dict = {"limit": 250, "with_payload": True, "with_vector": False}
+        if flt:
+            body["filter"] = flt
+        if offset:
+            body["offset"] = offset
+        r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/scroll", body)
+        res = r.get("result", {})
+        points.extend(res.get("points", []))
+        offset = res.get("next_page_offset")
+        if not offset:
+            break
+    points.sort(key=lambda p: p.get("payload", {}).get("timestamp", ""), reverse=True)
+    return points[:limit]
+
+
+def set_memory_fields(user_id: str, point_ids: list, fields: dict) -> bool:
+    """Modifie des champs de souvenirs précis (visibility, status, confidence…) —
+    c'est ce qu'utilise l'utilisateur pour passer un souvenir en « love » ou
+    « privé strict », ou le marquer supprimé."""
+    if not point_ids:
+        return True
+    cname = f"memory_{_user_hex(user_id)}"
+    r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/payload",
+              {"payload": fields, "points": point_ids})
+    return bool(r)
+
+
+def memory_overview(user_id: str) -> dict:
+    """Compteurs des souvenirs ACTIFS : total + par type, source, visibilité. Un seul
+    passage de scroll sans vecteurs (volume modeste par construction)."""
+    out = {"total": 0, "by_kind": {}, "by_source": {}, "by_visibility": {}}
+    for p in list_memories(user_id, limit=100000):
+        pl = p.get("payload", {})
+        out["total"] += 1
+        for field, key in (("kind", "by_kind"), ("source", "by_source"), ("visibility", "by_visibility")):
+            v = pl.get(field) or "?"
+            out[key][v] = out[key].get(v, 0) + 1
+    return out
+
+
+def get_memory(user_id: str, point_id: int) -> dict:
+    cname = f"memory_{_user_hex(user_id)}"
+    r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points",
+              {"ids": [point_id], "with_payload": True, "with_vector": False})
+    res = r.get("result") or []
+    return res[0] if isinstance(res, list) and res else {}
+
+
+def update_memory(user_id: str, point_id: int, content: str = None, kind: str = None,
+                  visibility: str = None) -> int:
+    """Corrige un souvenir. Le texte change ⇒ l'identifiant (dérivé du contenu) et le vecteur
+    aussi : on réécrit un nouveau point (confidence=1, « corrigé par l'utilisateur ») puis on
+    supprime l'ancien. Sinon simple mise à jour de champs. Retourne l'id courant, 0 si échec."""
+    cur = get_memory(user_id, point_id)
+    if not cur:
+        return 0
+    pl = cur.get("payload", {})
+    if content is not None and " ".join(content.split()) != " ".join(pl.get("content", "").split()):
+        ok = upsert_memory(user_id, content, kind=kind or pl.get("kind", "fact"),
+                           source=pl.get("source", "chat"),
+                           visibility=visibility or pl.get("visibility", "private"),
+                           confidence=1.0, timestamp=pl.get("timestamp"),
+                           extra={"edited": True})
+        if not ok:
+            return 0
+        new_id = _stable_id(user_id, _content_hash(content))
+        if new_id != point_id:
+            _delete_points(f"memory_{_user_hex(user_id)}", [point_id])
+        return new_id
+    fields = {k: v for k, v in (("kind", kind), ("visibility", visibility)) if v}
+    if fields:
+        fields["confidence"] = 1.0
+        if not set_memory_fields(user_id, [point_id], fields):
+            return 0
+    return point_id
+
+
+def delete_where(user_id: str, must: list) -> bool:
+    """Supprime tous les souvenirs d'un utilisateur qui satisfont les conditions Qdrant `must`."""
+    cname = f"memory_{_user_hex(user_id)}"
+    return bool(_curl("POST", f"{QDRANT_URL}/collections/{cname}/points/delete",
+                      {"filter": {"must": must}}))
+
+
+def delete_by_source(user_id: str, source: str) -> bool:
+    """#oublie : efface ce que BRO a appris d'UNE source (ex. « chat »)."""
+    return delete_where(user_id, [{"key": "source", "match": {"value": source}}])
+
+
+def delete_all_memories(user_id: str) -> bool:
+    """#reset : efface TOUTE la mémoire du compte (collection recréée vide, même dimension)."""
+    cname = f"memory_{_user_hex(user_id)}"
+    _curl("DELETE", f"{QDRANT_URL}/collections/{cname}")
+    try:
+        ensure_collection(cname)
+    except Exception as e:
+        print(f"[memory_manager] ⚠️ recréation de {cname} : {e}", file=sys.stderr)
+        return False
+    return True
+
+
+def delete_memory(user_id: str, point_ids: list) -> bool:
+    """« Oublier » des souvenirs précis (droit à l'oubli). Le TEXTE est effacé pour de bon ; il reste une pierre
+    tombale (vecteur + empreinte, sans contenu) pour que l'apprentissage automatique ne ré-extrait pas, quelques jours
+    plus tard, ce que la personne vient de faire oublier — sans elle, la suppression ne tenait que jusqu'au message suivant."""
+    return forget_points(user_id, point_ids)
+
+
+def forget_points(user_id: str, point_ids: list) -> bool:
+    if not point_ids:
+        return True
+    return set_memory_fields(user_id, point_ids, {
+        "status": "deleted", "deleted_by": "user", "content": "",
+        "deleted_at": datetime.utcnow().isoformat() + "Z"})
+
+
+TOMBSTONE_MIN = float(os.environ.get("MEMORY_TOMBSTONE_MIN", "0.85"))   # même sens, reformulé
+
+
+def forgotten_match(user_id: str, text: str, threshold: float = None) -> dict:
+    """Pierre tombale proche de `text` (la personne a fait oublier ce SUJET), sinon {}."""
+    vec = _embed(text)
+    if not vec:
+        return {}
+    cname = f"memory_{_user_hex(user_id)}"
+    ensure_collection(cname)
+    r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/search", {
+        "vector": vec, "limit": 1, "with_payload": False,
+        "score_threshold": TOMBSTONE_MIN if threshold is None else threshold,
+        "filter": {"must": [{"key": "status", "match": {"value": "deleted"}},
+                            {"key": "deleted_by", "match": {"value": "user"}}]}})
+    res = r.get("result") or []
+    return res[0] if res else {}
 
 
 def recent_user_slot(user_id: str, slot: int = 0, limit: int = 5) -> list:
@@ -344,7 +722,7 @@ def recent_user_slot(user_id: str, slot: int = 0, limit: int = 5) -> list:
     offset = None
     while True:
         body: dict = {"limit": 250, "with_payload": True, "with_vector": False,
-                      "filter": {"must": [{"key": "slot", "match": {"value": slot}}]}}
+                      "filter": {"must": _slot_must(slot), "must_not": _NOT_ACTIVE}}
         if offset:
             body["offset"] = offset
         r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/scroll", body)
@@ -363,7 +741,7 @@ def count_user_slot(user_id: str, slot: int) -> int:
     admin/self-service de l'état des mémoires (UPassport services/memory_status.py)."""
     cname = f"memory_{_user_hex(user_id)}"
     r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/count", {
-        "filter": {"must": [{"key": "slot", "match": {"value": slot}}]},
+        "filter": {"must": _slot_must(slot), "must_not": _NOT_ACTIVE},
         "exact": True,
     })
     return int(r.get("result", {}).get("count", 0))
@@ -393,11 +771,11 @@ def upsert_love_mem(user_id: str, content: str,
 
 
 def search_love_mem(user_id: str, query: str, limit: int = 5,
-                    score_threshold: float = 0.3) -> list:
-    """Recherche sémantique dans les souvenirs LOVE d'un utilisateur — utilisé
-    pour bâtir un contexte pertinent (et non plus seulement récent) à chaque
-    question posée à MUSE."""
-    return search_user_slot(user_id, query, slots=[LOVE_MEMORY_SLOT],
+                    score_threshold: float = None) -> list:
+    """Recherche sémantique dans les souvenirs LOVE d'un utilisateur (visibility=love)
+    — utilisé pour bâtir un contexte pertinent (et non plus seulement récent) à
+    chaque question posée à MUSE."""
+    return search_user_slot(user_id, query, visibility="love",
                             limit=limit, score_threshold=score_threshold)
 
 
@@ -409,7 +787,7 @@ def delete_love_mem(user_id: str) -> bool:
 
 
 def love_resonance(user_id_a: str, user_id_b: str,
-                   sample: int = 15, score_threshold: float = 0.55,
+                   sample: int = 15, score_threshold: float = None,
                    top_k: int = 3) -> list:
     """Associations poétiques entre deux utilisateurs LOVE : cherche, pour un
     échantillon de souvenirs LOVE de A, le souvenir LOVE de B le plus proche
@@ -419,17 +797,29 @@ def love_resonance(user_id_a: str, user_id_b: str,
     et la génération d'intros (_handle_love_intro). Filtre explicitement sur
     LOVE_MEMORY_SLOT des deux côtés : memory_{hex16} contient aussi d'autres
     slots (mémoire classique, persona...) qui ne doivent jamais entrer dans
-    cette comparaison."""
+    cette comparaison.
+
+    Espaces RELATIFS à chaque clé : la synchro N² ne constitue aucune base globale. Cette comparaison ne
+    lit donc que les mémoires de DEUX comptes hébergés sur CETTE station ; un candidat distant n'est
+    jamais comparé par ses souvenirs (sa mémoire reste chez lui), seulement par ses tags publics
+    (search_dream_matches)."""
+    if score_threshold is None:
+        score_threshold = LOVE_RESONANCE_THRESHOLD
     cname_a = f"memory_{_user_hex(user_id_a)}"
     cname_b = f"memory_{_user_hex(user_id_b)}"
-    slot_filter = {"must": [{"key": "slot", "match": {"value": LOVE_MEMORY_SLOT}}]}
+    # Seuls les souvenirs que leur auteur a marqués « love » (jamais le privé) et encore actifs.
+    slot_filter = {"must": [{"key": "visibility", "match": {"value": "love"}}],
+                   "must_not": _NOT_ACTIVE}
     scrolled = _curl("POST", f"{QDRANT_URL}/collections/{cname_a}/points/scroll", {
-        "limit": sample, "with_payload": True, "with_vector": True,
+        "limit": 250, "with_payload": True, "with_vector": True,
         "filter": slot_filter,
     })
     points = scrolled.get("result", {}).get("points", [])
     if not points:
         return []
+    # Les plus récents, pas « les 15 premiers renvoyés par le scroll » (ordre arbitraire).
+    points.sort(key=lambda p: p.get("payload", {}).get("timestamp", ""), reverse=True)
+    points = points[:sample]
 
     pairs = []
     for pt in points:
@@ -595,7 +985,15 @@ def _ollama_summarize(text: str, activity: str = "", max_tokens: int = 200) -> s
         "stream": False,
         "options": {"num_predict": max_tokens, "temperature": 0.3},
     }
+    try:
+        _gpu_ensure(OLLAMA_MODEL)
+    except RuntimeError as e:
+        print(f"[memory_manager] ⛔ résumé RÊVE reporté : {e}", file=sys.stderr)
+        return ""
+    import ollama_metrics
+    _t0 = ollama_metrics.start()
     r = _curl("POST", f"{OLLAMA_URL}/api/generate", payload)
+    ollama_metrics.record("generate", OLLAMA_MODEL, _t0, resp=r, ok=bool(r.get("response")))
     return r.get("response", "").strip()
 
 
@@ -616,7 +1014,7 @@ def reve_compress_slot(user_id: str, slot: int = 0) -> bool:
     offset = None
     while True:
         body: dict = {"limit": 250, "with_payload": True, "with_vector": False,
-                      "filter": {"must": [{"key": "slot", "match": {"value": slot}}]}}
+                      "filter": {"must": _slot_must(slot), "must_not": _NOT_ACTIVE}}
         if offset:
             body["offset"] = offset
         r = _curl("POST", f"{QDRANT_URL}/collections/{cname}/points/scroll", body)
@@ -645,9 +1043,11 @@ def reve_compress_slot(user_id: str, slot: int = 0) -> bool:
     if not summary:
         return False
 
-    ts_now = datetime.utcnow().isoformat() + "Z"
-    upsert_user_slot(user_id, slot, f"[RÊVE] {summary}", timestamp=ts_now,
-                     importance=len(to_compress))
+    # Le résumé porte la date du DERNIER souvenir qu'il remplace, pas « maintenant » :
+    # sinon il passerait pour le souvenir le plus récent (#mem, tri, prochaine compression).
+    ts_summary = to_compress[-1].get("payload", {}).get("timestamp") or datetime.utcnow().isoformat() + "Z"
+    upsert_user_slot(user_id, slot, f"[RÊVE] {summary}", timestamp=ts_summary,
+                     importance=len(to_compress), source="reve")
 
     # Purge des points individuels remplacés par le résumé ci-dessus — sans
     # ça, ils restent orphelins dans Qdrant pour toujours.
@@ -655,81 +1055,6 @@ def reve_compress_slot(user_id: str, slot: int = 0) -> bool:
     if not _delete_points(cname, old_ids):
         print(f"[memory_manager] ⚠️ RÊVE : {len(old_ids)} vecteur(s) compressé(s) "
               f"non purgés de Qdrant pour {user_id}/slot{slot} (orphelins, sans impact "
-              f"fonctionnel — nettoyage différé).")
-    return True
-
-
-def reve_compress_geo(lat: str, lon: str, geo_file: str = None) -> bool:
-    """Déclenche la compression RÊVE pour la mémoire géo d'une coordonnée."""
-    if not geo_file:
-        coord_key = f"{lat}_{lon}".replace(".", "_").replace("-", "m")
-        geo_file  = os.path.join(GEO_DIR, f"{coord_key}.json")
-    if not os.path.isfile(geo_file):
-        return False
-
-    with open(geo_file, encoding="utf-8") as f:
-        data = json.load(f)
-
-    msgs = data.get("messages", [])
-    if len(msgs) < REVE_THRESHOLD:
-        return False
-
-    to_compress = msgs[:-REVE_KEEP]
-    recent      = msgs[-REVE_KEEP:]
-
-    # Sécurité anti-perte — même garde que reve_compress_slot (voir son
-    # commentaire) : jamais de purge JSON d'un message pas encore confirmé
-    # dans Qdrant.
-    unsynced = [m for m in to_compress if not m.get("qdrant_synced", True)]
-    if unsynced:
-        print(f"[memory_manager] 🔄 RÊVE géo : rattrapage de {len(unsynced)} message(s) "
-              f"jamais synchronisés avant compression ({lat}, {lon})")
-        failed = sum(
-            0 if upsert_geo(lat, lon, m.get("content", ""), m.get("pubkey", ""),
-                             timestamp=m.get("timestamp"), event_id=m.get("event_id", ""))
-            else 1
-            for m in unsynced
-        )
-        if failed:
-            print(f"[memory_manager] ❌ RÊVE géo abandonné pour ({lat}, {lon}) : "
-                  f"{failed}/{len(unsynced)} message(s) toujours non synchronisés après "
-                  f"rattrapage — rien n'est purgé du JSON, nouvelle tentative au prochain cycle.")
-            observability.log_event("geo", "reve_compression", "abort_unsynced",
-                                     success=False, extra={"failed": failed, "total": len(unsynced),
-                                                            "lat": lat, "lon": lon})
-            return False
-        print(f"[memory_manager] ✅ RÊVE géo : rattrapage réussi pour {len(unsynced)} message(s)")
-
-    block = "\n".join(
-        f"[{m.get('timestamp', '')[:10]}] {m.get('content', '')}"
-        for m in to_compress
-    )
-    summary = _ollama_summarize(block)
-    if not summary:
-        return False
-
-    ts_now = datetime.utcnow().isoformat() + "Z"
-    summary_entry = {
-        "timestamp": ts_now,
-        "event_id":  f"reve:{hashlib.md5(summary.encode()).hexdigest()[:8]}",
-        "pubkey":    "reve",
-        "content":   f"[RÊVE] {summary}",
-        "season":    _season(to_compress[-1].get("timestamp", ts_now)) if to_compress else _season(ts_now),
-        "importance": len(to_compress),
-    }
-    data["messages"] = [summary_entry] + recent
-    with open(geo_file, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-    upsert_geo(lat, lon, summary_entry["content"], timestamp=ts_now, importance=len(to_compress))
-
-    # Purge des vecteurs individuels remplacés — même raisonnement que
-    # reve_compress_slot (voir son commentaire).
-    old_ids = [_stable_id(lat, lon, m.get("timestamp"), m.get("pubkey", ""))
-               for m in to_compress if m.get("timestamp")]
-    if not _delete_points("uplanet_geo", old_ids):
-        print(f"[memory_manager] ⚠️ RÊVE géo : {len(old_ids)} vecteur(s) compressé(s) "
-              f"non purgés de Qdrant pour ({lat}, {lon}) (orphelins, sans impact "
               f"fonctionnel — nettoyage différé).")
     return True
 
@@ -824,14 +1149,6 @@ if __name__ == "__main__":
 
     sub.add_parser("ensure-collections")
 
-    pg = sub.add_parser("upsert-geo")
-    pg.add_argument("--lat",        required=True)
-    pg.add_argument("--lon",        required=True)
-    pg.add_argument("--content",    required=True)
-    pg.add_argument("--pubkey",     default="")
-    pg.add_argument("--event-id",   default="")
-    pg.add_argument("--importance", type=int, default=1)
-
     ps = sub.add_parser("upsert-slot")
     ps.add_argument("--user-id",    required=True)
     ps.add_argument("--slot",       type=int, default=0)
@@ -894,10 +1211,6 @@ if __name__ == "__main__":
     pr.add_argument("--user-id", required=True)
     pr.add_argument("--slot",    type=int, default=0)
 
-    prg = sub.add_parser("reve-geo")
-    prg.add_argument("--lat", required=True)
-    prg.add_argument("--lon", required=True)
-
     psh = sub.add_parser("skill-hash")
     psh.add_argument("--skill", required=True)
 
@@ -915,6 +1228,45 @@ if __name__ == "__main__":
     psr.add_argument("--limit",  type=int, default=5)
     psr.add_argument("--season", choices=["hiver", "printemps", "ete", "automne"], default=None)
 
+    pov = sub.add_parser("memory-overview")
+    pov.add_argument("--user-id", required=True)
+
+    psf = sub.add_parser("set-fields")
+    psf.add_argument("--user-id", required=True)
+    psf.add_argument("--ids", nargs="+", type=int, required=True)
+    psf.add_argument("--fields", required=True, help="JSON {champ: valeur}")
+
+    pum = sub.add_parser("upsert-memory")
+    pum.add_argument("--user-id", required=True)
+    pum.add_argument("--content", required=True)
+    pum.add_argument("--kind", default="fact")
+    pum.add_argument("--source", default="manual")
+    pum.add_argument("--visibility", default="private")
+
+    pup = sub.add_parser("update-memory")
+    pup.add_argument("--user-id", required=True)
+    pup.add_argument("--id", type=int, required=True)
+    pup.add_argument("--content", default=None)
+    pup.add_argument("--kind", default=None)
+    pup.add_argument("--visibility", default=None)
+
+    pds = sub.add_parser("delete-source")
+    pds.add_argument("--user-id", required=True)
+    pds.add_argument("--source", required=True)
+
+    pda = sub.add_parser("delete-all")
+    pda.add_argument("--user-id", required=True)
+
+    plm = sub.add_parser("list-memories")
+    plm.add_argument("--user-id", required=True)
+    plm.add_argument("--kinds",   nargs="*")
+    plm.add_argument("--source",  default=None)
+    plm.add_argument("--all",     action="store_true", help="inclut remplacés/supprimés")
+
+    pdm2 = sub.add_parser("delete-memory")
+    pdm2.add_argument("--user-id", required=True)
+    pdm2.add_argument("--ids",     nargs="+", type=int, required=True)
+
     psu = sub.add_parser("search-slot")
     psu.add_argument("--user-id", required=True)
     psu.add_argument("--query",   required=True)
@@ -927,11 +1279,6 @@ if __name__ == "__main__":
     if args.cmd == "ensure-collections":
         ensure_all_collections()
         print("OK")
-
-    elif args.cmd == "upsert-geo":
-        ok = upsert_geo(args.lat, args.lon, args.content, args.pubkey,
-                        event_id=args.event_id, importance=args.importance)
-        sys.exit(0 if ok else 1)
 
     elif args.cmd == "upsert-slot":
         ok = upsert_user_slot(args.user_id, args.slot, args.content,
@@ -987,10 +1334,6 @@ if __name__ == "__main__":
         ok = reve_compress_slot(args.user_id, args.slot)
         print("RÊVE effectué" if ok else "seuil non atteint")
 
-    elif args.cmd == "reve-geo":
-        ok = reve_compress_geo(args.lat, args.lon)
-        print("RÊVE effectué" if ok else "seuil non atteint")
-
     elif args.cmd == "skill-hash":
         print(skill_hash(args.skill))
 
@@ -1011,6 +1354,36 @@ if __name__ == "__main__":
         results = search_geo(args.lat, args.lon, args.query, args.limit,
                              season=args.season)
         print(json.dumps(results, ensure_ascii=False, indent=2))
+
+    elif args.cmd == "memory-overview":
+        print(json.dumps(memory_overview(args.user_id)))
+
+    elif args.cmd == "set-fields":
+        sys.exit(0 if set_memory_fields(args.user_id, args.ids, json.loads(args.fields)) else 1)
+
+    elif args.cmd == "upsert-memory":
+        ok = upsert_memory(args.user_id, args.content, kind=args.kind, source=args.source,
+                           visibility=args.visibility)
+        print(_stable_id(args.user_id, _content_hash(args.content)) if ok else 0)
+        sys.exit(0 if ok else 1)
+
+    elif args.cmd == "update-memory":
+        nid = update_memory(args.user_id, args.id, args.content, args.kind, args.visibility)
+        print(nid)
+        sys.exit(0 if nid else 1)
+
+    elif args.cmd == "delete-source":
+        sys.exit(0 if delete_by_source(args.user_id, args.source) else 1)
+
+    elif args.cmd == "delete-all":
+        sys.exit(0 if delete_all_memories(args.user_id) else 1)
+
+    elif args.cmd == "list-memories":
+        print(json.dumps(list_memories(args.user_id, kinds=args.kinds, source=args.source,
+                                       include_inactive=args.all), ensure_ascii=False))
+
+    elif args.cmd == "delete-memory":
+        sys.exit(0 if delete_memory(args.user_id, args.ids) else 1)
 
     elif args.cmd == "search-slot":
         results = search_user_slot(args.user_id, args.query,

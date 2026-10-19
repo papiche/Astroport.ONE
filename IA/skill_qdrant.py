@@ -37,8 +37,9 @@ if os.path.exists(venv_path):
 QDRANT_HOST = "localhost"
 QDRANT_PORT = 6333
 COLLECTION  = "wotx2_resources"
-EMBED_MODEL = "nomic-embed-text"  # Ollama embedding model
-VECTOR_SIZE = 768                 # nomic-embed-text output size
+import embed_config                 # modèle d'embedding UNIQUE de la plateforme (bge-m3)
+EMBED_MODEL = embed_config.MODEL
+VECTOR_SIZE = embed_config.DIM
 TOP_K       = 5
 
 
@@ -64,10 +65,8 @@ def _client():
 
 
 def _embed(text: str) -> list:
-    """Génère un embedding via Ollama (nomic-embed-text)."""
-    import ollama
-    resp = ollama.embeddings(model=EMBED_MODEL, prompt=text)
-    return resp["embedding"]
+    """Embedding via embed_config (bge-m3) — lève une erreur claire, jamais un vecteur vide."""
+    return embed_config.embed(text)
 
 
 def _ensure_collection():
@@ -75,12 +74,19 @@ def _ensure_collection():
     from qdrant_client.models import Distance, VectorParams
     client = _client()
     existing = [c.name for c in client.get_collections().collections]
-    if COLLECTION not in existing:
-        client.create_collection(
-            collection_name=COLLECTION,
-            vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
-        )
-        print(f"[skill_qdrant] Collection '{COLLECTION}' créée.", file=sys.stderr)
+    if COLLECTION in existing:
+        have = client.get_collection(COLLECTION).config.params.vectors.size
+        if have == VECTOR_SIZE:
+            return
+        # Reconstructible : `index-all` la régénère depuis le relais NOSTR — on recrée plutôt que de mélanger.
+        print(f"[skill_qdrant] '{COLLECTION}' : {have} d ≠ {VECTOR_SIZE} d ({EMBED_MODEL}) — recréée, "
+              f"relancez `skill_qdrant.py index-all`", file=sys.stderr)
+        client.delete_collection(COLLECTION)
+    client.create_collection(
+        collection_name=COLLECTION,
+        vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
+    )
+    print(f"[skill_qdrant] Collection '{COLLECTION}' créée.", file=sys.stderr)
 
 
 def _event_to_doc(event: dict) -> dict | None:
@@ -199,7 +205,7 @@ def search_resources(skill: str, question: str = "", limit: int = TOP_K) -> list
             collection_name=COLLECTION,
             query=vec,
             limit=limit,
-            score_threshold=0.3,
+            score_threshold=embed_config.threshold("doc"),   # l'ancien 0,3 laissait tout passer
         ).points
         results = []
         for h in hits:

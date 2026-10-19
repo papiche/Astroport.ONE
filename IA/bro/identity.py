@@ -158,7 +158,7 @@ def _append_preferences_history(owner_email, before_content, trigger_line, after
 
 def _trim_preferences_history(path):
     """Fenêtre glissante — écriture atomique (tmp+os.replace), même pattern
-    que short_memory.py/save_plan (jamais de fichier tronqué sur crash)."""
+    que save_plan (jamais de fichier tronqué sur crash)."""
     try:
         with open(path, encoding="utf-8") as f:
             lines = f.readlines()

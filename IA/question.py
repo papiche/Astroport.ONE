@@ -5,9 +5,10 @@ question.py — Orchestrateur IA Ollama avec mémoire multi-source
 Sources de contexte (priorité décroissante, toutes cumulables) :
   1. Flashmem skill  --skill devops   → ~/.zen/flashmem/skills/devops.md
   2. Qdrant RAG      --skill devops   → collection wotx2_resources (sémantique)
-  3. Slot user       --user-id email --slot N  → ~/.zen/flashmem/<email>/slotN.json
-  4. UMAP memory     --lat --lon      → ~/.zen/flashmem/uplanet_memory/<coord>.json
-  5. Pubkey memory   --pubkey <hex>   → ~/.zen/flashmem/uplanet_memory/pubkey/<hex>.json
+  3. Mémoire perso   --user-id email  → collection Qdrant memory_<hex> (souvenirs actifs, sémantique)
+  4. Mémoire du lieu --lat --lon      → collection Qdrant uplanet_geo : publications géolocalisées APPRÉCIÉES
+                                        (1 like = UMAP, 3 = SECTOR, 12 = REGION), indexées depuis NOSTR par geo_memory.py
+Plus aucun fichier local : tout vit dans NOSTR et Qdrant (stockage p2p).
 """
 
 # Auto-reinvocation dans le venv ~/.astro/ si dépendances absentes — UNIQUEMENT
@@ -123,19 +124,21 @@ def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=
 
     Simplification 2026-10 : la mémoire personnelle (user_id) n'est plus lue
     comme "les 20 derniers messages bruts d'un tiroir numéroté choisi par
-    l'utilisateur" — elle est retrouvée par PERTINENCE SÉMANTIQUE à la
-    question posée (memory_manager.search_user_slot, Qdrant), sur l'unique
-    slot personnel (0). Fini les #1-#12 à mémoriser soi-même : BRO retrouve
-    seul ce qui compte. Qdrant est désormais la seule source de vérité pour
-    cette mémoire (plus de fichier ~/.zen/flashmem/{user_id}/slot0.json lu
-    ici — short_memory.py continue de l'écrire pour compatibilité ascendante
-    mais rien ici n'en dépend plus)."""
+    l'utilisateur" — elle est retrouvée par PERTINENCE SÉMANTIQUE à la question
+    posée (memory_manager.search_user_slot, Qdrant), sur TOUS les souvenirs actifs
+    du compte (faits, épisodes, proches, traits). Qdrant est la seule source de
+    vérité : plus aucun fichier local."""
     if user_id:
         try:
             sys.path.insert(0, MY_DIR)
             import memory_manager
-            query = question_text or "contexte personnel récent"
-            hits = memory_manager.search_user_slot(user_id, query, slots=[slot], limit=5)
+            # Toute la mémoire ACTIVE du compte (faits, épisodes, traits), pas seulement le
+            # slot 0 (#rec, jamais pratiqué) : BRO retrouve seul ce qui compte. Seuil =
+            # RECALL_THRESHOLD du modèle d'embedding. Sans question : les plus récents.
+            if question_text:
+                hits = memory_manager.search_user_slot(user_id, question_text, limit=6)
+            else:
+                hits = memory_manager.list_memories(user_id, limit=5)
             if hits:
                 return "\n".join(
                     f"- {h.get('payload', {}).get('content', '')}" for h in hits
@@ -144,26 +147,24 @@ def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=
             print(f"[question.py] load_context: recherche Qdrant échouée ({e}) — contexte vide", file=sys.stderr)
         return ""
 
-    base_memory_dir = os.path.expanduser("~/.zen/flashmem/uplanet_memory")
-    os.makedirs(base_memory_dir, exist_ok=True)
-
     if latitude and longitude:
-        coord_key = f"{latitude}_{longitude}".replace(".", "_").replace("-", "m")
-        memory_file = os.path.join(base_memory_dir, f"{coord_key}.json")
-    elif pubkey:
-        memory_file = os.path.join(base_memory_dir, "pubkey", f"{pubkey}.json")
-    else:
-        return ""
-
-    if not os.path.isfile(memory_file):
-        return ""
-    try:
-        with open(memory_file, 'r') as f:
-            memory = json.load(f)
-            messages = memory.get('messages', [])
-            return "\n".join(f"- {m.get('content', '')}" for m in messages)
-    except Exception:
-        return ""
+        # Mémoire du LIEU : publications géolocalisées appréciées, pertinentes pour la question, au périmètre où elles
+        # comptent (leur case UMAP ≥ 1 like, leur SECTOR ≥ 3, leur REGION ≥ 12). Avant : TOUS les messages d'un fichier JSON
+        # local, sans tri, écrits par short_memory.py (supprimé : plus de disque local).
+        try:
+            sys.path.insert(0, MY_DIR)
+            import memory_manager
+            hits = memory_manager.search_geo(latitude, longitude, question_text or "ce qui se passe ici", limit=5)
+        except Exception as e:
+            print(f"[question.py] load_context: mémoire du lieu indisponible ({e}) — contexte vide", file=sys.stderr)
+            return ""
+        out = []
+        for h in hits:
+            pl = h.get("payload", {})
+            out.append(f"- [{str(pl.get('timestamp', ''))[:10]} · {str(pl.get('level', '')).upper()} · "
+                       f"{pl.get('likes', 0)} like(s)] {pl.get('content', '')[:400]}")
+        return "\n".join(out)
+    return ""
 
 
 def filter_think_tags(text):
@@ -292,7 +293,7 @@ def get_ollama_answer(prompt: str, model_name: str = "gemma3:12b",
                       repeat_penalty: float = None,
                       format_json: bool = False) -> str | None:
     """Génère une réponse Ollama avec le prompt final."""
-    _system = system_prompt or (
+    _system = system_prompt or (_JSON_RULES if format_json else
         "RÉPONDS EN FRANÇAIS UNIQUEMENT.\n\n"
         "RÈGLES:\n"
         "1. Réponds en FRANÇAIS (ou dans la langue de la question)\n"
@@ -327,11 +328,35 @@ def get_ollama_answer(prompt: str, model_name: str = "gemma3:12b",
         # interpret_command_with_context dans bro_watch_core.py).
         kwargs['format'] = 'json'
     try:
+        # La 3090 est PARTAGÉE avec ComfyUI : ne pas demander un modèle à charger s'il n'y a pas la place (cf. gpu_headroom.py).
+        sys.path.insert(0, MY_DIR)
+        import gpu_headroom
+        gpu_headroom.ensure(model_name, ctx=num_ctx)
+    except Exception as e:                       # GpuBusy : dit pourquoi, la réponse est refusée plutôt que de risquer le GPU
+        print(f"[question.py] GPU occupé : {e}", file=sys.stderr)
+        return None
+    import ollama_metrics                        # journal des appels au GPU partagé (~/.zen/log/ollama_calls_*.jsonl)
+    _t0 = ollama_metrics.start()
+    try:
         ai_response = ollama.chat(**kwargs)
+        ollama_metrics.record("chat", model_name, _t0, resp=ai_response, ctx=num_ctx)
         return filter_think_tags(ai_response['message']['content'])
     except Exception as e:
+        ollama_metrics.record("chat", model_name, _t0, ok=False, error=e, ctx=num_ctx)
         print(f"[question.py] Erreur Ollama: {e}", file=sys.stderr)
         return None
+
+
+# Appels qui attendent une DONNÉE (classification, extraction, synthèse de profil) :
+# aucune consigne de style conversationnel — « utilise des emojis » se retrouvait sinon
+# dans les valeurs JSON recopiées telles quelles dans identity/.Preferences.md.
+_JSON_RULES = (
+    "Tu es un composant de traitement de données.\n"
+    "RÈGLES:\n"
+    "1. Réponds UNIQUEMENT par un objet JSON valide, conforme au format demandé\n"
+    "2. Aucun texte autour, aucun markdown, AUCUN emoji\n"
+    "3. Les valeurs textuelles sont écrites en français, sobres et factuelles"
+)
 
 
 def answer_question(question_text: str, model_name: str = "gemma3:12b",
@@ -364,14 +389,15 @@ def answer_question(question_text: str, model_name: str = "gemma3:12b",
         user_ctx = load_context(user_id=user_id, slot=slot, question_text=question_text)
         if user_ctx:
             context_parts.append(f"Historique personnel :\n{wrap_untrusted('personal_history', user_ctx)}")
+            context_parts.append(
+                "Règle de transparence : si ta réponse s'appuie sur un élément de l'historique personnel, dis-le en une "
+                "courte incise (« je me souviens que… », « d'après ce que tu m'as dit… ») pour que la personne puisse te "
+                "corriger. N'en cite aucun s'il n'aide pas à répondre, et n'invente jamais de souvenir.")
     elif lat and lon:
-        geo_ctx = load_context(latitude=lat, longitude=lon)
+        geo_ctx = load_context(latitude=lat, longitude=lon, question_text=question_text)
         if geo_ctx:
-            context_parts.append(f"Contexte géographique :\n{wrap_untrusted('geo_context', geo_ctx)}")
-    elif pubkey:
-        pub_ctx = load_context(pubkey=pubkey)
-        if pub_ctx:
-            context_parts.append(f"Contexte utilisateur :\n{wrap_untrusted('user_context', pub_ctx)}")
+            context_parts.append(f"Contexte géographique (publications appréciées du lieu) :\n{wrap_untrusted('geo_context', geo_ctx)}")
+    # `pubkey` : n'ouvre plus de contexte (la mémoire par clé publique était un fichier local écrit par short_memory.py, supprimé)
 
     # ── Prompt final ──────────────────────────────────────────────────────────
     # Question seule dans le rôle "user" — contexte et règles dans "system"
@@ -379,7 +405,7 @@ def answer_question(question_text: str, model_name: str = "gemma3:12b",
     #  le contexte RAG avec la demande utilisateur)
     final_prompt = question_text
 
-    _base_rules = (
+    _base_rules = _JSON_RULES if format_json else (
         "RÉPONDS EN FRANÇAIS UNIQUEMENT.\n\n"
         "RÈGLES:\n"
         "1. Réponds en FRANÇAIS (ou dans la langue de la question)\n"
@@ -475,6 +501,11 @@ if __name__ == "__main__":
                         help="Nucleus sampling top_p (ex: 0.9). Défaut: modèle Ollama.")
     parser.add_argument("--repeat-penalty",  type=float, default=None, dest="repeat_penalty",
                         help="Pénalité répétition repeat_penalty (ex: 1.1). Défaut: modèle Ollama.")
+    parser.add_argument("--learn",           action="store_true",
+                        help="Met la question en file d'apprentissage de la mémoire (source « chat », "
+                             "memory_writer.py) — réservé aux canaux où l'auteur est AUTHENTIFIÉ comme "
+                             "propriétaire de --user-id (DM déchiffré). Jamais Telegram/Mastodon/roaming : "
+                             "n'importe qui peut y écrire.")
     parser.add_argument("--format-json",     action="store_true", dest="format_json",
                         help="Force Ollama à générer un JSON syntaxiquement valide "
                              "(paramètre API format=json) — pour les prompts qui exigent "
@@ -504,6 +535,13 @@ if __name__ == "__main__":
         top_p=args.top_p, repeat_penalty=args.repeat_penalty,
         format_json=args.format_json,
     )
+
+    if answer and args.learn and args.user_id:
+        try:
+            import memory_writer
+            memory_writer.ingest(args.user_id, [question_text], source="chat")
+        except Exception as e:
+            print(f"[question.py] apprentissage mémoire indisponible : {e}", file=sys.stderr)
 
     if answer:
         if args.json:
