@@ -19,7 +19,7 @@ Phases :
 
 Dépendances :
   - ollama.me.sh  : assure qu'Ollama est disponible en local (port 11434)
-  - embed.py      : génère les embeddings via nomic-embed-text + gère Qdrant
+  - embed.py      : génère les embeddings (embed_config.py : bge-m3) + gère Qdrant
 """
 
 # Auto-reinvocation dans le venv ~/.astro/ si dépendances absentes
@@ -60,7 +60,7 @@ except ImportError as e:
     print(f"  [code_assistant] embed.py non trouvé dans {_IA_DIR}: {e}",
           file=sys.stderr)
     EMBED_OK = False
-    EMBED_MODEL  = "nomic-embed-text"
+    EMBED_MODEL  = "bge-m3"
     QDRANT_URL   = "http://localhost:6333"
     def get_embedding(text, model=None): return []
     def qdrant_available(): return False
@@ -320,7 +320,7 @@ def qdrant_search(query: str, top: int = 3, language: str = None) -> list:
     de mélanger les sessions Python et Shell.
     """
     results = _qdrant_search_raw(
-        QDRANT_COL, query, top=top, score_threshold=0.65,
+        QDRANT_COL, query, top=top, score_threshold=None,   # None = seuil « cluster » de embed_config
         filter_language=language
     )
     return [r.get("payload", {}) for r in results]
@@ -578,7 +578,8 @@ def call_llm(system: str, user_prompt: str, model: str,
     if json_format:
         kwargs["format"] = "json"
     try:
-        resp = ollama.chat(**kwargs)
+        import ollama_metrics                    # garde-fou VRAM (GpuBusy → l'`except` ci-dessous le dit) + mesure
+        resp = ollama_metrics.chat(**kwargs)
         result = filter_think_tags(resp["message"]["content"])
         observability.log_node_event(
             "code_assistant", "call_llm", success=True,
@@ -800,7 +801,7 @@ def main():
                 print(f"  ✅ {model} prêt")
             except Exception as e:
                 print(f"  ❌ {model} : {e}")
-        print(f"\n  nomic-embed-text (embedding)...")
+        print(f"\n  {EMBED_MODEL} (embedding)...")
         try:
             ollama.pull(EMBED_MODEL)
             print(f"  ✅ {EMBED_MODEL} prêt")

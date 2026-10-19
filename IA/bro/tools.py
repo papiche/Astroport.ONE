@@ -244,7 +244,9 @@ def match_tool(text):
     valid_names = {t.name for t in arbor_tools}
     try:
         import ollama
-        response = ollama.chat(
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        import ollama_metrics                    # garde-fou VRAM (GpuBusy → l'`except` ci-dessous le dit) + mesure
+        response = ollama_metrics.chat(
             model=TOOL_ROUTING_MODEL,
             messages=[{"role": "user", "content": text}],
             tools=tools_spec,
@@ -300,7 +302,7 @@ def _format_memory_summary(owner_email, limit=5):
         import sys
         sys.path.insert(0, BRO_IA_PATH)
         import memory_manager as mm
-        hits = mm.recent_user_slot(owner_email, slot=0, limit=limit)
+        hits = mm.list_memories(owner_email, limit=limit)   # tous types, récents d'abord
     except Exception:
         return None
     if not hits:
@@ -313,7 +315,7 @@ def _clear_memory(owner_email):
         import sys
         sys.path.insert(0, BRO_IA_PATH)
         import memory_manager as mm
-        mm.delete_user_slot(owner_email, 0)
+        mm.delete_all_memories(owner_email)   # #reset : l'utilisateur efface TOUT, explicitement
     except Exception:
         pass
 

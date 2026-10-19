@@ -953,6 +953,8 @@ for t in turns:
     _dlg="${dialog_context//\"\"\"/ }"
     _que="${question//\"\"\"/ }"
 
+    ## La 3090 est partagée avec ComfyUI : pas de chargement de modèle sans place (IA/gpu_headroom.py). Sortie vide = « indisponible ».
+    python3 "$(dirname "${BASH_SOURCE[0]}")/../gpu_headroom.py" check --model "${_LOVE_MODEL}" >&2 || { echo ""; return 0; }
     python3 - <<PYEOF 2>/dev/null
 import urllib.request, json
 
@@ -984,8 +986,13 @@ try:
         "${_LOVE_OLLAMA_URL}/api/generate",
         data=data, method="POST",
         headers={"Content-Type": "application/json"})
+    import sys, time
+    sys.path.insert(0, "$(dirname "${BASH_SOURCE[0]}")/..")
+    import ollama_metrics                      # mesure de l'appel au GPU partagé
+    _t0 = ollama_metrics.start()
     with urllib.request.urlopen(req, timeout=90) as r:
         resp = json.loads(r.read())
+        ollama_metrics.record("generate", "${_LOVE_MODEL}", _t0, resp=resp, extra={"origine": "love_handler"})
         print(resp.get("response", "").strip())
 except Exception:
     print("")

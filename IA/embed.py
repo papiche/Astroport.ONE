@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-embed.py — Utilitaire d'embedding via Ollama (nomic-embed-text) + Qdrant (Stack AI)
+embed.py — Utilitaire d'embedding via Ollama (modèle de embed_config.py : bge-m3) + Qdrant (Stack AI)
 
 Optimisé pour ZEN[0] : 
 - Détection auto de la clé API dans ~/.zen/ai-company/.env
@@ -27,7 +27,9 @@ import time
 # Configuration & Secrets
 # ─────────────────────────────────────────────────────────────────────────────
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-EMBED_MODEL = "nomic-embed-text"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import embed_config   # modèle + seuils UNIQUES de la plateforme (bge-m3)
+EMBED_MODEL = embed_config.MODEL
 QDRANT_URL  = os.environ.get("QDRANT_URL", "http://localhost:6333")
 
 # Auto-détection de la clé API Qdrant
@@ -85,7 +87,12 @@ def get_embedding(text: str, model: str = EMBED_MODEL) -> list:
     text = text.strip()[:8000]
     if not text: return []
     try:
+        import gpu_headroom                   # GPU partagé avec ComfyUI
+        import ollama_metrics
+        gpu_headroom.ensure(model)
+        _t0 = ollama_metrics.start()
         resp = _ollama.embeddings(model=model, prompt=text)
+        ollama_metrics.record("embed", model, _t0, resp=resp, ok=bool(resp.get("embedding")), n_inputs=1)
         return resp.get("embedding", [])
     except Exception as e:
         if "not found" in str(e).lower() and _ensure_model(model):
@@ -106,12 +113,19 @@ def qdrant_available() -> bool:
         return r.status_code == 200
     except Exception: return False
 
-def qdrant_ensure_collection(collection: str, vector_size: int = 768) -> bool:
+def qdrant_ensure_collection(collection: str, vector_size: int = embed_config.DIM) -> bool:
     if not _REQUESTS_OK: return False
     headers = _qdrant_headers()
     try:
         r = _requests.get(f"{QDRANT_URL}/collections/{collection}", headers=headers, timeout=2)
-        if r.status_code == 200: return True
+        if r.status_code == 200:
+            have = (r.json().get("result", {}).get("config", {}).get("params", {}).get("vectors") or {}).get("size")
+            if have and int(have) != int(vector_size):
+                # Collections de CE module (sessions de code…) : reconstructibles, mais on le DIT.
+                print(f"  [embed] ❌ {collection} : {have} d ≠ {vector_size} d — recréée (changement de modèle d'embedding)", file=sys.stderr)
+                _requests.delete(f"{QDRANT_URL}/collections/{collection}", headers=headers, timeout=5)
+            else:
+                return True
         payload = {"vectors": {"size": vector_size, "distance": "Cosine"}}
         r = _requests.put(f"{QDRANT_URL}/collections/{collection}", json=payload, headers=headers, timeout=5)
         return r.status_code in (200, 201)
@@ -141,10 +155,12 @@ def qdrant_index(collection: str, point_id: int, text: str,
     except Exception: return False
 
 def qdrant_search(collection: str, query: str, top: int = 5,
-                  score_threshold: float = 0.65,
+                  score_threshold: float = None,
                   model: str = EMBED_MODEL,
                   filter_language: str = None) -> list:
     if not _REQUESTS_OK: return []
+    if score_threshold is None:
+        score_threshold = embed_config.threshold("cluster")   # deux formulations d'une même chose (0,61, mesuré)
     v = get_embedding(query, model)
     if not v: return []
 

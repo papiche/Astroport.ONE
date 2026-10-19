@@ -109,6 +109,8 @@ send_workflow() {
   head -c 300 "$api_payload_file" >&2
   echo >&2
 
+  # La 3090 est partagée avec Ollama : lui faire libérer la place avant de soumettre
+  gpu_make_room 20 generate_video || exit 1
   # Send the workflow to ComfyUI
   local http_status
   http_status=$(curl -s -w "%{http_code}" -o "$response_body_file" \
@@ -141,6 +143,7 @@ send_workflow() {
     echo "API response (error details): $response_body" >&2
     exit 1
   fi
+  gpu_comfy_watch generate_video "$prompt_id"       # mesure du job (observateur détaché, IA/ollama_metrics.py)
   monitor_progress "$prompt_id"
 }
 

@@ -94,6 +94,7 @@ _WORKFLOW="$MY_PATH/workflow/Face Detect Embeddings JSON.json"
 _UI2API="$MY_PATH/../comfyui_ui2api.py"
 _UENC_CODEC="$MY_PATH/../../tools/uenc_codec.py"
 _GPU_LOCK="$HOME/.zen/tmp/comfyui_brain.lock"
+. "$MY_PATH/lib/gpu_room.sh"
 
 _tmp_dir=$(mktemp -d /tmp/faceid_XXXXXX)
 _cleanup() { rm -rf "$_tmp_dir"; }
@@ -242,6 +243,9 @@ PYRESIZE
     local _api_workflow
     _api_workflow=$(jq -c --arg img "$_uploaded" '.["1"].inputs.image = $img' <<< "$_API_WORKFLOW_TEMPLATE")
 
+    ## 5.5 La 3090 est partagée avec Ollama : lui faire libérer la place (revérifié au plus toutes les 30 s en --batch)
+    GPU_ROOM_TTL=30 gpu_make_room 3 faceid || { flock -u 9; return 1; }
+
     ## 6. Soumettre à /prompt avec un client_id pour l'attente WebSocket ciblée
     local _client_id _submit_resp _prompt_id
     _client_id=$(python3 -c "import uuid; print(str(uuid.uuid4()))")
@@ -276,6 +280,7 @@ PYRESIZE
     if [ "$_wait_result" != "done" ]; then
         echo "WARN:faceid:comfyui_wait:${_wait_result} — tentative de lecture de /history quand même" >&2
     fi
+    gpu_comfy_record_inline faceid "$_prompt_id" "$_history"     # mesure du job (lots : sans processus Python par photo)
 
     ## 8. Sortie texte du node SaveText depuis /history (clé "text" ou
     ##    "string", scalaire ou tableau [0] selon la version du node).

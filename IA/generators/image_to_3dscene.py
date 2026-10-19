@@ -59,11 +59,20 @@ def upload(path):
 
 
 def run(workflow, label):
+    # La 3090 est partagée avec Ollama : lui faire libérer la place avant de soumettre (IA/gpu_headroom.py)
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+    import gpu_headroom
+    try:
+        gpu_headroom.make_room_for_comfy(10, "image_to_3dscene")
+    except gpu_headroom.GpuBusy as e:
+        sys.exit(f"ERROR:image_to_3dscene:gpu_busy: {e}")
     res = json.loads(_request(f"{COMFY}/prompt", json.dumps({"prompt": workflow}).encode(),
                               {"Content-Type": "application/json"}))
     if res.get("node_errors"):
         sys.exit(f"Erreur ComfyUI ({label}) : {json.dumps(res['node_errors'])[:500]}")
     pid, start = res["prompt_id"], time.time()
+    import ollama_metrics
+    ollama_metrics.comfy_watch(f"image_to_3dscene:{label}", pid)     # mesure du job (observateur détaché)
     while True:
         hist = json.loads(_request(f"{COMFY}/history/{pid}"))
         if pid in hist:

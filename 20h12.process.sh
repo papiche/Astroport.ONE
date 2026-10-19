@@ -59,6 +59,25 @@ LOG_DIR="$HOME/.zen/log"
 mkdir -p "$LOG_DIR"
 find "$LOG_DIR" -name "20h12_*.log" -mtime +2 -exec gzip -f {} \; 2>/dev/null || true
 find "$LOG_DIR" -name "20h12_*.log.gz" -mtime +30 -delete 2>/dev/null || true
+## Mémoire géolocalisée : un journal par jour (geo_memory_AAAAMMJJ.log), même rotation que 20h12_*
+find "$LOG_DIR" -name "geo_memory_*.log" -mtime +2 -exec gzip -f {} \; 2>/dev/null || true
+find "$LOG_DIR" -name "geo_memory_*.log.gz" -mtime +30 -delete 2>/dev/null || true
+## Garde-fou VRAM (IA/gpu_headroom.py) : attentes, libérations de ComfyUI, refus — même rotation
+find "$LOG_DIR" -name "gpu_headroom_*.log" -mtime +2 -exec gzip -f {} \; 2>/dev/null || true
+find "$LOG_DIR" -name "gpu_headroom_*.log.gz" -mtime +30 -delete 2>/dev/null || true
+## Appels au GPU partagé (IA/ollama_metrics.py) : un fichier par jour, gzip > 2 j, purge > 30 j (analyse : IA/ollama_stats.py)
+find "$LOG_DIR" -name "ollama_calls_*.jsonl" -mtime +2 -exec gzip -f {} \; 2>/dev/null || true
+find "$LOG_DIR" -name "ollama_calls_*.jsonl.gz" -mtime +30 -delete 2>/dev/null || true
+## Erreurs des observateurs de jobs ComfyUI (IA/ollama_metrics.py comfy) : on garde la fin si le fichier dépasse 2 Mo
+_COMFY_WATCH_LOG="$LOG_DIR/comfy_watch.log"
+if [[ -f "$_COMFY_WATCH_LOG" ]] && [[ $(stat -c%s "$_COMFY_WATCH_LOG" 2>/dev/null || echo 0) -gt 2000000 ]]; then
+    tail -n 2000 "$_COMFY_WATCH_LOG" > "${_COMFY_WATCH_LOG}.tmp" && mv "${_COMFY_WATCH_LOG}.tmp" "$_COMFY_WATCH_LOG"
+fi
+## Historique des chronométrages (IA/bench_memory.py) : une ligne JSON par passage, on garde les 500 dernières
+_BENCH_LOG="$LOG_DIR/bench_memory.jsonl"
+if [[ -f "$_BENCH_LOG" ]] && [[ $(wc -l < "$_BENCH_LOG") -gt 500 ]]; then
+    tail -n 500 "$_BENCH_LOG" > "${_BENCH_LOG}.tmp" && mv "${_BENCH_LOG}.tmp" "$_BENCH_LOG"
+fi
 ## Rotation défensive du log brut cron (sortie écrite avant que ce script
 ## ne source my.sh / ne redirige vers le log daté ci-dessous, ex: erreur de PATH)
 _RAW_CRON_LOG="$LOG_DIR/20h12.log"
@@ -571,6 +590,16 @@ fi
 
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 
+## Mémoire géolocalisée (Qdrant uplanet_geo) : publications géolocalisées likées → UMAP (1 like) / SECTOR (3) / REGION (12).
+## Index reconstruit depuis NOSTR, processus autonome (setsid) : ne bloque pas le refresh.
+## Journal PERMANENT (avec rotation, cf. plus haut) : ~/.zen/log/geo_memory_AAAAMMJJ.log — ~/.zen/tmp/ est purgé chaque nuit.
+if [[ -f "${MY_PATH}/IA/geo_memory.py" ]]; then
+    mkdir -p "$LOG_DIR"
+    setsid nohup python3 "${MY_PATH}/IA/geo_memory.py" refresh >> "$LOG_DIR/geo_memory_$(date +%Y%m%d).log" 2>&1 < /dev/null &
+else
+    echo "[20h12] ❌ IA/geo_memory.py introuvable : uplanet_geo n'est pas mis à jour" >&2
+fi
+
 ## Paiements ẐEN roaming (Kind 7) qui n'avaient pas pu être relayés à la home station : on les rejoue
 ## (alerte Capitaine après 7 jours) — rien ne se perd en silence. Cf. tools/zen_like_retry.sh
 ${MY_PATH}/tools/zen_like_retry.sh
@@ -933,6 +962,22 @@ if systemctl is-enabled victron-mppt-monitor.service &>/dev/null; then
         "$VICTRON_STATS_SH" record-daily-history "$VICTRON_CSV" 2>&1 | tee -a $LOG_FILE || true
         IPFSNODEID="$IPFSNODEID" "$VICTRON_STATS_SH" publish-cid 2>&1 | tee -a $LOG_FILE || true
     fi
+fi
+
+########################################################################
+## USAGE DU GPU PARTAGÉ (carte « 🎮 Usage du GPU » de status.html) — mêmes couches que Solaire/Consommation :
+## 1) agrège les journaux ~/.zen/log/ollama_calls_*.jsonl (IA/ollama_metrics.py) dans l'historique PERMANENT
+##    ~/.zen/game/gpu/gpu_history.json (jamais sous ~/.zen/tmp/, purgé chaque nuit) ; 2) épingle l'historique sur IPFS et
+##    n'écrit que son CID dans ~/.zen/tmp/$IPFSNODEID/GPU/gpu_history.json.ipfs ; 3) _12345.sh en tire l'instantané léger.
+## Chaque station ne voit que SES appels à la carte partagée.
+########################################################################
+if [[ -f "${MY_PATH}/IA/ollama_stats.py" ]]; then
+    python3 "${MY_PATH}/IA/ollama_stats.py" record-daily 2>&1 | tee -a $LOG_FILE || true
+    if [[ -s "$HOME/.zen/game/gpu/gpu_history.json" ]]; then
+        IPFSNODEID="$IPFSNODEID" python3 "${MY_PATH}/IA/ollama_stats.py" publish-cid 2>&1 | tee -a $LOG_FILE || true
+    fi
+else
+    echo "❌ IA/ollama_stats.py introuvable : usage du GPU non rendu pour status.html" | tee -a $LOG_FILE >&2
 fi
 
 ########################################################################

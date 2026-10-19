@@ -288,6 +288,43 @@
             <div class="hist-summary" id="pow-hist-summary"></div>
         </div>
 
+        <!-- Usage du GPU partagé (Ollama) — masquée tant qu'aucun appel n'est enregistré sur cette station -->
+        <div class="card" id="card-gpu" style="display:none;grid-column:1/-1;">
+            <div class="card-title"><span class="dot" style="background:#9b59b6"></span>🎮 Usage du GPU partagé (Ollama + ComfyUI)</div>
+            <div class="stat-row" style="margin-bottom:0;">
+                <div class="stat-box"><div class="sv" id="gpu-today">—</div><div class="sk">appels aujourd'hui</div></div>
+                <div class="stat-box"><div class="sv" id="gpu-cold">—</div><div class="sk">démarrages à froid (7 j)</div></div>
+                <div class="stat-box"><div class="sv" id="gpu-p50">—</div><div class="sk">latence médiane (7 j)</div></div>
+                <div class="stat-box"><div class="sv" id="gpu-wait">—</div><div class="sk">attentes VRAM / refus (7 j)</div></div>
+                <div class="stat-box"><div class="sv" id="gpu-comfy">—</div><div class="sk">jobs ComfyUI (7 j) · échecs</div></div>
+                <div class="stat-box"><div class="sv" id="gpu-comfy-t">—</div><div class="sk">job : durée · attente en file</div></div>
+            </div>
+            <div class="dur-row">
+                <button class="dur-btn" data-dur="7" onclick="setGpuDuration(7, this)">7 jours</button>
+                <button class="dur-btn active" data-dur="30" onclick="setGpuDuration(30, this)">30 jours</button>
+                <button class="dur-btn" data-dur="90" onclick="setGpuDuration(90, this)">90 jours</button>
+                <button class="dur-btn" data-dur="all" onclick="setGpuDuration('all', this)">Tout</button>
+            </div>
+            <div class="dur-row">
+                <button class="dur-btn active" onclick="setGpuMetric('calls', this)">Appels</button>
+                <button class="dur-btn" onclick="setGpuMetric('cold', this)">À froid</button>
+                <button class="dur-btn" onclick="setGpuMetric('p50', this)">Latence</button>
+                <button class="dur-btn" onclick="setGpuMetric('waits', this)">Attentes VRAM</button>
+                <button class="dur-btn" onclick="setGpuMetric('comfy', this)">Jobs ComfyUI</button>
+                <button class="dur-btn" onclick="setGpuMetric('cexec', this)">Durée job</button>
+                <button class="dur-btn" onclick="setGpuMetric('cqueue', this)">Attente en file</button>
+            </div>
+            <div class="chart-wrap" id="gpu-chart"></div>
+            <div class="hist-note" id="gpu-hist-status"></div>
+            <div class="hist-summary" id="gpu-hist-summary"></div>
+            <div class="hist-note" style="margin-top:10px;">Heures d'usage (7 derniers jours)</div>
+            <div class="chart-wrap" id="gpu-hours"></div>
+            <div class="hist-note" style="margin-top:10px;">Heures des jobs ComfyUI (7 derniers jours)</div>
+            <div class="chart-wrap" id="gpu-hours-comfy"></div>
+            <div class="hist-summary" id="gpu-detail"></div>
+            <div class="hist-note">Appels de CETTE station à la carte partagée : Ollama (chat, embeddings, vision) et jobs ComfyUI qu'elle a soumis. La carte est mutualisée entre stations. « À froid » = modèle rechargé en VRAM (&gt; 0,5 s) ; « attente en file » = temps passé derrière les autres jobs.</div>
+        </div>
+
         <!-- Capacités -->
         <div class="card">
             <div class="card-title"><span class="dot" style="background:#27ae60"></span>📊 Capacités</div>
@@ -686,6 +723,121 @@ function setEnergyDuration(value, btn) {
     renderEnergyChart();
 }
 
+// --- Usage du GPU partagé (Ollama) ---
+
+let gpuHistoryDays = null;     // Map(date -> entrée du jour de ollama_stats.py) | Map vide si indisponible
+let gpuHistorySince = null;
+let gpuDuration = 30;          // nombre de jours, ou 'all'
+let gpuMetric = 'calls';       // calls | cold | p50 | waits | comfy | cexec | cqueue
+
+function fmtMs(ms) { return ms >= 1000 ? (ms / 1000).toFixed(1) + ' s' : Math.round(ms) + ' ms'; }
+
+function renderGpu(d) {
+    const g = d.gpu_usage;
+    const card = document.getElementById('card-gpu');
+    if (!card) return;
+    if (!g || !g.available) { card.style.display = 'none'; return; }
+    card.style.display = '';
+
+    const w = g.week || {}, t = g.today || {};
+    setText('gpu-today', String(t.calls ?? 0));
+    setText('gpu-cold',  (w.cold_starts ?? 0) + ' (' + (w.cold_pct ?? 0).toFixed(0) + ' %)');
+    setText('gpu-p50',   w.p50_ms != null ? fmtMs(w.p50_ms) : '—');
+    setText('gpu-wait',  (w.waits ?? 0) + ' / ' + (w.busy ?? 0));
+    const cf = w.comfy || {};
+    setText('gpu-comfy', (cf.jobs ?? 0) + ' · ' + (cf.errors ?? 0) + (cf.oom ? ' (' + cf.oom + ' mém.)' : ''));
+    setText('gpu-comfy-t', cf.jobs ? (cf.exec_p50_ms != null ? fmtMs(cf.exec_p50_ms) : '—') + ' · ' + (cf.queue_p50_ms != null ? fmtMs(cf.queue_p50_ms) : '—') : '—');
+
+    const hours = g.hours_7d || [];
+    const hoursEl = document.getElementById('gpu-hours');
+    if (hoursEl && hours.length === 24) hoursEl.innerHTML = buildHourBarsSVG(hours);
+    const hc = g.hours_comfy_7d || [];
+    const hoursCEl = document.getElementById('gpu-hours-comfy');
+    if (hoursCEl) hoursCEl.innerHTML = hc.length === 24 && hc.some(v => v > 0) ? buildHourBarsSVG(hc, '#e67e22', 'job(s)')
+        : '<div class="hist-note">Aucun job ComfyUI enregistré sur 7 jours.</div>';
+    const detail = document.getElementById('gpu-detail');
+    if (detail) {
+        const un = Object.entries(w.unloaded || {}).map(([m, n]) => m + ' ×' + n).join(', ');
+        detail.textContent = (w.top_model ? 'Modèle le plus sollicité : ' + w.top_model + ' · ' : '') +
+            (w.top_source ? 'source principale : ' + w.top_source + ' · ' : '') +
+            (cf.top_label ? 'job ComfyUI le plus fréquent : ' + cf.top_label + ' · ' : '') +
+            (w.comfy_room ? 'places faites pour ComfyUI : ' + w.comfy_room + (un ? ' (déchargés : ' + un + ')' : '') + ' · ' : '') +
+            (w.errors ? w.errors + ' appel(s) en erreur' : 'aucune erreur');
+    }
+    if (gpuHistoryDays === null) loadGpuHistory(); // une seule fois
+}
+
+// 24 barres (une par heure locale), heures de pointe visibles d'un coup d'œil.
+function buildHourBarsSVG(values, color, noun) {
+    color = color || '#9b59b6'; noun = noun || 'appel(s)';
+    const w = 640, h = 110, padL = 30, padB = 16, padT = 6, padR = 6;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const max = Math.max(...values, 1);
+    const bw = plotW / 24;
+    let bars = '', labels = '';
+    values.forEach((v, i) => {
+        const bh = Math.max(0, (v / max) * plotH);
+        const x = padL + i * bw;
+        bars += `<rect class="chart-bar" x="${x.toFixed(1)}" y="${(padT + plotH - bh).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${bh.toFixed(1)}" rx="1" fill="${color}"><title>${String(i).padStart(2, '0')}h : ${v} ${noun}</title></rect>`;
+        if (i % 3 === 0) labels += `<text class="chart-label" x="${x.toFixed(1)}" y="${h - 3}">${i}h</text>`;
+    });
+    const top = `<text class="chart-label" x="2" y="${padT + 8}">${max}</text>`;
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet">${top}${bars}${labels}</svg>`;
+}
+
+async function loadGpuHistory() {
+    const statusEl = document.getElementById('gpu-hist-status');
+    if (statusEl) statusEl.textContent = '⏳ Chargement de l\'historique publié…';
+    try {
+        const r = await fetchHistoryDays('/GPU/gpu_history.json.ipfs');
+        gpuHistoryDays = r.days;
+        gpuHistorySince = r.since;
+    } catch (e) {
+        gpuHistoryDays = new Map();
+        if (statusEl) statusEl.textContent = "⚠️ Historique pas encore publié (premier passage de 20h12 à venir, ou IPFS indisponible).";
+        return;
+    }
+    if (statusEl) statusEl.textContent = '';
+    renderGpuChart();
+}
+
+function renderGpuChart() {
+    const chartEl = document.getElementById('gpu-chart');
+    const sumEl = document.getElementById('gpu-hist-summary');
+    if (!chartEl || !gpuHistoryDays) return;
+    if (gpuHistoryDays.size === 0) { chartEl.innerHTML = ''; if (sumEl) sumEl.innerHTML = ''; return; }
+
+    const dates = gpuDuration === 'all' ? datesSince(gpuHistorySince) : lastNDates(gpuDuration);
+    const pick = e => !e ? 0 : gpuMetric === 'calls' ? e.calls : gpuMetric === 'cold' ? e.cold_starts :
+        gpuMetric === 'p50' ? (e.p50_ms || 0) : gpuMetric === 'comfy' ? (e.comfy?.jobs || 0) :
+        gpuMetric === 'cexec' ? (e.comfy?.exec_p50_ms || 0) : gpuMetric === 'cqueue' ? (e.comfy?.queue_p50_ms || 0) : (e.waits + e.busy);
+    const isTime = ['p50', 'cexec', 'cqueue'].includes(gpuMetric);
+    const values = dates.map(dt => pick(gpuHistoryDays.get(dt)));
+    const unit = isTime ? v => fmtMs(v) : v => String(Math.round(v));
+    const total = values.reduce((s, v) => s + v, 0);
+    const daysWithData = dates.filter(dt => gpuHistoryDays.has(dt)).length;
+
+    chartEl.innerHTML = buildBarChartSVG(dates, values, {
+        color: '#9b59b6',
+        tooltip: (dt, v) => {
+            const e = gpuHistoryDays.get(dt);
+            const c = e && e.comfy;
+            return e ? `${dt} : ${e.calls} appels · ${e.cold_starts} à froid · médiane ${e.p50_ms != null ? fmtMs(e.p50_ms) : '—'} · ${e.waits} attente(s), ${e.busy} refus` +
+                       (c && c.jobs ? ` · ${c.jobs} job(s) ComfyUI (durée ${c.exec_p50_ms != null ? fmtMs(c.exec_p50_ms) : '—'}, file ${c.queue_p50_ms != null ? fmtMs(c.queue_p50_ms) : '—'}${c.errors ? ', ' + c.errors + ' échec(s)' : ''})` : '')
+                     : `${dt} : aucun appel`;
+        },
+        axisFmt: unit,
+    });
+    if (sumEl) {
+        const label = { calls: 'appels', cold: 'démarrages à froid', waits: 'attentes ou refus', comfy: 'jobs ComfyUI' }[gpuMetric];
+        sumEl.textContent = (isTime ? `${daysWithData} jour(s) mesuré(s)` : `${total} ${label} sur la période · ${daysWithData}/${dates.length} jours suivis`) +
+            (gpuHistorySince ? ` · depuis ${gpuHistorySince}` : '');
+    }
+}
+
+function setGpuDuration(value, btn) { gpuDuration = value; activateDurButton(btn); renderGpuChart(); }
+function setGpuMetric(value, btn) { gpuMetric = value; activateDurButton(btn); renderGpuChart(); }
+
 // ─── Main render ──────────────────────────────────────────────────────────────
 
 function render(d, apiBase) {
@@ -760,6 +912,7 @@ function render(d, apiBase) {
     // Solaire (Victron MPPT) / Consommation (PowerJoular), si installés
     renderSolar(d);
     renderEnergy(d);
+    renderGpu(d);
 
     // Links
     renderLinks(d, apiBase);

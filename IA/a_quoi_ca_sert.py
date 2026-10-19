@@ -72,7 +72,8 @@ def _ensure_ollama():
 def _ollama_vision(image_bytes, prompt, model='minicpm-v4.6:latest'):
     import ollama
     def _call():
-        return ollama.chat(
+        import ollama_metrics                    # garde-fou VRAM (GPU partagé) + mesure
+        return ollama_metrics.chat(
             model=model,
             messages=[{'role': 'user', 'content': prompt, 'images': [image_bytes]}],
             options={'temperature': 0.1, 'num_predict': 400},
@@ -101,7 +102,8 @@ def _ollama_text(prompt, model=None, num_predict=1200):
                 continue
     if model is None:
         model = 'llama3.2-vision:11b'
-    resp = ollama.chat(
+    import ollama_metrics                        # garde-fou VRAM (GPU partagé) + mesure
+    resp = ollama_metrics.chat(
         model=model,
         messages=[{'role': 'user', 'content': prompt}],
         options={'temperature': 0.2, 'num_predict': num_predict, 'repeat_penalty': 1.2},

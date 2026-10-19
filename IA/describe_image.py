@@ -238,12 +238,22 @@ def describe_image_from_ipfs(image_source, ollama_model="minicpm-v4.6:latest", o
         _t_chat = time.time()
 
         def _ollama_chat():
-            return ollama.chat(
-                model=ollama_model,
-                messages=[{'role': 'user', 'content': prompt, 'images': [image_bytes]}],
-                options=dict({'repeat_penalty': 1.4, 'num_predict': 600, 'temperature': 0.3, 'num_ctx': 4096}, **(gen_options or {})),
-                keep_alive='30m'
-            )
+            import gpu_headroom               # GPU partagé avec ComfyUI : traitement de fond, il peut attendre la place
+            gpu_headroom.ensure(ollama_model, wait=300)
+            import ollama_metrics
+            _tm = ollama_metrics.start()
+            try:
+                _resp = ollama.chat(
+                    model=ollama_model,
+                    messages=[{'role': 'user', 'content': prompt, 'images': [image_bytes]}],
+                    options=dict({'repeat_penalty': 1.4, 'num_predict': 600, 'temperature': 0.3, 'num_ctx': 4096}, **(gen_options or {})),
+                    keep_alive='30m'
+                )
+            except Exception as _e:
+                ollama_metrics.record("vision", ollama_model, _tm, ok=False, error=_e, ctx=4096)
+                raise
+            ollama_metrics.record("vision", ollama_model, _tm, resp=_resp, ctx=4096)
+            return _resp
 
         # Retry once if connection is reset (tunnel may have dropped)
         try:

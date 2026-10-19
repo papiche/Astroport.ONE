@@ -732,6 +732,38 @@ dbg "Mode      : $MODE"
 dbg "Modèle IA : $AI_MODEL"
 dbg "question.py : $QUESTION_PY ($([ -f "$QUESTION_PY" ] && echo 'trouvé' || echo 'ABSENT'))"
 
+# ── GPU partagé : pré-vol UNIQUE et VISIBLE ──────────────────────────────────────────────────────────────────
+# Tous les appels Ollama passent par question.py (qui appelle gpu_headroom.ensure), mais ils sont lancés ici avec
+# `timeout 25-35` et `2>/dev/null` : un refus « GPU occupé » y serait muet. On vérifie donc UNE fois, en le disant.
+# qwen2.5-coder:14b pèse ~9 Go, et un contexte de 32 768 jetons ajoute ~6 Go de cache : si la carte (partagée avec
+# ComfyUI) n'a pas la place, on réduit le contexte (16 384, puis 8 192), sinon on renonce à l'IA pour cette exécution.
+export OLLAMA_SOURCE=commit.sh          # étiquette des appels dans ~/.zen/log/ollama_calls_*.jsonl
+export GPU_HEADROOM_WAIT=20          # < aux `timeout` ci-dessous : l'attente de place n'est jamais coupée en silence
+if [[ "${AI_BACKEND:-ollama}" == "ollama" ]] && [[ -f "${QUESTION_PY:-}" ]]; then
+    _gpu_py="$(dirname "$QUESTION_PY")/gpu_headroom.py"
+    if [[ -f "$_gpu_py" ]]; then
+        _gpu_ok=""; _gpu_msg=""
+        for _c in "$AI_CTX" 16384 8192; do
+            [[ "$_c" -gt "$AI_CTX" ]] && continue
+            if _gpu_msg=$(python3 "$_gpu_py" check --model "$AI_MODEL" --ctx "$_c" --wait 8 2>&1); then
+                _gpu_ok=1
+                if [[ "$_c" != "$AI_CTX" ]]; then
+                    echo -e "${YELLOW}⚠️  GPU partagé chargé : contexte IA réduit à ${_c} jetons (au lieu de ${AI_CTX})${NC}" >&2
+                    AI_CTX=$_c; (( AI_CTX_REVIEW > _c )) && AI_CTX_REVIEW=$_c
+                fi
+                break
+            fi
+        done
+        if [[ -z "$_gpu_ok" ]]; then
+            echo -e "${YELLOW}⚠️  GPU partagé occupé : pas assez de VRAM pour ${AI_MODEL} — analyse IA ignorée (commit sans résumé IA)${NC}" >&2
+            dbg "$(echo "$_gpu_msg" | tail -2)"
+            QUESTION_PY=""; AI_ENHANCED=false
+        fi
+    else
+        echo -e "${YELLOW}⚠️  gpu_headroom.py introuvable (${_gpu_py}) : place en VRAM non vérifiée${NC}" >&2
+    fi
+fi
+
 # ── Pull avant analyse ────────────────────────────────────────────────────────
 if git remote get-url origin &>/dev/null; then
     echo -e "${BLUE}⬇️  git pull...${NC}"

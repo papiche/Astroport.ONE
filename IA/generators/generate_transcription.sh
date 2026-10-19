@@ -87,6 +87,8 @@ PAYLOAD=$(jq -n --arg audio "$AUDIO_NAME" --arg model "$MODEL" '{prompt: {
   "4": {class_type: "PreviewAny", inputs: {source: ["3", 0]}},
   "5": {class_type: "PreviewAny", inputs: {source: ["3", 1]}}
 }}')
+. "${MY_PATH}/lib/gpu_room.sh"
+gpu_make_room 4 generate_transcription || exit 1  # la 3090 est partagée avec Ollama
 RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$COMFYUI_URL/prompt")
 PROMPT_ID=$(echo "$RESPONSE" | jq -r '.prompt_id // empty')
 if [ -z "$PROMPT_ID" ]; then
@@ -94,6 +96,7 @@ if [ -z "$PROMPT_ID" ]; then
   exit 1
 fi
 echo "Prompt ID : $PROMPT_ID" >&2
+gpu_comfy_watch generate_transcription "$PROMPT_ID"   # mesure du job (observateur détaché, IA/ollama_metrics.py)
 
 # 5. Attente du résultat
 HISTORY=""

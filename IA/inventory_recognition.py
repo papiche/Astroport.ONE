@@ -16,6 +16,7 @@ del _sys, _os
 
 import sys
 import os
+import ollama_metrics                   # garde-fou VRAM (GPU partagé) + mesure de chaque appel
 import json
 import time
 import argparse
@@ -179,7 +180,7 @@ IMPORTANT: Return ONLY valid JSON, no other text."""
 
     try:
         log_message("Classifying image type with AI...")
-        response = ollama.chat(
+        response = ollama_metrics.chat(
             model=VISION_MODEL,
             messages=[{
                 'role': 'user',
@@ -280,7 +281,7 @@ IMPORTANT: Return ONLY valid JSON."""
 
     try:
         log_message(f"Identifying {item_type} with AI...")
-        response = ollama.chat(
+        response = ollama_metrics.chat(
             model=VISION_MODEL,
             messages=[{
                 'role': 'user',
@@ -374,7 +375,7 @@ IMPORTANT: Génère un contrat réaliste et utile, adapté au type d'élément."
 
     try:
         log_message("Generating maintenance contract with AI...")
-        response = ollama.chat(
+        response = ollama_metrics.chat(
             model="gemma3:latest",
             messages=[
                 {

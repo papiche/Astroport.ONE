@@ -70,6 +70,8 @@ jq --arg vid "$COMFY_VIDEO_NAME" \
    "$WORKFLOW_JSON" > "$TMP_WORKFLOW"
 
 # 4. Exécution
+. "${MY_PATH}/lib/gpu_room.sh"
+gpu_make_room 10 apply_lipsync || exit 1          # la 3090 est partagée avec Ollama
 echo "Lancement de la synchronisation labiale..." >&2
 PROMPT_ID=$(curl -s -X POST -H "Content-Type: application/json" \
     -d "{\"prompt\": $(cat "$TMP_WORKFLOW")}" "$COMFYUI_URL/prompt" | jq -r '.prompt_id')
@@ -77,6 +79,7 @@ PROMPT_ID=$(curl -s -X POST -H "Content-Type: application/json" \
 if [ "$PROMPT_ID" == "null" ]; then
     echo "Erreur API ComfyUI" >&2 ; exit 1
 fi
+gpu_comfy_watch apply_lipsync "$PROMPT_ID"       # mesure du job (observateur détaché, IA/ollama_metrics.py)
 
 # 5. Monitoring (Max 5 minutes)
 attempts=0

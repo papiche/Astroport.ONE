@@ -11,6 +11,9 @@
 ## Attend que $COMFYUI_URL et $MY_PATH soient déjà définis par l'appelant.
 ################################################################################
 
+# Sens inverse du garde-fou VRAM (gpu_make_room) : disponible pour tous les scripts qui sourcent ce fichier.
+. "$(dirname "${BASH_SOURCE[0]}")/gpu_room.sh"
+
 # Nombre de retries déjà effectués après libération VRAM (anti-boucle infinie)
 _COMFYUI_OOM_RETRY_DONE="${_COMFYUI_OOM_RETRY_DONE:-0}"
 

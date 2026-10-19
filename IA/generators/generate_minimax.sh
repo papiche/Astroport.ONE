@@ -285,6 +285,8 @@ add_first_frame() {
 }
 
 send_workflow() {
+  . "${MY_PATH}/lib/gpu_room.sh"
+  gpu_make_room 2 generate_minimax || exit 1      # nœuds API cloud : peu de VRAM locale, mais ComfyUI doit pouvoir démarrer
   echo "Envoi du workflow à l'API ComfyUI..." >&2
   local response_body_file="$TMP_DIR/response_body_${UNIQUE_ID}.json"
   local http_status
@@ -308,6 +310,7 @@ send_workflow() {
     echo "Erreur : prompt_id non trouvé dans la réponse : $response_body" >&2
     exit 1
   fi
+  gpu_comfy_watch generate_minimax "$prompt_id"       # mesure du job (observateur détaché, IA/ollama_metrics.py)
   monitor_progress "$prompt_id"
 }
 

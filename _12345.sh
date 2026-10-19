@@ -886,6 +886,16 @@ while true; do
         [[ -z "${ENERGY}" ]] && ENERGY='{"available":false}'
     fi
 
+    ## GPU_USAGE (Ollama partagé) — instantané léger tiré de l'historique quotidien (IA/ollama_stats.py gpu-stats : jour,
+    ## 7 jours, heures de pointe). L'historique multi-jours n'est PAS dupliqué ici : status.html le lit via le CID publié
+    ## par 20h12.process.sh (ollama_stats.py publish-cid). Erreurs dans ~/.zen/log/gpu_stats_12345.log (jamais muettes).
+    _OLLAMA_STATS_PY="${MY_PATH}/IA/ollama_stats.py"
+    GPU_USAGE='{"available":false}'
+    if [[ -f "${_OLLAMA_STATS_PY}" && -s "$HOME/.zen/game/gpu/gpu_history.json" ]]; then
+        GPU_USAGE=$(python3 "${_OLLAMA_STATS_PY}" gpu-stats 2>>"$HOME/.zen/log/gpu_stats_12345.log" | jq -c '. + {available:true}' 2>/dev/null)
+        [[ -z "${GPU_USAGE}" ]] && GPU_USAGE='{"available":false}'
+    fi
+
     ## Élargit la clé de cache d'écriture (NODE_STATE, définie plus haut) aux
     ## blocs recalculés à chaque cycle mais absents de cette clé (capacités
     ## matérielles, services, solaire, consommation) : sans ça, une station
@@ -894,7 +904,7 @@ while true; do
     ## heartbox_analysis (cache 12h) ou les lectures Victron/PowerJoular
     ## produisent une nouvelle valeur — seul le flux HTTP CGI live (port 12345,
     ## toujours réécrit plus bas) resterait à jour, pas la balise IPNS.
-    NODE_STATE="${NODE_STATE}|$(printf '%s' "${CAPACITIES}${SERVICES}${SOLAR}${ENERGY}" | md5sum | cut -d' ' -f1)"
+    NODE_STATE="${NODE_STATE}|$(printf '%s' "${CAPACITIES}${SERVICES}${SOLAR}${ENERGY}${GPU_USAGE}" | md5sum | cut -d' ' -f1)"
 
 NODE12345="{
     \"version\" : \"12345.0.2\",
@@ -948,6 +958,7 @@ NODE12345="{
     \"services\" : ${SERVICES},
     \"solar\" : ${SOLAR},
     \"energy\" : ${ENERGY},
+    \"gpu_usage\" : ${GPU_USAGE},
     \"economy\" : {
         \"multipass_count\" : ${MULTIPASS_COUNT:-0},
         \"zencard_count\" : ${ZENCARD_COUNT:-0},

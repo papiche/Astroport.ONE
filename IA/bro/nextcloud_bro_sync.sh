@@ -9,7 +9,7 @@
 # Architecture :
 #   NextCloud /Astroport/  ─[WebDAV]─→  Fichiers locaux
 #         ↓ (modifications)
-#   Ollama nomic-embed-text ──────────→  Vecteurs 768d
+#   Ollama (modèle de IA/embed_config.py, bge-m3) ──→  Vecteurs 1024d
 #         ↓
 #   Qdrant "nextcloud_kb"  ──[query]─→  #BRO / OpenWebUI / code_assistant
 #
@@ -19,7 +19,7 @@
 #   nextcloud_bro_sync.sh --query "ma question"  # requête directe
 #
 # Prérequis :
-#   - Ollama (port 11434) avec nomic-embed-text
+#   - Ollama (port 11434) avec le modèle de IA/embed_config.py (bge-m3)
 #   - Qdrant (port 6333)
 #   - curl, python3 (pour les requêtes WebDAV et embeddings)
 #
@@ -58,7 +58,12 @@ _QDRANT_AUTH=()
 if [[ -n "$QDRANT_API_KEY" ]]; then
     _QDRANT_AUTH=(-H "api-key: $QDRANT_API_KEY")
 fi
-EMBED_MODEL="nomic-embed-text"
+## Modèle d'embedding, dimension et seuil de score : UNE source (IA/embed_config.py, bge-m3). Le même modèle que
+## la mémoire personnelle (memory_<hex>) — sans quoi la recherche comparerait deux espaces vectoriels différents.
+_EMBED_CFG="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../embed_config.py"
+EMBED_MODEL="${EMBED_MODEL:-$(python3 "$_EMBED_CFG" | python3 -c 'import sys,json; print(json.load(sys.stdin)["model"])')}"
+EMBED_DIM="${EMBED_DIM:-$(python3 "$_EMBED_CFG" | python3 -c 'import sys,json; print(json.load(sys.stdin)["dim"])')}"
+SCORE_DOC="${SCORE_DOC:-$(python3 "$_EMBED_CFG" | python3 -c 'import sys,json; print(json.load(sys.stdin)["thresholds"]["doc"])')}"
 CACHE_DIR="$HOME/.zen/tmp/nextcloud_sync"
 SYNC_LOG="$HOME/.zen/tmp/nextcloud_sync.log"
 
@@ -161,27 +166,47 @@ _check_services() {
 _ensure_qdrant_collection() {
     local existing
     existing=$(curl -sf "${_QDRANT_AUTH[@]}" "$QDRANT_URL/collections/$QDRANT_COLLECTION" 2>/dev/null)
+    local have_dim=""
+    have_dim=$(echo "$existing" | python3 -c "import sys,json; d=json.load(sys.stdin); print((d.get('result',{}).get('config',{}).get('params',{}).get('vectors') or {}).get('size',''))" 2>/dev/null)
+    if [[ -n "$have_dim" && "$have_dim" != "$EMBED_DIM" ]]; then
+        ## Collection d'INDEX (reconstructible par une nouvelle synchro) : jamais deux espaces vectoriels mélangés.
+        info "Collection '$QDRANT_COLLECTION' : ${have_dim}d ≠ ${EMBED_DIM}d (${EMBED_MODEL}) — recréée, tout sera ré-indexé"
+        curl -sf -X DELETE "$QDRANT_URL/collections/$QDRANT_COLLECTION" "${_QDRANT_AUTH[@]}" >/dev/null || info "ERREUR : suppression de '$QDRANT_COLLECTION' impossible"
+        existing=""
+    fi
     if echo "$existing" | python3 -c "import sys,json; d=json.load(sys.stdin); exit(0 if d.get('result') else 1)" 2>/dev/null; then
         info "Collection Qdrant '$QDRANT_COLLECTION' existe"
     else
-        info "Création de la collection Qdrant '$QDRANT_COLLECTION' (768d nomic)..."
+        info "Création de la collection Qdrant '$QDRANT_COLLECTION' (${EMBED_DIM}d ${EMBED_MODEL})..."
         curl -sf -X PUT "$QDRANT_URL/collections/$QDRANT_COLLECTION" \
             "${_QDRANT_AUTH[@]}" \
             -H "Content-Type: application/json" \
-            -d '{"vectors":{"size":768,"distance":"Cosine"}}' \
+            -d "{\"vectors\":{\"size\":${EMBED_DIM},\"distance\":\"Cosine\"}}" \
             | python3 -c "import sys,json; r=json.load(sys.stdin); print('✅ Collection créée' if r.get('result') else '❌ Erreur: '+str(r), file=sys.stderr)" 2>/dev/null
     fi
 }
 
 ## ── Génération d'un embedding via Ollama ────────────────────────────
+_gpu_check() {   # $1 modèle — la 3090 est partagée avec ComfyUI (IA/gpu_headroom.py) ; revérifié au plus toutes les 30 s
+    local now; now=$(date +%s)
+    [[ $(( now - ${_GPU_OK_AT:-0} )) -lt 30 ]] && return 0
+    python3 "$MY_PATH/../gpu_headroom.py" check --model "$1" >&2 || return 1
+    _GPU_OK_AT=$now
+}
+
 _embed_text() {
     local text="$1"
+    _gpu_check "$EMBED_MODEL" || return 1
     local prompt_json
     prompt_json=$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<< "$text")
-    curl -sf -X POST "$OLLAMA_URL/api/embeddings" \
+    local _t0 _resp _ms; _t0=$(date +%s%N)
+    _resp=$(curl -sf -X POST "$OLLAMA_URL/api/embeddings" \
         -H "Content-Type: application/json" \
-        -d "{\"model\":\"$EMBED_MODEL\",\"prompt\":$prompt_json}" \
-        | python3 -c "import sys,json; d=json.load(sys.stdin); print(' '.join(map(str,d.get('embedding',[]))))" 2>/dev/null
+        -d "{\"model\":\"$EMBED_MODEL\",\"prompt\":$prompt_json}")
+    _ms=$(( ( $(date +%s%N) - _t0 ) / 1000000 ))
+    python3 "$MY_PATH/../ollama_metrics.py" record --kind embed --model "$EMBED_MODEL" --wall-ms "$_ms" \
+        --source nextcloud_bro_sync.sh <<< "$_resp" >&2 || true
+    python3 -c "import sys,json; d=json.load(sys.stdin); print(' '.join(map(str,d.get('embedding',[]))))" <<< "$_resp" 2>/dev/null
 }
 
 ## ── Indexation d'un fichier dans Qdrant ─────────────────────────────
@@ -293,7 +318,7 @@ _query_knowledge() {
     results=$(curl -sf -X POST "$QDRANT_URL/collections/$QDRANT_COLLECTION/points/search" \
         "${_QDRANT_AUTH[@]}" \
         -H "Content-Type: application/json" \
-        -d "{\"vector\":$vector_json,\"limit\":$top_k,\"with_payload\":true}" 2>/dev/null)
+        -d "{\"vector\":$vector_json,\"limit\":$top_k,\"with_payload\":true,\"score_threshold\":$SCORE_DOC}" 2>/dev/null)
 
     ## Diagnostics sur stderr uniquement
     {
@@ -327,7 +352,7 @@ print(ctx[:4000])
     results_code=$(curl -sf --max-time 2 -X POST "$QDRANT_URL/collections/codebase/points/search" \
         "${_QDRANT_AUTH[@]}" \
         -H "Content-Type: application/json" \
-        -d "{\"vector\":$vector_json,\"limit\":2,\"with_payload\":true}" 2>/dev/null)
+        -d "{\"vector\":$vector_json,\"limit\":2,\"with_payload\":true,\"score_threshold\":$SCORE_DOC}" 2>/dev/null)
     if [[ -n "$results_code" ]]; then
         local context_code
         context_code=$(echo "$results_code" | python3 -c "
@@ -385,16 +410,16 @@ import sys, json
 raw = sys.argv[1]
 nums = [int(x) for x in raw.split(',') if x.strip().isdigit() and x.strip() != '0']
 if nums:
-    f = {'must': [{'key': 'slot', 'match': {'any': nums}}]}
+    f = {'must': [{'key': 'slot', 'match': {'any': nums}}], 'must_not': [{'key': 'status', 'match': {'any': ['superseded', 'deleted']}}]}
     print(json.dumps(f))
 " "$slots" 2>/dev/null)
             fi
             local _search_body
             if [[ -n "$_slot_filter" ]]; then
-                _search_body="{\"vector\":$vector_json,\"limit\":5,\"with_payload\":true,\"filter\":${_slot_filter}}"
+                _search_body="{\"vector\":$vector_json,\"limit\":5,\"with_payload\":true,\"score_threshold\":$SCORE_DOC,\"filter\":${_slot_filter}}"
                 info "Filtre mémoire slots: $slots"
             else
-                _search_body="{\"vector\":$vector_json,\"limit\":3,\"with_payload\":true}"
+                _search_body="{\"vector\":$vector_json,\"limit\":3,\"with_payload\":true,\"score_threshold\":$SCORE_DOC,\"filter\":{\"must_not\":[{\"key\":\"status\",\"match\":{\"any\":[\"superseded\",\"deleted\"]}}]}}"
             fi
             local personal_results
             personal_results=$(curl -sf -X POST \
@@ -461,11 +486,16 @@ Réponds en français en te basant sur le contexte ci-dessus. Sois concis et pr�
         local _prompt_json
         _prompt_json=$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<< "$prompt_text")
         local _response
-        _response=$(curl -sf --max-time 120 \
+        _gpu_check "${OLLAMA_MODEL:-gemma3:latest}" || return 1
+        local _gt0 _graw _gms; _gt0=$(date +%s%N)
+        _graw=$(curl -sf --max-time 120 \
             -X POST "$OLLAMA_URL/api/generate" \
             -H "Content-Type: application/json" \
-            -d "{\"model\":\"${OLLAMA_MODEL:-gemma3:latest}\",\"prompt\":${_prompt_json},\"stream\":false}" \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('response','').strip())" 2>/dev/null)
+            -d "{\"model\":\"${OLLAMA_MODEL:-gemma3:latest}\",\"prompt\":${_prompt_json},\"stream\":false}")
+        _gms=$(( ( $(date +%s%N) - _gt0 ) / 1000000 ))
+        python3 "$MY_PATH/../ollama_metrics.py" record --kind generate --model "${OLLAMA_MODEL:-gemma3:latest}" --wall-ms "$_gms" \
+            --source nextcloud_bro_sync.sh <<< "$_graw" >&2 || true
+        _response=$(python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('response','').strip())" <<< "$_graw" 2>/dev/null)
         if [[ -n "$_response" ]]; then
             echo "$_response"
         else

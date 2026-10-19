@@ -93,8 +93,14 @@ chat_call() {
   body=$(jq -nc --arg model "$MODEL" --argjson msgs "$MESSAGES" --argjson t "$temp" \
     '{model:$model, messages:$msgs, stream:false, options:{temperature:$t}}')
   [ "$want_json" = 1 ] && body=$(jq -c '. + {format:"json"}' <<< "$body")
-  curl -s -m 180 -X POST "$OLLAMA_URL/api/chat" -H "Content-Type: application/json" -d "$body" \
-    | jq -r '.message.content // empty'
+  # La 3090 est partagée avec ComfyUI : pas de chargement de modèle sans place (IA/gpu_headroom.py)
+  python3 "$(dirname "${BASH_SOURCE[0]}")/../gpu_headroom.py" check --model "$MODEL" >&2 || { echo "ERROR:storyboard:gpu_busy" >&2; return 1; }
+  local _t0 _resp _ms; _t0=$(date +%s%N)
+  _resp=$(curl -s -m 180 -X POST "$OLLAMA_URL/api/chat" -H "Content-Type: application/json" -d "$body")
+  _ms=$(( ( $(date +%s%N) - _t0 ) / 1000000 ))
+  python3 "$(dirname "${BASH_SOURCE[0]}")/../ollama_metrics.py" record --kind chat --model "$MODEL" --wall-ms "$_ms" \
+      --source generate_storyboard.sh <<< "$_resp" >&2 || echo "⚠️ mesure de l'appel non enregistrée" >&2
+  jq -r '.message.content // empty' <<< "$_resp"
 }
 
 # Consignes de l'assistant : UNE seule source, lib/storyboard_prompts.json, lue aussi par l'assistant du Studio web
