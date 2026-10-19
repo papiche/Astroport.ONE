@@ -13,8 +13,9 @@ question.py/Ollama, le dialogue de GOUVERNANCE/FORGE avec Arbor passe par
 Claude (jugé insuffisant par Ollama local pour un raisonnement de ce niveau,
 cf. constat 2026-07-03 dans arbor_tool_forge.py).
 
-Pas de mémoire persistée ici : l'historique de la conversation vit côté
-client (navigateur) pour cette v1 — l'état qui compte réellement (bâton,
+Mémoire (arbor_memory.py) : à chaque tour, le code du dépôt et les tentatives passées d'ARBOR les plus
+proches de la demande sont retrouvés et donnés à Arbor (jamais inventés). L'historique de la conversation,
+lui, vit côté client (navigateur) pour cette v1 — l'état qui compte réellement (bâton,
 branches, audit) est déjà ré-interrogé à chaque tour depuis la source de
 vérité (coop_config, git, arbor_run.sh), jamais depuis la conversation elle-
 même.
@@ -56,6 +57,7 @@ doublons. Le déclenchement MANUEL de tes autres capacités reste toujours possi
 Contexte actuel de CETTE station (JSON) :
 {context}
 
+{memoire}
 Réponds en français, de façon concise et directe (3-5 phrases maximum sauf si le Capitaine demande \
 plus de détail). Pose des questions si le besoin décrit est ambigu plutôt que de proposer une action \
 hasardeuse. Quand — et SEULEMENT quand — une action concrète et bien définie se dégage de l'échange, \
@@ -66,11 +68,31 @@ termine ta réponse par EXACTEMENT un bloc de ce format (rien d'autre après) :
 ```
 
 "need"/"slug" uniquement pertinents pour mode=forge (slug optionnel, minuscules/tirets). Omets \
-totalement ce bloc tant qu'aucune action n'est prête à être proposée — ne force jamais une proposition."""
+totalement ce bloc tant qu'aucune action n'est prête à être proposée — ne force jamais une proposition.
+
+Si une section « Mémoire d'Arbor » est fournie ci-dessus, appuie-toi dessus : cite les fichiers au format \
+chemin:ligne et rappelle les tentatives passées qui t'éclairent (surtout les échecs et leur cause). \
+N'invente JAMAIS un fichier, une fonction ou une tentative absents de cette section."""
 
 
-def _build_prompt(message: str, history: list, context: dict) -> str:
-    parts = [_SYSTEM_PROMPT.format(context=json.dumps(context, ensure_ascii=False, indent=2))]
+def _memory_block(message: str) -> str:
+    """Mémoire d'Arbor pour CE message : code du dépôt + tentatives passées voisines. '' s'il n'y a rien de
+    pertinent ; si une mémoire est indisponible, le DIT dans le prompt (Arbor ne doit pas prétendre l'avoir lue)."""
+    if len(message.strip()) < 15:
+        return ""
+    try:
+        import arbor_memory
+        text, warns = arbor_memory.memory_context(message, code_limit=3, max_chars=2400)
+    except Exception as e:
+        return f"Mémoire d'Arbor : INDISPONIBLE ({e}). Dis-le si on te demande ce qui existe dans le dépôt."
+    out = ("Mémoire d'Arbor (retrouvée pour ce message) :\n" + text) if text else ""
+    if warns:
+        out += ("\n" if out else "") + "Remarque : " + " ; ".join(warns)
+    return out
+
+
+def _build_prompt(message: str, history: list, context: dict, memory: str = "") -> str:
+    parts = [_SYSTEM_PROMPT.format(context=json.dumps(context, ensure_ascii=False, indent=2), memoire=memory)]
     for turn in history[-12:]:  # borne large mais finie — un historique de session reste court en pratique
         role = "Capitaine" if turn.get("role") == "user" else "Arbor"
         content = str(turn.get("content", ""))[:2000]
@@ -104,7 +126,7 @@ def chat_turn(message: str, history: list, context: dict) -> dict:
             "proposed_action": None,
             "error": "claude_cli_unavailable",
         }
-    prompt = _build_prompt(message, history or [], context or {})
+    prompt = _build_prompt(message, history or [], context or {}, _memory_block(message))
     raw = _ask_claude(prompt, timeout=90)
     if not raw:
         return {

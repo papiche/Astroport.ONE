@@ -64,7 +64,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bro_watch_core as bwc
 from arbor_self_improve import _create_worktree, _slugify, _run_git, _node_nsec, REPO_ROOT
 from arbor_tool_forge import (
-    _extract_code, _ask_claude, _notify_captain, claude_available,
+    _arbor_memory, _extract_code, _ask_claude, _notify_captain, claude_available,
     _bwrap_available, _prlimit_available,
     _FORBIDDEN_CALL_NAMES, _FORBIDDEN_IMPORT_MODULES, _FORBIDDEN_OS_ATTRS,
     _FORBIDDEN_DUNDER_NAMES, _attr_root_name, _collect_import_aliases,
@@ -412,7 +412,7 @@ def _run_pytest_scraper_in_worktree(worktree_path, test_file_abs, extra_pythonpa
 
 # ─── Génération du code et du test ─────────────────────────────────────────
 
-def generate_scraper_code(domain, target_url, html_context, previous_code=None, error_output=None):
+def generate_scraper_code(domain, target_url, html_context, previous_code=None, error_output=None, memory_ctx=""):
     """Génère le code du scraper avec injection du contexte HTML (Pilier 2).
     Mode guérison si previous_code + error_output fournis (Pilier 3)."""
     if previous_code and error_output:
@@ -434,7 +434,8 @@ def generate_scraper_code(domain, target_url, html_context, previous_code=None, 
         prompt = (
             f"Écris un scraper Python pour le domaine '{domain}'.\n\n"
             f"URL cible : {target_url}\n\n"
-            f"Voici le code source HTML de la page chargée avec les cookies de l'utilisateur :\n"
+            + (f"{memory_ctx}\n\n" if memory_ctx else "")
+            + f"Voici le code source HTML de la page chargée avec les cookies de l'utilisateur :\n"
             f"```html\n{html_context[:10000]}\n```\n\n"
             "En analysant ce HTML, identifie les sélecteurs CSS/DOM qui permettent d'extraire "
             "les posts/messages récents (auteur, texte, URL du post).\n\n"
@@ -556,8 +557,19 @@ def forge_scraper(owner_email, domain, target_url=None, notify_captain=False):
     shell_path = os.path.join(scraper_dir, f"{domain}.sh")
     test_path = os.path.join(test_dir, f"test_{scraper_module}.py")
 
+    # Mémoire d'ARBOR : les scrapers déjà tentés pour ce domaine (réussis ou non, et pourquoi).
+    am = _arbor_memory()
+    goal = f"scraper {domain} ({target_url})"
+    mem_ctx = ""
+    if am:
+        try:
+            mem_ctx = am.runs_context(goal, kind="forge-scraper")
+        except Exception as e:
+            print(f"⚠️ mémoire d'ARBOR (historique) indisponible : {e}")
+        print("🧠 Mémoire d'ARBOR : tentatives passées injectées" if mem_ctx else "🧠 Mémoire d'ARBOR : aucune tentative voisine")
+
     print("🤖 Génération du code par Claude...")
-    code = generate_scraper_code(domain, target_url, html_context)
+    code = generate_scraper_code(domain, target_url, html_context, memory_ctx=mem_ctx)
     test_code = generate_scraper_test(domain, scraper_module, cookie_file_path)
 
     passed, last_output, attempt = False, "", 0
@@ -595,6 +607,8 @@ def forge_scraper(owner_email, domain, target_url=None, notify_captain=False):
     if not passed:
         print(f"\n❌ Échec après {MAX_ITERATIONS} tentatives — rien n'est committé.")
         _run_git(["worktree", "remove", "--force", worktree_path], REPO_ROOT)
+        if am:
+            am.safe_record("forge-scraper", goal, "failed", reason=last_output[-500:], attempts=MAX_ITERATIONS)
         if notify_captain:
             _notify_captain(
                 f"🔨 Forge à scrapers BRO — échec\n\n"
@@ -621,6 +635,9 @@ def forge_scraper(owner_email, domain, target_url=None, notify_captain=False):
         worktree_path,
     )
 
+    if am:
+        am.safe_record("forge-scraper", goal, "ok", files=[rel_scraper, rel_shell, rel_test],
+                       branch=branch_name, attempts=attempt)
     print(f"\n✅ Scraper généré — branche {branch_name}")
     print(f"   Fichiers : {rel_scraper}, {rel_shell}, {rel_test}")
 

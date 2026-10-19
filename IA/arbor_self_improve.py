@@ -358,14 +358,14 @@ def _notify_captain_arbor(winner, branch_name, worktree_path):
 
 MINED_CLUSTERS_STATE = os.path.expanduser("~/.zen/flashmem/bro_tool_requests_mined.json")
 MIN_CLUSTER_SIZE = 3
-# Calibré empiriquement (comme SEMANTIC_THRESHOLD dans bro_watch_core.py) sur
-# 3 reformulations réelles d'une même demande ("suivre mon Twitter/X" dit
-# différemment) : cosinus 0.695-0.798 entre elles vs 0.615-0.666 avec un
-# message sans rapport. La marge est étroite (nomic-embed-text a un plancher
-# élevé sur les phrases courtes) — biais volontaire vers le rappel : un faux
-# rapprochement coûte une lecture inutile au capitaine, un pattern manqué
-# rate complètement l'objectif de la fonctionnalité.
-CLUSTER_SIMILARITY_THRESHOLD = 0.68
+# Seuil de regroupement de deux formulations d'UNE même demande d'outil (embed_config, bge-m3).
+# Mesuré le 2026-10-19 sur 4 demandes × 3 reformulations + demandes différentes + hors-sujet :
+# même demande ≥ 0,63 ; demandes différentes ≤ 0,60 → 0,61 sépare parfaitement (12/12, 0 faux
+# rapprochement). L'ancien 0,68 (calibré pour nomic) ratait 2 reformulations sur 12 avec bge-m3.
+# Biais voulu vers le rappel : un faux rapprochement coûte une lecture inutile au capitaine, un pattern
+# manqué rate l'objectif de la fonctionnalité.
+import embed_config
+CLUSTER_SIMILARITY_THRESHOLD = embed_config.threshold("cluster")
 
 
 def _load_tool_requests():
@@ -795,8 +795,22 @@ def main():
         return
 
     winner = validate_choice(args.model) if args.model else explore()
+    goal = (f"modèle d'interprétation des commandes BRO (candidat imposé : {args.model})" if args.model
+            else "meilleur modèle d'interprétation des commandes BRO")
+    try:
+        import arbor_memory as _am
+    except Exception as e:
+        print(f"⚠️ mémoire d'ARBOR indisponible ({e}) — ce résultat ne sera pas enregistré")
+        _am = None
     if not winner:
+        if _am:
+            _am.safe_record("explore", goal, "failed",
+                            reason="aucun candidat n'a battu strictement le score dev de référence, "
+                                   "ou le gain n'a pas été confirmé sur le jeu held-out")
         return
+    if _am:
+        _am.safe_record("explore", goal, "ok", reason=f"modèle retenu : {winner['model']}",
+                        extra={"model": winner["model"]})
 
     if not args.apply:
         print("\n(rejouer avec --apply pour matérialiser ce changement dans un worktree isolé, sans le merger)")
@@ -809,6 +823,9 @@ def main():
     print(f"Worktree : {worktree_path}")
     print(f"Revue    : cd {REPO_ROOT} && git diff master...{branch_name}")
     print("Le capitaine décide seul du merge — cf. décision de gouvernance actée.")
+    if _am:
+        _am.safe_record("apply", goal, "ok", branch=branch_name, reason=f"proposition committée pour revue : {winner['model']}",
+                        extra={"model": winner["model"]})
 
     if args.notify_captain:
         if _notify_captain_arbor(winner, branch_name, worktree_path):

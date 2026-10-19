@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-codebase_index.py — Mémoire vectorielle du code source (Qdrant + nomic-embed-text).
+codebase_index.py — Mémoire vectorielle du code source (Qdrant + embed_config.py : bge-m3).
 
 Modes :
   --index        Indexer / réindexer les fichiers du codebase
@@ -15,7 +15,7 @@ Variables d'environnement :
   QDRANT_URL      http://127.0.0.1:6333
   QDRANT_API_KEY  (optionnel — clé API Qdrant si configurée)
   OLLAMA_URL      http://localhost:11434
-  EMBED_MODEL     nomic-embed-text
+  EMBED_MODEL     (défaut : embed_config.MODEL = bge-m3)
   IPFS_GATEWAY    http://localhost:8080
   CODEBASE_ROOT   ~/workspace/AAA
 """
@@ -35,6 +35,9 @@ import time
 import hashlib
 import argparse
 import subprocess
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "IA"))
+import embed_config   # modèle d'embedding UNIQUE de la plateforme (bge-m3)
+import code_chunker   # découpe en fonctions / classes / blocs
 from pathlib import Path
 
 try:
@@ -75,11 +78,11 @@ except ImportError:
 QDRANT_URL     = os.getenv("QDRANT_URL",     "http://127.0.0.1:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
 OLLAMA_URL     = os.getenv("OLLAMA_URL",     "http://localhost:11434")
-EMBED_MODEL  = os.getenv("EMBED_MODEL",  "nomic-embed-text")
+EMBED_MODEL  = os.getenv("EMBED_MODEL",  embed_config.MODEL)
 IPFS_GATEWAY = os.getenv("IPFS_GATEWAY", "http://localhost:8080")
 COLLECTION   = "codebase"
-VECTOR_SIZE  = 768   # nomic-embed-text:latest (matryoshka 768-dim)
-MAX_CHARS    = 2000  # chars par fichier — limite tokens nomic-embed-text (2048t)
+VECTOR_SIZE  = int(os.getenv("EMBED_DIM", embed_config.DIM))
+MAX_CHARS    = 6000  # chars par fichier (≈ 2 000 tokens ; bge-m3 en accepte 8 000 — nomic plafonnait à 2 000 car.)
 
 WORKSPACE_DEFAULT = str(Path.home() / "workspace" / "AAA")
 
@@ -98,6 +101,30 @@ SKIP_DIRS = frozenset({
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def _roots(workspace: Path) -> list:
+    """Où chercher chaque répertoire d'INDEX_DIRS. Deux dispositions réelles :
+      • dépôt de travail  ~/workspace/AAA/{Astroport.ONE,UPassport,UPlanet,NIP-101}  (frères)
+      • station           ~/.zen/{Astroport.ONE,UPassport}  +  ~/.zen/workspace/{NIP-101,UPlanet}
+    (les liens de ~/.zen pointent vers le dépôt de travail). Chaque répertoire est cherché dans l'ordre
+    sous : la racine demandée, sa sous-dossier workspace/, ~/.zen, ~/.zen/workspace."""
+    zen = Path.home() / ".zen"
+    out, seen = [], set()
+    for r in (workspace, workspace / "workspace", zen, zen / "workspace"):
+        key = str(r)
+        if key not in seen:
+            seen.add(key)
+            out.append(r)
+    return out
+
+
+def _resolve(workspace: Path, subdir: str):
+    """(racine, chemin) du premier emplacement existant pour `subdir`, sinon (None, None)."""
+    for root in _roots(workspace):
+        if (root / subdir).exists():
+            return root, root / subdir
+    return None, None
+
+
 def _session():
     try:
         s = requests.Session()
@@ -109,19 +136,43 @@ def _session():
 
 
 def get_embedding(session, text: str) -> list | None:
-    try:
-        r = session.post(
-            f"{OLLAMA_URL}/api/embed",
-            json={"model": EMBED_MODEL, "input": text[:MAX_CHARS]},
-            timeout=30,
-        )
-        if r.ok:
-            data = r.json()
-            emb = data.get("embeddings") or data.get("embedding")
-            if emb:
-                return emb[0] if isinstance(emb[0], list) else emb
+    """Un vecteur (requêtes de recherche)."""
+    out = get_embeddings(session, [text])
+    return out[0] if out else None
+
+
+def get_embeddings(session, texts: list, retries: int = 2) -> list | None:
+    """Vecteurs d'un LOT de textes en un seul appel Ollama (/api/embed accepte une liste) ; tout ou rien,
+    avec reprises : un lot raté ne doit pas laisser un fichier à moitié indexé."""
+    last = None
+    try:                                         # GPU partagé avec ComfyUI : jamais de chargement sans place (gpu_headroom.py)
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "IA"))
+        import gpu_headroom
+        gpu_headroom.ensure(EMBED_MODEL, wait=300)
     except Exception as e:
-        print(f"  [EMBED] {e}", file=sys.stderr)
+        print(f"ERROR: {e}", file=sys.stderr)
+        return None
+    import ollama_metrics                        # mesure de chaque appel au GPU partagé
+    for attempt in range(retries + 1):
+        _t0 = ollama_metrics.start()
+        try:
+            r = session.post(
+                f"{OLLAMA_URL}/api/embed",
+                json={"model": EMBED_MODEL, "input": [t[:MAX_CHARS] for t in texts]},
+                timeout=120,
+            )
+            ollama_metrics.record("embed", EMBED_MODEL, _t0, resp=r.json() if r.ok else None, ok=r.ok,
+                                  error=None if r.ok else f"HTTP {r.status_code}", n_inputs=len(texts))
+            if r.ok:
+                embs = r.json().get("embeddings") or []
+                if len(embs) == len(texts) and all(isinstance(e, list) and len(e) == VECTOR_SIZE for e in embs):
+                    return embs
+                last = f"réponse inattendue ({len(embs)} vecteurs pour {len(texts)} textes)"
+            else:
+                last = f"HTTP {r.status_code}"
+        except Exception as e:
+            last = str(e)
+    print(f"  [EMBED] échec après {retries + 1} essais : {last}", file=sys.stderr)
     return None
 
 
@@ -130,12 +181,26 @@ def path_to_uuid(rel_path: str) -> str:
     return f"{h[:8]}-{h[8:12]}-4{h[13:16]}-{h[16:20]}-{h[20:32]}"
 
 
+def _recreate_if_dim_differs(session, have_dim):
+    """Collection d'INDEX (reconstructible en relançant ce script) : dimension ≠ modèle courant → on la
+    supprime et on la recrée, en le disant, plutôt que de mélanger deux espaces vectoriels."""
+    if have_dim and int(have_dim) != VECTOR_SIZE:
+        print(f"  [qdrant] ❌ '{COLLECTION}' : {have_dim} d ≠ {VECTOR_SIZE} d ({EMBED_MODEL}) — recréée, tout sera ré-indexé",
+              file=sys.stderr)
+        session.delete(f"{QDRANT_URL}/collections/{COLLECTION}", timeout=15)
+        return True
+    return False
+
+
 def ensure_collection(session, reset: bool = False) -> bool:
     if reset:
         session.delete(f"{QDRANT_URL}/collections/{COLLECTION}", timeout=10)
         print(f"  [reset] collection '{COLLECTION}' supprimée", file=sys.stderr)
 
     r = session.get(f"{QDRANT_URL}/collections/{COLLECTION}", timeout=5)
+    if r.ok and _recreate_if_dim_differs(session, ((r.json().get("result", {}).get("config", {}).get("params", {})
+                                                    .get("vectors") or {}).get("size"))):
+        r = session.get(f"{QDRANT_URL}/collections/{COLLECTION}", timeout=5)   # 404 : sera recréée ci-dessous
     if r.ok:
         info = r.json().get("result", {})
         cnt  = info.get("points_count", 0)
@@ -158,34 +223,66 @@ def ensure_collection(session, reset: bool = False) -> bool:
     return False
 
 
-def upsert_file(session, file_path: Path, rel_path: str, project: str) -> bool:
+def _is_vendored_or_minified(file_path: Path, content: str) -> bool:
+    """Bibliothèques tierces embarquées (jspdf.umd.min.js, mermaid.min.js, nostr.bundle.js…) : jamais indexées —
+    une ligne de 400 000 caractères n'a pas de « fonction » à retrouver et ferait échouer l'embedding."""
+    name = file_path.name.lower()
+    if ".min." in name or name.endswith(("-min.js", ".bundle.js", ".umd.js")):
+        return True
+    lines = content.split("\n")
+    return len(content) > 20000 and (len(content) / max(1, len(lines))) > 300      # minifié : lignes énormes
+
+
+def _chunk_id(rel_path: str, symbol: str, start: int) -> str:
+    return path_to_uuid(f"{rel_path}#{symbol}#{start}")
+
+
+def upsert_file(session, file_path: Path, rel_path: str, project: str):
+    """Indexe UN fichier en morceaux (une fonction / classe / bloc chacun, cf. code_chunker.py).
+    Retourne le nombre de morceaux écrits, None s'il n'y a rien à indexer (trivial / tiers), 0 en cas d'échec — auquel cas les anciens morceaux du fichier
+    sont CONSERVÉS (on ne remplace qu'après avoir obtenu tous les vecteurs)."""
     try:
         content = file_path.read_text(errors="replace")
     except Exception:
-        return False
+        return 0
+    ext = file_path.suffix.lstrip(".")
+    if _is_vendored_or_minified(file_path, content):
+        return None                              # bibliothèque tierce : du bruit pour la recherche, pas du code du projet
+    chunks = code_chunker.chunk_file(content, ext)
+    if not chunks:
+        return None                              # fichier trivial (__init__.py vide…) : rien à indexer, pas une erreur
+    texts = [f"{rel_path} — {c['symbol']} ({c['kind']})\n{c['text']}" for c in chunks]
+    vectors = []
+    for i in range(0, len(texts), 16):
+        embs = get_embeddings(session, texts[i:i + 16])
+        if embs is None:
+            return 0
+        vectors.extend(embs)
 
-    text   = f"Fichier: {rel_path}\nProjet: {project}\n\n{content[:MAX_CHARS]}"
-    vector = get_embedding(session, text)
-    if vector is None:
-        return False
+    mtime = int(file_path.stat().st_mtime)
+    points = [{
+        "id": _chunk_id(rel_path, c["symbol"], c["start_line"]),
+        "vector": v,
+        "payload": {
+            "path": rel_path, "project": project, "ext": ext, "mtime": mtime,
+            "symbol": c["symbol"], "kind": c["kind"],
+            "start_line": c["start_line"], "end_line": c["end_line"],
+            "text": c["text"], "preview": c["text"][:300],
+        },
+    } for c, v in zip(chunks, vectors)]
 
-    mtime   = int(file_path.stat().st_mtime)
-    size    = file_path.stat().st_size
-    payload = {
-        "path":    rel_path,
-        "project": project,
-        "ext":     file_path.suffix.lstrip("."),
-        "mtime":   mtime,
-        "size":    size,
-        "preview": content[:300],
-    }
-
-    r = session.put(
-        f"{QDRANT_URL}/collections/{COLLECTION}/points",
-        json={"points": [{"id": path_to_uuid(rel_path), "vector": vector, "payload": payload}]},
-        timeout=15,
-    )
-    return bool(r.ok)
+    # Remplacement : anciens morceaux du fichier supprimés, puis nouveaux écrits.
+    d = session.post(f"{QDRANT_URL}/collections/{COLLECTION}/points/delete",
+                     json={"filter": {"must": [{"key": "path", "match": {"value": rel_path}}]}}, timeout=30)
+    if not d.ok:
+        print(f"  [WARN] suppression des anciens morceaux de {rel_path} : HTTP {d.status_code}", file=sys.stderr)
+    for i in range(0, len(points), 64):
+        r = session.put(f"{QDRANT_URL}/collections/{COLLECTION}/points",
+                        json={"points": points[i:i + 64]}, timeout=60)
+        if not r.ok:
+            print(f"  [ERROR] écriture de {rel_path} : HTTP {r.status_code}", file=sys.stderr)
+            return 0
+    return len(points)
 
 
 def load_existing_mtimes(session) -> dict:
@@ -223,13 +320,14 @@ def do_index(session, workspace: Path, incremental: bool, reset: bool):
 
     existing = load_existing_mtimes(session) if incremental else {}
 
-    total, skipped, errors = 0, 0, 0
+    total, skipped, errors, chunks_total = 0, 0, 0, 0
     t0 = time.time()
 
     for subdir, exts in INDEX_DIRS:
-        base = workspace / subdir
-        if not base.exists():
-            print(f"  [SKIP] {subdir} absent", file=sys.stderr)
+        root, base = _resolve(workspace, subdir)
+        if base is None:
+            tried = ", ".join(str(r) for r in _roots(workspace))
+            print(f"  [SKIP] {subdir} introuvable (cherché sous : {tried})", file=sys.stderr)
             continue
         project = subdir.split("/")[0]
         print(f"\n  → {subdir} ({', '.join(exts)})...", file=sys.stderr)
@@ -238,23 +336,28 @@ def do_index(session, workspace: Path, incremental: bool, reset: bool):
             for fp in sorted(base.rglob(f"*.{ext}")):
                 if any(s in fp.parts for s in SKIP_DIRS):
                     continue
-                rel = str(fp.relative_to(workspace))
+                rel = str(fp.relative_to(root))      # chemin LOGIQUE (« UPlanet/earth/… »), identique sur toute disposition
 
                 if incremental and existing.get(rel) == int(fp.stat().st_mtime):
                     skipped += 1
                     continue
 
                 print(f"    {rel} ...", end=" ", flush=True, file=sys.stderr)
-                if upsert_file(session, fp, rel, project):
-                    print("✓", file=sys.stderr)
+                n = upsert_file(session, fp, rel, project)
+                if n is None:
+                    print("— (rien à indexer)", file=sys.stderr)
+                    skipped += 1
+                elif n:
+                    print(f"✓ ({n} morceaux)", file=sys.stderr)
                     total += 1
+                    chunks_total += n
                 else:
                     print("✗", file=sys.stderr)
                     errors += 1
 
     elapsed = time.time() - t0
     print(
-        f"\n  ✓ {total} fichiers indexés, {skipped} skippés, {errors} erreurs — {elapsed:.1f}s",
+        f"\n  ✓ {total} fichiers indexés ({chunks_total} morceaux), {skipped} skippés, {errors} erreurs — {elapsed:.1f}s",
         file=sys.stderr,
     )
 
@@ -413,8 +516,8 @@ def main():
             p     = hit.get("payload", {})
             score = hit.get("score", 0.0)
             path  = p.get("path", "")
-            # Output: score<TAB>path — parsable par bash
-            print(f"{score:.4f}\t{path}")
+            # Sortie : score<TAB>chemin<TAB>ligne<TAB>symbole — les deux premières colonnes comme avant (parsable par bash)
+            print(f"{score:.4f}\t{path}\t{p.get('start_line', '')}\t{p.get('symbol', '')}")
         return
 
     # Indexation

@@ -3,7 +3,7 @@
 # codebase_index.sh — Mémoire vectorielle du code source
 #
 # Indexe Astroport.ONE / UPlanet / UPassport / NIP-101 dans Qdrant
-# en utilisant nomic-embed-text (Ollama) pour les embeddings.
+# en utilisant le modèle d'embedding de IA/embed_config.py (bge-m3, via Ollama).
 # Le snapshot peut être publié sur IPFS et partagé dans la constellation.
 #
 # Usage :
@@ -14,12 +14,14 @@
 # Variables d'environnement :
 #   QDRANT_URL      http://localhost:6333
 #   OLLAMA_URL      http://localhost:11434
-#   EMBED_MODEL     nomic-embed-text
+#   EMBED_MODEL     (défaut : modèle de IA/embed_config.py = bge-m3)
 #   CODEBASE_ROOT   ~/workspace/AAA
 ###########################################################################
 _ME="${BASH_SOURCE[0]##*/}"
 _MY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE="${CODEBASE_ROOT:-${_MY_PATH}/../..}"
+## Racine = DOSSIER PARENT de Astroport.ONE (il contient aussi UPassport, UPlanet, NIP-101) : codebase_index.py y cherche
+## ses répertoires. Le défaut précédent (Astroport.ONE lui-même) indexait 0 fichier — constaté le 2026-10-19.
+WORKSPACE="${CODEBASE_ROOT:-$(cd "${_MY_PATH}/../../.." && pwd)}"
 WORKSPACE="$(realpath "$WORKSPACE" 2>/dev/null || echo "$WORKSPACE")"
 
 # Auto-symlink dans ~/.local/bin
@@ -29,7 +31,7 @@ WORKSPACE="$(realpath "$WORKSPACE" 2>/dev/null || echo "$WORKSPACE")"
 
 QDRANT_URL="${QDRANT_URL:-http://127.0.0.1:6333}"
 OLLAMA_URL="${OLLAMA_URL:-http://localhost:11434}"
-EMBED_MODEL="${EMBED_MODEL:-nomic-embed-text}"
+EMBED_MODEL="${EMBED_MODEL:-$(python3 "$(dirname "$(realpath "$0")")/../../IA/embed_config.py" 2>/dev/null | python3 -c 'import sys,json; print(json.load(sys.stdin)["model"])' 2>/dev/null || echo bge-m3)}"
 
 # Clé API Qdrant — source canonique : ~/.zen/ai-company/.env (install-ai-company.docker.sh)
 _AI_ENV="${HOME}/.zen/ai-company/.env"

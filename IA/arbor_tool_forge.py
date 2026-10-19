@@ -385,7 +385,18 @@ _TOOL_CONSTRAINTS = (
 )
 
 
-def generate_tool_code(spec, previous_code=None, error_output=None):
+def _arbor_memory():
+    """Mémoire d'ARBOR (code du dépôt + tentatives passées) — None, EN LE DISANT, si elle est indisponible :
+    la forge continue sans elle, mais ne prétend pas l'avoir consultée."""
+    try:
+        import arbor_memory
+        return arbor_memory
+    except Exception as e:
+        print(f"⚠️ mémoire d'ARBOR indisponible ({e}) — forge sans contexte du dépôt ni historique")
+        return None
+
+
+def generate_tool_code(spec, previous_code=None, error_output=None, memory_ctx=""):
     if previous_code and error_output:
         prompt = (
             f"Le code suivant a échoué (test ou garde-fou de sécurité) :\n\n"
@@ -402,7 +413,8 @@ def generate_tool_code(spec, previous_code=None, error_output=None):
             f"Écris un outil Python pour : {spec['description']}\n"
             f"Exemple de requête : {spec['example_query']}\n"
             f"Exemple de sortie attendue : {spec['example_output']}\n\n"
-            f"{_TOOL_CONSTRAINTS}\n"
+            + (f"{memory_ctx}\n\n" if memory_ctx else "")
+            + f"{_TOOL_CONSTRAINTS}\n"
             "Réponds avec le code Python dans un bloc ```python ... ```."
         )
     return _extract_code(_ask_claude(prompt, timeout=120, label="Code de l'outil"))
@@ -621,6 +633,9 @@ def forge_tool(need_description, slug=None, notify_captain=False):
     spec = generate_spec(need_description)
     if not spec or not spec.get("description"):
         print("❌ Échec génération de spec — abandon.")
+        am = _arbor_memory()
+        if am:
+            am.safe_record("forge", need_description, "failed", reason="spécification non générée par Claude")
         return None
 
     tool_module = f"tool_{_slugify(slug or spec.get('tool_name', 'outil'), 30)}"
@@ -635,7 +650,15 @@ def forge_tool(need_description, slug=None, notify_captain=False):
     tool_path = os.path.join(tool_dir, f"{tool_module}.py")
     test_path = os.path.join(test_dir, f"test_{tool_module}.py")
 
-    code = generate_tool_code(spec)
+    # Mémoire d'ARBOR : tentatives passées voisines (+ leurs causes d'échec) et code existant du dépôt pertinent.
+    am = _arbor_memory()
+    mem_ctx = ""
+    if am:
+        mem_ctx, _warns = am.memory_context(f"{need_description}. {spec['description']}", kind="forge")
+        print("🧠 Mémoire d'ARBOR : contexte injecté dans le prompt" if mem_ctx
+              else "🧠 Mémoire d'ARBOR : rien de pertinent (ni tentative voisine, ni code proche)")
+
+    code = generate_tool_code(spec, memory_ctx=mem_ctx)
     test_code = generate_test_code(spec, tool_module)
 
     passed, last_output, attempt = False, "", 0
@@ -665,6 +688,8 @@ def forge_tool(need_description, slug=None, notify_captain=False):
     if not passed:
         print(f"\n❌ Échec après {max_iter} tentatives — rien n'est committé.")
         _run_git(["worktree", "remove", "--force", worktree_path], REPO_ROOT)
+        if am:
+            am.safe_record("forge", need_description, "failed", reason=last_output[-500:], attempts=max_iter)
         if notify_captain:
             msg = (
                 f"🔨 Forge à outils BRO — échec\n\n"
@@ -690,6 +715,9 @@ def forge_tool(need_description, slug=None, notify_captain=False):
               f"Validé {attempt}/{max_iter} tentative(s) — aucun fichier existant modifié."],
              worktree_path)
 
+    if am:
+        am.safe_record("forge", need_description, "ok", files=[rel_tool, rel_test, rel_manifest],
+                       branch=branch_name, attempts=attempt)
     print(f"\n✅ Outil généré et testé — branche {branch_name}")
     print(f"   Fichiers : {rel_tool}, {rel_test}, {rel_manifest}")
 
