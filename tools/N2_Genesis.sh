@@ -29,8 +29,9 @@
 # EXACTEMENT la même naissance sur un AUTRE MULTIPASS dérive le MÊME HEX_LOVE.
 # Un registre local (n2_genesis_love_claimed.txt) garantit qu'un seul genesis
 # est jamais accordé par HEX_LOVE, quel que soit le nombre de MULTIPASS créés
-# avec cette naissance. Protection à l'échelle de CETTE STATION uniquement
-# (comme tout le ledger Ğ1-N², jamais synchronisé entre stations).
+# avec cette naissance. Protection à l'échelle de CETTE STATION uniquement (le ledger étant
+# répliqué entre amis, une même naissance peut encore obtenir un genesis sur UNE AUTRE station :
+# anti-Sybil inter-stations non résolu — cf. plan Ğ1-N², phase 2c).
 #
 # Usage: N2_Genesis.sh <EMAIL>
 ################################################################################
@@ -41,8 +42,16 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 
 log() { echo "[N2_Genesis] $*" >&2; }
 
+## EN VEILLE : G1-N² (extension des billets TrocZen) n'est pas encore activé. Aucun mint, aucun
+## marqueur, aucune entrée de registre. Réveil : N2_GENESIS_ENABLED=1 — puis rejouer ce script pour
+## les MULTIPASS qui ont un HEX_LOVE mais pas de .n2_genesis_minted (inscrits pendant la veille).
+if [[ "${N2_GENESIS_ENABLED:-0}" != "1" ]]; then
+    log "genesis Ğ1-N² EN VEILLE (N2_GENESIS_ENABLED!=1) — aucune action"
+    exit 0
+fi
+
 GENESIS_AMOUNT="11.00"   # → 100.00 Ẑen, cf. g1n2_check.sh: Ẑen=(solde-1)*10
-MINT_KEYFILE="$HOME/.zen/game/uplanet.G1.nostr"
+MINT_KEYFILE="${N2_MINT_KEYFILE:-$HOME/.zen/game/n2_mint.nostr}"   # clé de mint PROPRE à la station (cf. my.sh)
 LOVE_REGISTRY="$HOME/.zen/strfry/n2_genesis_love_claimed.txt"
 
 EMAIL="${1:-}"

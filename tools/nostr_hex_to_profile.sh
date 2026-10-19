@@ -64,6 +64,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Cache frais (< PROFILE_CACHE_TTL_H, défaut 6h) : en mode --file, ne pas refaire N scans strfry
+# à chaque cycle de backfill alors que les profils (kind 0) changent rarement. FORCE=1 pour forcer.
+if [[ "$HEX_INPUT" == file:* && "${FORCE:-0}" != "1" && -s "$JSON_OUTPUT" ]] \
+   && [[ -z "$(find "$JSON_OUTPUT" -mmin +$(( ${PROFILE_CACHE_TTL_H:-6} * 60 )) 2>/dev/null)" ]]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] Cache profils frais (< ${PROFILE_CACHE_TTL_H:-6}h) — extraction ignorée" >> "$LOG_FILE"
+    exit 0
+fi
+
 # Function to log messages
 log() {
     local level="$1"
@@ -75,7 +83,8 @@ log() {
         echo "[$timestamp] [$level] $message"
     fi
     
-    # Always log to file
+    # Always log to file (DEBUG : seulement en --verbose)
+    [[ "$level" == "DEBUG" && "$VERBOSE" != "true" ]] && return 0
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
 }
 
@@ -85,7 +94,7 @@ get_profile_info() {
     local profile_data="{}"
     local relay_data="[]"
     
-    log "INFO" "Fetching profile for HEX: ${hex_pubkey:0:8}..."
+    log "DEBUG" "Fetching profile for HEX: ${hex_pubkey:0:8}..."
     
     # Check if strfry is available
     if [[ ! -x "$HOME/.zen/strfry/strfry" ]]; then
@@ -300,12 +309,12 @@ main() {
     local success_count=0
     
     for hex_pubkey in "${hex_pubkeys[@]}"; do
-        log "INFO" "Processing HEX: ${hex_pubkey:0:8}..."
+        log "DEBUG" "Processing HEX: ${hex_pubkey:0:8}..."
         
         if profile_data=$(get_profile_info "$hex_pubkey"); then
             profiles+=("$profile_data")
             ((success_count++))
-            log "INFO" "✅ Successfully processed ${hex_pubkey:0:8}"
+            log "DEBUG" "✅ Successfully processed ${hex_pubkey:0:8}"
         else
             log "WARN" "❌ Failed to process ${hex_pubkey:0:8}"
         fi

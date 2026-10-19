@@ -84,7 +84,7 @@ bro_log() {
 #   Échoue TOUJOURS silencieusement — l'observabilité ne doit jamais
 #   perturber ni ralentir l'appelant (même philosophie que bro_alert_captain).
 ########################################################################
-BRO_ACTIVITY_RING_LIMIT="${BRO_ACTIVITY_RING_LIMIT:-200}"
+BRO_ACTIVITY_RING_LIMIT="${BRO_ACTIVITY_RING_LIMIT:-1000}"   # fichier publié sur IPNS : borné en taille ET en âge (48h)
 
 bro_log_event() {
     local _action="$1" _success="$2" _category="${3:-}" _latency_ms="${4:-}" _extra="${5:-}"
@@ -125,16 +125,32 @@ if extra:
     except Exception:
         pass
 
+import fcntl
+MAX_AGE_H = 48
 try:
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(event, ensure_ascii=False) + "\n")
-
-    limit_n = int(limit)
-    with open(path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    if len(lines) > limit_n:
-        with open(path, "w", encoding="utf-8") as f:
-            f.writelines(lines[-limit_n:])
+    with open(path, "a+", encoding="utf-8") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+            f.flush()
+            f.seek(0)
+            lines = f.readlines()
+            cutoff = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(time.time() - MAX_AGE_H * 3600))
+            kept = []
+            for l in lines:
+                try:
+                    if json.loads(l).get("timestamp", "") >= cutoff:
+                        kept.append(l)
+                except Exception:
+                    continue
+            kept = kept[-int(limit):]
+            if len(kept) != len(lines):
+                f.seek(0)
+                f.truncate()
+                f.writelines(kept)
+                f.flush()
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
 except Exception:
     pass
 PYEOF

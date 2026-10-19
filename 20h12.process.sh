@@ -617,7 +617,8 @@ ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 
 ########################################################################
 ## REMOVE TMP BUT KEEP swarm, ${IPFSNODEID} and coucou and scenes
-find "$HOME/.zen/tmp/" -mindepth 1 ! -name "swarm" ! -name "coucou" ! -name "scenes" ! -name "$IPFSNODEID" -delete
+## (54321.log* conservé : UPassport le fait tourner lui-même, 5 Mo x 3 — le supprimer sous uvicorn = écritures perdues)
+find "$HOME/.zen/tmp/" -mindepth 1 ! -name "swarm" ! -name "coucou" ! -name "scenes" ! -name "$IPFSNODEID" ! -name "54321.log*" -delete
 ## NETTOYAGE tmp.media (disque) : purge finale des médias orphelins de plus de 24h
 [[ -d "$HOME/.zen/tmp.media" ]] && find "$HOME/.zen/tmp.media" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 

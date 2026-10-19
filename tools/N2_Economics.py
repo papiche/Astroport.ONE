@@ -219,6 +219,12 @@ def publish_du_increment(email, amount, date_str, dry_run=False):
 
 
 def main():
+    # EN VEILLE : G1-N² (extension des billets TrocZen) n'est pas encore activé — aucun kind 30305
+    # n'est émis. Réveil : N2_ECONOMICS_ENABLED=1 (dans l'environnement de 20h12.process.sh).
+    if os.environ.get("N2_ECONOMICS_ENABLED", "0") != "1":
+        log("N2_Economics EN VEILLE (N2_ECONOMICS_ENABLED!=1) — aucune émission de DU")
+        return 0
+
     parser = argparse.ArgumentParser(description="DU hyper-relativiste quotidien (Ğ1-Nostr N²)")
     parser.add_argument("--dry-run", action="store_true", help="Calcule sans publier")
     parser.add_argument("--c2", type=float, default=0.01, help="Constante c² (défaut 0.01 ≈ 1%%)")

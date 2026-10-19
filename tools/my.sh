@@ -884,6 +884,23 @@ if [[ ! -s "$HOME/.zen/game/uplanet.G1.nostr" ]]; then
     chmod 600 "$HOME/.zen/game/uplanet.G1.nostr"
 fi
 
+## CLÉ DE MINT Ğ1-N² PROPRE À LA STATION (n2_mint.nostr)
+## Jamais dérivée de UPLANETNAME : ce secret est partagé par tout l'essaim, une clé de mint
+## commune donnerait une chaîne `prev` unique que chaque station fork en parallèle (et ferait de
+## chaque capitaine l'émetteur des mints de tous les autres). Clé aléatoire, locale, 0600.
+## La clé publique (n2_mint.hex, publiée avec la balise) permet aux autres stations de la
+## reconnaître via n2_mint_authorities.sh.
+if [[ ! -s "$HOME/.zen/game/n2_mint.nostr" && -n "$IPFSNODEID" && -x "$HOME/.zen/Astroport.ONE/tools/keygen" ]]; then
+    _n2s=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'); _n2p=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+    _n2npub=$("$HOME/.zen/Astroport.ONE/tools/keygen" -t nostr "$_n2s" "$_n2p" 2>/dev/null)
+    _n2nsec=$("$HOME/.zen/Astroport.ONE/tools/keygen" -t nostr "$_n2s" "$_n2p" -s 2>/dev/null)
+    _n2hex=$("$HOME/.zen/Astroport.ONE/tools/nostr2hex.py" "$_n2npub" 2>/dev/null)
+    if [[ "$_n2hex" =~ ^[0-9a-f]{64}$ && -n "$_n2nsec" ]]; then
+        ( umask 077; echo "NSEC=$_n2nsec; NPUB=$_n2npub; HEX=$_n2hex" > "$HOME/.zen/game/n2_mint.nostr" )
+    fi
+    unset _n2s _n2p _n2npub _n2nsec _n2hex
+fi
+
 # =========================================================================
 # UPLANETNAME_NODE (Lui ne dépend pas de la swarm.key, donc cache séparé)
 # =========================================================================

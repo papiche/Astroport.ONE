@@ -25,6 +25,41 @@ import time
 ACTIVITY_RING_LIMIT = 200
 
 
+NODE_RING_LIMIT = 1000   # fichier publié sur /ipns/$IPFSNODEID : on borne la taille (~170 Ko max)
+NODE_MAX_AGE_H = 48      # et l'âge, pour que le digest 24H de 20h12 reste fiable
+
+
+def _append_node_line(path, line: str, limit: int = NODE_RING_LIMIT,
+                      max_age_h: float = NODE_MAX_AGE_H) -> None:
+    """Append + purge (âge puis nombre de lignes) sous flock exclusif, en place
+    (même inode) : ssûr face aux écrivains concurrents (relay, UPassport, bro)."""
+    import fcntl
+    with open(path, "a+", encoding="utf-8") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            f.write(line + "\n")
+            f.flush()
+            f.seek(0)
+            lines = f.readlines()
+            cutoff = time.strftime("%Y-%m-%dT%H:%M:%S%z",
+                                   time.localtime(time.time() - max_age_h * 3600))
+            kept = []
+            for l in lines:
+                try:
+                    if json.loads(l).get("timestamp", "") >= cutoff:
+                        kept.append(l)
+                except Exception:
+                    continue  # ligne corrompue : écartée
+            kept = kept[-limit:]
+            if len(kept) != len(lines):
+                f.seek(0)
+                f.truncate()
+                f.writelines(kept)
+                f.flush()
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+
 def _activity_path(user_id: str) -> str:
     return os.path.expanduser(f"~/.zen/flashmem/{user_id}/observability/activity.jsonl")
 
@@ -71,9 +106,7 @@ def log_node_event(script: str, action: str, success: bool, category: str = None
             event["latency_ms"] = round(latency_ms, 1)
         if extra:
             event.update(extra)
-        with open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(event, ensure_ascii=False) + "\n")
-        _trim_ring_buffer(path, ACTIVITY_RING_LIMIT)
+        _append_node_line(path, json.dumps(event, ensure_ascii=False))
     except Exception:
         pass
 

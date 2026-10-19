@@ -30,7 +30,14 @@ loge() { echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] $*${RESET}" >&2; }
 logw() { echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] $*${RESET}" >&2; }
 logok(){ echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] $*${RESET}" >&2; }
 
-MINT_KEYFILE="$HOME/.zen/game/uplanet.G1.nostr"
+## PONT SUSPENDU tant que le ledger Ğ1-N² n'est pas stabilisé (mints par station, crédit du DU,
+## gel de compte sur fork). Réactivation explicite : N2_BRIDGE_ENABLED=1 N2_Bridge.sh <EMAIL>
+if [[ "${N2_BRIDGE_ENABLED:-0}" != "1" ]]; then
+    echo "[N2_Bridge] pont Ğ1 → Ğ1-N² DÉSACTIVÉ (N2_BRIDGE_ENABLED!=1) — aucune action" >&2
+    exit 0
+fi
+
+MINT_KEYFILE="${N2_MINT_KEYFILE:-$HOME/.zen/game/n2_mint.nostr}"
 MAX_COURTESY_PER_RUN="${MAX_COURTESY_PER_RUN:-20}"
 COURTESY_RUN_MARKER="$HOME/.zen/tmp/n2_bridge_courtesy_last_run"
 COURTESY_MIN_INTERVAL_SEC="${COURTESY_MIN_INTERVAL_SEC:-3600}"   # 1h entre deux vagues de courtoisie

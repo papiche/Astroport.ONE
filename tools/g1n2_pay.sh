@@ -70,6 +70,12 @@ if [[ $# -lt 3 ]]; then
     exit 1
 fi
 
+# Pont Ğ1 → N² suspendu (cf. N2_Bridge.sh) : refuser tout mint estampillé N2_BRIDGE:* sauf réactivation explicite
+if [[ "$IS_MINT" == "true" && "${4:-}" == N2_BRIDGE:* && "${N2_BRIDGE_ENABLED:-0}" != "1" ]]; then
+    loge "Mint N2_BRIDGE refusé : pont Ğ1 → Ğ1-N² désactivé (N2_BRIDGE_ENABLED!=1)"
+    exit 1
+fi
+
 KEYFILE="$1"
 AMOUNT="$2"
 DEST_ORIGINAL="$3"

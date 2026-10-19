@@ -691,6 +691,8 @@ while true; do
             if [[ "$SWARMSIZE" != "$local_swarm_size" ]]; then
                 echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize
                 # CORRECTED: On ajoute le dossier swarm lui-même (/* - pour avoir le bon CID !!
+                ## purge des copies héritées de observability/ des autres stations (ne plus les re-publier)
+                rm -rf ~/.zen/tmp/swarm/*/observability 2>/dev/null
                 SWARMH=$(ipfs --timeout 30s add -rwq ~/.zen/tmp/swarm/* | tail -n 1)
                 if [[ -n "$SWARMH" ]]; then
                     echo "=== PUBLISHING UPDATED SWARM MAP: /ipfs/${SWARMH} ==="
@@ -711,7 +713,13 @@ while true; do
                 cp "${MY_PATH}/templates/status.html" ~/.zen/tmp/${IPFSNODEID}/status.html
             ## ─────────────────────────────────────────────────────────────────────
 
-            MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1)
+            ## Autorités de mint Ğ1-N² : publier NOTRE clé publique de mint, reconnaître celles de l'essaim
+            [[ -x "${MY_PATH}/tools/n2_mint_authorities.sh" ]] && "${MY_PATH}/tools/n2_mint_authorities.sh" 2>/dev/null
+            ## Détection de problèmes (taux d'échec) + résumé agrégé sans IP → activity_summary.json
+            [[ -x "${MY_PATH}/tools/node_activity_watch.sh" ]] && "${MY_PATH}/tools/node_activity_watch.sh" 2>/dev/null
+            ## observability/ (journaux JSONL : IP clients, évènements) reste LOCAL : jamais publié sur IPNS/essaim
+            BALISE_ITEMS=(); for _e in ~/.zen/tmp/${IPFSNODEID}/*; do [[ "${_e##*/}" == "observability" ]] || BALISE_ITEMS+=("$_e"); done
+            MYCACHE=$(ipfs --timeout 180s add -rwq "${BALISE_ITEMS[@]}" | tail -n 1)
             if [[ -n "$MYCACHE" ]]; then
                 echo "=== PUBLISHING NODE BALISE: /ipfs/${MYCACHE} ==="
                 if [[ "$MYCACHE" != "$(cat "$LAST_NODE_PUBLISH_FILE" 2>/dev/null)" ]]; then

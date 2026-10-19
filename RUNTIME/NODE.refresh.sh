@@ -88,7 +88,9 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     ipfs pin rm ${RESOLV}
 
     NSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | cut -d ' ' -f 1)
-    ROUTING=$(ipfs add -rwHq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
+    ## observability/ (journaux JSONL : IP clients, évènements) reste LOCAL : jamais publié sur IPNS/essaim
+    BALISE_ITEMS=(); for _e in ~/.zen/tmp/${IPFSNODEID}/*; do [[ "${_e##*/}" == "observability" ]] || BALISE_ITEMS+=("$_e"); done
+    ROUTING=$(ipfs add -rwHq "${BALISE_ITEMS[@]}" | tail -n 1 )
     ipfs name publish /ipfs/${ROUTING}
     echo ">> $NSIZE Bytes STATION BALISE > ${myIPFS}/ipns/${IPFSNODEID}"
 

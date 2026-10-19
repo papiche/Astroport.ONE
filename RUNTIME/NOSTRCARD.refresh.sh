@@ -1555,11 +1555,19 @@ ${tva_result}"
     echo "## CONTROL TRANSACTIONS PRIMAL CONFORMITY..."
     # Call the generic primal wallet control function (using UPLANETNAME_G1 as unique primal source)
     echo "CONTROL UPLANET ZEN - MULTIPASS primal control"
-    ${MY_PATH}/../tools/primal_wallet_control.sh \
+    ## Sortie résumée : le détail (une banderole + 3 lignes par TX, relu à chaque cycle) ne
+    ## remonte dans nostrcard_refresh.log qu'en cas d'anomalie ou d'échec.
+    _PRIMAL_OUT=$(${MY_PATH}/../tools/primal_wallet_control.sh \
         "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
         "${G1PUBNOSTR}" \
         "${UPLANETNAME_G1}" \
-        "${PLAYER}"
+        "${PLAYER}" 2>&1)
+    _PRIMAL_RC=$?
+    if [[ $_PRIMAL_RC -ne 0 ]] || grep -qiE "⚠|ERREUR|intrusion détectée|invalide|rembours" <<< "$_PRIMAL_OUT"; then
+        echo "$_PRIMAL_OUT"
+    else
+        echo "primal OK — $(grep -c 'TX valide' <<< "$_PRIMAL_OUT") TX valide(s) (détail: relancer primal_wallet_control.sh)"
+    fi
 
     ## ADD AMIS of AMIS -- friends of registered MULTIPASS can use our nostr relay
     fof_list=($($MY_PATH/../tools/nostr_get_N1.sh $HEX 2>/dev/null))

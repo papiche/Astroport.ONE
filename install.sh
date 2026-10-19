@@ -1148,6 +1148,10 @@ echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"
 ~/.zen/Astroport.ONE/install/install_powerjoular.sh
 
 ###############################################################
+echo "## LIMITE DU JOURNAL SYSTEMD (journald) ##########"
+bash "${MY_PATH}/install/install_journald.sh" || true
+
+###############################################################
 ## prometheus-node-exporter seul : léger, expose /metrics sur :9100
 ## Prometheus serveur complet : installé uniquement avec le profil ai-company
 echo "## INSTALL prometheus-node-exporter (heartbox metrics export) ##########"
