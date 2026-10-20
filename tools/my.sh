@@ -100,6 +100,191 @@ resolve_player_dunikey() {
     return 1
 }
 
+# ── Formules de crédentiel des clés d'un compte (SALT, PEPPER) ────────────────
+# RÈGLE : toute clé du MULTIPASS dérivée avec keygen d'un (SALT, PEPPER) doit l'être avec
+# le crédentiel ISOLÉ par UPlanet — (SALT, PEPPER_<sel UPlanet>), sel = sha256(UPLANETNAME)[:16] —
+# sinon la même paire donnerait la même clé dans deux UPlanets (clés qui se chevauchent).
+#   "isolated" : formule de référence (make_NOSTRCARD.sh : wallet Ğ1, IPNS, bitcoin, monero)
+#   "legacy"   : pepper brut — comptes plus anciens ; JAMAIS choisi pour un nouveau compte,
+#                seulement RETROUVÉ quand il reproduit la clé publique de référence du compte
+#                (on ne signe jamais depuis un mauvais wallet / une mauvaise clé IPNS).
+# EXCEPTION VOULUE : la clé de la ẐEN Card (VISA.new.sh, SALT/PEPPER de secret.june) garde le
+# crédentiel BRUT — elle compte les parts de CAPEX et doit être la même sur toutes les UPlanets.
+uplanet_salt() {
+    echo -n "${UPLANETNAME}" | sha256sum | cut -c1-16
+}
+
+# Pepper à passer à keygen pour la formule donnée.
+uplanet_pepper() {
+    local pepper="$1" formula="${2:-isolated}"
+    [[ "$formula" == "legacy" ]] && echo "$pepper" || echo "${pepper}_$(uplanet_salt)"
+}
+
+# Fichier de crédentiels 0600 (RAM si possible) pour keygen -i ; imprime son chemin.
+# L'appelant le supprime (rm -f). Évite SALT/PEPPER dans `ps`.
+uplanet_cred_file() {
+    local salt="$1" pepper="$2" formula="${3:-isolated}" f
+    f=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
+    chmod 600 "$f"
+    printf '%s\n%s\n' "$salt" "$(uplanet_pepper "$pepper" "$formula")" > "$f"
+    echo "$f"
+}
+
+# Quelle formule reproduit la référence publique ? (isolated d'abord, legacy ensuite)
+#   kind : g1 (SS58 ou v1) | nostr (hex ou npub) | ipns (id k51…, avec ou sans /ipns/)
+# Usage : resolve_key_formula <kind> <salt> <pepper> <ref>      Affiche la formule ; code 1 si aucune.
+resolve_key_formula() {
+    local kind="$1" salt="$2" pepper="$3" ref="$4"
+    [[ -z "$kind" || -z "$salt" || -z "$pepper" || -z "$ref" ]] && return 1
+    ref="${ref#/ipns/}"
+    local astro_path formula cred got v1
+    astro_path="$(myAstroPath)"
+    for formula in isolated legacy; do
+        cred=$(uplanet_cred_file "$salt" "$pepper" "$formula")
+        case "$kind" in
+            g1)
+                v1=$("${astro_path}/tools/keygen" -t duniter -i "$cred" 2>/dev/null)
+                got=$(python3 "${astro_path}/tools/g1pub_to_ss58.py" "$v1" 2>/dev/null)
+                [[ "$got" == "$ref" || "$v1" == "$ref" ]] && { rm -f "$cred"; echo "$formula"; return 0; } ;;
+            nostr)
+                got=$("${astro_path}/tools/keygen" -t nostr -i "$cred" 2>/dev/null)
+                if [[ "$got" == "$ref" ]] || [[ "$(python3 "${astro_path}/tools/nostr2hex.py" "$got" 2>/dev/null)" == "$ref" ]]; then
+                    rm -f "$cred"; echo "$formula"; return 0
+                fi ;;
+            ipns)
+                # keygen -t ipfs affiche le PeerID (12D3…) ; le nom IPNS (k51…) en est un autre encodage
+                got=$("${astro_path}/tools/keygen" -t ipfs -i "$cred" 2>/dev/null)
+                got=$(python3 "${astro_path}/tools/peerid2ipns.py" "$got" 2>/dev/null)
+                [[ -n "$got" && "$got" == "$ref" ]] && { rm -f "$cred"; echo "$formula"; return 0; } ;;
+            *) rm -f "$cred"; return 1 ;;
+        esac
+        rm -f "$cred"
+    done
+    return 1
+}
+
+# ── API pour un compte DÉJÀ CRÉÉ (~/.zen/game/nostr/<email>) ───────────────────────────────
+# Les scripts n'écrivent jamais eux-mêmes un `keygen … "${salt}" "${pepper}"` : ils demandent le
+# fichier de crédentiel du compte, qui applique la formule de CE compte et pour CETTE clé.
+#   .keyformula : "nostr=<f> g1=<f> ipns=<f>" (<f> = isolated|legacy). Écrit à la création
+#   (make_NOSTRCARD.sh) ou au premier besoin (retrouvé par la référence publique, puis mis en cache).
+_account_dir() { echo "${ZEN_GAME_NOSTR:-$HOME/.zen/game/nostr}/$1"; }
+
+# DISCO du compte → affiche "<salt> <pepper>" ; code 1 s'il manque (reconstruire par SSSS avant).
+account_salt_pepper() {
+    local f s salt p pepper
+    f="$(_account_dir "$1")/.secret.disco"
+    [[ -s "$f" ]] || return 1
+    IFS='=&' read -r s salt p pepper < "$f"
+    [[ -n "$salt" && -n "$pepper" ]] || return 1
+    echo "$salt $pepper"
+}
+
+# Enregistre/actualise <kind>=<formule> dans <dossier>/.keyformula (les autres clés sont conservées).
+_keyformula_set() {
+    local dir="$1" kind="$2" val="$3" line="" k out=""
+    [[ -f "$dir/.keyformula" ]] && line=$(cat "$dir/.keyformula")
+    for k in nostr g1 ipns; do
+        local cur
+        if [[ "$k" == "$kind" ]]; then cur="$val"; else cur=$(echo "$line" | tr ' ' '\n' | sed -n "s/^${k}=//p" | head -1); fi
+        [[ -n "$cur" ]] && out="${out:+$out }${k}=${cur}"
+    done
+    echo "$out" > "$dir/.keyformula"; chmod 600 "$dir/.keyformula"
+}
+
+# Formule de <kind> (nostr|g1|ipns) pour ce compte. Lit .keyformula ; sinon la retrouve par la
+# référence publique du compte (HEX / G1PUBNOSTR / NOSTRNS) et la met en cache. Code 1 si aucune
+# formule ne reproduit la référence : erreur visible, jamais une clé « proche ».
+account_key_formula() {
+    local email="$1" kind="$2" dir ref sp salt pepper f
+    dir="$(_account_dir "$email")"
+    f=$(cat "$dir/.keyformula" 2>/dev/null | tr ' ' '\n' | sed -n "s/^${kind}=//p" | head -1)
+    [[ -n "$f" ]] && { echo "$f"; return 0; }
+    case "$kind" in
+        nostr) ref=$(cat "$dir/HEX" 2>/dev/null) ;;
+        g1)    ref=$(cat "$dir/G1PUBNOSTR" 2>/dev/null) ;;
+        ipns)  ref=$(cut -d/ -f3 "$dir/NOSTRNS" 2>/dev/null) ;;
+        *) return 1 ;;
+    esac
+    sp=$(account_salt_pepper "$email") || { echo "ERROR:NO_DISCO ${email}: .secret.disco absent, formule de ${kind} indéterminable" >&2; return 1; }
+    read -r salt pepper <<< "$sp"
+    f=$(resolve_key_formula "$kind" "$salt" "$pepper" "$ref") \
+        || { echo "ERROR:KEYS_MISMATCH ${email}: aucune formule ne reproduit la référence de ${kind}" >&2; return 1; }
+    _keyformula_set "$dir" "$kind" "$f"
+    echo "$f"
+}
+
+# Fichier de crédentiel (0600, RAM) du compte pour <kind> ; imprime son chemin, l'appelant fait rm -f.
+#   cred=$(account_cred_file "$email" nostr) && keygen -t nostr -s -i "$cred"; rm -f "$cred"
+account_cred_file() {
+    local email="$1" kind="$2" sp salt pepper f
+    sp=$(account_salt_pepper "$email") || { echo "ERROR:NO_DISCO ${email}: .secret.disco absent" >&2; return 1; }
+    read -r salt pepper <<< "$sp"
+    f=$(account_key_formula "$email" "$kind") || return 1
+    uplanet_cred_file "$salt" "$pepper" "$f"
+}
+
+# ── Déménagement d'un compte entre stations (UPassport/services/migration.py) ─────────────
+# État lu dans <compte>/.migration.json : affiche "<rôle>:<état>" (source|target : …) ou rien.
+account_migration_state() {
+    local f; f="$(_account_dir "$1")/.migration.json"
+    [[ -s "$f" ]] || return 0
+    jq -r 'select(.role != null) | "\(.role):\(.state)"' "$f" 2>/dev/null
+}
+
+# Code 0 = compte à NE PAS rafraîchir, facturer ni compter : en cours de départ (ancienne station :
+# marqueur .migrating) ou en cours d'arrivée sans que l'import soit terminé (nouvelle station). Un compte
+# fraîchement importé sans ses marqueurs (.lastpayment, .account_created…) serait pris pour un compte neuf.
+account_frozen() {
+    local email="$1" dir; dir="$(_account_dir "$email")"
+    [[ -e "$dir/.migrating" ]] && return 0
+    case "$(account_migration_state "$email")" in
+        target:requested|target:imported|target:claiming|target:error) return 0 ;;
+    esac
+    return 1
+}
+
+# Formule de la clé NOSTR d'un NOUVEAU compte : isolée, sauf restauration explicite d'un compte
+# historique dont il faut retrouver le même HEX (MULTIPASS_NOSTR_FORMULA=legacy, jamais par défaut).
+new_account_nostr_formula() {
+    case "${MULTIPASS_NOSTR_FORMULA:-isolated}" in legacy) echo legacy ;; *) echo isolated ;; esac
+}
+
+# Reconstruit les clés d'un compte depuis (SALT, PEPPER) dans <dossier>, chacune avec la
+# formule qui reproduit SA référence publiée. Refuse (code 1, ERROR:KEYS_MISMATCH sur stderr)
+# si une référence n'est reproduite par aucune formule : jamais de clé « presque bonne ».
+# Écrit : .secret.nostr .secret.dunikey .secret.ipns NPUB HEX G1PUBNOSTR (SS58) NOSTRNS .keyformula
+# Usage : derive_account_keys <dossier> <salt> <pepper> <ref_hex> <ref_g1pubnostr> <ref_nostrns>
+derive_account_keys() {
+    local dir="$1" salt="$2" pepper="$3" ref_hex="$4" ref_g1="$5" ref_ns="$6"
+    local astro_path f_nostr f_g1 f_ipns cred npub nsec hex v1 ss58
+    astro_path="$(myAstroPath)"
+    f_nostr=$(resolve_key_formula nostr "$salt" "$pepper" "$ref_hex") || { echo "ERROR:KEYS_MISMATCH clé NOSTR : aucune formule ne reproduit le HEX publié" >&2; return 1; }
+    f_g1=$(resolve_key_formula g1 "$salt" "$pepper" "$ref_g1")       || { echo "ERROR:KEYS_MISMATCH wallet Ğ1 : aucune formule ne reproduit G1PUBNOSTR publié" >&2; return 1; }
+    f_ipns=$(resolve_key_formula ipns "$salt" "$pepper" "$ref_ns")   || { echo "ERROR:KEYS_MISMATCH clé IPNS : aucune formule ne reproduit le NOSTRNS publié" >&2; return 1; }
+    mkdir -p "$dir"
+
+    cred=$(uplanet_cred_file "$salt" "$pepper" "$f_nostr")
+    nsec=$("${astro_path}/tools/keygen" -t nostr -s -i "$cred"); npub=$("${astro_path}/tools/keygen" -t nostr -i "$cred"); rm -f "$cred"
+    hex=$(python3 "${astro_path}/tools/nostr2hex.py" "$npub")
+    echo "NSEC=${nsec}; NPUB=${npub}; HEX=${hex}" > "${dir}/.secret.nostr"
+    echo "$npub" > "${dir}/NPUB"; echo "$hex" > "${dir}/HEX"
+
+    cred=$(uplanet_cred_file "$salt" "$pepper" "$f_g1")
+    "${astro_path}/tools/keygen" -t duniter -o "${dir}/.secret.dunikey" -i "$cred" >/dev/null 2>&1
+    v1=$(grep -E '^pub:' "${dir}/.secret.dunikey" | awk '{print $2}'); rm -f "$cred"
+    ss58=$(python3 "${astro_path}/tools/g1pub_to_ss58.py" "$v1" 2>/dev/null)
+    echo "${ss58:-$v1}" > "${dir}/G1PUBNOSTR"
+
+    cred=$(uplanet_cred_file "$salt" "$pepper" "$f_ipns")
+    "${astro_path}/tools/keygen" -t ipfs -o "${dir}/.secret.ipns" -i "$cred" >/dev/null 2>&1; rm -f "$cred"
+    echo "/ipns/${ref_ns#/ipns/}" > "${dir}/NOSTRNS"
+
+    echo "nostr=${f_nostr} g1=${f_g1} ipns=${f_ipns}" > "${dir}/.keyformula"
+    chmod 600 "${dir}"/.secret.* "${dir}/.keyformula"
+    return 0
+}
+
 myHome() {
     echo "$HOME"
 }
@@ -943,4 +1128,16 @@ if [ -z "$COOP_CONFIG_LOADED" ]; then
         coop_load_env_vars 2>/dev/null && export COOP_CONFIG_LOADED=1
     fi
     unset _COOP_CFG
+fi
+
+## DOMAINE DE L'UPLANET : copylaradio.com = UPlanet ORIGIN (swarm.key absente = UPLANETNAME à zéros). Sur une UPlanet Ẑen
+## (swarm.key privée), le paramètre coopératif OVH_ZONE l'EMPORTE : passerelle, visio, Coracle et porte d'entrée en dérivent.
+## UPLANET_DOMAIN reste VIDE sur ORIGIN : les scripts d'embarquement/restauration ne réécrivent alors AUCUN lien.
+export UPLANET_DOMAIN=""
+if [[ -n "${OVH_ZONE:-}" && "${OVH_ZONE}" != "copylaradio.com" && "${UPLANETNAME}" != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
+    export UPLANET_DOMAIN="${OVH_ZONE}"
+    VDONINJA="https://vdo.${UPLANET_DOMAIN}"
+    myLIBRA="https://ipfs.${UPLANET_DOMAIN}"
+    myCORACLE="https://coracle.${UPLANET_DOMAIN}"
+    myUPLANET="${myIPFS}/ipns/${UPLANET_DOMAIN}"
 fi

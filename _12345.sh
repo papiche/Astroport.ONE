@@ -277,18 +277,30 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
     DISCO=$(cat ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.disco)
     IFS='=&' read -r s salt p pepper <<< "$DISCO"
     if [[ -n $salt && -n $pepper ]]; then
-        CAPTAING1PUB=$(${MY_PATH}/tools/keygen -t duniter "$salt" "$pepper")
-        CAPTAINCOINS=$(read_cached_coin "$CAPTAING1PUB")
-        CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOINS - 1) * 10" | bc)
-        captainNPUB=$(${MY_PATH}/tools/keygen -t nostr "$salt" "$pepper")
-        captainHEX=$(${MY_PATH}/tools/nostr2hex.py "$captainNPUB")
-        captainNSEC=$(${MY_PATH}/tools/keygen -t nostr "$salt" "$pepper" -s)
-        echo "NSEC=$captainNSEC; NPUB=$captainNPUB; HEX=$captainHEX" \
-            > ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
-        chmod 600 ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
-        mkdir -p ~/.zen/game/nostr/CAPTAIN
-        echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
-        echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
+        ## Norme des clés (my.sh) : wallet et clé NOSTR du Capitaine avec LEUR formule (retrouvée par
+        ## G1PUBNOSTR / HEX publiés), jamais un pepper brut deviné — le Capitaine est un MULTIPASS.
+        _cap_g1_cred=$(account_cred_file "$CAPTAINEMAIL" g1) && _cap_nostr_cred=$(account_cred_file "$CAPTAINEMAIL" nostr)
+        if [[ -n "$_cap_g1_cred" && -n "$_cap_nostr_cred" ]]; then
+            CAPTAING1PUB=$(${MY_PATH}/tools/keygen -t duniter -i "$_cap_g1_cred")
+            CAPTAINCOINS=$(read_cached_coin "$CAPTAING1PUB")
+            CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOINS - 1) * 10" | bc)
+            captainNPUB=$(${MY_PATH}/tools/keygen -t nostr -i "$_cap_nostr_cred")
+            captainHEX=$(${MY_PATH}/tools/nostr2hex.py "$captainNPUB")
+            captainNSEC=$(${MY_PATH}/tools/keygen -t nostr -s -i "$_cap_nostr_cred")
+            rm -f "$_cap_g1_cred" "$_cap_nostr_cred"
+        else
+            echo "ERROR: clés du Capitaine ${CAPTAINEMAIL} non reconstruites (aucune formule ne reproduit ses références publiées)" >&2
+            captainNPUB=""
+        fi
+        ## Jamais d'écriture d'un .secret.nostr vide : sans clés reconstruites on n'écrit RIEN.
+        if [[ -n "$captainNPUB" && -n "$captainNSEC" && -n "$captainHEX" ]]; then
+            echo "NSEC=$captainNSEC; NPUB=$captainNPUB; HEX=$captainHEX" \
+                > ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+            chmod 600 ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+            mkdir -p ~/.zen/game/nostr/CAPTAIN
+            echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
+            echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
+        fi
     else
         echo "ERROR : CAPTAIN BAD DISCO DECODING" >> ~/.zen/game/nostr/$CAPTAINEMAIL/ERROR
     fi

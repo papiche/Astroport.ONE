@@ -1338,6 +1338,27 @@ _handle_ucloud_share() {
         || _log "WARN: 📸 ucloud_share ${mode#--} refusé ou en échec (détail dans $LOG_FILE)"
 }
 
+## ── Canaux "migrate_*" : déménagement d'un MULTIPASS entre stations, à clé
+## identique (UPassport/services/migration.py). Cinq messages : migrate_request
+## (nouvelle → ancienne, avec la PREUVE signée par la personne), migrate_bundle
+## (ancienne → nouvelle : CID + clé du paquet), migrate_ack (nouvelle → ancienne),
+## migrate_commit (ancienne → nouvelle : séquence + valeur IPNS), migrate_pinned (nouvelle →
+## ancienne : documents épinglés ; seul cet accusé déclenche le nettoyage). Le sender est déjà
+## authentifié comme NODE swarm ; migration.py vérifie en plus la preuve de la
+## personne et l'ÉTAT attendu (on n'accepte un paquet que du NODE sollicité).
+## Un refus est un ERROR:migration:… dans le journal, jamais un repli silencieux.
+_handle_migrate() {
+    local payload="$1" mode="$2" from="$3"
+    local _script="$HOME/.zen/UPassport/multipass_migrate.py"
+    if [[ ! -s "$_script" ]]; then
+        _log "WARN: 🚚 migrate : $_script introuvable"
+        return
+    fi
+    printf '%s' "$payload" | python3 "$_script" "$mode" --sender "$from" >> "$LOG_FILE" 2>&1 \
+        && _log "🚚 migrate ${mode#--} traité" \
+        || _log "WARN: 🚚 migrate ${mode#--} refusé ou en échec (détail dans $LOG_FILE)"
+}
+
 ## ── Canal "arbor_baton" : notification de courtoisie, transmission du
 ## bâton de parole ARBOR (cf. IA/arbor_baton.sh). L'état (ARBOR_BATON_HOLDER/
 ## SINCE) est déjà écrit par la station émettrice AVANT l'envoi de ce DM —
@@ -1994,7 +2015,7 @@ _process_event() {
     ## jamais par un humain en chat — donc aucune entrée correspondante dans le
     ## `case` soumis au niveau d'abonnement MULTIPASS plus bas, contrairement à
     ## comfyui_job qui, lui, est aussi accessible à l'utilisateur.
-    if [[ "$channel" =~ ^(vocals|webcam|zen_like|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result|ucloud_share|ucloud_share_ack|arbor_baton)$ ]]; then
+    if [[ "$channel" =~ ^(vocals|webcam|zen_like|comfyui_result|self_command_relay|vision_analysis_job|vision_analysis_result|ucloud_share|ucloud_share_ack|arbor_baton|migrate_request|migrate_bundle|migrate_ack|migrate_commit|migrate_pinned)$ ]]; then
         if ! _is_swarm_node "$sender"; then
             _log "WARN: canal inter-NODE '$channel' de ${sender:0:12}... non reconnu comme NODE swarm — ignoré"
             return
@@ -2010,6 +2031,11 @@ _process_event() {
             ucloud_share)            _handle_ucloud_share "$payload" "--receive" ;;
             ucloud_share_ack)        _handle_ucloud_share "$payload" "--ack" ;;
             arbor_baton)             _handle_arbor_baton "$payload" "$sender" ;;
+            migrate_request)         _handle_migrate "$payload" "--serve-request" "$sender" ;;
+            migrate_bundle)          _handle_migrate "$payload" "--receive-bundle" "$sender" ;;
+            migrate_ack)             _handle_migrate "$payload" "--serve-ack" "$sender" ;;
+            migrate_commit)          _handle_migrate "$payload" "--receive-commit" "$sender" ;;
+            migrate_pinned)          _handle_migrate "$payload" "--serve-pinned" "$sender" ;;
         esac
         return
     fi

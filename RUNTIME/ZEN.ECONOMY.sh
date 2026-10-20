@@ -136,11 +136,11 @@ fi
 #######################################################################
 NOSTRS=()
 for d in ~/.zen/game/nostr/*@*/; do
-    [[ -d "$d" && ! -f "${d}.roaming" ]] && NOSTRS+=("$(basename "$d")")
+    [[ -d "$d" && ! -f "${d}.roaming" ]] && ! account_frozen "$(basename "$d")" && NOSTRS+=("$(basename "$d")")
 done
 PLAYERS=()
 for d in ~/.zen/game/players/*@*/; do
-    [[ -d "$d" && ! -f "${d}.roaming" ]] && PLAYERS+=("$(basename "$d")")
+    [[ -d "$d" && ! -f "${d}.roaming" ]] && ! account_frozen "$(basename "$d")" && PLAYERS+=("$(basename "$d")")
 done
 log_output "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
 

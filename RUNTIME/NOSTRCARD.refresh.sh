@@ -566,6 +566,14 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     # ---------------------------------------------------------
+    # IGNORER LES COMPTES EN DÉMÉNAGEMENT (gelés côté départ, incomplets côté arrivée) : ni redevance,
+    # ni rafraîchissement, ni purge — voir my.sh::account_frozen / UPassport/services/migration.py
+    if account_frozen "$PLAYER"; then
+        log "INFO" "🚚 MULTIPASS en déménagement ignoré ($(account_migration_state "$PLAYER")) : $PLAYER"
+        continue
+    fi
+
+    # ---------------------------------------------------------
     # 1. Détection de corruption "Fantôme" (Fichiers de base absents)
     # ---------------------------------------------------------
     if [[ ! -f ~/.zen/game/nostr/${PLAYER}/HEX || ! -f ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR ]]; then
@@ -791,9 +799,17 @@ for PLAYER in "${NOSTR[@]}"; do
     ## NOW salt & pepper are valid, we can generate NSEC & NPUB
     ## CACHING SECRET & DISCO to nostr/${PLAYER}/.secret.nostr
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
-        NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
-        NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
-        echo "NSEC=$NSEC; NPUB=$NPUB; HEX=$HEX;" > ~/.zen/game/nostr/${PLAYER}/.secret.nostr
+        ## Norme des clés (my.sh) : formule PROPRE À CE COMPTE, retrouvée par son HEX publié — jamais
+        ## un pepper brut deviné (un compte récent est en crédentiel isolé, un ancien en formule legacy).
+        if _nostr_cred=$(account_cred_file "${PLAYER}" nostr); then
+            NSEC=$(${MY_PATH}/../tools/keygen -t nostr -s -i "$_nostr_cred")
+            NPUB=$(${MY_PATH}/../tools/keygen -t nostr -i "$_nostr_cred")
+            rm -f "$_nostr_cred"
+            echo "NSEC=$NSEC; NPUB=$NPUB; HEX=$HEX;" > ~/.zen/game/nostr/${PLAYER}/.secret.nostr
+        else
+            log "ERROR" "NOSTR: clé de ${PLAYER} non reconstruite (aucune formule ne reproduit son HEX) — .secret.nostr NON écrit"
+            continue
+        fi
         chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret*
     else
         source ~/.zen/game/nostr/${PLAYER}/.secret.nostr
@@ -806,57 +822,36 @@ for PLAYER in "${NOSTR[@]}"; do
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     ########################################################################
     ## 1st Day send welcome message...
+    ## Bienvenue court (+ devoir OpenCollective sous 7 jours), puis la série « se dégafamiser » (voir plus bas).
+    _WELCOME_TPL="welcome_degafam.html"; _WELCOME_SUBJECT="🌍 Bienvenue sur UPlanet — votre MULTIPASS est prêt"
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
-        cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+        cp ${MY_PATH}/../templates/NOSTR/${_WELCOME_TPL} ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~http://127.0.0.1:8080~${myLIBRA}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~_USPOT_~${uSPOT}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~_CORACLEURL_~${myCORACLE:-https://coracle.copylaradio.com}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-        && ${MY_PATH}/../tools/mailjet.sh --channel milestones --template "${MY_PATH}/../templates/NOSTR/welcome.html" --expire 7d "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "Welcome on UPlanet"
+        && ${MY_PATH}/../tools/mailjet.sh --channel milestones --template "${MY_PATH}/../templates/NOSTR/${_WELCOME_TPL}" --expire 7d "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "${_WELCOME_SUBJECT}"
         log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
         log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
     fi
 
     ####################################################################
     ## ZINES QUOTIDIENS J1→J6 (période d'essai MULTIPASS, hors CAPTAIN)
-    if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] && [[ "${CAPTAING1PUB}" != "${G1PUBNOSTR}" ]]; then
-        _ZINE_BIRTHDATE_SEC=$(date -d "${BIRTHDATE}" +%s 2>/dev/null || date +%s)
-        _ZINE_TODAY_SEC=$(date -d "${TODATE}" +%s 2>/dev/null || date +%s)
-        _ZINE_DAY=$(( (_ZINE_TODAY_SEC - _ZINE_BIRTHDATE_SEC) / 86400 ))
-
-        ## Helper : prépare et envoie un Zine si le flag n'existe pas encore
-        _send_zine() {
-            local day="$1" tpl="$2" subject="$3"
-            local flag="${HOME}/.zen/game/nostr/${PLAYER}/.zine_j${day}_sent"
-            [[ -s "$flag" ]] && return 0
-            local tmp_zine
-            tmp_zine=$(mktemp)
-            sed -e "s~_USPOT_~${uSPOT}~g" \
-                -e "s~_MYIPFS_~${myIPFS}~g" \
-                -e "s~_CORACLEURL_~${myCORACLE:-https://coracle.copylaradio.com}~g" \
-                -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
-                -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
-                -e "s~_NCARD_~${NCARD}~g" \
-                -e "s~_ZCARD_~${ZCARD}~g" \
-                "${MY_PATH}/../templates/NOSTR/zine/${tpl}" > "$tmp_zine"
-            ${MY_PATH}/../tools/mailjet.sh --channel zine --template "${MY_PATH}/../templates/NOSTR/zine/${tpl}" --expire 2d \
-                "${PLAYER}" "$tmp_zine" "$subject"
-            rm -f "$tmp_zine"
-            echo "${TODATE}" > "$flag"
-            log "INFO" "Zine J${day} envoyé à ${PLAYER} : ${subject}"
-        }
-
-        case $_ZINE_DAY in
-            1) _send_zine 1 "zine_j1_coracle.html"    "🌐 J1 — Coracle, votre porte NOSTR" ;;
-            2) _send_zine 2 "zine_j2_nextcloud.html"  "☁️ J2 — NextCloud, sortez du GAFAM" ;;
-            3) _send_zine 3 "zine_j3_nostrtube.html"  "🎬 J3 — Nostr Tube & Vocals" ;;
-            4) _send_zine 4 "zine_j4_wotx2.html"      "🕸️ J4 — WoTx2 & MineLife" ;;
-            5) _send_zine 5 "zine_j5_zelkova.html"    "💎 J5 — Zelkova & TrocZen" ;;
-            6) _send_zine 6 "zine_j6_ecosysteme.html" "🌐 J6 — L'écosystème complet" ;;
-        esac
-
-        unset -f _send_zine
-        unset _ZINE_BIRTHDATE_SEC _ZINE_TODAY_SEC _ZINE_DAY
+    ## SÉRIE « SE DÉGAFAMISER » (remplace les zines J1→J6) : photos → contacts → agenda → amis, puis Zelkova et Coracle.
+    ## Un message au plus par jour, décidé d'après l'ÉTAT RÉEL du compte (UPassport/services/degafam.py).
+    ## Processus autonome (setsid nohup) : jamais de sous-shell qui retiendrait ce rafraîchissement.
+    _ONB_PY="${HOME}/.zen/UPassport/ucloud_onboarding.py"
+    _ONB_AGE=$(( ($(date -d "${TODATE}" +%s 2>/dev/null || date +%s) - $(date -d "${BIRTHDATE}" +%s 2>/dev/null || date +%s)) / 86400 ))
+    if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]] && [[ "${CAPTAING1PUB}" != "${G1PUBNOSTR}" ]] && [[ $_ONB_AGE -le 60 ]] \
+       && [[ ! -f "$HOME/.zen/tmp/onboarding_${PLAYER}_${TODATE}.done" ]]; then
+        if [[ -s "$_ONB_PY" ]]; then
+            touch "$HOME/.zen/tmp/onboarding_${PLAYER}_${TODATE}.done"
+            setsid nohup python3 "$_ONB_PY" "${PLAYER}" >> "$HOME/.zen/log/onboarding_${PLAYER}.log" 2>&1 < /dev/null 200>&- &
+            log "INFO" "📬 série dégafamisation : passage quotidien lancé pour ${PLAYER} (PID: $!)"
+        else
+            log "ERROR" "ucloud_onboarding.py introuvable (${_ONB_PY}) — installation incomplète, série non envoyée"
+        fi
     fi
+    unset _ONB_PY _ONB_AGE
     ####################################################################
 
     ####################################################################
@@ -1600,10 +1595,21 @@ ${tva_result}"
 
         ## Keeping .secret.ipns (quicker ipfs processing)
         if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.ipns ]]; then
-            ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/nostr/${PLAYER}/.secret.ipns "${salt}" "${pepper}"
-            ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
-            NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/game/nostr/${PLAYER}/.secret.ipns)
-            chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.ipns
+            ## Clé IPNS : MÊME crédentiel que make_NOSTRCARD.sh (SALT, PEPPER_<sel UPlanet>), jamais
+            ## (SALT, PEPPER) bruts — sinon la clé régénérée ne correspond plus au NOSTRNS publié et
+            ## la station publie sous un nom que personne n'annonce (constaté sur dev@g1sms.fr).
+            ## resolve_key_formula ne retient que la formule qui reproduit le NOSTRNS du compte.
+            _ipns_ref=$(cut -d/ -f3 ~/.zen/game/nostr/${PLAYER}/NOSTRNS 2>/dev/null)
+            if _ipns_formula=$(resolve_key_formula ipns "${salt}" "${pepper}" "${_ipns_ref}"); then
+                _ipns_cred=$(uplanet_cred_file "${salt}" "${pepper}" "${_ipns_formula}")
+                ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/nostr/${PLAYER}/.secret.ipns -i "$_ipns_cred"
+                rm -f "$_ipns_cred"
+                ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
+                NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/game/nostr/${PLAYER}/.secret.ipns)
+                chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.ipns
+            else
+                log "ERROR" "IPNS: aucune formule de crédentiel ne reproduit le NOSTRNS de ${PLAYER} (${_ipns_ref:-absent}) — clé IPNS NON régénérée, jamais une clé « proche »"
+            fi
         fi
 
         ## UPDATE IPNS RESOLVE

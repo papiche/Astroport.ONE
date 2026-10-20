@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Votre MULTIPASS a déménagé | Your MULTIPASS has moved</title>
+</head>
+<!--
+  Email du déménagement d'un MULTIPASS entre stations. Lisible dans TOUTES les messageries : HTML statique, styles
+  EN LIGNE, tableaux, aucun JavaScript ni contenu masqué ; français puis anglais, l'un sous l'autre.
+  Marqueurs remplacés par UPassport/services/migration.py : _EMAIL_ _STATION_ _STATION_URL_ _OLDSTATION_ _DATE_ _DOCS_ _CAPTAIN_
+-->
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#1e293b;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;">
+<tr><td align="center" style="padding:16px 8px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #e2e8f0;">
+  <tr><td bgcolor="#16a34a" style="background-color:#16a34a;padding:22px 24px;text-align:center;">
+    <div style="font-size:24px;line-height:30px;font-weight:bold;color:#ffffff;">🚚 Votre MULTIPASS a déménagé</div>
+    <div style="font-size:14px;line-height:20px;color:#dcfce7;padding-top:4px;">Your MULTIPASS has moved</div>
+  </td></tr>
+  <tr><td style="padding:22px 24px 4px 24px;">
+    <div style="font-size:12px;letter-spacing:2px;color:#64748b;font-weight:bold;">🇫🇷 FRANÇAIS</div>
+    <h2 style="font-size:19px;margin:10px 0 8px 0;color:#0f172a;">Bienvenue sur votre nouvelle station</h2>
+    <p style="font-size:15px;line-height:22px;margin:0 0 12px 0;">Votre MULTIPASS <strong>_EMAIL_</strong> vit désormais sur la station <strong>_STATION_</strong>. Vos données, votre espace de fichiers et vos documents (<strong>_DOCS_</strong>) ont été transférés <strong>et vérifiés</strong> ; l'ancienne station (_OLDSTATION_) ne les gère plus.</p>
+    <p style="font-size:15px;line-height:22px;margin:0 0 12px 0;"><strong>Rien à faire de votre côté</strong> : mêmes clés, même portefeuille, même code PASS, même adresse IPNS. Votre compte n'a pas changé d'identité, seulement de lieu.</p>
+  </td></tr>
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #bbf7d0;background-color:#f0fdf4;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#14532d;">✅ Ce qui a été transféré</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Compte, préférences et historique (redevance, étapes)</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Espace de fichiers et photos chiffrés, mémoire de BRO</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">uDRIVE et documents IPFS, ZenCard et parts sociales</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Vos messages et publications NOSTR</div>
+      <a href="_STATION_URL_" target="_blank" style="display:inline-block;background-color:#16a34a;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:11px 18px;border-radius:6px;margin-top:6px;">🌐 Ouvrir ma nouvelle station</a>
+    </td></tr>
+    </table>
+  </td></tr>
+  <tr><td style="padding:22px 24px 4px 24px;">
+    <div style="font-size:12px;letter-spacing:2px;color:#64748b;font-weight:bold;">🇫🇷</div>
+    <h2 style="font-size:19px;margin:10px 0 8px 0;color:#0f172a;">Ce n'était pas vous ?</h2>
+    <p style="font-size:15px;line-height:22px;margin:0 0 12px 0;">Si vous n'avez pas demandé ce déménagement, contactez immédiatement le Capitaine de la station (<strong>_CAPTAIN_</strong>).</p>
+  </td></tr>
+  <tr><td style="padding:0 24px;"><div style="border-top:2px solid #cbd5e1;font-size:1px;line-height:1px;">&nbsp;</div></td></tr>
+  <tr><td style="padding:18px 24px 4px 24px;">
+    <div style="font-size:12px;letter-spacing:2px;color:#64748b;font-weight:bold;">🇬🇧 ENGLISH</div>
+    <h2 style="font-size:19px;margin:10px 0 8px 0;color:#0f172a;">Welcome to your new station</h2>
+    <p style="font-size:15px;line-height:22px;margin:0 0 12px 0;">Your MULTIPASS <strong>_EMAIL_</strong> now lives on the station <strong>_STATION_</strong>. Your data, file space and documents (<strong>_DOCS_</strong>) were transferred <strong>and verified</strong>; the previous station (_OLDSTATION_) no longer manages them.</p>
+    <p style="font-size:15px;line-height:22px;margin:0 0 12px 0;"><strong>Nothing to do on your side</strong>: same keys, same wallet, same PASS code, same IPNS address. Your account did not change identity, only location.</p>
+  </td></tr>
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #bbf7d0;background-color:#f0fdf4;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#14532d;">✅ What was transferred</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Account, preferences and history (fee, milestones)</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Encrypted file space and photos, BRO memory</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">uDRIVE and IPFS documents, ZenCard and shares</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Your NOSTR messages and posts</div>
+      <a href="_STATION_URL_" target="_blank" style="display:inline-block;background-color:#16a34a;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:11px 18px;border-radius:6px;margin-top:6px;">🌐 Open my new station</a>
+    </td></tr>
+    </table>
+  </td></tr>
+  <tr><td style="padding:18px 24px 4px 24px;">
+    <div style="font-size:12px;letter-spacing:2px;color:#64748b;font-weight:bold;">🇬🇧</div>
+    <h2 style="font-size:19px;margin:10px 0 8px 0;color:#0f172a;">Wasn't you?</h2>
+    <p style="font-size:15px;line-height:22px;margin:0 0 12px 0;">If you did not request this move, contact the station Captain (<strong>_CAPTAIN_</strong>) immediately.</p>
+  </td></tr>
+  <tr><td bgcolor="#f8fafc" style="background-color:#f8fafc;border-top:1px solid #e2e8f0;padding:14px 24px;text-align:center;font-size:12px;line-height:18px;color:#64748b;">
+    Déménagé le / Moved: _DATE_<br>Station d'origine / Previous station: _OLDSTATION_
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

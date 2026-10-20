@@ -251,10 +251,14 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     # 1. Generate a DISCO Nostr key pair
     # Sécurité : masquer SALT/PEPPER de ps aux via fichier credentials temporaire en RAM
-    _CRED_NOSTR=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
-    chmod 600 "$_CRED_NOSTR"
+    ## NORME DES CLÉS (tools/my.sh) : TOUTES les clés du MULTIPASS (NOSTR, Ğ1, IPNS, Bitcoin, Monero)
+    ## sont dérivées du MÊME crédentiel isolé par UPlanet (SALT, PEPPER_<sel UPlanet>) — sinon la même
+    ## paire donnerait la même clé dans deux UPlanets. Seule exception : restauration explicite d'un compte
+    ## historique dont il faut retrouver le même HEX (MULTIPASS_NOSTR_FORMULA=legacy, cf. nostr_RESTORE_TW.sh).
+    ## (La clé de la ẐEN Card, elle, reste volontairement brute : elle compte les parts de CAPEX.)
+    _NOSTR_FORMULA=$(new_account_nostr_formula)
+    _CRED_NOSTR=$(uplanet_cred_file "${SALT}" "${PEPPER}" "${_NOSTR_FORMULA}")
     trap "rm -f '$_CRED_NOSTR'" EXIT INT TERM
-    printf '%s\n%s\n' "${SALT}" "${PEPPER}" > "$_CRED_NOSTR"
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr -s -i "$_CRED_NOSTR")
     NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr -i "$_CRED_NOSTR")
     HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUBLIC")
@@ -297,6 +301,7 @@ EOFNOSTR
     UPLANET_SALT=$(echo -n "${UPLANETNAME}" | sha256sum | cut -c1-16)
     printf '%s\n%s\n' "${SALT}" "${PEPPER}_${UPLANET_SALT}" > "$_CRED_DUNITER"
 
+    trap "rm -f '$_CRED_NOSTR' '$_CRED_DUNITER'" EXIT INT TERM
     # La clé G1 générée sera unique à cette UPlanet, vierge de toute transaction primale !
     G1PUBNOSTR=$(${MY_PATH}/../tools/keygen -t duniter -i "$_CRED_DUNITER")
     echo "G1NOSTR _WALLET v1: $G1PUBNOSTR"
@@ -314,6 +319,10 @@ EOFNOSTR
     ## VISA.new.sh vérifie ce fichier avant de créer la ZEN Card
     mkdir -p "${HOME}/.zen/game/nostr/${EMAIL}/"
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
+    ## Formule de chaque clé, pour que tout script la retrouve sans la deviner (my.sh::account_key_formula)
+    _keyformula_set "${HOME}/.zen/game/nostr/${EMAIL}" nostr "${_NOSTR_FORMULA}"
+    _keyformula_set "${HOME}/.zen/game/nostr/${EMAIL}" g1 isolated
+    _keyformula_set "${HOME}/.zen/game/nostr/${EMAIL}" ipns isolated
 
     ############ CREATE LOCAL USER SPACE
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
@@ -448,7 +457,7 @@ EOFGOALS
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
-        "⏰ UPlanet Ẑen ${_EARLY_ORIGIN} // Welcome // ${myLIBRA}/ipns/copylaradio.com // DID: did:nostr:${HEX}" \
+        "⏰ UPlanet Ẑen ${_EARLY_ORIGIN} // Welcome // ${myLIBRA}/ipns/${UPLANET_DOMAIN:-copylaradio.com} // DID: did:nostr:${HEX}" \
         "$_EARLY_AVATAR" \
         "$_EARLY_AVATAR" \
         "" "$myLIBRA/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \
@@ -505,6 +514,7 @@ EOFGOALS
   "salt": "${SALT}",
   "pepper": "${PEPPER}",
   "pepper_g1": "${PEPPER}_${UPLANET_SALT}",
+  "pepper_nostr": "$(uplanet_pepper "${PEPPER}" "${_NOSTR_FORMULA}")",
   "email": "${EMAIL}",
   "lat": "${ZLAT}",
   "lon": "${ZLON}",
@@ -536,7 +546,7 @@ EOFJSON
     echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png.cid
 
     ## Create NOSTR Profile Viewer QR Code
-    amzqr "${myLIBRA}/ipns/copylaradio.com/nostr_profile_viewer.html?hex=${HEX}" -l H -p ${MY_PATH}/../images/lamanostr.png \
+    amzqr "${myLIBRA}/ipns/${UPLANET_DOMAIN:-copylaradio.com}/nostr_profile_viewer.html?hex=${HEX}" -l H -p ${MY_PATH}/../images/lamanostr.png \
         -c -n PROFILE.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     PROFILEQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/PROFILE.QR.png)
@@ -786,7 +796,7 @@ EOFJSON
 
     ## Build profile name and about (Cesium+ overrides defaults if available)
     PROFILE_NAME="${CESIUM_NAME:-[•͡˘㇁•͡˘] $YOUSER}"
-    PROFILE_ABOUT="${CESIUM_ABOUT:-⏰ UPlanet Ẑen ${ORIGIN} // Welcome // ${myLIBRA}/ipns/copylaradio.com // DID: did:nostr:${HEX}}"
+    PROFILE_ABOUT="${CESIUM_ABOUT:-⏰ UPlanet Ẑen ${ORIGIN} // Welcome // ${myLIBRA}/ipns/${UPLANET_DOMAIN:-copylaradio.com} // DID: did:nostr:${HEX}}"
     PROFILE_AVATAR="$myLIBRA/ipfs/${G1PUBNOSTRQR}"
     [[ -n "$CESIUM_AVATAR_CID" ]] && PROFILE_AVATAR="$myLIBRA/ipfs/${CESIUM_AVATAR_CID}"
 

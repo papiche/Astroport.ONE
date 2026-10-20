@@ -63,6 +63,8 @@ echo "RENEWING LOCAL UPLANET REPOSITORY (CAPTAIN=${CURRENT})
 for PLAYER in ${PLAYERONE[@]}; do
     [[ ! -d ~/.zen/game/players/${PLAYER:-undefined} ]] && echo "BAD ${PLAYERONE}" && continue
     [[ ! $(echo "${PLAYER}" | grep '@') ]] && continue
+    # Compte en déménagement (gelé / import incomplet) : jamais rafraîchi ni nettoyé (my.sh::account_frozen)
+    account_frozen "${PLAYER}" && echo "🚚 ${PLAYER} en déménagement : ignoré" && continue
 
     start=`date +%s`
     # CLEAN LOST ACCOUNT

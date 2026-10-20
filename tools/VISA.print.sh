@@ -43,8 +43,8 @@ else
 
     echo "VIRTUAL PLAYER ${PLAYER} WELCOME - CREATING AstroID"
     VIRTUAL=1
-    G1PUB=$(${MY_PATH}/keygen -t duniter "${SALT}" "${PEPPER}")
-    ASTRONAUTENS=$(${MY_PATH}/keygen -t ipfs "${SALT}" "${PEPPER}")
+    G1PUB=$(${MY_PATH}/keygen -t duniter "${SALT}" "${PEPPER}")  # ZENCARD : clé CAPEX volontairement brute (identique sur toutes les UPlanets)
+    ASTRONAUTENS=$(${MY_PATH}/keygen -t ipfs "${SALT}" "${PEPPER}")  # ZENCARD : clé CAPEX volontairement brute (identique sur toutes les UPlanets)
     PSEUDO="UPlanet"
 
     mkdir -p ~/.zen/game/players/${PLAYER}/

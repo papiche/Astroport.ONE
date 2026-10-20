@@ -1,471 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>MULTIPASS/uDRIVE Migration Ready | MULTIPASS/uDRIVE Prêt pour Migration</title>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            margin: 0;
-            padding: 0;
-            line-height: 1.5;
-            color: #2c3e50;
-            background: #f8f9fa;
-            font-size: 16px;
-        }
-        .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1.5rem;
-            text-align: center;
-            border-radius: 0;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: 600;
-            line-height: 1.3;
-        }
-        .content {
-            padding: 1.5rem;
-        }
-        .section {
-            margin: 1rem 0;
-            padding: 1rem;
-            border-radius: 8px;
-            border-left: 4px solid;
-            background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .status {
-            border-left-color: #e74c3c;
-            background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
-        }
-        .backup {
-            border-left-color: #27ae60;
-            background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
-        }
-        .ai-status {
-            border-left-color: #8e44ad;
-            background: linear-gradient(135deg, #faf5ff 0%, #e9d8fd 100%);
-        }
-        .earn {
-            border-left-color: #3498db;
-            background: linear-gradient(135deg, #eff6ff 0%, #bfdbfe 100%);
-        }
-        .keys {
-            border-left-color: #e67e22;
-            background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
-        }
-        .rejoin {
-            border-left-color: #2c3e50;
-            background: linear-gradient(135deg, #f7fafc 0%, #e2e8f0 100%);
-            text-align: center;
-        }
-        h2, h3, h4 {
-            margin: 0 0 0.5rem 0;
-            font-weight: 600;
-            line-height: 1.3;
-        }
-        h2 {
-            font-size: 1.25rem;
-            color: #1a202c;
-        }
-        h3 {
-            font-size: 1.1rem;
-            color: #2d3748;
-        }
-        h4 {
-            font-size: 1rem;
-            color: #4a5568;
-        }
-        p {
-            margin: 0 0 0.75rem 0;
-            font-size: 0.95rem;
-            line-height: 1.5;
-        }
-        p:last-child {
-            margin-bottom: 0;
-        }
-        a {
-            color: #3182ce;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
-        a:hover {
-            color: #2c5282;
-            text-decoration: underline;
-        }
-        .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-decoration: none;
-            margin: 0.5rem 0.25rem;
-            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-            transition: all 0.2s ease;
-        }
-        .cta-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
-            text-decoration: none;
-        }
-        .highlight {
-            background: rgba(102, 126, 234, 0.1);
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-weight: 600;
-            color: #667eea;
-        }
-        code {
-            background: #f7fafc;
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.85rem;
-            color: #2d3748;
-            border: 1px solid #e2e8f0;
-            word-break: break-all;
-        }
-        small {
-            font-size: 0.8rem;
-            color: #718096;
-            display: block;
-            margin-top: 0.5rem;
-        }
-        .emoji {
-            font-size: 1.2em;
-            margin-right: 0.3rem;
-        }
-        .button-group {
-            margin: 1rem 0;
-        }
-        .lang-selector {
-            text-align: center;
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            background: #f8f9fa;
-            border-radius: 6px;
-        }
-        .lang-btn {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            margin: 0 0.25rem;
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 6px;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-        .lang-btn.active {
-            background: #667eea;
-            color: white;
-        }
-        .lang-btn:hover {
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-        }
-        .lang-content {
-            display: none;
-        }
-        .lang-content.active {
-            display: block;
-        }
-        @media (max-width: 480px) {
-            body {
-                font-size: 14px;
-            }
-            .header {
-                padding: 1rem;
-            }
-            .header h1 {
-                font-size: 1.3rem;
-            }
-            .content {
-                padding: 1rem;
-            }
-            .section {
-                padding: 0.75rem;
-                margin: 0.75rem 0;
-            }
-            h2 {
-                font-size: 1.1rem;
-            }
-            h3 {
-                font-size: 1rem;
-            }
-            .cta-button {
-                display: block;
-                margin: 0.5rem 0;
-                text-align: center;
-            }
-            .button-group {
-                margin: 0.75rem 0;
-            }
-            .lang-btn {
-                display: block;
-                margin: 0.25rem 0;
-            }
-        }
-    </style>
-    <script>
-        function switchLanguage(lang) {
-            // Hide all language content
-            document.querySelectorAll('.lang-content').forEach(function(el) {
-                el.classList.remove('active');
-            });
-            
-            // Show selected language content
-            document.querySelectorAll('.lang-content[data-lang=\'' + lang + '\']').forEach(function(el) {
-                el.classList.add('active');
-            });
-            
-            // Update language buttons
-            document.querySelectorAll('.lang-btn').forEach(function(btn) {
-                btn.classList.remove('active');
-            });
-            document.querySelector('.lang-btn[data-lang=\'' + lang + '\']').classList.add('active');
-        }
-        
-        // Set default language based on user preference or browser language
-        window.onload = function() {
-            var browserLang = navigator.language || navigator.userLanguage;
-            var defaultLang = browserLang.startsWith('fr') ? 'fr' : 'en';
-            switchLanguage(defaultLang);
-            
-            // Add event listeners to language buttons
-            document.querySelectorAll('.lang-btn').forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    var lang = this.getAttribute('data-lang');
-                    switchLanguage(lang);
-                });
-            });
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MULTIPASS désactivé — migration prête | MULTIPASS deactivated — migration ready</title>
 </head>
-<body>
-    <div class='email-container'>
-        <div class='header'>
-            <div class='lang-content' data-lang='en'>
-                <h1>🔄 MULTIPASS/uDRIVE Migration Ready</h1>
-            </div>
-            <div class='lang-content' data-lang='fr'>
-                <h1>🔄 MULTIPASS/uDRIVE Prêt pour Migration</h1>
-            </div>
-        </div>
-        
-        <div class='content'>
-            <div class='lang-selector'>
-                <a href='#' class='lang-btn' data-lang='en'>🇺🇸 English</a>
-                <a href='#' class='lang-btn' data-lang='fr'>🇫🇷 Français</a>
-            </div>
+<!--
+  Email du CAPITAINE : lisible dans TOUTES les messageries (HTML statique, styles en ligne, tableaux, aucun
+  JavaScript, aucun contenu masqué — l'ancien sélecteur de langue laissait le texte invisible). Français puis
+  anglais. Le secret de l'archive n'y figure JAMAIS : il n'est remis qu'au joueur (wallet_deactivation_player.html).
+  Marqueurs remplacés par tools/nostr_DESTROY_TW.sh : _myIPFS_ _NOSTRIFS_ _uSPOT_ _CORACLEURL_
+  _DEACTIVATION_DATE_ _OC_URL_SATELLITE_ _REASON_TEXT_FR_/EN_ _CASHBACK_TEXT_FR_/EN_
+-->
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#1e293b;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;">
+<tr><td align="center" style="padding:16px 8px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #e2e8f0;">
 
-            <div class='section status'>
-                <div class='lang-content' data-lang='en'>
-                    <h2>Account Migration Status</h2>
-                    <p>Your MULTIPASS/uDRIVE has been <span class='highlight'>deactivated on this relay</span> to allow migration to a new relay/captain. <strong>Your account is NOT deleted</strong> - all your data, connections, and settings are perfectly safe and ready for restoration!</p>
-                    <p><strong>🔮 Next Restoration Ready:</strong> A new .disco has been pre-generated for restoration on a new relay. Your next HEX is stored in your DID document and NOSTR profile.</p>
-                </div>
-                <div class='lang-content' data-lang='fr'>
-                    <h2>Statut de Migration du Compte</h2>
-                    <p>Votre MULTIPASS/uDRIVE a été <span class='highlight'>désactivé sur ce relais</span> pour permettre la migration vers un nouveau relais/capitaine. <strong>Votre compte N'EST PAS supprimé</strong> - toutes vos données, connexions et paramètres sont parfaitement sûrs et prêts pour la restauration !</p>
-                    <p><strong>🔮 Restauration Prête :</strong> Un nouveau .disco a été pré-généré pour la restauration sur un nouveau relais. Votre prochain HEX est stocké dans votre document DID et votre profil NOSTR.</p>
-                </div>
-            </div>
+  <tr><td bgcolor="#0f766e" style="background-color:#0f766e;padding:22px 24px;text-align:center;">
+    <div style="font-size:12px;letter-spacing:2px;color:#99f6e4;font-weight:bold;">👑 CAPITAINE / CAPTAIN</div>
+    <div style="font-size:23px;line-height:30px;font-weight:bold;color:#ffffff;padding-top:6px;">🔄 MULTIPASS désactivé — migration prête</div>
+    <div style="font-size:14px;line-height:20px;color:#ccfbf1;padding-top:4px;">MULTIPASS deactivated — migration ready</div>
+  </td></tr>
 
-            <div class='section backup'>
-                <div class='lang-content' data-lang='en'>
-                    <h3>📦 Complete Migration Backup</h3>
-                    <p>We've created a complete backup of all your MULTIPASS data on IPFS, including pre-generated credentials for restoration on a new relay:</p>
-                    <p><strong>Backup CID:</strong> <code>_NOSTRIFS_</code></p>
-                    <div class='button-group'>
-                        <a target='_blank' href='_myIPFS_/ipfs/_NOSTRIFS_' class='cta-button'>📥 Download ZIP Backup</a>
-                    </div>
-                    <p><strong>🔑 What's in the backup:</strong></p>
-                    <ul>
-                        <li>✅ <strong>.next.disco</strong> - Pre-generated new credentials for restoration on new relay</li>
-                        <li>✅ <strong>.next.hex</strong> - Next HEX address (also in your DID and NOSTR profile)</li>
-                        <li>✅ <strong>nostr_export.json</strong> - All your NOSTR events</li>
-                        <li>✅ <strong>uDRIVE_manifest.json</strong> - Complete file structure</li>
-                        <li>✅ <strong>secret.june</strong> - ZEN Card capital shares history (preserved)</li>
-                        <li>✅ <strong>.g1pub</strong> - ZEN Card G1 wallet access</li>
-                    </ul>
-                    <small>Download the ZIP file and extract it with your MULTIPASS/ZEN Card PASS code to access all restoration data</small>
-                </div>
-                <div class='lang-content' data-lang='fr'>
-                    <h3>📦 Sauvegarde Complète de Migration</h3>
-                    <p>Nous avons créé une sauvegarde complète de toutes vos données MULTIPASS sur IPFS, incluant les identifiants pré-générés pour la restauration sur un nouveau relais :</p>
-                    <p><strong>CID de Sauvegarde :</strong> <code>_NOSTRIFS_</code></p>
-                    <div class='button-group'>
-                        <a target='_blank' href='_myIPFS_/ipfs/_NOSTRIFS_' class='cta-button'>📥 Télécharger Sauvegarde ZIP</a>
-                    </div>
-                    <p><strong>🔑 Contenu de la sauvegarde :</strong></p>
-                    <ul>
-                        <li>✅ <strong>.next.disco</strong> - Nouveaux identifiants pré-générés pour restauration sur nouveau relais</li>
-                        <li>✅ <strong>.next.hex</strong> - Prochaine adresse HEX (également dans votre DID et profil NOSTR)</li>
-                        <li>✅ <strong>nostr_export.json</strong> - Tous vos événements NOSTR</li>
-                        <li>✅ <strong>uDRIVE_manifest.json</strong> - Structure complète des fichiers</li>
-                        <li>✅ <strong>secret.june</strong> - Historique des parts sociales ZEN Card (préservé)</li>
-                        <li>✅ <strong>.g1pub</strong> - Accès au portefeuille G1 de la ZEN Card</li>
-                    </ul>
-                    <small>Téléchargez le fichier ZIP et extrayez-le avec votre code PASS MULTIPASS/ZEN Card pour accéder à toutes les données de restauration</small>
-                </div>
-            </div>
+  <!-- ═══════════════ FRANÇAIS ═══════════════ -->
+  <tr><td style="padding:22px 24px 4px 24px;">
+    <div style="font-size:12px;letter-spacing:2px;color:#64748b;font-weight:bold;">🇫🇷 FRANÇAIS</div>
+    <h2 style="font-size:19px;margin:10px 0 8px 0;color:#0f172a;">Statut du compte</h2>
+    <p style="font-size:15px;line-height:22px;margin:0 0 10px 0;">Ce MULTIPASS/uDRIVE a été <strong style="color:#b45309;">désactivé sur votre relais</strong> pour permettre une migration vers un autre relais/capitaine. <strong>Le compte n'est pas supprimé</strong> : une sauvegarde complète est disponible. _REASON_TEXT_FR_</p>
+  </td></tr>
 
-            <div class='section' style='border-left-color: #f1c40f; background: linear-gradient(135deg, #fffbea 0%, #fef3c7 100%);'>
-                <div class='lang-content' data-lang='en'>
-                    <h3>💰 G1 Balance</h3>
-                    <p>_CASHBACK_TEXT_EN_</p>
-                </div>
-                <div class='lang-content' data-lang='fr'>
-                    <h3>💰 Solde Ğ1</h3>
-                    <p>_CASHBACK_TEXT_FR_</p>
-                </div>
-            </div>
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #99f6e4;background-color:#f0fdfa;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#115e59;">📦 Sauvegarde chiffrée</div>
+      <div style="font-size:14px;line-height:21px;">CID :</div>
+      <div style="font-family:Consolas,Menlo,monospace;font-size:13px;line-height:19px;word-break:break-all;background-color:#ffffff;border:1px solid #99f6e4;padding:8px;margin:4px 0 12px 0;">_NOSTRIFS_</div>
+      <a href="_myIPFS_/ipfs/_NOSTRIFS_" target="_blank" style="display:inline-block;background-color:#0f766e;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:11px 18px;border-radius:6px;">📥 Télécharger l'archive 7z</a>
+      <div style="font-size:14px;line-height:21px;margin-top:12px;">🔐 Archive AES-256 : son <strong>secret a été envoyé uniquement au joueur</strong> (vous ne l'avez pas). La restauration le demande ; sans lui, aucun accès.</div>
+    </td></tr>
+    </table>
+  </td></tr>
 
-            <div class='section ai-status'>
-                <div class='lang-content' data-lang='en'>
-                    <h3>🤖 #BRO AI Services</h3>
-                    <p>Your #BRO AI assistant access is currently paused, but you can still connect with friends on our relay! Your social connections remain active.</p>
-                </div>
-                <div class='lang-content' data-lang='fr'>
-                    <h3>🤖 Services IA #BRO</h3>
-                    <p>Votre accès à l'assistant IA #BRO est actuellement en pause, mais vous pouvez toujours vous connecter avec vos amis sur notre relais ! Vos connexions sociales restent actives.</p>
-                </div>
-            </div>
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e2e8f0;background-color:#f8fafc;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#0f172a;">🔑 Restaurer sur votre station</div>
+      <div style="font-family:Consolas,Menlo,monospace;font-size:13px;line-height:19px;word-break:break-all;background-color:#0f172a;color:#e2e8f0;padding:10px;margin-bottom:10px;">./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</div>
+      <div style="font-size:14px;line-height:21px;">Le script demande le secret de l'archive (à obtenir du joueur), puis :</div>
+      <ul style="font-size:14px;line-height:21px;margin:6px 0 8px 0;padding-left:20px;">
+        <li>crée le MULTIPASS avec les nouveaux identifiants (<code>.next.disco</code>, identité neuve) ;</li>
+        <li>importe les événements NOSTR (ils restent signés par l'<strong>ancienne</strong> clé : archive consultable, pas ceux du nouveau compte) ;</li>
+        <li>restaure le uDRIVE et, si présents, l'index ucloud, les visages et la mémoire de BRO ;</li>
+        <li>recrée la ZEN Card avec ses identifiants d'origine (historique des parts préservé) et y remet son <strong>TiddlyWiki</strong> (contenu et chaîne de versions, sans aucune clé) ;</li>
+        <li>renvoie le cashback depuis UPLANETNAME_G1 (moins 1 Ğ1 de primo).</li>
+      </ul>
+      <div style="font-size:14px;line-height:21px;">⚠️ L'ancien <code>.secret.disco</code> ne fonctionne pas sur un nouveau relais : seul <code>.next.disco</code> sert.</div>
+    </td></tr>
+    </table>
+  </td></tr>
 
-            <div class='section earn'>
-                <div class='lang-content' data-lang='en'>
-                    <h3>💎 Earn Ẑen Easily!</h3>
-                    <p>Need Ẑen? Join Coracle and earn <span class='highlight'>1 Ẑen per like</span> on your messages! Share your thoughts and get rewarded by the community.</p>
-                    <a target='_blank' href='_CORACLEURL_' class='cta-button'>🚀 Join Coracle</a>
-                </div>
-                <div class='lang-content' data-lang='fr'>
-                    <h3>💎 Gagnez des Ẑen Facilement !</h3>
-                    <p>Besoin de Ẑen ? Rejoignez Coracle et gagnez <span class='highlight'>1 Ẑen par like</span> sur vos messages ! Partagez vos idées et soyez récompensé par la communauté.</p>
-                    <a target='_blank' href='_CORACLEURL_' class='cta-button'>🚀 Rejoindre Coracle</a>
-                </div>
-            </div>
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #fde68a;background-color:#fffbeb;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:6px;color:#78350f;">💰 Solde Ğ1</div>
+      <div style="font-size:14px;line-height:21px;">_CASHBACK_TEXT_FR_</div>
+    </td></tr>
+    </table>
+  </td></tr>
 
-            <div class='section' style='border-left-color: #e65c00; background: linear-gradient(135deg, #fff8f0 0%, #ffe0c0 100%);'>
-                <div class='lang-content' data-lang='en'>
-                    <h3>🛡️ Prevent Future Deactivation</h3>
-                    <p>_REASON_TEXT_EN_ The simplest way to avoid future weekly-fee deactivations is to <strong>register on OpenCollective with the same email as your MULTIPASS</strong>.</p>
-                    <p>Once validated, your account is exempted from weekly fees — you co-own the infrastructure instead of renting it.</p>
-                    <div style='text-align:center; margin-top: 0.75rem;'>
-                        <a href='_OC_URL_SATELLITE_' target='_blank' class='cta-button'>🌱 Join OpenCollective (50 €/year)</a>
-                    </div>
-                    <small>Use the same email as your MULTIPASS to link your account automatically.</small>
-                </div>
-                <div class='lang-content' data-lang='fr'>
-                    <h3>🛡️ Éviter la prochaine désactivation</h3>
-                    <p>_REASON_TEXT_FR_ La solution la plus simple pour éviter les futures désactivations liées à la redevance hebdomadaire : <strong>s'inscrire sur OpenCollective avec le même email que votre MULTIPASS</strong>.</p>
-                    <p>Une fois validé, votre compte est exempté de redevance hebdomadaire — vous co-financez l'infrastructure au lieu de la louer semaine par semaine.</p>
-                    <div style='text-align:center; margin-top: 0.75rem;'>
-                        <a href='_OC_URL_SATELLITE_' target='_blank' class='cta-button'>🌱 Rejoindre OpenCollective (50 €/an)</a>
-                    </div>
-                    <small>Utilisez le même email que votre MULTIPASS pour lier automatiquement votre compte.</small>
-                </div>
-            </div>
+  <tr><td style="padding:0 24px 18px 24px;">
+    <div style="font-size:14px;line-height:21px;">Le joueur peut aussi <a href="_uSPOT_/g1" style="color:#0f766e;font-weight:bold;">se réactiver sur cette station</a> ou <a href="_OC_URL_SATELLITE_" style="color:#0f766e;font-weight:bold;">rejoindre OpenCollective</a> (même email que son MULTIPASS) pour être exempté de la redevance hebdomadaire. <a href="_CORACLEURL_" style="color:#0f766e;">Coracle</a> : 1 Ẑen par like reçu.</div>
+  </td></tr>
 
-            <div class='section keys'>
-                <div class='lang-content' data-lang='en'>
-                    <h4>🔑 For New Captains: Account Migration & Restoration</h4>
-                    <p><strong>This account is ready for migration to your Astroport.ONE station.</strong></p>
-                    <p>Run the restore script with the password-protected backup:</p>
-                    <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
-                    <p>The user will be prompted for their MULTIPASS/ZEN Card PASS code — <strong>required</strong>, there is no fallback without it.</p>
-                    <p><strong>The restore script handles everything automatically:</strong></p>
-                    <ul>
-                        <li>✅ Creates MULTIPASS with new credentials (<code>.next.disco</code>)</li>
-                        <li>✅ Imports all NOSTR events and profile</li>
-                        <li>✅ Restores uDRIVE file structure</li>
-                        <li>✅ Recreates ZEN Card with original credentials (capital shares history preserved)</li>
-                        <li>✅ Sends back MULTIPASS cashback from UPLANETNAME_G1 (minus 1 Ğ1 primo)</li>
-                    </ul>
-                    <p><strong>⚠️ Important:</strong> The old <code>.secret.disco</code> will NOT work on a new relay — only <code>.next.disco</code> works.</p>
-                    <small>Deactivated: _DEACTIVATION_DATE_ | ZIP CID: _NOSTRIFS_</small>
-                </div>
-                <div class='lang-content' data-lang='fr'>
-                    <h4>🔑 Pour les Nouveaux Capitaines : Migration et Restauration du Compte</h4>
-                    <p><strong>Ce compte est prêt pour la migration vers votre station Astroport.ONE.</strong></p>
-                    <p>Lancez le script de restauration avec le backup protégé par mot de passe :</p>
-                    <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
-                    <p>L'utilisateur sera invité à saisir son code PASS MULTIPASS/ZEN Card — <strong>obligatoire</strong>, il n'y a pas d'alternative sans lui.</p>
-                    <p><strong>Le script de restauration gère tout automatiquement :</strong></p>
-                    <ul>
-                        <li>✅ Crée le MULTIPASS avec les nouveaux identifiants (<code>.next.disco</code>)</li>
-                        <li>✅ Importe tous les événements NOSTR et le profil</li>
-                        <li>✅ Restaure la structure uDRIVE</li>
-                        <li>✅ Recrée la ZEN Card avec les identifiants originaux (historique des parts préservé)</li>
-                        <li>✅ Renvoie le cashback MULTIPASS depuis UPLANETNAME_G1 (moins 1 Ğ1 primo)</li>
-                    </ul>
-                    <p><strong>⚠️ Important :</strong> L'ancien <code>.secret.disco</code> ne fonctionnera PAS sur un nouveau relais — seul <code>.next.disco</code> fonctionne.</p>
-                    <small>Désactivé : _DEACTIVATION_DATE_ | CID ZIP : _NOSTRIFS_</small>
-                </div>
-            </div>
+  <tr><td style="padding:0 24px;"><div style="border-top:2px solid #cbd5e1;font-size:1px;line-height:1px;">&nbsp;</div></td></tr>
 
-            <div class='section rejoin'>
-                <div class='lang-content' data-lang='en'>
-                    <h3>🚀 Account Migration Options</h3>
-                    <p><strong>Option 1: Migrate to a New Relay/Captain (Recommended)</strong></p>
-                    <p>Your account is ready for migration! Contact any Astroport.ONE captain and give them:</p>
-                    <ul>
-                        <li>📦 Your backup CID: <code>_NOSTRIFS_</code></li>
-                        <li>🔑 Your MULTIPASS/ZEN Card PASS code — <strong>required</strong>, there is no way to restore without it</li>
-                    </ul>
-                    <p>The captain restores your account with one command. Your MULTIPASS, NOSTR events, uDRIVE, ZEN Card history, and Ğ1 balance are all restored automatically.</p>
-                    
-                    <p><strong>Option 2: Get Ẑen and Reactivate on This Station</strong></p>
-                    <p>Earn Ẑen and reactivate your account on this station.</p>
-                    <div class='button-group'>
-                        <a target='_blank' href='_uSPOT_/g1' class='cta-button'>🌟 Reactivate My MULTIPASS</a>
-                        <a target='_blank' href='https://opencollective.com/monnaie-libre#category-CONTRIBUTE' class='cta-button'>💎 Get Ẑen on OpenCollective</a>
-                    </div>
-                    
-                    <p><strong>💡 Your Next HEX:</strong> Your pre-generated next HEX is stored in your DID document and NOSTR profile. Any captain can find it there for verification.</p>
-                </div>
-                <div class='lang-content' data-lang='fr'>
-                    <h3>🚀 Options de Migration du Compte</h3>
-                    <p><strong>Option 1 : Migrer vers un Nouveau Relais/Capitaine (Recommandé)</strong></p>
-                    <p>Votre compte est prêt pour la migration ! Contactez n'importe quel capitaine Astroport.ONE et donnez-lui :</p>
-                    <ul>
-                        <li>📦 Votre CID de sauvegarde : <code>_NOSTRIFS_</code></li>
-                        <li>🔑 Votre code PASS MULTIPASS/ZEN Card — <strong>obligatoire</strong>, aucune restauration n'est possible sans lui</li>
-                    </ul>
-                    <p>Le capitaine restaure votre compte en une seule commande. Votre MULTIPASS, événements NOSTR, uDRIVE, historique ZEN Card et solde Ğ1 sont tous restaurés automatiquement.</p>
-                    
-                    <p><strong>Option 2 : Obtenir des Ẑen et Réactiver sur Cette Station</strong></p>
-                    <p>Gagnez des Ẑen et réactivez votre compte sur cette station.</p>
-                    <div class='button-group'>
-                        <a target='_blank' href='_uSPOT_/g1' class='cta-button'>🌟 Réactiver Mon MULTIPASS</a>
-                        <a target='_blank' href='https://opencollective.com/monnaie-libre#category-CONTRIBUTE' class='cta-button'>💎 Obtenir des Ẑen sur OpenCollective</a>
-                    </div>
-                    
-                    <p><strong>💡 Votre Prochain HEX :</strong> Votre prochain HEX pré-généré est stocké dans votre document DID et votre profil NOSTR. N'importe quel capitaine peut le trouver là pour vérification.</p>
-                </div>
-            </div>
-        </div>
-    </div>
+  <!-- ═══════════════ ENGLISH ═══════════════ -->
+  <tr><td style="padding:18px 24px 4px 24px;">
+    <div style="font-size:12px;letter-spacing:2px;color:#64748b;font-weight:bold;">🇬🇧 ENGLISH</div>
+    <h2 style="font-size:19px;margin:10px 0 8px 0;color:#0f172a;">Account status</h2>
+    <p style="font-size:15px;line-height:22px;margin:0 0 10px 0;">This MULTIPASS/uDRIVE has been <strong style="color:#b45309;">deactivated on your relay</strong> to allow migration to another relay/captain. <strong>The account is not deleted</strong>: a complete backup is available. _REASON_TEXT_EN_</p>
+  </td></tr>
+
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #99f6e4;background-color:#f0fdfa;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#115e59;">📦 Encrypted backup</div>
+      <div style="font-size:14px;line-height:21px;">CID:</div>
+      <div style="font-family:Consolas,Menlo,monospace;font-size:13px;line-height:19px;word-break:break-all;background-color:#ffffff;border:1px solid #99f6e4;padding:8px;margin:4px 0 12px 0;">_NOSTRIFS_</div>
+      <a href="_myIPFS_/ipfs/_NOSTRIFS_" target="_blank" style="display:inline-block;background-color:#0f766e;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:11px 18px;border-radius:6px;">📥 Download the 7z archive</a>
+      <div style="font-size:14px;line-height:21px;margin-top:12px;">🔐 AES-256 archive: its <strong>secret was sent to the player only</strong> (you do not have it). The restore asks for it; without it there is no access.</div>
+    </td></tr>
+    </table>
+  </td></tr>
+
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e2e8f0;background-color:#f8fafc;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#0f172a;">🔑 Restore on your station</div>
+      <div style="font-family:Consolas,Menlo,monospace;font-size:13px;line-height:19px;word-break:break-all;background-color:#0f172a;color:#e2e8f0;padding:10px;margin-bottom:10px;">./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</div>
+      <div style="font-size:14px;line-height:21px;">The script asks for the archive secret (get it from the player), then:</div>
+      <ul style="font-size:14px;line-height:21px;margin:6px 0 8px 0;padding-left:20px;">
+        <li>creates the MULTIPASS with the new credentials (<code>.next.disco</code>, a new identity);</li>
+        <li>imports the NOSTR events (they stay signed by the <strong>old</strong> key: a readable archive, not the new account's own events);</li>
+        <li>restores the uDRIVE and, when present, the ucloud index, faces and BRO memory;</li>
+        <li>recreates the ZEN Card with its original credentials (shares history preserved) and puts its <strong>TiddlyWiki</strong> back (content and version chain, no key);</li>
+        <li>sends back the cashback from UPLANETNAME_G1 (minus 1 Ğ1 primo).</li>
+      </ul>
+      <div style="font-size:14px;line-height:21px;">⚠️ The old <code>.secret.disco</code> does not work on a new relay: only <code>.next.disco</code> does.</div>
+    </td></tr>
+    </table>
+  </td></tr>
+
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #fde68a;background-color:#fffbeb;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:6px;color:#78350f;">💰 Ğ1 balance</div>
+      <div style="font-size:14px;line-height:21px;">_CASHBACK_TEXT_EN_</div>
+    </td></tr>
+    </table>
+  </td></tr>
+
+  <tr><td style="padding:0 24px 18px 24px;">
+    <div style="font-size:14px;line-height:21px;">The player can also <a href="_uSPOT_/g1" style="color:#0f766e;font-weight:bold;">reactivate on this station</a> or <a href="_OC_URL_SATELLITE_" style="color:#0f766e;font-weight:bold;">join OpenCollective</a> (same email as their MULTIPASS) to be exempted from the weekly fee. <a href="_CORACLEURL_" style="color:#0f766e;">Coracle</a>: 1 Ẑen per like received.</div>
+  </td></tr>
+
+  <tr><td bgcolor="#f8fafc" style="background-color:#f8fafc;border-top:1px solid #e2e8f0;padding:14px 24px;text-align:center;font-size:12px;line-height:18px;color:#64748b;">
+    Désactivé le / Deactivated: _DEACTIVATION_DATE_<br>
+    Sauvegarde / Backup: _NOSTRIFS_
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
 </body>
 </html>

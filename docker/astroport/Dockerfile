@@ -10,7 +10,7 @@ RUN apt-get update \
  && apt-get -fy upgrade \
  && DEBIAN_FRONTEND=noninteractive apt-get -fy install --no-install-recommends \
         # Core tools
-        bash git zip make cmake sudo cron curl wget ca-certificates \
+        bash git zip p7zip-full make cmake sudo cron curl wget ca-certificates \
         # Network & security
         openssh-client fail2ban iptables ufw dnsutils ntpsec-ntpdate net-tools \
         netcat-traditional nmap socat \

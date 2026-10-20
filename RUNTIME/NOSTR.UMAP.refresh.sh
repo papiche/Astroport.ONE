@@ -784,6 +784,7 @@ process_multipass_summaries() {
     for player_dir in ~/.zen/game/nostr/*@*/; do
         if [[ -d "$player_dir" ]]; then
             local player_name=$(basename "$player_dir")
+            account_frozen "$player_name" && continue   ## compte en déménagement : ignoré (my.sh::account_frozen)
             local gps_file="${player_dir}/GPS"
             
             # Check if this MULTIPASS has GPS coordinates

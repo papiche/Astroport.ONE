@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MULTIPASS accueilli | MULTIPASS welcomed</title>
+</head>
+<!--
+  Email du déménagement d'un MULTIPASS entre stations. Lisible dans TOUTES les messageries : HTML statique, styles
+  EN LIGNE, tableaux, aucun JavaScript ni contenu masqué ; français puis anglais, l'un sous l'autre.
+  Marqueurs remplacés par UPassport/services/migration.py : _EMAIL_ _OLDSTATION_ _DATE_ _STATUS_ _TOTAL_ _PINNED_ _FAILED_ _DETAIL_
+-->
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#1e293b;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;">
+<tr><td align="center" style="padding:16px 8px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #e2e8f0;">
+  <tr><td bgcolor="#0f766e" style="background-color:#0f766e;padding:22px 24px;text-align:center;">
+    <div style="font-size:24px;line-height:30px;font-weight:bold;color:#ffffff;">📥 MULTIPASS accueilli</div>
+    <div style="font-size:14px;line-height:20px;color:#ccfbf1;padding-top:4px;">MULTIPASS welcomed</div>
+  </td></tr>
+  <tr><td style="padding:22px 24px 4px 24px;">
+    <div style="font-size:12px;letter-spacing:2px;color:#64748b;font-weight:bold;">🇫🇷 FRANÇAIS</div>
+    <h2 style="font-size:19px;margin:10px 0 8px 0;color:#0f172a;">Un compte a déménagé vers votre station</h2>
+    <p style="font-size:15px;line-height:22px;margin:0 0 12px 0;">Le MULTIPASS <strong>_EMAIL_</strong> vient de la station <strong>_OLDSTATION_</strong> (même clé : même HEX, même wallet, même IPNS). Il est maintenant hébergé ici et sa personne a été prévenue.</p>
+  </td></tr>
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #99f6e4;background-color:#f0fdfa;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#115e59;">📊 Rapatriement des documents IPFS</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Statut : <strong>_STATUS_</strong></div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Documents : _PINNED_ épinglés sur _TOTAL_ — échecs : <strong>_FAILED_</strong></div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">_DETAIL_</div>
+    </td></tr>
+    </table>
+  </td></tr>
+  <tr><td style="padding:0 24px;"><div style="border-top:2px solid #cbd5e1;font-size:1px;line-height:1px;">&nbsp;</div></td></tr>
+  <tr><td style="padding:18px 24px 4px 24px;">
+    <div style="font-size:12px;letter-spacing:2px;color:#64748b;font-weight:bold;">🇬🇧 ENGLISH</div>
+    <h2 style="font-size:19px;margin:10px 0 8px 0;color:#0f172a;">An account moved to your station</h2>
+    <p style="font-size:15px;line-height:22px;margin:0 0 12px 0;">The MULTIPASS <strong>_EMAIL_</strong> comes from station <strong>_OLDSTATION_</strong> (same key: same HEX, wallet and IPNS). It is now hosted here and its owner has been notified.</p>
+  </td></tr>
+  <tr><td style="padding:0 24px 12px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #99f6e4;background-color:#f0fdfa;">
+    <tr><td style="padding:16px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#115e59;">📊 IPFS documents repatriation</div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Status: <strong>_STATUS_</strong></div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">Documents: _PINNED_ pinned out of _TOTAL_ — failures: <strong>_FAILED_</strong></div>
+      <div style="font-size:14px;line-height:21px;margin-bottom:6px;">_DETAIL_</div>
+    </td></tr>
+    </table>
+  </td></tr>
+  <tr><td bgcolor="#f8fafc" style="background-color:#f8fafc;border-top:1px solid #e2e8f0;padding:14px 24px;text-align:center;font-size:12px;line-height:18px;color:#64748b;">
+    Date: _DATE_
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

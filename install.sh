@@ -699,7 +699,7 @@ echo "#############################################"
 
 _ALL_PKGS=(
     # Outils système
-    zip ssss dos2unix make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs
+    zip p7zip-full ssss dos2unix make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs
     parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools
     bubblewrap
     curl net-tools "libsodium*" miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev htop cron psmisc iputils-ping

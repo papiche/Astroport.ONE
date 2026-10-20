@@ -297,35 +297,46 @@ fi
 ###################################################################
 test_log_info "━━━ SECTION 5: DISCO format parsing ━━━"
 
-# Test the regex used in nostr_RESTORE_TW.sh
-DISCO_TEST="/?testuser@test.com=mySalt123abc&nostr=myPepper456def"
+# Teste la VRAIE fonction parse_disco() de nostr_RESTORE_TW.sh (extraite du script,
+# pas une copie de la regex : l'ancienne copie validait un format obsolète pendant
+# que le script cassait sur le format réel de make_NOSTRCARD.sh).
+eval "$(sed -n '/^parse_disco() {/,/^}/p' "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh")"
 
-if [[ "$DISCO_TEST" =~ ^/\?([^=]+)=([^&]+)\&nostr=(.+)$ ]]; then
-    PARSED_EMAIL="${BASH_REMATCH[1]}"
-    PARSED_SALT="${BASH_REMATCH[2]}"
-    PARSED_PEPPER="${BASH_REMATCH[3]}"
+# Format actuel produit par make_NOSTRCARD.sh / nostr_DESTROY_TW.sh : sans email
+parse_disco "/?salt=mySalt123abc&nostr=myPepper456def"
+assert_equal "" "$D_EMAIL" "parse_disco: format actuel, pas d'email"
+assert_equal "mySalt123abc" "$D_SALT" "parse_disco: format actuel, salt"
+assert_equal "myPepper456def" "$D_PEPPER" "parse_disco: format actuel, pepper"
 
-    assert_equal "testuser@test.com" "$PARSED_EMAIL" \
-        "DISCO regex: email parsed correctly"
+# Ancien format avec email (comptes historiques)
+parse_disco "/?user+tag@sub.domain.com=LongSalt0000&nostr=LongPepper0000"
+assert_equal "user+tag@sub.domain.com" "$D_EMAIL" "parse_disco: ancien format, email"
+assert_equal "LongSalt0000" "$D_SALT" "parse_disco: ancien format, salt"
 
-    assert_equal "mySalt123abc" "$PARSED_SALT" \
-        "DISCO regex: salt parsed correctly"
-
-    assert_equal "myPepper456def" "$PARSED_PEPPER" \
-        "DISCO regex: pepper parsed correctly"
+# Format invalide
+if parse_disco "n'importe quoi"; then
+    test_log_error "parse_disco: accepte un format invalide"; ((TEST_COUNT++)); ((FAIL_COUNT++))
 else
-    test_log_error "DISCO regex failed to match valid format"
-    ((TEST_COUNT++)); ((FAIL_COUNT++))
+    test_log_success "parse_disco: rejette un format invalide"; ((TEST_COUNT++)); ((PASS_COUNT++))
 fi
 
-# Test with special characters in email
-DISCO_TEST2="/?user+tag@sub.domain.com=LongSalt42chars000000000000000000000000000&nostr=LongPepper42chars00000000000000000000000"
-if [[ "$DISCO_TEST2" =~ ^/\?([^=]+)=([^&]+)\&nostr=(.+)$ ]]; then
-    test_log_success "DISCO regex: handles complex email format"
-    ((TEST_COUNT++)); ((PASS_COUNT++))
+# Archive 7z AES-256 : mot de passe obligatoire, noms de fichiers chiffrés
+if command -v 7z >/dev/null 2>&1; then
+    SZ_DIR="$TEST_DIR/sz_src/me@test.com_nostr_backup_x"; mkdir -p "$SZ_DIR"
+    echo '[]' > "$SZ_DIR/nostr_export.json"; echo 'me@test.com' > "$SZ_DIR/.email"
+    SZ_SECRET=$(head -c 400 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 24)
+    (cd "$TEST_DIR/sz_src" && 7z a -t7z -mhe=on -p"$SZ_SECRET" "$TEST_DIR/b.7z" "me@test.com_nostr_backup_x" >/dev/null)
+    assert_equal "24" "${#SZ_SECRET}" "7z: secret de 24 caractères"
+    if 7z l -p"mauvais" "$TEST_DIR/b.7z" 2>&1 | grep -q "nostr_export.json"; then
+        test_log_error "7z: noms de fichiers lisibles sans le bon secret"; ((TEST_COUNT++)); ((FAIL_COUNT++))
+    else
+        test_log_success "7z: noms de fichiers chiffrés (-mhe=on)"; ((TEST_COUNT++)); ((PASS_COUNT++))
+    fi
+    mkdir -p "$TEST_DIR/sz_out"
+    7z x -y -p"$SZ_SECRET" -o"$TEST_DIR/sz_out" "$TEST_DIR/b.7z" >/dev/null 2>&1
+    assert_equal "me@test.com" "$(cat "$TEST_DIR/sz_out"/*/.email 2>/dev/null)" "7z: aller-retour avec le bon secret + .email"
 else
-    test_log_error "DISCO regex: failed with complex email"
-    ((TEST_COUNT++)); ((FAIL_COUNT++))
+    test_log_info "7z absent : tests d'archive sautés (apt install p7zip-full)"
 fi
 
 ###################################################################
@@ -424,7 +435,6 @@ DID
 
     # Apply the same jq transform as nostr_DESTROY_TW.sh
     jq ".metadata.deactivation.nextRestorationHex = \"${MOCK_NEXT_HEX}\"
-        | .metadata.deactivation.backupCID = \"${MOCK_NOSTRIFS}\"
         | .metadata.deactivation.backupUplanetCID = \"${MOCK_NOSTRIFS_UPLANET}\"" \
         "$DID_CACHE" > "${DID_CACHE}.tmp" 2>/dev/null
 
@@ -433,14 +443,14 @@ DID
 
         # Verify all fields
         GOT_HEX=$(jq -r '.metadata.deactivation.nextRestorationHex' "$DID_CACHE")
-        GOT_CID=$(jq -r '.metadata.deactivation.backupCID' "$DID_CACHE")
+        GOT_CID=$(jq -r '.metadata.deactivation.backupCID // "absent"' "$DID_CACHE")
         GOT_UCID=$(jq -r '.metadata.deactivation.backupUplanetCID' "$DID_CACHE")
 
         assert_equal "$MOCK_NEXT_HEX" "$GOT_HEX" \
             "DID metadata: nextRestorationHex set correctly"
 
-        assert_equal "$MOCK_NOSTRIFS" "$GOT_CID" \
-            "DID metadata: backupCID set correctly"
+        assert_equal "absent" "$GOT_CID" \
+            "DID metadata: backupCID jamais publié (CID remis par email seulement)"
 
         assert_equal "$MOCK_NOSTRIFS_UPLANET" "$GOT_UCID" \
             "DID metadata: backupUplanetCID set correctly"
@@ -615,6 +625,146 @@ if command -v bc >/dev/null 2>&1; then
 else
     test_log_warning "bc not available - skipping cashback calculation tests"
 fi
+
+###################################################################
+# SECTION 10: emails de désactivation lisibles dans une messagerie
+###################################################################
+test_log_info "━━━ SECTION 10: emails de désactivation ━━━"
+# Un client mail n'exécute AUCUN script : l'ancien sélecteur de langue (JS + display:none) laissait tout le texte
+# invisible. Les deux emails doivent être du HTML statique, sans contenu masqué, et chaque marqueur doit être
+# remplacé par nostr_DESTROY_TW.sh.
+for TPL in wallet_deactivation_player.html wallet_deactivation.html; do
+    F="$SCRIPT_DIR/templates/NOSTR/$TPL"
+    if grep -qiE '<script|display: *none|lang-content|onclick=' "$F"; then
+        test_log_error "$TPL : script ou contenu masqué (invisible dans un client mail)"; ((TEST_COUNT++)); ((FAIL_COUNT++))
+    else
+        test_log_success "$TPL : HTML statique, aucun contenu masqué"; ((TEST_COUNT++)); ((PASS_COUNT++))
+    fi
+    MISSING=""
+    for M in $(sed 's/<!--.*-->//' "$F" | grep -oE '(^|[^A-Za-z0-9])_[A-Za-z]+(_[A-Za-z]+)*_([^A-Za-z0-9]|$)' | grep -oE '_[A-Za-z]+(_[A-Za-z]+)*_' | sort -u); do
+        [[ "$M" == "$(echo "$M" | tr a-z A-Z)" || "$M" == "_myIPFS_" || "$M" == "_uSPOT_" ]] || continue
+        grep -q "s~${M}~" "$SCRIPT_DIR/tools/nostr_DESTROY_TW.sh" || MISSING="$MISSING $M"
+    done
+    if [[ -z "$MISSING" ]]; then test_log_success "$TPL : tous les marqueurs sont remplacés par DESTROY"; ((TEST_COUNT++)); ((PASS_COUNT++))
+    else test_log_error "$TPL : marqueurs non remplacés :$MISSING"; ((TEST_COUNT++)); ((FAIL_COUNT++)); fi
+done
+# Le secret de l'archive n'est remis QU'AU JOUEUR
+if grep -q "_BACKUP_SECRET_" "$SCRIPT_DIR/templates/NOSTR/wallet_deactivation.html"; then
+    test_log_error "email du Capitaine : contient le secret de l'archive"; ((TEST_COUNT++)); ((FAIL_COUNT++))
+else test_log_success "email du Capitaine : ne contient pas le secret de l'archive"; ((TEST_COUNT++)); ((PASS_COUNT++)); fi
+grep -q "_BACKUP_SECRET_" "$SCRIPT_DIR/templates/NOSTR/wallet_deactivation_player.html" \
+    && { test_log_success "email du joueur : affiche le secret de l'archive"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "email du joueur : n'affiche pas le secret"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+# Le comptage d'événements exportés compte aussi les lignes préfixées d'une virgule
+CNT=$(printf '[\n{"a":1}\n,{"a":2}\n,{"a":3}\n]\n' | grep -c '^,\?{')
+assert_equal "3" "$CNT" "comptage des événements exportés (lignes ',{…' incluses)"
+grep -qF 'grep -c '"'"'^,\?{'"'"'' "$SCRIPT_DIR/tools/nostr_DESTROY_TW.sh" \
+    && { test_log_success "DESTROY utilise ce comptage"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "DESTROY compte encore avec '^{' seul"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+
+###################################################################
+# SECTION 11: changement de CONSTELLATION (autre UPLANETNAME = autre swarm IPFS privé)
+###################################################################
+test_log_info "━━━ SECTION 11: autre constellation : rapatriement par la passerelle ━━━"
+# 11.1 DESTROY ne livre plus le secret de la constellation dans l'archive : seulement son empreinte + la passerelle
+if grep -qE 'echo "\$\{UPLANETNAME\}" *>' "$SCRIPT_DIR/tools/nostr_DESTROY_TW.sh"; then
+    test_log_error "DESTROY écrit encore UPLANETNAME en clair dans l'archive"; ((TEST_COUNT++)); ((FAIL_COUNT++))
+else test_log_success "DESTROY n'écrit plus UPLANETNAME en clair"; ((TEST_COUNT++)); ((PASS_COUNT++)); fi
+grep -q '\.uplanetname_sha256' "$SCRIPT_DIR/tools/nostr_DESTROY_TW.sh" \
+    && { test_log_success "DESTROY consigne l'empreinte de UPLANETNAME"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "DESTROY ne consigne pas l'empreinte"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+grep -qE 'myIPFS\}" *> *"\$\{BACKUP_DIR\}/\.gateway"' "$SCRIPT_DIR/tools/nostr_DESTROY_TW.sh" \
+    && { test_log_success "DESTROY consigne la passerelle de l'ancienne station"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "DESTROY ne consigne pas la passerelle"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+# 11.2 RESTORE avec --gateway : le téléchargement va à la PASSERELLE, jamais à l'IPFS local (swarm étranger)
+GW_DIR=$(mktemp -d); FAKE_CID="Qm$(printf 'A%.0s' {1..44})"
+mkdir -p "$GW_DIR/ipfs"; echo "ceci n'est pas une archive" > "$GW_DIR/ipfs/$FAKE_CID"
+GW_PORT=$((20000 + RANDOM % 20000))
+(cd "$GW_DIR" && exec python3 -m http.server "$GW_PORT" --bind 127.0.0.1 > "$GW_DIR/access.log" 2>&1) &
+GW_PID=$!; sleep 1
+GATEWAY_ALLOW_PRIVATE=1 timeout 90 bash "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh" "$FAKE_CID" --gateway "http://127.0.0.1:$GW_PORT" \
+    < /dev/null > "$GW_DIR/restore.out" 2>&1
+GW_HIT=$(grep -c "GET /ipfs/$FAKE_CID" "$GW_DIR/access.log")
+[[ "$GW_HIT" -ge 1 ]] && { test_log_success "RESTORE --gateway : l'archive est demandée à la passerelle"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "RESTORE --gateway : aucune requête reçue par la passerelle"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+grep -q "Backup downloaded successfully" "$GW_DIR/restore.out" \
+    && { test_log_success "RESTORE --gateway : téléchargement accepté (sans IPFS local)"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "RESTORE --gateway : téléchargement non reconnu"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+# 11.3 un lien « https://hote/ipfs/<CID> » (e-mail de désactivation) tient lieu de CID + passerelle
+HITS_BEFORE=$(grep -c "GET /ipfs/$FAKE_CID" "$GW_DIR/access.log")
+GATEWAY_ALLOW_PRIVATE=1 timeout 90 bash "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh" "http://127.0.0.1:$GW_PORT/ipfs/$FAKE_CID" \
+    < /dev/null > "$GW_DIR/restore2.out" 2>&1
+[[ $(grep -c "GET /ipfs/$FAKE_CID" "$GW_DIR/access.log") -gt $HITS_BEFORE ]] \
+    && { test_log_success "RESTORE : un lien de passerelle est compris (CID + passerelle)"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "RESTORE : le lien de passerelle n'est pas compris"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+kill "$GW_PID" 2>/dev/null; wait "$GW_PID" 2>/dev/null; rm -rf "$GW_DIR"
+# 11.4 le script RESTORE sait lire l'empreinte (archive récente) comme l'ancien .uplanetname (jamais affiché)
+grep -q 'BACKUP_UPLANET_SHA' "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh" && grep -q 'uplanetname_sha256' "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh" \
+    && { test_log_success "RESTORE compare les UPlanets par empreinte"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "RESTORE ne compare pas par empreinte"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+if grep -nE 'echo[^|]*\$\{?UPLANETNAME\}?([^_A-Za-z]|$)' "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh" | grep -v 'sha256sum' >/dev/null \
+   || grep -qE 'BACKUP_UPLANETNAME=\$\(cat' "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh"; then
+    test_log_error "RESTORE affiche ou manipule le nom (secret) de l'UPlanet en clair"; ((TEST_COUNT++)); ((FAIL_COUNT++))
+else test_log_success "RESTORE ne montre jamais le nom (secret) de l'UPlanet : empreinte seulement"; ((TEST_COUNT++)); ((PASS_COUNT++)); fi
+
+###################################################################
+# SECTION 12: TiddlyWiki de la ZenCard dans l'archive de départ
+###################################################################
+test_log_info "━━━ SECTION 12: TiddlyWiki de la ZenCard ━━━"
+# On exécute le VRAI bloc de nostr_DESTROY_TW.sh (extrait du script) avec un export simulé.
+ZC_BLOCK=$(awk '/^ZEN_PLAYER_DIR=/{f=1} /^# Save next restoration info/{f=0} f' "$SCRIPT_DIR/tools/nostr_DESTROY_TW.sh")
+[[ -n "$ZC_BLOCK" ]] && { test_log_success "bloc ZenCard présent dans DESTROY"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+                     || { test_log_error "bloc ZenCard absent de DESTROY"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+ZC_DIR=$(mktemp -d); mkdir -p "$ZC_DIR/home/.zen/game/players/zc@test.tld" "$ZC_DIR/backup"
+cat > "$ZC_DIR/export_ok.py" <<'PYEOF'
+import sys, json; print(json.dumps({"files": 40}))
+PYEOF
+cat > "$ZC_DIR/export_ko.py" <<'PYEOF'
+import sys; sys.stderr.write("ERROR: TiddlyWiki trop gros\n"); sys.exit(1)
+PYEOF
+run_zc() {  # $1 = script d'export ; $2 = DESTROY_SKIP_ZENCARD ; $3 = email (dossier players présent ou non)
+    ( HOME="$ZC_DIR/home"; player="$3"; BACKUP_DIR="$ZC_DIR/backup"; UCLOUD_BACKUP_PY="$1"; DESTROY_SKIP_ZENCARD="$2"
+      mkdir -p "$BACKUP_DIR"; eval "$ZC_BLOCK"; echo "SUITE_ATteinte" )
+}
+OUT=$(run_zc "$ZC_DIR/export_ok.py" 0 zc@test.tld 2>&1); RC=$?
+echo "$OUT" | grep -q "TiddlyWiki exporté" && echo "$OUT" | grep -q "SUITE_ATteinte" && [[ $RC -eq 0 ]] \
+    && { test_log_success "export réussi : DESTROY continue"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "export réussi mal géré ($OUT)"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+OUT=$(run_zc "$ZC_DIR/export_ko.py" 0 zc@test.tld 2>&1); RC=$?
+if [[ $RC -ne 0 ]] && ! echo "$OUT" | grep -q "SUITE_ATteinte" && echo "$OUT" | grep -q "destruction annulée" && [[ ! -d "$ZC_DIR/backup" ]]; then
+    test_log_success "export en échec : destruction ANNULÉE (rien n'a été perdu), archive partielle supprimée"; ((TEST_COUNT++)); ((PASS_COUNT++))
+else test_log_error "export en échec : la destruction continue ou l'archive reste ($RC / $OUT)"; ((TEST_COUNT++)); ((FAIL_COUNT++)); fi
+OUT=$(run_zc "$ZC_DIR/inexistant.py" 0 zc@test.tld 2>&1); RC=$?
+[[ $RC -ne 0 ]] && echo "$OUT" | grep -q "destruction annulée" \
+    && { test_log_success "module d'export introuvable : destruction ANNULÉE (jamais de perte silencieuse)"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "module introuvable : la destruction continue"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+OUT=$(run_zc "$ZC_DIR/export_ko.py" 1 zc@test.tld 2>&1); RC=$?
+echo "$OUT" | grep -q "SUITE_ATteinte" && echo "$OUT" | grep -q "il sera perdu" && [[ $RC -eq 0 ]] \
+    && { test_log_success "DESTROY_SKIP_ZENCARD=1 : renoncement EXPLICITE, annoncé, destruction poursuivie"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "renoncement explicite mal géré ($OUT)"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+OUT=$(run_zc "$ZC_DIR/export_ko.py" 0 sans-zencard@test.tld 2>&1); RC=$?
+echo "$OUT" | grep -q "Pas de ZEN Card" && echo "$OUT" | grep -q "SUITE_ATteinte" && [[ $RC -eq 0 ]] \
+    && { test_log_success "compte sans ZenCard : rien à exporter, aucun échec"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "compte sans ZenCard mal géré ($OUT)"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+rm -rf "$ZC_DIR"
+# L'export a lieu AVANT la suppression de la ZenCard (PLAYER.unplug.sh) : c'est ici ou jamais
+EXP_LINE=$(grep -n 'zencard-export' "$SCRIPT_DIR/tools/nostr_DESTROY_TW.sh" | head -1 | cut -d: -f1)
+UNPLUG_LINE=$(grep -n 'PLAYER.unplug.sh' "$SCRIPT_DIR/tools/nostr_DESTROY_TW.sh" | grep -v '^\s*[0-9]*:\s*#' | grep -v echo | head -1 | cut -d: -f1)
+[[ -n "$EXP_LINE" && -n "$UNPLUG_LINE" && "$EXP_LINE" -lt "$UNPLUG_LINE" ]] \
+    && { test_log_success "l'export du TiddlyWiki précède PLAYER.unplug.sh (ligne $EXP_LINE < $UNPLUG_LINE)"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "l'export du TiddlyWiki ne précède pas la suppression de la ZenCard"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+# RESTORE : import APRÈS la recréation de la ZenCard, résumé, et textes de l'archive à jour
+IMP_LINE=$(grep -n 'zencard-import' "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh" | grep -v echo | head -1 | cut -d: -f1)
+VISA_OK_LINE=$(grep -n 'ZEN Card recreated successfully with original credentials' "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh" | head -1 | cut -d: -f1)
+[[ -n "$IMP_LINE" && -n "$VISA_OK_LINE" && "$IMP_LINE" -gt "$VISA_OK_LINE" ]] \
+    && { test_log_success "RESTORE importe le TiddlyWiki APRÈS la recréation de la ZenCard"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "RESTORE : import du TiddlyWiki mal placé"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+grep -q 'ZENCARD_CONTENT_RESTORED' "$SCRIPT_DIR/tools/nostr_RESTORE_TW.sh" && grep -q 'zencard_content.tgz' "$SCRIPT_DIR/tools/nostr_DESTROY_TW.sh" \
+    && { test_log_success "RESTORE annonce le TiddlyWiki restauré ; DESTROY le liste dans README et RESTORE_INSTRUCTIONS"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "textes de l'archive ou du résumé à compléter"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
+grep -q "TiddlyWiki" "$SCRIPT_DIR/templates/NOSTR/wallet_deactivation.html" \
+    && { test_log_success "l'e-mail du Capitaine annonce la restauration du TiddlyWiki"; ((TEST_COUNT++)); ((PASS_COUNT++)); } \
+    || { test_log_error "l'e-mail du Capitaine n'annonce pas le TiddlyWiki"; ((TEST_COUNT++)); ((FAIL_COUNT++)); }
 
 ###################################################################
 # Summary

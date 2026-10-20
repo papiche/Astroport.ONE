@@ -84,14 +84,14 @@ generate_uplanet_g1_nostr_key() {
     fi
     
     # Generate private key
-    local npriv=$("$keygen" -t nostr "$salt" "$pepper" -s 2>/dev/null)
+    local npriv=$("$keygen" -t nostr "$salt" "$pepper" -s 2>/dev/null)  # COOP : graine = UPLANETNAME.G1 (clé coopérative, déjà isolée par UPlanet)
     if [[ -z "$npriv" ]]; then
         echo "[ERROR] Failed to generate NOSTR private key"
         return 1
     fi
     
     # Generate public key
-    local npub=$("$keygen" -t nostr "$salt" "$pepper" 2>/dev/null)
+    local npub=$("$keygen" -t nostr "$salt" "$pepper" 2>/dev/null)  # COOP : graine = UPLANETNAME.G1 (clé coopérative, déjà isolée par UPlanet)
     if [[ -z "$npub" ]]; then
         echo "[ERROR] Failed to generate NOSTR public key"
         return 1

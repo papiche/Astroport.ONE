@@ -30,6 +30,8 @@ INDEX="$1"  ## TW file
 PLAYER="$2" ## PLAYER
 [[ ! ${PLAYER} ]] && PLAYER="$(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
 [[ ! ${PLAYER} ]] && echo "ERROR - Please provide PLAYER" && exit 1
+## Compte en déménagement (gelé / import incomplet) : aucun suivi de paiements (my.sh::account_frozen)
+account_frozen "${PLAYER}" && echo "🚚 ${PLAYER} en déménagement : G1PalPay ignoré" && exit 0
 
 ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | head -n1 | cut -d ' ' -f1) ## TW /ipns/
 [[ ! ${ASTRONAUTENS} ]] && echo "ERROR - Clef IPNS ${PLAYER} introuvable!"  && exit 1

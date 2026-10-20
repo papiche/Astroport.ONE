@@ -15,10 +15,18 @@
 #   - Uses .secret.disco (may not work on new relay)
 #   - Attempts restoration with original credentials
 #
-# Usage: ./nostr_RESTORE_TW.sh <IPFS_CID> [target_relay_url]
+# Usage: ./nostr_RESTORE_TW.sh <IPFS_CID | LIEN_PASSERELLE> [target_relay_url] [--email EMAIL] [--gateway URL]
+#   --email   : compte à recréer si la sauvegarde ne le porte pas (anciennes archives)
+#   --gateway : passerelle HTTP de l'ANCIENNE station (https://ipfs.ancien.domaine). CHANGEMENT DE CONSTELLATION
+#               (autre UPLANETNAME = autre swarm IPFS privé) : l'IPFS d'ici ne joint pas l'ancienne station, l'archive,
+#               le uDRIVE et le cloud chiffré se rapatrient alors par SA passerelle (CAR : même CID, blocs vérifiés,
+#               l'index ucloud reste valable). Un lien « https://hote/ipfs/<CID> » (celui de l'e-mail de désactivation)
+#               tient lieu de CID + passerelle. Sans option, si l'archive porte .gateway et que l'UPlanet a changé, elle
+#               est utilisée pour le uDRIVE et le cloud.
 #
 # The IPFS_CID can point to either:
-#   - A password-protected ZIP (requires the player's .pass) — current format
+#   - A 7z AES-256 archive (secret fort reçu par email du joueur) — current format
+#   - A password-protected ZIP (requires the player's .pass) — previous format
 #   - An asymmetrically encrypted backup (.enc) using natools.py — legacy format
 #     from older backups (requires either the player's old .secret.dunikey or
 #     Captain's uplanet key)
@@ -80,14 +88,45 @@ usage() {
     exit 1
 }
 
+
+# ── Lecture d'un DISCO ───────────────────────────────────────────────────────
+# Format actuel (make_NOSTRCARD.sh) : /?salt=<S>&nostr=<P>  — SANS email.
+# Ancien format : /?<email>=<S>&nostr=<P>. Pose D_EMAIL (vide si absent), D_SALT, D_PEPPER.
+parse_disco() {
+    local c="$1"
+    D_EMAIL=""; D_SALT=""; D_PEPPER=""
+    if [[ "$c" =~ ^/\?salt=([^\&]+)\&nostr=(.+)$ ]]; then
+        D_SALT="${BASH_REMATCH[1]}"; D_PEPPER="${BASH_REMATCH[2]}"
+    elif [[ "$c" =~ ^/\?([^=]+@[^=]+)=([^\&]+)\&nostr=(.+)$ ]]; then
+        D_EMAIL="${BASH_REMATCH[1]}"; D_SALT="${BASH_REMATCH[2]}"; D_PEPPER="${BASH_REMATCH[3]}"
+    else
+        return 1
+    fi
+}
+
 # Check arguments
 if [[ -z "$1" ]]; then
     echo -e "${RED}❌ Error: IPFS CID required${NC}"
     usage
 fi
 
-IPFS_CID="$1"
-TARGET_RELAY="${2:-ws://127.0.0.1:7777}"
+IPFS_CID="$1"; shift
+TARGET_RELAY="ws://127.0.0.1:7777"
+FORCE_EMAIL=""
+GATEWAY=""
+# Lien de passerelle (« https://hote/ipfs/<CID> ») : passerelle + CID
+if [[ "$IPFS_CID" =~ ^(https?://[^/]+)/ipfs/(Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-z2-7]{50,})(/.*)?$ ]]; then
+    GATEWAY="${BASH_REMATCH[1]}"
+    IPFS_CID="${BASH_REMATCH[2]}"
+fi
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --email) FORCE_EMAIL="$2"; shift 2 ;;
+        --gateway) GATEWAY="${2%/}"; shift 2 ;;
+        ws://*|wss://*) TARGET_RELAY="$1"; shift ;;
+        *) echo -e "${RED}❌ Argument inconnu: $1${NC}"; usage ;;
+    esac
+done
 RESTORE_DIR="$HOME/.zen/tmp/nostr_restore_$$"
 NO_VERIFY=true  # Use no-verify for faster import (trusted backup)
 
@@ -107,7 +146,16 @@ mkdir -p "${RESTORE_DIR}"
 echo -e "${YELLOW}Step 1/4:${NC} ${CYAN}Downloading backup from IPFS...${NC}"
 BACKUP_FILE="${RESTORE_DIR}/backup.data"
 
-if ipfs get "${IPFS_CID}" -o "${BACKUP_FILE}" 2>/dev/null; then
+if [[ -n "$GATEWAY" ]]; then
+    # Autre constellation : jamais l'IPFS d'ici, la PASSERELLE de l'ancienne station (le contenu est chiffré AES-256 :
+    # il s'authentifie lui-même à l'extraction)
+    python3 "$HOME/.zen/UPassport/gateway_fetch_cli.py" file "$GATEWAY" "$IPFS_CID" "${BACKUP_FILE}"
+    _DL_OK=$?
+else
+    ipfs get "${IPFS_CID}" -o "${BACKUP_FILE}" 2>/dev/null
+    _DL_OK=$?
+fi
+if [[ $_DL_OK -eq 0 ]]; then
     echo -e "${GREEN}✅ Backup downloaded successfully${NC}"
 else
     echo -e "${RED}❌ Failed to download backup from IPFS${NC}"
@@ -119,25 +167,35 @@ fi
 echo -e "${YELLOW}Step 2/4:${NC} ${CYAN}Decrypting and Extracting backup archive...${NC}"
 cd "${RESTORE_DIR}"
 
-# Check if this is a standard ZIP file (current format) or an Encrypted Binary (legacy)
-if file "${BACKUP_FILE}" 2>/dev/null | grep -q "Zip archive"; then
-    echo -e "${CYAN}   Archive is a password-protected ZIP${NC}"
-    
-    # Try to extract without password first
-    if unzip -q "${BACKUP_FILE}" 2>/dev/null; then
+# Archive 7z AES-256 (format actuel), ZIP (ancien) ou binaire natools (très ancien)
+FILE_KIND=$(file "${BACKUP_FILE}" 2>/dev/null)
+if echo "${FILE_KIND}" | grep -q "7-zip archive"; then
+    echo -e "${CYAN}   Archive is an AES-256 7z${NC}"
+    command -v 7z >/dev/null 2>&1 || { echo -e "${RED}❌ 7z introuvable (apt install p7zip-full)${NC}"; rm -rf "${RESTORE_DIR}"; exit 1; }
+    echo -e "${CYAN}Secret de l'archive (reçu par email lors de la désactivation) :${NC}"
+    read -s -p "> " arch_secret
+    echo ""
+    if 7z x -y -p"${arch_secret}" -o"${RESTORE_DIR}" "${BACKUP_FILE}" >/dev/null 2>&1; then
         echo -e "${GREEN}✅ Backup extracted successfully${NC}"
     else
-        # If that fails, try with password prompt
-        echo -e "${YELLOW}⚠️  Backup appears to be password-protected${NC}"
-        echo -e "${CYAN}Please enter the ZEN Card password (from the user's .pass file):${NC}"
-        if unzip "${BACKUP_FILE}" 2>/dev/null; then
-            echo -e "${GREEN}✅ Encrypted backup extracted successfully${NC}"
-        else
-            echo -e "${RED}❌ Failed to extract backup (wrong password or corrupted file)${NC}"
-            rm -rf "${RESTORE_DIR}"
-            exit 1
-        fi
+        echo -e "${RED}❌ Failed to extract backup (wrong secret or corrupted file)${NC}"
+        rm -rf "${RESTORE_DIR}"
+        exit 1
     fi
+    unset arch_secret
+elif echo "${FILE_KIND}" | grep -q "Zip archive"; then
+    echo -e "${CYAN}   Archive is a password-protected ZIP (ancien format, PASS à 4 chiffres)${NC}"
+    echo -e "${CYAN}Code PASS du joueur :${NC}"
+    read -s -p "> " zip_pass
+    echo ""
+    if unzip -q -P "${zip_pass}" "${BACKUP_FILE}" >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ Backup extracted successfully${NC}"
+    else
+        echo -e "${RED}❌ Failed to extract backup (wrong password or corrupted file)${NC}"
+        rm -rf "${RESTORE_DIR}"
+        exit 1
+    fi
+    unset zip_pass
 else
     echo -e "${YELLOW}⚠️  File is not a ZIP. Attempting asymmetric decryption (natools.py)...${NC}"
     DECRYPTED_ZIP="${RESTORE_DIR}/backup_decrypted.zip"
@@ -281,44 +339,34 @@ if [[ -f "${NEXT_DISCO_FILE}" ]]; then
     echo -e "${GREEN}✅ Next .disco key found (for restoration on NEW relay/captain)${NC}"
     echo -e "${CYAN}   🔮 This backup is ready for migration to a new relay/captain${NC}"
     
-    # Extract email, salt, and pepper from .next.disco file
+    # Extract salt and pepper from .next.disco file
     DISCO_CONTENT=$(cat "${NEXT_DISCO_FILE}")
-    echo -e "${CYAN}   📋 Next DISCO content: ${DISCO_CONTENT:0:50}...${NC}"
-    
-    # Parse DISCO format: /?email=salt&nostr=pepper
-    if [[ "$DISCO_CONTENT" =~ ^/\?([^=]+)=([^&]+)\&nostr=(.+)$ ]]; then
-        RESTORE_EMAIL="${BASH_REMATCH[1]}"
-        RESTORE_SALT="${BASH_REMATCH[2]}"
-        RESTORE_PEPPER="${BASH_REMATCH[3]}"
+    echo -e "${CYAN}   📋 Next DISCO content: ${DISCO_CONTENT:0:20}...${NC}"
+
+    if parse_disco "$DISCO_CONTENT"; then
+        RESTORE_EMAIL="$D_EMAIL"; RESTORE_SALT="$D_SALT"; RESTORE_PEPPER="$D_PEPPER"
+    elif [[ -s "${NEXT_SALT_FILE}" && -s "${NEXT_PEPPER_FILE}" ]]; then
+        echo -e "${YELLOW}   ⚠️  DISCO illisible — repli sur .next.salt / .next.pepper${NC}"
+        RESTORE_EMAIL=""; RESTORE_SALT=$(cat "${NEXT_SALT_FILE}"); RESTORE_PEPPER=$(cat "${NEXT_PEPPER_FILE}")
+    else
+        echo -e "${RED}❌ Invalid DISCO format in .next.disco${NC}"
+        RESTORE_SALT=""; RESTORE_PEPPER=""
+    fi
+
+    if [[ -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
         IS_NEW_RELAY_RESTORE=true
-        
-        echo -e "${GREEN}   📧 Email: ${RESTORE_EMAIL}${NC}"
-        echo -e "${GREEN}   🔐 New Salt: ${RESTORE_SALT:0:20}...${NC}"
-        echo -e "${GREEN}   🔐 New Pepper: ${RESTORE_PEPPER:0:20}...${NC}"
-        
-        # Verify with .next.salt and .next.pepper files if available
+        echo -e "${GREEN}   🔐 New Salt: ${RESTORE_SALT:0:6}...${NC}"
         if [[ -f "${NEXT_SALT_FILE}" ]] && [[ -f "${NEXT_PEPPER_FILE}" ]]; then
-            VERIFY_SALT=$(cat "${NEXT_SALT_FILE}")
-            VERIFY_PEPPER=$(cat "${NEXT_PEPPER_FILE}")
-            if [[ "$RESTORE_SALT" == "$VERIFY_SALT" ]] && [[ "$RESTORE_PEPPER" == "$VERIFY_PEPPER" ]]; then
+            if [[ "$RESTORE_SALT" == "$(cat "${NEXT_SALT_FILE}")" ]] && [[ "$RESTORE_PEPPER" == "$(cat "${NEXT_PEPPER_FILE}")" ]]; then
                 echo -e "${GREEN}   ✅ Salt/Pepper verified against backup files${NC}"
             fi
         fi
-        
-        # Show next HEX if available
         if [[ -f "${NEXT_HEX_FILE}" ]]; then
             NEXT_HEX=$(cat "${NEXT_HEX_FILE}")
             echo -e "${CYAN}   🔮 Next HEX (pre-generated): ${NEXT_HEX:0:20}...${NC}"
-            echo -e "${CYAN}   💡 This HEX will be used for the new MULTIPASS on this relay${NC}"
         fi
-        
         echo -e "${YELLOW}   ⚠️  IMPORTANT: This is a NEW .disco for restoration on a NEW relay/captain${NC}"
         echo -e "${YELLOW}   ⚠️  The old .secret.disco will NOT work on a new relay${NC}"
-    else
-        echo -e "${RED}❌ Invalid DISCO format in .next.disco${NC}"
-        RESTORE_EMAIL=""
-        RESTORE_SALT=""
-        RESTORE_PEPPER=""
     fi
 elif [[ -f "${OLD_DISCO_FILE}" ]]; then
     # Fallback to old .secret.disco (for backward compatibility)
@@ -326,27 +374,17 @@ elif [[ -f "${OLD_DISCO_FILE}" ]]; then
     echo -e "${YELLOW}   ⚠️  This is the OLD .disco - it may not work on a new relay${NC}"
     echo -e "${CYAN}   🔑 Attempting restoration with old credentials...${NC}"
     
-    # Extract email, salt, and pepper from old .disco file
     DISCO_CONTENT=$(cat "${OLD_DISCO_FILE}")
-    echo -e "${CYAN}   📋 Old DISCO content: ${DISCO_CONTENT:0:50}...${NC}"
-    
-    # Parse DISCO format: /?email=salt&nostr=pepper
-    if [[ "$DISCO_CONTENT" =~ ^/\?([^=]+)=([^&]+)\&nostr=(.+)$ ]]; then
-        RESTORE_EMAIL="${BASH_REMATCH[1]}"
-        RESTORE_SALT="${BASH_REMATCH[2]}"
-        RESTORE_PEPPER="${BASH_REMATCH[3]}"
+    echo -e "${CYAN}   📋 Old DISCO content: ${DISCO_CONTENT:0:20}...${NC}"
+
+    if parse_disco "$DISCO_CONTENT"; then
+        RESTORE_EMAIL="$D_EMAIL"; RESTORE_SALT="$D_SALT"; RESTORE_PEPPER="$D_PEPPER"
         IS_NEW_RELAY_RESTORE=false
-        
-        echo -e "${GREEN}   📧 Email: ${RESTORE_EMAIL}${NC}"
-        echo -e "${GREEN}   🔐 Old Salt: ${RESTORE_SALT:0:20}...${NC}"
-        echo -e "${GREEN}   🔐 Old Pepper: ${RESTORE_PEPPER:0:20}...${NC}"
         echo -e "${YELLOW}   ⚠️  WARNING: Using old .disco - restoration may fail on new relay${NC}"
         echo -e "${YELLOW}   💡 For new relay/captain, use .next.disco from a recent backup${NC}"
     else
         echo -e "${RED}❌ Invalid DISCO format in .secret.disco${NC}"
-        RESTORE_EMAIL=""
-        RESTORE_SALT=""
-        RESTORE_PEPPER=""
+        RESTORE_EMAIL=""; RESTORE_SALT=""; RESTORE_PEPPER=""
     fi
 else
     echo -e "${YELLOW}⚠️  No .disco found (limited restoration)${NC}"
@@ -354,6 +392,26 @@ else
     RESTORE_EMAIL=""
     RESTORE_SALT=""
     RESTORE_PEPPER=""
+fi
+
+# Compte à recréer : --email, sinon .email de l'archive, sinon nom du dossier
+# (<email>_nostr_backup_<date>), sinon l'email porté par un ancien DISCO.
+if [[ -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
+    BACKUP_EMAIL_FILE=$(find "${RESTORE_DIR}" -name ".email" | head -1)
+    BACKUP_TOPDIR=$(basename "$(dirname "${EXPORT_FILE}")")
+    if [[ -n "$FORCE_EMAIL" ]]; then
+        RESTORE_EMAIL="$FORCE_EMAIL"
+    elif [[ -s "${BACKUP_EMAIL_FILE}" ]]; then
+        RESTORE_EMAIL=$(head -n 1 "${BACKUP_EMAIL_FILE}")
+    elif [[ -z "$RESTORE_EMAIL" && "$BACKUP_TOPDIR" == *@*_nostr_backup_* ]]; then
+        RESTORE_EMAIL="${BACKUP_TOPDIR%%_nostr_backup_*}"
+    fi
+    if [[ -z "$RESTORE_EMAIL" ]]; then
+        echo -e "${RED}❌ Email du compte introuvable dans la sauvegarde — relancer avec --email <EMAIL>${NC}"
+        rm -rf "${RESTORE_DIR}"
+        exit 1
+    fi
+    echo -e "${GREEN}   📧 Compte à recréer: ${RESTORE_EMAIL}${NC}"
 fi
 
 # Check for ZEN Card files (current + numbered historical versions)
@@ -378,6 +436,14 @@ else
     echo -e "${YELLOW}⚠️  No ZEN Card secret.june found (no capital history)${NC}"
 fi
 
+# Contenu de la ZenCard (TiddlyWiki + chaîne de versions + historiques de paiements ; AUCUNE clé)
+ZEN_CONTENT_FILE=$(find "${RESTORE_DIR}" -name "zencard_content.tgz" | head -1)
+if [[ -f "${ZEN_CONTENT_FILE}" ]]; then
+    echo -e "${GREEN}✅ ZEN Card TiddlyWiki content found${NC}"
+else
+    echo -e "${YELLOW}⚠️  No ZEN Card TiddlyWiki content in this archive (no ZEN Card, or archive made before it was saved)${NC}"
+fi
+
 if [[ -f "${ZEN_G1PUB}" ]]; then
     echo -e "${GREEN}✅ ZEN Card .g1pub found${NC}"
     echo -e "${CYAN}   🏦 G1 wallet access preserved${NC}"
@@ -385,18 +451,39 @@ else
     echo -e "${YELLOW}⚠️  No ZEN Card .g1pub found (no G1 wallet)${NC}"
 fi
 
-# Detect UPlanet change (different UPLANETNAME = different cooperative)
+# Detect UPlanet change (different UPLANETNAME = different cooperative). L'archive ne porte que l'EMPREINTE de
+# UPLANETNAME (.uplanetname_sha256) : le nom lui-même est le secret de la constellation d'origine. Les anciennes
+# archives (.uplanetname en clair) sont comparées par empreinte aussi, sans jamais afficher le nom.
+BACKUP_UPLANET_SHA_FILE=$(find "${RESTORE_DIR}" -name ".uplanetname_sha256" | head -1)
 BACKUP_UPLANETNAME_FILE=$(find "${RESTORE_DIR}" -name ".uplanetname" | head -1)
+LOCAL_UPLANET_SHA=$(echo -n "${UPLANETNAME}" | sha256sum | cut -d' ' -f1)
+BACKUP_UPLANET_SHA=""
+if [[ -f "${BACKUP_UPLANET_SHA_FILE}" ]]; then
+    BACKUP_UPLANET_SHA=$(tr -d '[:space:]' < "${BACKUP_UPLANET_SHA_FILE}")
+elif [[ -f "${BACKUP_UPLANETNAME_FILE}" ]]; then
+    BACKUP_UPLANET_SHA=$(echo -n "$(cat "${BACKUP_UPLANETNAME_FILE}")" | sha256sum | cut -d' ' -f1)
+fi
 SAME_UPLANET=true
-if [[ -f "${BACKUP_UPLANETNAME_FILE}" ]]; then
-    BACKUP_UPLANETNAME=$(cat "${BACKUP_UPLANETNAME_FILE}")
-    if [[ "${BACKUP_UPLANETNAME}" != "${UPLANETNAME}" ]]; then
+# Étiquette de l'UPlanet d'origine = 12 premiers caractères de l'empreinte (nom d'archive des parts, messages) :
+# jamais le nom lui-même, secret de la constellation d'origine.
+BACKUP_UPLANETNAME="${BACKUP_UPLANET_SHA:0:12}"
+if [[ -n "${BACKUP_UPLANET_SHA}" ]]; then
+    if [[ "${BACKUP_UPLANET_SHA}" != "${LOCAL_UPLANET_SHA}" ]]; then
         SAME_UPLANET=false
-        echo -e "${YELLOW}⚠️  UPlanet change detected: ${BACKUP_UPLANETNAME} → ${UPLANETNAME}${NC}"
+        echo -e "${YELLOW}⚠️  UPlanet change detected (empreinte ${BACKUP_UPLANET_SHA:0:12}… → ${LOCAL_UPLANET_SHA:0:12}…)${NC}"
         echo -e "${CYAN}   📜 ZEN Card history will be archived (new cooperative)${NC}"
         echo -e "${CYAN}   💰 No cashback restoration (different UPlanet)${NC}"
+        if [[ -z "$GATEWAY" ]]; then
+            ARCHIVE_GATEWAY_FILE=$(find "${RESTORE_DIR}" -name ".gateway" | head -1)
+            [[ -s "${ARCHIVE_GATEWAY_FILE}" ]] && GATEWAY=$(tr -d '[:space:]' < "${ARCHIVE_GATEWAY_FILE}")
+            if [[ -n "$GATEWAY" ]]; then
+                echo -e "${CYAN}   🌐 uDRIVE et cloud chiffré : rapatriés par la passerelle de l'ancienne station (${GATEWAY})${NC}"
+            else
+                echo -e "${YELLOW}   ⚠️  Autre constellation et aucune passerelle connue : relancer avec --gateway https://<ancienne station> pour rapatrier uDRIVE et cloud${NC}"
+            fi
+        fi
     else
-        echo -e "${GREEN}✅ Same UPlanet: ${UPLANETNAME} (cashback will be restored)${NC}"
+        echo -e "${GREEN}✅ Same UPlanet (cashback will be restored)${NC}"
     fi
 else
     echo -e "${CYAN}   ℹ️  No UPlanet info in backup (legacy format, assuming same UPlanet)${NC}"
@@ -476,6 +563,18 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
             echo -e "${YELLOW}   ⚠️  Using old .secret.disco (may not work on new relay)${NC}"
         fi
         
+        # Norme des clés : un NOUVEAU disco (.next.disco) donne une identité neuve en crédentiel isolé ;
+        # l'ANCIEN disco doit retrouver le MÊME HEX, donc la formule NOSTR d'origine (.keyformula de l'archive).
+        MULTIPASS_NOSTR_FORMULA=isolated
+        if [[ "$IS_NEW_RELAY_RESTORE" != "true" ]]; then
+            BACKUP_KF_FILE=$(find "${RESTORE_DIR}" -name ".keyformula" | head -1)
+            if [[ -s "${BACKUP_KF_FILE}" ]] && grep -q "nostr=legacy" "${BACKUP_KF_FILE}"; then
+                MULTIPASS_NOSTR_FORMULA=legacy
+                echo -e "${YELLOW}   ⚠️  Compte historique : clé NOSTR en formule legacy, restaurée à l'identique${NC}"
+            fi
+        fi
+        export MULTIPASS_NOSTR_FORMULA
+
         # Recreate MULTIPASS with salt/pepper
         if "${MY_PATH}/make_NOSTRCARD.sh" "${RESTORE_EMAIL}" "fr" "0.00" "0.00" "${RESTORE_SALT}" "${RESTORE_PEPPER}" 2>/dev/null; then
             echo -e "${GREEN}✅ MULTIPASS recreated successfully${NC}"
@@ -505,13 +604,32 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
                         echo -e "${CYAN}   📥 Downloading complete uDRIVE structure from IPFS...${NC}"
                         echo -e "${CYAN}   🔗 Final CID: ${FINAL_CID}${NC}"
                         
-                        if ipfs get "${FINAL_CID}" -o "${UDRIVE_DIR}" 2>/dev/null; then
+                        # Autre constellation : on rapatrie d'abord le DAG par la PASSERELLE de l'ancienne station
+                        # (CAR, même CID, blocs vérifiés) ; `ipfs get` lit ensuite le dépôt LOCAL, sans réseau.
+                        _UDRIVE_FETCH=0
+                        if [[ -n "$GATEWAY" ]]; then
+                            python3 "$HOME/.zen/UPassport/gateway_fetch_cli.py" dag "$GATEWAY" "${FINAL_CID}" >/dev/null || _UDRIVE_FETCH=1
+                        fi
+                        if [[ $_UDRIVE_FETCH -eq 0 ]] && ipfs get "${FINAL_CID}" -o "${UDRIVE_DIR}" 2>/dev/null; then
                             echo -e "${GREEN}✅ Complete uDRIVE structure restored from IPFS${NC}"
                             
                             if [[ -f "${UDRIVE_DIR}/generate_ipfs_structure.sh" ]]; then
                                 echo -e "${GREEN}✅ generate_ipfs_structure.sh link verified${NC}"
                             else
                                 echo -e "${YELLOW}⚠️  generate_ipfs_structure.sh not found in restored structure${NC}"
+                                ln -s "${MY_PATH}/generate_ipfs_structure.sh" "${UDRIVE_DIR}/generate_ipfs_structure.sh"
+                            fi
+                            # Identité NEUVE (.next.disco) : le manifeste récupéré porte l'ANCIEN propriétaire
+                            # (owner_hex_pubkey, station) et a écrasé celui que make_NOSTRCARD.sh venait de générer.
+                            # Le générateur déduit le propriétaire du chemin et du fichier HEX du compte : on repart
+                            # donc d'un manifeste vierge (sans manifest-1.json, qui le ramènerait) et on le régénère.
+                            if [[ "$IS_NEW_RELAY_RESTORE" == "true" ]]; then
+                                if ( cd "${UDRIVE_DIR}" && rm -f manifest.json manifest-1.json \
+                                     && ./generate_ipfs_structure.sh . >/dev/null ); then
+                                    echo -e "${GREEN}✅ uDRIVE manifest regenerated for the new identity${NC}"
+                                else
+                                    echo -e "${RED}❌ uDRIVE manifest regeneration failed — the manifest still names the OLD owner${NC}"
+                                fi
                             fi
                         else
                             echo -e "${RED}❌ Failed to download uDRIVE structure from IPFS${NC}"
@@ -549,7 +667,7 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
                     # CETTE station. Sans ça, ils ne vivent que tant que
                     # l'ancienne station les garde épinglés. En arrière-plan :
                     # des milliers de CID peuvent prendre du temps.
-                    nohup python3 "${UCLOUD_BACKUP_PY}" pin "${RESTORE_EMAIL}" \
+                    nohup python3 "${UCLOUD_BACKUP_PY}" pin "${RESTORE_EMAIL}" ${GATEWAY:+--gateway "$GATEWAY"} \
                         > "$HOME/.zen/tmp/ucloud_pin_${RESTORE_EMAIL}.log" 2>&1 &
                     echo -e "${CYAN}   📌 Épinglage des fichiers chiffrés lancé en arrière-plan${NC}"
                 else
@@ -708,6 +826,23 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
                         
                         echo -e "${GREEN}✅ ZEN Card recreated successfully with original credentials${NC}"
 
+                        # TiddlyWiki : même clé de ZenCard sur TOUTES les UPlanets (clé CAPEX, crédentiel brut), donc le
+                        # contenu se restaure tel quel, y compris dans une autre constellation. Le TiddlyWiki tout neuf
+                        # créé à l'instant est mis de côté (~/.zen/tmp/zencard_fresh_…, purgé à 20h12), puis remplacé.
+                        if [[ -f "${ZEN_CONTENT_FILE}" ]]; then
+                            echo -e "${CYAN}   📓 Restoring the ZEN Card TiddlyWiki...${NC}"
+                            ZC_UCLOUD_PY="${HOME}/.zen/UPassport/ucloud_backup.py"
+                            if [[ -f "${ZC_UCLOUD_PY}" ]] && ZC_RES=$(python3 "${ZC_UCLOUD_PY}" zencard-import "${RESTORE_EMAIL}" "${ZEN_CONTENT_FILE}" ${UPLANET_DOMAIN:+--zone "${UPLANET_DOMAIN}"}); then
+                                ZENCARD_CONTENT_RESTORED=true
+                                echo -e "${GREEN}   ✅ ZEN Card TiddlyWiki restored ($(echo "${ZC_RES}" | tail -n 1 | jq -r '.files // "?"' 2>/dev/null) file(s))${NC}"
+                                # tout lien *.copylaradio.com (domaine d'UPlanet ORIGIN) → OVH_ZONE de CETTE UPlanet Ẑen (UPLANET_DOMAIN, vide sur ORIGIN)
+                                ZC_LINKS=$(echo "${ZC_RES}" | tail -n 1 | jq -r 'if .links_rewritten then "\(.links_rewritten.links) link(s) in \(.links_rewritten.files) file(s) → \(.links_rewritten.zone)" elif .links_error then "ERROR: \(.links_error)" else "" end' 2>/dev/null)
+                                [[ -n "${ZC_LINKS}" ]] && echo -e "${CYAN}   🔗 TiddlyWiki links: ${ZC_LINKS}${NC}"
+                            else
+                                echo -e "${RED}   ❌ ZEN Card TiddlyWiki NOT restored — relancer : python3 ${ZC_UCLOUD_PY} zencard-import ${RESTORE_EMAIL} <zencard_content.tgz extrait de l'archive>${NC}"
+                            fi
+                        fi
+
                         # Restore secret.june history
                         ZEN_CARD_DIR="${HOME}/.zen/game/players/${RESTORE_EMAIL}"
                         if [[ "$SAME_UPLANET" == "false" ]]; then
@@ -759,9 +894,22 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
             fi
 
             if [[ "$SAME_UPLANET" == "false" ]]; then
-                echo -e "${YELLOW}   ℹ️  No cashback restoration (UPlanet changed: ${BACKUP_UPLANETNAME:-?} → ${UPLANETNAME})${NC}"
+                echo -e "${YELLOW}   ℹ️  No cashback restoration (UPlanet changed: ${BACKUP_UPLANETNAME:-?}… → ${LOCAL_UPLANET_SHA:0:12}…)${NC}"
             elif [[ -f "${CASHBACK_FILE}" ]] && [[ -n "${RESTORE_G1PUB}" ]]; then
                 CASHBACK_RAW=$(cat "${CASHBACK_FILE}" | sed 's/[^0-9.]//g')
+                # DESTROY enregistre le solde AVANT d'avoir réussi le cashback. Ne rien
+                # verser si les fonds sont encore sur l'ancien wallet (double crédit) :
+                # après un cashback réussi il n'y reste que le dépôt existentiel (~1 Ğ1).
+                OLD_CB_G1PUB=$(cat "$(find "${RESTORE_DIR}" -name ".cashback_g1pub" | head -1)" 2>/dev/null)
+                OLD_CB_BAL=""
+                [[ -n "$OLD_CB_G1PUB" ]] && OLD_CB_BAL=$(${MY_PATH}/../tools/G1check.sh "${OLD_CB_G1PUB}" --fresh 2>/dev/null | tail -n 1 | sed 's/[^0-9.]//g')
+                if [[ -z "$OLD_CB_BAL" ]]; then
+                    echo -e "${YELLOW}   ⚠️  Solde de l'ancien wallet illisible — cashback NON versé (vérifier à la main : ${OLD_CB_G1PUB:-inconnu})${NC}"
+                    CASHBACK_RAW="0"
+                elif [[ $(echo "${OLD_CB_BAL} > 1.5" | bc -l 2>/dev/null) == "1" ]]; then
+                    echo -e "${YELLOW}   ⚠️  L'ancien wallet détient encore ${OLD_CB_BAL} Ğ1 : le cashback de DESTROY n'a pas eu lieu — rien n'est versé (fonds récupérables avec l'ancien .secret.disco)${NC}"
+                    CASHBACK_RAW="0"
+                fi
                 if command -v bc >/dev/null 2>&1; then
                     CASHBACK_AMT=$(echo "scale=2; ${CASHBACK_RAW} - 1" | bc -l 2>/dev/null)
                     CASHBACK_HAS_VALUE=false
@@ -867,6 +1015,9 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
     fi
     if [[ -f "${ZEN_SECRET_JUNE}" || -f "${ZEN_G1PUB}" ]]; then
         echo -e "   ${CYAN}✅ ZEN Card recreated with original credentials (capital owner history)${NC}"
+    fi
+    if [[ "${ZENCARD_CONTENT_RESTORED}" == "true" ]]; then
+        echo -e "   ${CYAN}✅ ZEN Card TiddlyWiki restored (content, version chain, payment histories)${NC}"
     fi
     echo -e "   ${CYAN}✅ Account location:${NC} ~/.zen/game/nostr/${RESTORE_EMAIL}/"
     echo ""

@@ -275,6 +275,22 @@ son entrée, les effets de bord de sa première moitié sont rejoués ; `~/.astr
 la stdlib (importer `argparse` AVANT `memory_manager`/`question`). Tests : `IA/tests/test_memory_v2.py`,
 `test_embed_config.py`, `test_arbor_memory.py`, `test_geo_memory.py` (`python3 -m unittest tests.<nom>` depuis `IA/`).
 
+### Briefing quotidien du Capitaine (`tools/captain_digest.py`, 2026-10-20)
+
+Le mail 20H12 n'est plus le journal brut (800 lignes) : `20h12.process.sh::_send_captain_digest` envoie un **briefing**
+— verdict 🟢/🟠/🔴 dans le sujet, liste PRIORISÉE de ce qui demande une action (avec la commande ou l'écran pour la
+traiter), puis chiffres courts : Station (services, disque, charge, mémoire, durée 20h12), IA/GPU (`ollama_stats.py` :
+appels, p50/p95, démarrages à froid, qui consomme), BRO (échecs récurrents par outil et par compte, démon DM),
+ARBOR (runs en échec sur 7 jours, branches `arbor/*` à relire, éligibilité au bâton), Membres (nouveaux, invitations
+FaceCloud, K viral). Le journal complet est JOINT (gz), avec le rapport de consommation. Règles : erreurs regroupées
+et comptées (compteur « 938x » du journal respecté), nouvelles tentatives et « 0 failed » ignorées, `[WARN] ❌` reste un
+avertissement, comptes de test (`@example.*`, `.invalid`) exclus du BRO, seuils de récurrence (≥ 10 échecs ET ≥ 30 %
+BRO / 50 % NODE) — un échec isolé n'est pas une alerte. Un collecteur qui plante apparaît dans le message ; si tout le
+briefing plante, le journal brut part quand même (repli visible dans le sujet). `python3 tools/captain_digest.py --log
+~/.zen/log/20h12_AAAAMMJJ.log[.gz] --html out.html [--subject|--json]` pour rejouer sur un ancien journal. Tests :
+`python3 -m unittest tests.test_captain_digest`. Les alertes ponctuelles (`bro_alert_captain` 1/24 h, `UPlanet_IA_Responder`,
+ARBOR, PAYforSURE…) restent des événements distincts.
+
 ### Data Directory (`~/.zen/`)
 All runtime data lives under `~/.zen/` (not in the repo):
 - `~/.zen/game/players/` - Player data and keys
@@ -367,6 +383,34 @@ SSL is managed by NPM:
 ### Install/Setup Separation (Docker-ready)
 - `install/` — build-time (Dockerfile RUN): packages, binaries, config files
 - `install/setup/` — runtime (entrypoint): identity, keys, network, .env, cron
+
+## Clés d'un compte : crédentiel isolé par UPlanet (NORME, 2026-10-20)
+
+**Toute clé du MULTIPASS dérivée avec `keygen` d'un (SALT, PEPPER) l'est avec (SALT, PEPPER_<sel UPlanet>)**, sel =
+`sha256(UPLANETNAME)[:16]` : NOSTR, Ğ1, IPNS, Bitcoin, Monero — sinon la même paire donnerait la même clé dans deux
+UPlanets. Un seul endroit décide : `tools/my.sh`.
+- **Création** (`make_NOSTRCARD.sh`) : un seul crédentiel pour toutes les clés (`uplanet_cred_file`), `.keyformula`
+  écrit (`nostr=isolated g1=isolated ipns=isolated`), `pepper_g1` ET `pepper_nostr` dans `.multipass.json`.
+- **Compte existant** : ne jamais écrire `keygen … "${salt}" "${pepper}"`. `account_cred_file <email> nostr|g1|ipns`
+  donne le crédentiel de CE compte ; `account_key_formula` lit `.keyformula` ou RETROUVE la formule par la référence
+  publique (HEX / G1PUBNOSTR / NOSTRNS) puis la met en cache ; sans correspondance : `ERROR:KEYS_MISMATCH`, jamais une
+  clé « proche ». `resolve_key_formula`, `derive_account_keys` (roaming `check_ssss.sh`), `new_account_nostr_formula`.
+- **Formule « legacy »** (pepper brut) : comptes antérieurs (leur clé NOSTR l'est encore : `fred@qwantic.com`,
+  `dev@g1sms.fr`). Jamais CHOISIE pour un nouveau compte ; seulement retrouvée, ou imposée à la restauration d'un compte
+  historique (`MULTIPASS_NOSTR_FORMULA=legacy`, lu dans le `.keyformula` de l'archive par `nostr_RESTORE_TW.sh`).
+- `keygen -t ipfs` affiche un PeerID (12D3…) ; le nom IPNS (k51…) = `tools/peerid2ipns.py`.
+- **Exceptions voulues, marquées dans le code** : `# ZENCARD` — la clé de la ẐEN Card (SALT/PEPPER de `secret.june`) reste
+  BRUTE : elle compte les parts de CAPEX et doit être la même sur toutes les UPlanets ; `# COOP` — clés coopératives dont la
+  graine contient déjà `UPLANETNAME` (UMAP, SECTOR, REGION, `UPLANETNAME.G1`…).
+- **Garde** : `tests/test_key_formulas.sh` échoue sur toute dérivation `(salt, pepper)` brute non marquée dans
+  `Astroport.ONE` et `UPassport`. UPassport : `identity.py` détecte les comptes par les DEUX npub possibles
+  (`_derive_npubs_from_credentials`) ; `tests/test_identity_keys.py`.
+- **Décisions de périmètre (Fred, 2026-10-20)** : les pages de démo crypto (`login-to-nsec.html`, `keygen.html`,
+  `g1v1_to_nsec.html`) ne sont PAS concernées. TrocZen garde la formule BRUTE (billets électroniques à traçabilité
+  partielle). La clé **LOVE** est la même partout (jamais isolée par UPlanet). **Norme côté client** : login
+  « email + PASS » → le serveur renvoie tout ce qu'il faut pour s'auto-configurer (`nsec`, `pepper_g1`, `pepper_nostr`…) ;
+  le client ne connaît jamais `UPLANETNAME` ni ne devine une formule. Le scan du QR + PASS (roaming, `check_ssss.sh`) sert
+  aussi à **déménager** (chemin « même clé », cf. `UPassport/services/migration.py`).
 
 ## Configuration coopérative (cooperative_config.sh)
 

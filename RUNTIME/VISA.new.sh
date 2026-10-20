@@ -373,6 +373,14 @@ cat ${MY_PATH}/../templates/data/AstroID.json \
 sed -i "s~tube.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~ipfs.copylaradio.com~$myTUBE~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 
+## copylaradio.com = domaine d'UPlanet ORIGIN : sur une UPlanet Ẑen, tout lien restant (vdo., relay., u.…) passe à OVH_ZONE
+## (UPLANET_DOMAIN de my.sh, vide sur ORIGIN) — même fonction que la restauration d'une ZenCard (UPassport/ucloud_backup.py).
+if [[ -n "${UPLANET_DOMAIN}" && -f "$HOME/.zen/UPassport/ucloud_backup.py" ]]; then
+    ZC_LINKS=$(python3 "$HOME/.zen/UPassport/ucloud_backup.py" zencard-links "${PLAYER}" "${UPLANET_DOMAIN}") \
+        && echo "ZenCard TiddlyWiki links → ${UPLANET_DOMAIN} : $(echo "${ZC_LINKS}" | tail -n 1)" \
+        || echo "ERROR: ZenCard TiddlyWiki links NOT rewritten to ${UPLANET_DOMAIN}" >&2
+fi
+
 ## PREPARE UMAP LAT LON replacement
 [[ ! ${LAT} ]] && LAT="0.00"
 [[ ! ${LON} ]] && LON="0.00"
@@ -645,7 +653,7 @@ if [[ -s $HOME/.zen/game/nostr/$PLAYER/.nostr.zine.html  ]]; then
     MULTIPASSzine=$(ipfs add -wq $HOME/.zen/game/nostr/$PLAYER/.nostr.zine.html | tail -n 1)
     MZineLink="/ipfs/$MULTIPASSzine/.nostr.zine.html"
 else
-    MZineLink="/ipns/copylaradio.com"
+    MZineLink="/ipns/${UPLANET_DOMAIN:-copylaradio.com}"
 fi
 if [[ -s $HOME/.zen/game/nostr/${PLAYER}/._SSSSQR.png  ]]; then
     SLINK=$(ipfs add -wq $HOME/.zen/game/nostr/${PLAYER}/._SSSSQR.png | tail -n 1)
@@ -712,7 +720,7 @@ cat ${ZINE} \
             -e "s~_PEPPER_~[PROTECTED]~g" \
             -e "s~_PAF_~${PAF:-14}~g" \
             -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
-            -e "s~_EARTHCID_~/ipns/copylaradio.com~g" \
+            -e "s~_EARTHCID_~/ipns/${UPLANET_DOMAIN:-copylaradio.com}~g" \
             -e "s~_SECTOR_~${SECTOR}~g" \
             -e "s~_SLAT_~${SLAT}~g" \
             -e "s~_SLON_~${SLON}~g" \

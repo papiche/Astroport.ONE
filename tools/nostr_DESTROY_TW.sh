@@ -21,11 +21,14 @@
 # - Exports the Qdrant face-recognition catalog (faces_<hex>, embeddings +
 #   name/pubkey) — collection name is tied to the OLD hex, re-created fresh
 #   under the NEW hex on restore
-# - Exports Qdrant LifeOS personal memory (memory_<hex16>, per-slot) — same
+# - Exports Qdrant LifeOS personal memory (memory_<hex16>, souvenirs + pierres tombales) — same
 #   principle, re-created under the NEW hex16 on restore. Collective
 #   collections (uplanet_geo, station_skills) are never touched: they don't
 #   belong to a single MULTIPASS
-# - Exports complete backup as a ZIP protected with the player's own .pass code
+# - Exports complete backup as a 7z archive (AES-256, noms de fichiers chiffrés)
+#   protégée par un secret FORT tiré au hasard, remis UNIQUEMENT dans l'email du
+#   joueur. Le .pass (4 chiffres) ne protège plus rien : cassable en millisecondes.
+#   Le CID n'est plus publié dans le profil NOSTR ni dans le DID.
 #
 # Usage: ./nostr_DESTROY_TW.sh [email] [reason]
 # If no email is provided, the script will prompt the user to select one.
@@ -209,8 +212,12 @@ fi
 ##################################################### DISCO DECODED
 echo "Target email: $player"
 youser=$($MY_PATH/../tools/clyuseryomail.sh "${player}")
-secnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
-pubnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
+# Norme des clés (my.sh) : la clé NOSTR de CE compte, avec sa propre formule (jamais un pepper brut deviné)
+_nostr_cred=$(account_cred_file "${player}" nostr) \
+    || { echo "[ERROR] clé NOSTR de ${player} irreconstructible (aucune formule ne reproduit son HEX) — destruction annulée" >&2; exit 1; }
+secnostr=$(${MY_PATH}/../tools/keygen -t nostr -s -i "$_nostr_cred")
+pubnostr=$(${MY_PATH}/../tools/keygen -t nostr -i "$_nostr_cred")
+rm -f "$_nostr_cred"
 
 OUTPUT_DIR="$HOME/.zen/game/nostr/${player}"
 
@@ -222,7 +229,9 @@ echo "[" > "${OUTPUT_DIR}/nostr_export.json"
 echo "]" >> "${OUTPUT_DIR}/nostr_export.json"
 cd - > /dev/null 2>&1
 
-COUNT=$(grep -c '^{' "${OUTPUT_DIR}/nostr_export.json" 2>/dev/null || echo "0")
+# Chaque événement est sur sa ligne, préfixée d'une virgule sauf le premier (',{…' ou '{…') : compter les deux,
+# sinon un compte de 7 événements s'affichait « 1 ».
+COUNT=$(grep -c '^,\?{' "${OUTPUT_DIR}/nostr_export.json" 2>/dev/null || echo "0")
 echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
 
 ## PREGENERATE NEXT .disco FOR RESTORATION (before creating instructions)
@@ -235,7 +244,11 @@ NEW_PEPPER=$(head -c 200 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 56
 NEW_DISCO="/?salt=${NEW_SALT}&nostr=${NEW_PEPPER}"
 
 # Generate next HEX from new SALT/PEPPER
-NEXT_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${NEW_SALT}" "${NEW_PEPPER}" 2>/dev/null)
+# Même formule que make_NOSTRCARD.sh pour un nouveau compte (crédentiel isolé de CETTE UPlanet) :
+# valable pour une restauration dans la même UPlanet (autre UPlanet = autre sel = autre HEX).
+_next_cred=$(uplanet_cred_file "${NEW_SALT}" "${NEW_PEPPER}" isolated)
+NEXT_NPUB=$(${MY_PATH}/../tools/keygen -t nostr -i "$_next_cred" 2>/dev/null)
+rm -f "$_next_cred"
 NEXT_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NEXT_NPUB" 2>/dev/null)
 
 if [[ -n "$NEXT_HEX" ]]; then
@@ -267,17 +280,19 @@ echo "    (FaceCloud) index and decryption keys — the photos themselves"
 echo "    stay on IPFS, these files are what finds and decrypts them"
 echo "  • qdrant_faces.json - Your FaceCloud face-recognition catalog"
 echo "    (embeddings + names/keys of recognized people)"
-echo "  • qdrant_lifeos.json - Your LifeOS personal memory (BRO/persona/"
-echo "    LOVE slots, embeddings + content)"
+echo "  • qdrant_lifeos.json - Your LifeOS personal memory (BRO, embeddings +"
+echo "    content, tombstones of forgotten memories)"
 echo "  • .secret.disco - Your OLD secret key (for reference)"
 echo "  • .next.disco - PRE-GENERATED new .disco for restoration"
 echo "  • .next.hex - Next HEX address for new relay/captain"
 echo "  • secret.june - ZEN Card transaction history (capital shares)"
 echo "  • .g1pub - ZEN Card G1 wallet access"
+echo "  • zencard_content.tgz - Your ZEN Card TiddlyWiki (your content and its version"
+echo "    chain, payment histories — no key), restored by nostr_RESTORE_TW.sh"
 echo ""
-echo "🔐 PASSWORD PROTECTED"
-echo "Your backup.zip is protected with your MULTIPASS/ZEN Card PASS code"
-echo "(the one given to you at account creation)."
+echo "🔐 ENCRYPTED"
+echo "Your backup.7z is AES-256 encrypted. The secret was sent ONLY to your email"
+echo "(it is NOT your PASS code)."
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESTORATION METHODS:"
@@ -286,11 +301,11 @@ echo ""
 echo "Method 1: Automated restore (RECOMMENDED)"
 echo "  cd ~/.zen/Astroport.ONE"
 echo "  ./tools/nostr_RESTORE_TW.sh <IPFS_CID_OF_BACKUP>"
-echo "  (Script will automatically prompt for your PASS code if needed)"
+echo "  (Script will prompt for the archive secret from your email)"
 echo ""
 echo "Method 2: Manual restoration with NEW .disco"
-echo "  1. Unzip backup.zip (will ask for your MULTIPASS/ZEN Card PASS code):"
-echo "     unzip backup.zip"
+echo "  1. Extract backup.7z (secret from your deactivation email):"
+echo "     7z x backup.7z"
 echo "  2. Use .next.disco to create MULTIPASS on new relay:"
 echo "     cat .next.disco"
 echo "  3. Create MULTIPASS with same email + .next.disco:"
@@ -350,19 +365,23 @@ This encrypted backup contains:
     cloud index and per-file decryption keys (if exists)
   • qdrant_faces.json - Your FaceCloud face-recognition catalog
     (embeddings + names/keys of recognized people, if exists)
-  • qdrant_lifeos.json - Your LifeOS personal memory (BRO/persona/LOVE
-    slots, embeddings + content, if exists)
+  • qdrant_lifeos.json - Your LifeOS personal memory (BRO, embeddings +
+    content, tombstones of forgotten memories, if exists)
   • .secret.disco - Your OLD secret key (for reference only)
   • .next.disco - PRE-GENERATED new .disco for restoration on new relay
   • .next.hex - Next HEX address (pre-calculated)
   • .next.salt / .next.pepper - New credentials for restoration
   • secret.june - ZEN Card transaction history (capital shares preserved)
   • .g1pub - ZEN Card G1 wallet access
+  • zencard_content.tgz - Your ZEN Card TiddlyWiki (your content and its version
+    chain, payment histories — no key), restored by nostr_RESTORE_TW.sh
+  • .gateway / .uplanetname_sha256 - Previous station gateway (data repatriation
+    when moving to ANOTHER constellation) and a fingerprint of its UPlanet
   • RESTORE_INSTRUCTIONS.sh - Quick restore guide
 
-🔐 PASSWORD PROTECTED:
-This backup.zip is protected with your MULTIPASS/ZEN Card PASS code (the one
-given to you at account creation) — you need it to unzip.
+🔐 ENCRYPTED (AES-256):
+This backup.7z is protected by a random secret sent ONLY to your email
+(it is NOT your PASS code) — you need it to extract.
 
 ═══════════════════════════════════════════════════════════════
 
@@ -386,11 +405,11 @@ RESTORE METHODS:
 Method 1: Using Astroport restore tool (RECOMMENDED)
   $ cd ~/.zen/Astroport.ONE
   $ ./tools/nostr_RESTORE_TW.sh <IPFS_CID>
-  (Script will prompt for your PASS code and use .next.disco)
+  (Script will prompt for the archive secret and use .next.disco)
 
 Method 2: Manual recreation with NEW .disco
   $ cd ~/.zen/Astroport.ONE
-  $ unzip backup.zip   # asks for your MULTIPASS/ZEN Card PASS code
+  $ 7z x backup.7z   # asks for the secret from your deactivation email
   $ cat backup/.next.disco
   $ # Use the SALT and PEPPER from .next.salt and .next.pepper
   $ ./tools/make_NOSTRCARD.sh <EMAIL> <LANG> <LAT> <LON> <NEW_SALT> <NEW_PEPPER>
@@ -442,6 +461,9 @@ EOF
 # Create minimal backup with only essential files
 BACKUP_DIR="$HOME/.zen/tmp/${player}_nostr_backup_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "${BACKUP_DIR}"
+# L'email n'est PAS dans le DISCO (/?salt=..&nostr=..) : le consigner pour que
+# nostr_RESTORE_TW.sh sache pour quel compte recréer le MULTIPASS.
+echo "${player}" > "${BACKUP_DIR}/.email"
 
 echo "Creating minimal backup with essential files only..."
 
@@ -480,7 +502,7 @@ QDRANT_URL="http://localhost:6333"
 QDRANT_API_KEY=""
 [[ -s "${HOME}/.zen/ai-company/.env" ]] && QDRANT_API_KEY=$(grep '^QDRANT_API_KEY=' "${HOME}/.zen/ai-company/.env" | cut -d= -f2-)
 UCLOUD_BACKUP_PY="${HOME}/.zen/UPassport/ucloud_backup.py"
-if [[ -f "${UCLOUD_BACKUP_PY}" ]] && UCLOUD_EXPORT=$(python3 "${UCLOUD_BACKUP_PY}" export "${player}" "${BACKUP_DIR}" 2>/dev/null | tail -n 1) \
+if [[ -f "${UCLOUD_BACKUP_PY}" ]] && UCLOUD_EXPORT=$(python3 "${UCLOUD_BACKUP_PY}" export "${player}" "${BACKUP_DIR}" | tail -n 1) \
         && [[ -n "${UCLOUD_EXPORT}" ]]; then
     echo "✅ uCloud (FaceCloud) exporté : ${UCLOUD_EXPORT}"
 else
@@ -550,7 +572,11 @@ HEX16="${hex:0:16}"
 LIFEOS_COLLECTION="memory_${HEX16}"
 LIFEOS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "api-key: ${QDRANT_API_KEY}" \
     "${QDRANT_URL}/collections/${LIFEOS_COLLECTION}" 2>/dev/null)
-if [[ "${LIFEOS_STATUS}" == "200" ]]; then
+if [[ -s "${BACKUP_DIR}/qdrant_lifeos.json" ]]; then
+    # Déjà exporté, paginé, par UPassport/ucloud_backup.py (le scroll ci-dessous
+    # s'arrête à 10000 points et tronquerait une grosse mémoire).
+    echo "✅ LifeOS memory exported par ucloud_backup.py ($(jq 'length' "${BACKUP_DIR}/qdrant_lifeos.json" 2>/dev/null) souvenir(s))"
+elif [[ "${LIFEOS_STATUS}" == "200" ]]; then
     LIFEOS_POINTS=$(curl -s -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json" \
         -X POST "${QDRANT_URL}/collections/${LIFEOS_COLLECTION}/points/scroll" \
         -d '{"limit":10000,"with_payload":true,"with_vector":true}' 2>/dev/null \
@@ -591,8 +617,21 @@ else
     echo "⚠️  ZEN Card secret.june not found (no transaction history to backup)"
 fi
 
-# Save current UPLANETNAME for migration detection on restore
-echo "${UPLANETNAME}" > "${BACKUP_DIR}/.uplanetname"
+# Détection d'un CHANGEMENT d'UPlanet à la restauration : on ne consigne QUE l'empreinte de UPLANETNAME. Le nom lui-même
+# est le secret de la constellation (clé du swarm IPFS privé) : le mettre dans une archive que le Capitaine d'UNE AUTRE
+# constellation ouvrira le lui livrerait.
+echo -n "${UPLANETNAME}" | sha256sum | cut -d' ' -f1 > "${BACKUP_DIR}/.uplanetname_sha256"
+# Passerelle HTTP de CETTE station : si le compte part dans une autre constellation, son IPFS ne joindra jamais le
+# nôtre — uDRIVE et ucloud se rapatrient par cette passerelle (nostr_RESTORE_TW.sh --gateway), tant que nous les gardons.
+echo -n "${myIPFS}" > "${BACKUP_DIR}/.gateway"
+# Formule de chaque clé du compte (nostr=… g1=… ipns=…) : une restauration à l'identique d'un compte
+# historique doit retrouver le MÊME HEX (nostr_RESTORE_TW.sh la relit).
+if [[ -s "${HOME}/.zen/game/nostr/${player}/.keyformula" ]]; then
+    cp "${HOME}/.zen/game/nostr/${player}/.keyformula" "${BACKUP_DIR}/.keyformula"
+else
+    _kf="nostr=$(account_key_formula "${player}" nostr 2>/dev/null)"
+    echo "${_kf}" > "${BACKUP_DIR}/.keyformula"
+fi
 
 # Copy ZEN Card .g1pub if it exists (for G1 wallet access)
 ZEN_G1PUB="${HOME}/.zen/game/players/${player}/.g1pub"
@@ -601,6 +640,30 @@ if [[ -f "${ZEN_G1PUB}" ]]; then
     echo "✅ ZEN Card .g1pub exported (G1 wallet access preserved)"
 else
     echo "⚠️  ZEN Card .g1pub not found (no G1 wallet to backup)"
+fi
+
+# TiddlyWiki de la ZenCard (et la chaîne de ses versions, le flux, les historiques de paiements) : le CONTENU que la personne
+# a écrit, sans aucune clé (UPassport/ucloud_backup.py zencard-export). PLAYER.unplug.sh, plus bas, supprime la ZenCard :
+# c'est ICI ou jamais. Un export en échec ANNULE la destruction (rien n'est encore perdu) — sauf DESTROY_SKIP_ZENCARD=1,
+# décision explicite de renoncer au contenu (ex. TiddlyWiki > 256 Mo à exporter à la main).
+ZEN_PLAYER_DIR="${HOME}/.zen/game/players/${player}"
+if [[ -d "${ZEN_PLAYER_DIR}" ]]; then
+    ZC_OUT=""; ZC_RC=1
+    if [[ -f "${UCLOUD_BACKUP_PY}" ]]; then
+        ZC_OUT=$(python3 "${UCLOUD_BACKUP_PY}" zencard-export "${player}" "${BACKUP_DIR}"); ZC_RC=$?
+    fi
+    if [[ $ZC_RC -eq 0 ]]; then
+        echo "✅ ZEN Card TiddlyWiki exporté : $(echo "${ZC_OUT}" | tail -n 1)"
+    elif [[ "${DESTROY_SKIP_ZENCARD:-0}" == "1" ]]; then
+        echo "⚠️  Contenu de la ZEN Card NON exporté (DESTROY_SKIP_ZENCARD=1) — il sera perdu" >&2
+    else
+        echo "❌ Export du contenu de la ZEN Card impossible — destruction annulée, rien n'a été perdu." >&2
+        echo "   (DESTROY_SKIP_ZENCARD=1 pour y renoncer en connaissance de cause)" >&2
+        rm -rf "${BACKUP_DIR}"
+        exit 1
+    fi
+else
+    echo "ℹ️  Pas de ZEN Card pour ${player} : aucun TiddlyWiki à sauvegarder"
 fi
 
 # Save next restoration info to backup directory (before ZIP creation)
@@ -633,49 +696,53 @@ echo "${g1pubnostr}" > "${BACKUP_DIR}/.cashback_g1pub"
 echo "✅ Cashback amount recorded: ${CASHBACK_AMOUNT} Ğ1"
 
 # -----------------------------------------------------------------------------
-# CREATE ARCHIVE, password-protected with the player's own .pass
+# CREATE ARCHIVE : 7z AES-256, noms de fichiers chiffrés (-mhe=on)
 # -----------------------------------------------------------------------------
-# .pass est le code communiqué au joueur dès la création du MULTIPASS
-# (make_NOSTRCARD.sh) et réutilisé pour la ZEN Card (VISA.new.sh) : c'est le
-# seul secret que le joueur détient encore une fois son compte détruit
-# (contrairement à .secret.dunikey, jamais remis en main propre). Pas de
-# chiffrement natools.py supplémentaire (ni clé joueur ni clé Capitaine) :
-# le mot de passe du zip est la seule protection, volontairement simple.
-PLAYER_PASS=""
-[[ -s ~/.zen/game/nostr/${player}/.pass ]] && PLAYER_PASS=$(cat ~/.zen/game/nostr/${player}/.pass)
+# Le .pass n'est PAS utilisé : 4 chiffres (make_NOSTRCARD.sh) = 10 000 essais,
+# cassable instantanément dès que le CID est connu. Un secret de 24 caractères
+# tiré au hasard le remplace ; il n'est remis QUE dans l'email du joueur (jamais
+# dans l'email du Capitaine, ni dans le profil NOSTR, ni dans le DID).
+# Jamais d'archive en clair : sans 7z ou sans secret, on s'arrête AVANT toute
+# destruction (le compte n'a encore rien perdu).
+if ! command -v 7z >/dev/null 2>&1; then
+    echo "❌ 7z introuvable (apt install p7zip-full) — aucune archive en clair n'est produite, destruction annulée" >&2
+    exit 1
+fi
+BACKUP_SECRET=$(head -c 400 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 24)
+if [[ ${#BACKUP_SECRET} -ne 24 ]]; then
+    echo "❌ Génération du secret d'archive impossible — destruction annulée" >&2
+    exit 1
+fi
 
-ZIP_FILE="${BACKUP_DIR}.zip"
+ZIP_FILE="${BACKUP_DIR}.7z"
 echo "Creating archive: ${ZIP_FILE}"
 
 cd "$(dirname "${BACKUP_DIR}")"
-if [[ -n "$PLAYER_PASS" ]]; then
-    ZIP_CREATE=(zip -r -P "$PLAYER_PASS" "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")")
-else
-    echo "⚠️  No .pass found for ${player} — archive will not be password-protected"
-    ZIP_CREATE=(zip -r "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")")
-fi
-if "${ZIP_CREATE[@]}" 2>/dev/null; then
-    echo "✅ Backup archive created successfully"
+# 7z n'accepte le mot de passe qu'en argv (visible dans ps le temps de la commande)
+if 7z a -t7z -mhe=on -mx=3 -p"${BACKUP_SECRET}" "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")" >/dev/null; then
+    echo "✅ Backup archive created successfully (AES-256)"
     cd - > /dev/null 2>&1
 
-    # Add the password-protected ZIP directly to IPFS (no natools layer)
+    # Add the encrypted archive directly to IPFS (no natools layer)
     echo "Adding backup to IPFS..."
     NOSTRIFS=$(ipfs add -q "${ZIP_FILE}" | tail -n 1)
     if [[ -n "${NOSTRIFS}" ]]; then
         ipfs pin rm ${NOSTRIFS} 2>/dev/null
         echo "✅ Backup added to IPFS: ${NOSTRIFS}"
-        echo "   🔓 Extract: unzip -P <PASS> backup.zip"
+        echo "   🔓 Extract: 7z x -p<SECRET> backup.7z (secret = email du joueur)"
     else
-        echo "❌ Failed to add backup to IPFS"
+        echo "❌ Failed to add backup to IPFS — destruction annulée" >&2
+        rm -f "${ZIP_FILE}"; rm -rf "${BACKUP_DIR}"
+        exit 1
     fi
 
     # Clean up temporary files
     rm -f "${ZIP_FILE}"
     rm -rf "${BACKUP_DIR}"
-    unset PLAYER_PASS ZIP_CREATE
 else
-    echo "❌ Failed to create backup ZIP archive"
+    echo "❌ Failed to create backup archive" >&2
     cd - > /dev/null 2>&1
+    rm -rf "${BACKUP_DIR}"
     exit 1
 fi
 
@@ -694,8 +761,7 @@ if [[ -f "${MY_PATH}/did_manager_nostr.sh" ]]; then
         did_cache_file="${HOME}/.zen/game/nostr/${player}/did.json.cache"
         if [[ -f "$did_cache_file" ]] && command -v jq >/dev/null 2>&1; then
             # Add next restoration HEX to deactivation metadata
-            jq ".metadata.deactivation.nextRestorationHex = \"${NEXT_HEX}\"
-                | .metadata.deactivation.backupCID = \"${NOSTRIFS}\"" "$did_cache_file" > "${did_cache_file}.tmp" 2>/dev/null
+            jq ".metadata.deactivation.nextRestorationHex = \"${NEXT_HEX}\"" "$did_cache_file" > "${did_cache_file}.tmp" 2>/dev/null
             if [[ -s "${did_cache_file}.tmp" ]]; then
                 mv "${did_cache_file}.tmp" "$did_cache_file"
                 echo "   🔮 Next restoration HEX added to DID metadata: ${NEXT_HEX:0:20}..."
@@ -720,19 +786,19 @@ fi
 ## 1. UPDATE NOSTR PROFILE - Mark as deactivated and include next HEX
 echo "📝 Updating NOSTR profile to mark as deactivated..."
 if [[ -f "${MY_PATH}/nostr_update_profile.py" ]]; then
-    # Build about message with backup links and next HEX
+    # Aucun lien vers la sauvegarde dans un profil PUBLIC : le CID n'est remis que
+    # par email (joueur + Capitaine). Publié, il permettait de télécharger l'archive
+    # et d'en attaquer le mot de passe hors ligne.
     if [[ -n "$NEXT_HEX" ]]; then
-        ABOUT_MSG="Account deactivated - Backup: ${myIPFS}/ipfs/${NOSTRIFS} | Next HEX: ${NEXT_HEX:0:16}..."
+        ABOUT_MSG="Account deactivated | Next HEX: ${NEXT_HEX:0:16}..."
     else
-        ABOUT_MSG="Account deactivated - backup available at ${myIPFS}/ipfs/${NOSTRIFS}"
+        ABOUT_MSG="Account deactivated"
     fi
-    
-    # Update profile with deactivation message, backup link, and next HEX
+
     "${MY_PATH}/nostr_update_profile.py" "${player}" "ws://127.0.0.1:7777" "wss://relay.copylaradio.com" \
         --about "${ABOUT_MSG}" \
-        --name "[DEACTIVATED] ${youser}" \
-        --website "${myIPFS}/ipfs/${NOSTRIFS}" 2>/dev/null \
-        && echo "✅ NOSTR profile updated - marked as deactivated with backup link and next HEX" \
+        --name "[DEACTIVATED] ${youser}" 2>/dev/null \
+        && echo "✅ NOSTR profile updated - marked as deactivated with next HEX" \
         || echo "⚠️  Failed to update NOSTR profile (will continue with destruction)"
 else
     echo "⚠️  nostr_update_profile.py not found, skipping NOSTR profile update"
@@ -887,6 +953,7 @@ if [[ -s "${MY_PATH}/../templates/NOSTR/wallet_deactivation_player.html" ]]; the
         | sed -e "s~_myIPFS_~${myIPFS}~g" \
               -e "s~_NOSTRIFS_~${NOSTRIFS}~g" \
               -e "s~_DEST_~${player}~g" \
+              -e "s~_BACKUP_SECRET_~${BACKUP_SECRET}~g" \
               -e "s~_uSPOT_~${uSPOT}~g" \
               -e "s~_DEACTIVATION_DATE_~$(date '+%Y-%m-%d %H:%M:%S')~g" \
               -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
@@ -909,6 +976,8 @@ if [[ -x "$OVH_TOOL" ]]; then
     youser=$(${MY_PATH}/../tools/clyuseryomail.sh ${player})
     "$OVH_TOOL" delete "${youser}" 2>/dev/null || true
 fi
+
+unset BACKUP_SECRET PLAYER_EMAIL_TEMPLATE
 
 ## REMOVE NOSTR IPNS VAULT key
 ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1

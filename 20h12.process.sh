@@ -111,6 +111,28 @@ if [[ -n "$IPFSNODEID" && -f "$_TIMINGS" ]] && [[ $(wc -l < "$_TIMINGS") -gt 100
 fi
 LOG_FILE="$LOG_DIR/20h12_$(date +%Y%m%d).log"
 
+## BRIEFING DU CAPITAINE — remplace l'envoi du journal brut (800 lignes) dans le corps du mail.
+## tools/captain_digest.py : verdict, liste PRIORISÉE de ce qui demande une action, chiffres courts (station, IA/GPU, BRO,
+## ARBOR, membres). Le journal complet est joint (compressé). Si le briefing plante, le journal brut part quand même
+## (repli VISIBLE dans le journal et dans le sujet) : le Capitaine ne reste jamais sans nouvelles.
+_send_captain_digest() {
+    local _tag="${1:-}" _gz="/tmp/20h12_$(date +%Y%m%d).log.gz" _html="/tmp/20h12_digest.html" _subj _py="$HOME/.astro/bin/python3"
+    [[ -x "$_py" ]] || _py="python3"
+    local _station; _station="$(hostname -f)"
+    gzip -c "$LOG_FILE" > "$_gz" 2>/dev/null
+    rm -f "$_html"
+    if _subj=$("$_py" "${MY_PATH}/tools/captain_digest.py" --log "$LOG_FILE" --html "$_html" --subject 2>>"$LOG_FILE") && [[ -s "$_html" ]]; then
+        local _att=(--attach "$_gz")
+        [[ -f /tmp/20h12_power_report.html ]] && _att+=(--attach /tmp/20h12_power_report.html)
+        ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "${_att[@]}" "$CAPTAINEMAIL" "$_html" "${_subj}${_tag}"
+    else
+        echo "⚠️ captain_digest.py a échoué — envoi du journal brut (repli)" | tee -a "$LOG_FILE"
+        ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "$CAPTAINEMAIL" "$LOG_FILE" \
+            "20H12 ${_station} <${CAPTAINEMAIL}> — ⚠️ briefing indisponible, journal brut${_tag}"
+    fi
+    rm -f "$_gz" "$_html"
+}
+
 ## Anti-doublon : le cron horaire fixe (heure solaire) ET le rattrapage @reboot
 ## (cron_VRFY.sh) peuvent tous deux déclencher ce script le même jour, par exemple
 ## si la machine était éteinte à l'heure solaire calculée puis redémarrée plus tard.
@@ -683,9 +705,7 @@ if [[ $LOWMODE != "" ]]; then
     ## reporting complète (power report, mailjet) se trouve après ce bloc,
     ## qui se termine par exit 0 avant de jamais l'atteindre. Sans cela les
     ## stations LOW/LAN ne recevaient jamais le mail 20H12.
-    _STATION="$(hostname -f)"
-    ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "$CAPTAINEMAIL" "$LOG_FILE" \
-        "20H12 ${_STATION} <${CAPTAINEMAIL}> (LOW mode)"
+    _send_captain_digest " (LOW mode)"
 
     sudo systemctl stop ipfs
     echo "🛑 IPFS stopped (LOW mode)"
@@ -1127,14 +1147,8 @@ _STATION="$(hostname -f)"
 _PLAYER="$(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
 _GPS="$(cat ~/.zen/GPS 2>/dev/null)"
 
-if [[ -f "$POWER_REPORT_HTML" ]]; then
-    echo "📧 Sending 20H12 report with power consumption analysis..."
-    ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "$CAPTAINEMAIL" "$POWER_REPORT_HTML" \
-        "20H12 ${_STATION} <${CAPTAINEMAIL}> : ${_PLAYER} (${_GPS}) - Power Consumption Report"
-else
-    ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "$CAPTAINEMAIL" "$LOG_FILE" \
-        "20H12 ${_STATION} <${CAPTAINEMAIL}> : ${_PLAYER} (${_GPS})"
-fi
+echo "📧 Envoi du briefing 20H12 au Capitaine..."
+_send_captain_digest
 
 # espeak "TOTAL DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1 &
 

@@ -12,6 +12,8 @@ permettant à un NODE de router les messages sans ambiguïté :
   comfyui_result — résultat renvoyé par le Brain au satellite
   vision_analysis_job    — détection de visages (InsightFace) déléguée à un Brain GPU
   vision_analysis_result — embeddings de visages renvoyés par le Brain au satellite
+  migrate_request / migrate_bundle / migrate_ack / migrate_commit / migrate_pinned — déménagement d'un
+                 MULTIPASS entre deux stations, à clé identique (UPassport/services/migration.py)
 
 Sous-commande `unwrap-giftwrap` : dé-wrap NIP-59/NIP-17 (kind 1059 → seal kind 13
 → rumor kind 14/15), utilisé par IA/bro/bro_dm_daemon.sh pour les messages

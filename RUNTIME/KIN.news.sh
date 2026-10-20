@@ -154,7 +154,7 @@ echo "========================================================================"
 # Collecte des profils Kin Maya et GPS depuis le relay local (kind 30800)
 # ─────────────────────────────────────────────────────────────────────────────
 WELCOME_TMPL="${TMPL_DIR}/kin_alpha_welcome.html"
-WELCOME_DIR="${HOME}/.zen/game/.kin_welcomed"
+WELCOME_DIR="${HOME}/.zen/tmp/coucou/.kin_welcomed"
 mkdir -p "$WELCOME_DIR"
 
 echo "  📡 Scan kind 30800..."
