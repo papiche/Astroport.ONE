@@ -1,0 +1,1178 @@
+{
+  "$comment": "Source de vérité UNIQUE des outils de IA/generators/ (Tool Calling). Lu par tool_runner.py. Chaque outil : name, description (lue par le modèle), input_schema (JSON Schema), exec (script + argv), output, timeout_sec. Voir README.tools.md. Exclus volontairement : generate_storyboard.sh (conversation interactive au terminal), image_to_3dscene.py (appelé via generate_3dscene.sh).",
+  "version": 1,
+  "tools": [
+    {
+      "name": "generate_image",
+      "description": "Génère une image à partir d'un texte (ComfyUI) et la publie sur IPFS. Retourne l'URL IPFS de l'image. Durée : jusqu'à ~2 minutes.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description de l'image souhaitée (anglais conseillé)."
+          },
+          "udrive_path": {
+            "type": "string",
+            "x-path": "dir",
+            "description": "Dossier uDRIVE où copier l'image (optionnel)."
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_image.sh",
+        "args": [
+          {
+            "positional": "prompt"
+          },
+          {
+            "positional": "udrive_path"
+          }
+        ]
+      },
+      "output": "last_line",
+      "timeout_sec": 300,
+      "tags": [
+        "image",
+        "comfyui",
+        "gpu",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "generate_music",
+      "description": "Génère un morceau de musique à partir d'un style (ComfyUI, ACE-Step). Pour des paroles, écrire le style puis « #parole » suivi des paroles dans le même texte. Retourne l'URL IPFS du fichier audio.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Style musical, éventuellement suivi de « #parole » et des paroles."
+          },
+          "udrive_path": {
+            "type": "string",
+            "x-path": "dir",
+            "description": "Dossier uDRIVE de destination (optionnel)."
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_music.sh",
+        "args": [
+          {
+            "positional": "prompt"
+          },
+          {
+            "positional": "udrive_path"
+          }
+        ]
+      },
+      "output": "last_line",
+      "timeout_sec": 900,
+      "tags": [
+        "audio",
+        "music",
+        "comfyui",
+        "gpu",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "generate_video",
+      "description": "Génère une vidéo à partir d'un texte avec un workflow ComfyUI donné. Retourne l'URL IPFS de la vidéo. Opération lourde (GPU).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description de la vidéo."
+          },
+          "workflow_path": {
+            "type": "string",
+            "x-path": "file",
+            "description": "Chemin du workflow ComfyUI (format API) à utiliser, ex. workflow/Text2VideoWan2.2.json."
+          },
+          "udrive_path": {
+            "type": "string",
+            "x-path": "dir",
+            "description": "Dossier uDRIVE de destination (optionnel)."
+          }
+        },
+        "required": [
+          "prompt",
+          "workflow_path"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_video.sh",
+        "args": [
+          {
+            "positional": "prompt"
+          },
+          {
+            "positional": "workflow_path"
+          },
+          {
+            "positional": "udrive_path"
+          }
+        ]
+      },
+      "output": "last_line",
+      "timeout_sec": 3600,
+      "tags": [
+        "video",
+        "comfyui",
+        "gpu",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "image_to_video",
+      "description": "Anime une image (Wan 2.2 14B image→vidéo). Retourne l'URL IPFS de la vidéo. Opération lourde (GPU).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Animation souhaitée, ex. « le personnage tourne lentement la tête »."
+          },
+          "image_url": {
+            "type": "string",
+            "minLength": 1,
+            "description": "URL (IPFS, HTTP) de l'image source."
+          },
+          "udrive_path": {
+            "type": "string",
+            "x-path": "dir",
+            "description": "Dossier uDRIVE de destination (optionnel)."
+          }
+        },
+        "required": [
+          "prompt",
+          "image_url"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "image_to_video.sh",
+        "args": [
+          {
+            "positional": "prompt"
+          },
+          {
+            "positional": "image_url"
+          },
+          {
+            "positional": "udrive_path"
+          }
+        ]
+      },
+      "output": "last_line",
+      "timeout_sec": 3600,
+      "tags": [
+        "video",
+        "comfyui",
+        "gpu",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "generate_minimax",
+      "description": "Génère une vidéo avec son (MiniMax H3 sur ComfyUI) : texte→vidéo, image→vidéo (first_frame) ou références visage/voix (reference_images, reference_audios). Retourne l'URL IPFS, ou le chemin du fichier si output_file est fourni. Réglage rapide : megapixels 0.4, steps 10.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description du plan. Avec des références, citer <Picture 1>, <Audio 1>…"
+          },
+          "first_frame": {
+            "type": "string",
+            "description": "Image de départ (image→vidéo). Incompatible avec reference_images."
+          },
+          "reference_images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 9,
+            "description": "Images de référence (visage/décor), 9 max."
+          },
+          "reference_audios": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "description": "Audios de référence (voix), 3 max."
+          },
+          "upscale": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Facteur d'upscale SeedVR2 (lent). Défaut : aucun."
+          },
+          "duration": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 15,
+            "description": "Durée en secondes (défaut 5, entraîné ~5-15)."
+          },
+          "ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "2:3",
+              "3:2",
+              "3:4",
+              "4:3",
+              "9:16",
+              "16:9",
+              "21:9"
+            ],
+            "description": "Ratio (défaut 16:9)."
+          },
+          "megapixels": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 2,
+            "description": "Résolution de calcul (défaut 0.4 → 864x480)."
+          },
+          "steps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Nombre de steps (défaut 10)."
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seed : mêmes paramètres + même seed = même plan."
+          },
+          "output_file": {
+            "type": "string",
+            "description": "Écrit la vidéo dans ce fichier, sans IPFS."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 60,
+            "description": "Timeout du calcul (défaut 3600)."
+          },
+          "udrive_path": {
+            "type": "string",
+            "x-path": "dir",
+            "description": "Dossier uDRIVE de destination (optionnel)."
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_minimax.sh",
+        "args": [
+          {
+            "flag": "-i",
+            "param": "first_frame"
+          },
+          {
+            "flag": "-R",
+            "param": "reference_images",
+            "repeat": true
+          },
+          {
+            "flag": "-A",
+            "param": "reference_audios",
+            "repeat": true
+          },
+          {
+            "flag": "-u",
+            "param": "upscale"
+          },
+          {
+            "flag": "-d",
+            "param": "duration"
+          },
+          {
+            "flag": "-r",
+            "param": "ratio"
+          },
+          {
+            "flag": "-m",
+            "param": "megapixels"
+          },
+          {
+            "flag": "-s",
+            "param": "steps"
+          },
+          {
+            "flag": "-S",
+            "param": "seed"
+          },
+          {
+            "flag": "-o",
+            "param": "output_file"
+          },
+          {
+            "flag": "-t",
+            "param": "timeout_sec"
+          },
+          {
+            "positional": "prompt"
+          },
+          {
+            "positional": "udrive_path"
+          }
+        ]
+      },
+      "exit_codes": {
+        "0": "ok",
+        "1": "erreur",
+        "3": "ComfyUI non équipé (modèles/nodes manquants)",
+        "4": "timeout"
+      },
+      "output": "last_line",
+      "timeout_sec": 18000,
+      "tags": [
+        "video",
+        "audio",
+        "minimax",
+        "comfyui",
+        "gpu",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "apply_lipsync",
+      "description": "Synchronise les lèvres d'une vidéo sur un audio (LivePortrait). Retourne l'URL IPFS de la vidéo synchronisée.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "video": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Chemin ou URL de la vidéo."
+          },
+          "audio": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Chemin ou URL de l'audio."
+          },
+          "udrive_path": {
+            "type": "string",
+            "x-path": "dir",
+            "description": "Dossier uDRIVE de destination (optionnel)."
+          }
+        },
+        "required": [
+          "video",
+          "audio"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "apply_lipsync.sh",
+        "args": [
+          {
+            "positional": "video"
+          },
+          {
+            "positional": "audio"
+          },
+          {
+            "positional": "udrive_path"
+          }
+        ]
+      },
+      "output": "last_line",
+      "timeout_sec": 1800,
+      "tags": [
+        "video",
+        "lipsync",
+        "comfyui",
+        "gpu",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "generate_movie",
+      "description": "Workflow cinéma complet : anime une image (image_to_video) puis applique la synchronisation labiale sur un audio. Retourne l'URL IPFS du film final.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Action/animation de la scène."
+          },
+          "image_url": {
+            "type": "string",
+            "minLength": 1,
+            "description": "URL de l'image de référence."
+          },
+          "audio_url": {
+            "type": "string",
+            "minLength": 1,
+            "description": "URL de l'audio (parole) pour le lip-sync."
+          }
+        },
+        "required": [
+          "prompt",
+          "image_url",
+          "audio_url"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_movie.sh",
+        "args": [
+          {
+            "positional": "prompt"
+          },
+          {
+            "positional": "image_url"
+          },
+          {
+            "positional": "audio_url"
+          }
+        ]
+      },
+      "output": "last_line",
+      "timeout_sec": 5400,
+      "tags": [
+        "video",
+        "lipsync",
+        "comfyui",
+        "gpu",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "generate_speech",
+      "description": "Synthèse vocale française (Orpheus TTS, voix pierre ou amelie). Retourne l'URL IPFS du fichier audio.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Texte à prononcer."
+          },
+          "voice": {
+            "type": "string",
+            "enum": [
+              "pierre",
+              "amelie"
+            ],
+            "description": "Voix à utiliser."
+          }
+        },
+        "required": [
+          "text",
+          "voice"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_speech.sh",
+        "args": [
+          {
+            "positional": "text"
+          },
+          {
+            "positional": "voice"
+          }
+        ]
+      },
+      "output": "last_line",
+      "timeout_sec": 600,
+      "tags": [
+        "audio",
+        "tts",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "generate_voice",
+      "description": "Invente une voix d'après une description (Qwen3-TTS VoiceDesign) et lui fait dire une phrase. Écrit un fichier WAV (reproductible à description, texte et seed identiques) ; sert de voix de référence pour generate_minimax.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "voice_description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description du timbre, en anglais de préférence (« warm low-pitched woman, calm »)."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Phrase à prononcer."
+          },
+          "output_file": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\.wav$",
+            "description": "Chemin du fichier WAV à écrire."
+          },
+          "language": {
+            "type": "string",
+            "description": "Langue (défaut French)."
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seed (défaut 42)."
+          }
+        },
+        "required": [
+          "voice_description",
+          "text",
+          "output_file"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_voice.py",
+        "interpreter": "QWEN3TTS_PY",
+        "args": [
+          {
+            "flag": "-o",
+            "param": "output_file"
+          },
+          {
+            "flag": "-l",
+            "param": "language"
+          },
+          {
+            "flag": "-S",
+            "param": "seed"
+          },
+          {
+            "positional": "voice_description"
+          },
+          {
+            "positional": "text"
+          }
+        ]
+      },
+      "output": "last_line",
+      "timeout_sec": 900,
+      "tags": [
+        "audio",
+        "tts",
+        "gpu"
+      ],
+      "enabled": false,
+      "disabled_reason": "Intégration Qwen3-TTS en cours (doit tourner sur la station GPU) ; pas encore de garde-fou VRAM."
+    },
+    {
+      "name": "generate_character",
+      "description": "Crée un personnage : portrait (Z-Image) + voix de référence (Qwen3-TTS) dans un dossier (portrait.png, voice.wav, progress.json). Un fichier déjà présent n'est pas refait.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workdir": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Dossier de sortie (créé si besoin)."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nom du personnage."
+          },
+          "look": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Visage et vêtements (anglais conseillé)."
+          },
+          "voice_design": {
+            "type": "string",
+            "description": "Description de la voix (anglais)."
+          },
+          "line": {
+            "type": "string",
+            "description": "Phrase en français dite par la voix (~8 s)."
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seed (défaut 42)."
+          }
+        },
+        "required": [
+          "workdir",
+          "name",
+          "look"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_character.sh",
+        "args": [
+          {
+            "flag": "-w",
+            "param": "workdir"
+          },
+          {
+            "flag": "-S",
+            "param": "seed"
+          },
+          {
+            "positional": "name"
+          },
+          {
+            "positional": "look"
+          },
+          {
+            "positional": "voice_design"
+          },
+          {
+            "positional": "line"
+          }
+        ]
+      },
+      "exit_codes": {
+        "0": "ok",
+        "1": "erreur",
+        "2": "arguments invalides"
+      },
+      "output": "last_line",
+      "timeout_sec": 1800,
+      "tags": [
+        "image",
+        "audio",
+        "character",
+        "gpu"
+      ]
+    },
+    {
+      "name": "generate_3dscene",
+      "description": "Transforme une photo en scène 3D GLB (objets séparés et nommés, importable dans Blender). Retourne l'URL IPFS de scene.glb.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "type": "string",
+            "x-path": "file",
+            "description": "Chemin de la photo."
+          },
+          "objects": {
+            "type": "string",
+            "description": "Objets à extraire, en anglais, séparés par des virgules (« armchair,lamp »). Vide : détection par un modèle de vision."
+          },
+          "udrive_path": {
+            "type": "string",
+            "x-path": "dir",
+            "description": "Dossier uDRIVE où copier scene.glb (optionnel)."
+          }
+        },
+        "required": [
+          "image"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_3dscene.sh",
+        "args": [
+          {
+            "positional": "image"
+          },
+          {
+            "positional": "objects"
+          },
+          {
+            "positional": "udrive_path"
+          }
+        ]
+      },
+      "output": "last_line",
+      "timeout_sec": 3600,
+      "tags": [
+        "3d",
+        "comfyui",
+        "gpu",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "generate_transcription",
+      "description": "Transcrit un audio ou une vidéo (Phonon-2). Avec format unique (txt, srt, vtt, json, words) retourne ce contenu ; avec « all » retourne un JSON {text, srt, vtt, words, files, ipfs}.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Fichier local ou URL http(s)/IPFS d'un média."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "txt",
+              "srt",
+              "vtt",
+              "json",
+              "words",
+              "all"
+            ],
+            "description": "Format de sortie (défaut all)."
+          },
+          "output_dir": {
+            "type": "string",
+            "description": "Dossier de sortie (défaut ~/.zen/tmp.media/transcription_<id>)."
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_transcription.sh",
+        "args": [
+          {
+            "positional": "input"
+          },
+          {
+            "positional": "format"
+          },
+          {
+            "positional": "output_dir"
+          }
+        ]
+      },
+      "output": "text_or_json",
+      "timeout_sec": 1200,
+      "tags": [
+        "audio",
+        "stt",
+        "comfyui",
+        "gpu"
+      ]
+    },
+    {
+      "name": "generate_article",
+      "description": "Génère un article à partir d'un texte : résumé narratif, tags, illustration IA, identifiant NOSTR kind 30023. Sortie JSON {title, summary, tags, image_url, content, published_at, d_tag} (ou md/html).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Texte source."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "md",
+              "html"
+            ],
+            "description": "Format de sortie (défaut json)."
+          },
+          "lang": {
+            "type": "string",
+            "pattern": "^[a-z]{2}$",
+            "description": "Langue ISO 639-1 (défaut fr)."
+          },
+          "no_image": {
+            "type": "boolean",
+            "description": "Ne pas générer d'illustration."
+          },
+          "model": {
+            "type": "string",
+            "description": "Modèle Ollama (défaut gemma3:latest)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Titre imposé (sinon généré)."
+          },
+          "tags": {
+            "type": "string",
+            "description": "Tags supplémentaires sans #, séparés par des espaces."
+          },
+          "udrive_path": {
+            "type": "string",
+            "x-path": "dir",
+            "description": "Dossier de sortie de l'image."
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_article.sh",
+        "args": [
+          {
+            "flag": "--format",
+            "param": "format"
+          },
+          {
+            "flag": "--lang",
+            "param": "lang"
+          },
+          {
+            "flag": "--no-image",
+            "param": "no_image",
+            "boolean": true
+          },
+          {
+            "flag": "--model",
+            "param": "model"
+          },
+          {
+            "flag": "--title",
+            "param": "title"
+          },
+          {
+            "flag": "--tags",
+            "param": "tags"
+          },
+          {
+            "flag": "--udrive",
+            "param": "udrive_path"
+          },
+          {
+            "positional": "text"
+          }
+        ]
+      },
+      "output": "text_or_json",
+      "timeout_sec": 600,
+      "tags": [
+        "text",
+        "article",
+        "ollama",
+        "nostr"
+      ]
+    },
+    {
+      "name": "generate_badge_image",
+      "description": "Génère l'image d'un badge de permis/compétence WoTx² (1024x1024 + miniatures 256 et 64) et la publie sur IPFS. Retourne un JSON {badge_image_url, badge_thumb_256, badge_thumb_64}.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "badge_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]+$",
+            "description": "Identifiant unique (ex. ore_verifier, permit_maitre_nageur_x5)."
+          },
+          "permit_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nom du permis (ex. « Maître Nageur »)."
+          },
+          "permit_description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Description du permis."
+          },
+          "level": {
+            "type": "string",
+            "pattern": "^X[0-9]+$",
+            "description": "Niveau WoTx² (X5, X10…), optionnel."
+          },
+          "label": {
+            "type": "string",
+            "description": "Libellé du niveau (Expert, Maître…), optionnel."
+          }
+        },
+        "required": [
+          "badge_id",
+          "permit_name",
+          "permit_description"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_badge_image.sh",
+        "args": [
+          {
+            "positional": "badge_id"
+          },
+          {
+            "positional": "permit_name"
+          },
+          {
+            "positional": "permit_description"
+          },
+          {
+            "positional": "level"
+          },
+          {
+            "positional": "label"
+          }
+        ]
+      },
+      "output": "text_or_json",
+      "timeout_sec": 600,
+      "tags": [
+        "image",
+        "badge",
+        "wotx2",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "check_storyboard",
+      "description": "Valide un storyboard JSON sans rien calculer (mêmes règles que generate_scene). À appeler avant generate_scene.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "storyboard_path": {
+            "type": "string",
+            "x-path": "file",
+            "description": "Chemin du storyboard .json."
+          }
+        },
+        "required": [
+          "storyboard_path"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_scene.sh",
+        "args": [
+          {
+            "literal": "--check"
+          },
+          {
+            "positional": "storyboard_path"
+          }
+        ]
+      },
+      "exit_codes": {
+        "0": "storyboard valide",
+        "2": "storyboard invalide"
+      },
+      "output": "text",
+      "timeout_sec": 60,
+      "tags": [
+        "video",
+        "storyboard"
+      ]
+    },
+    {
+      "name": "generate_scene",
+      "description": "Rend un storyboard JSON en vidéo multi-plans (MiniMax H3) assemblée en 720p. Relancer avec le même workdir reprend la scène (plans déjà rendus conservés). Retourne l'URL IPFS de la vidéo finale. Très long : valider d'abord avec check_storyboard.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "storyboard_path": {
+            "type": "string",
+            "x-path": "file",
+            "description": "Chemin du storyboard .json."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Répertoire de travail (reprise de scène)."
+          },
+          "cast_only": {
+            "type": "boolean",
+            "description": "Prépare seulement les personnages (.cast), sans rendre de plan."
+          },
+          "shot_index": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Ne (re)calcule que ce plan (0-based), sans assemblage."
+          },
+          "publish": {
+            "type": "string",
+            "enum": [
+              "coop",
+              "private"
+            ],
+            "description": "Publie dans la bibliothèque du Studio vidéo : coop (visible des Capitaines) ou private (chiffré)."
+          },
+          "udrive_path": {
+            "type": "string",
+            "x-path": "dir",
+            "description": "Dossier où copier la vidéo finale."
+          }
+        },
+        "required": [
+          "storyboard_path"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "generate_scene.sh",
+        "args": [
+          {
+            "flag": "-w",
+            "param": "workdir"
+          },
+          {
+            "flag": "-c",
+            "param": "cast_only",
+            "boolean": true
+          },
+          {
+            "flag": "-i",
+            "param": "shot_index"
+          },
+          {
+            "flag": "-p",
+            "param": "publish"
+          },
+          {
+            "positional": "storyboard_path"
+          },
+          {
+            "positional": "udrive_path"
+          }
+        ]
+      },
+      "exit_codes": {
+        "0": "ok",
+        "1": "erreur",
+        "2": "storyboard invalide ou usage",
+        "3": "ComfyUI non équipé",
+        "4": "timeout"
+      },
+      "output": "last_line",
+      "timeout_sec": 21600,
+      "tags": [
+        "video",
+        "scene",
+        "minimax",
+        "gpu",
+        "ipfs"
+      ]
+    },
+    {
+      "name": "video_finish",
+      "description": "Met une vidéo à l'échelle (720p par défaut, 24 i/s, AAC 48 kHz) avec style VHS optionnel. Écrit le fichier de sortie.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "x-path": "file",
+            "description": "Vidéo d'entrée."
+          },
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Vidéo de sortie."
+          },
+          "vhs": {
+            "type": "boolean",
+            "description": "Style lecteur VHS."
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 144,
+            "maximum": 2160,
+            "description": "Petit côté en pixels (défaut 720). Exclusif avec size."
+          },
+          "size": {
+            "type": "string",
+            "pattern": "^[0-9]+x[0-9]+$",
+            "description": "Taille exacte LxH, recadrage centré. Exclusif avec height."
+          }
+        },
+        "required": [
+          "input",
+          "output"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "video_finish.sh",
+        "args": [
+          {
+            "flag": "-v",
+            "param": "vhs",
+            "boolean": true
+          },
+          {
+            "flag": "-H",
+            "param": "height"
+          },
+          {
+            "flag": "-s",
+            "param": "size"
+          },
+          {
+            "positional": "input"
+          },
+          {
+            "positional": "output"
+          }
+        ]
+      },
+      "output": "text",
+      "timeout_sec": 1800,
+      "tags": [
+        "video",
+        "ffmpeg"
+      ]
+    },
+    {
+      "name": "faceid",
+      "description": "Détecte les visages d'une image (InsightFace via ComfyUI) et retourne un JSON {faces:[{bbox, det_score, embedding}], scene_analysis?}. scene_analysis (objet/plante/animal…) n'apparaît que si aucun visage n'est trouvé. Données biométriques : ne jamais republier les embeddings.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Fichier local ou CID/lien IPFS."
+          },
+          "decryption_key_hex": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{64}$",
+            "x-sensitive": true,
+            "description": "Clé AES-256-GCM (64 hex) si l'image est un blob UENC du cloud chiffré."
+          }
+        },
+        "required": [
+          "image"
+        ],
+        "additionalProperties": false
+      },
+      "exec": {
+        "script": "faceid.sh",
+        "args": [
+          {
+            "positional": "image"
+          },
+          {
+            "literal": "",
+            "only_if": "decryption_key_hex"
+          },
+          {
+            "positional": "decryption_key_hex"
+          }
+        ]
+      },
+      "output": "json",
+      "timeout_sec": 300,
+      "tags": [
+        "vision",
+        "face",
+        "comfyui",
+        "gpu",
+        "privacy"
+      ]
+    }
+  ]
+}
