@@ -1040,6 +1040,11 @@ NODE12345="{
         sudo systemctl restart ipfs 2>/dev/null
     fi
 
+    ## Watchdog UPassport — relance si /health ne répond plus (trace py-spy avant),
+    ## cf. UPassport/watchdog/upassport-watchdog.sh (~45 s au pire, dans ce cycle)
+    [[ -x "${HOME}/.zen/UPassport/watchdog/upassport-watchdog.sh" ]] \
+        && "${HOME}/.zen/UPassport/watchdog/upassport-watchdog.sh" >> "${HOME}/.zen/log/upassport_watchdog.out" 2>&1
+
     ## Watchdog GPU NVIDIA — reboot si le GPU disparaît (Xid 79), avec garde-fous anti-boucle
     bash "${HOME}/.zen/Astroport.ONE/admin/monitor/gpu_guard.sh" >> "${HOME}/.zen/log/gpu_guard.log" 2>&1
 
