@@ -21,6 +21,8 @@ show_help() {
     echo "                      Ex: --exclude 'jquery' --exclude 'bootstrap'"
     echo "  --well-known        Exclure les bibliothèques tierces répandues (jQuery, Bootstrap,"
     echo "                      Leaflet, p5.js, nacl, scrypt, blake2b, axios, mermaid…)"
+    echo "  --include-build     Inclure les fichiers compilés/générés (exclus par défaut :"
+    echo "                      target/ build/ dist/ out/ node_modules/ __pycache__/ venv/ *.min.js *.min.css)"
     echo "  --help              Affiche cette aide."
     exit 0
 }
@@ -35,6 +37,7 @@ JSON_MODE=false
 MAX_FILE_SIZE=0
 EXCLUDE_PATTERNS=()
 WELL_KNOWN=false
+INCLUDE_BUILD=false
 POSITIONAL=()
 
 # Bibliothèques tierces répandues — liste centralisée dans tools/well_known_libs.sh
@@ -52,6 +55,7 @@ while [[ $# -gt 0 ]]; do
         --exclude)          EXCLUDE_PATTERNS+=("$2"); shift 2 ;;
         --exclude=*)        EXCLUDE_PATTERNS+=("${1#--exclude=}"); shift ;;
         --well-known)       WELL_KNOWN=true; shift ;;
+        --include-build)    INCLUDE_BUILD=true; shift ;;
         *)                  POSITIONAL+=("$1"); shift ;;
     esac
 done
@@ -81,6 +85,22 @@ TEMP_FILE="/tmp/$MOATS.txt"
 
 NB_FILES=0
 JSON_FILE_COUNT=0
+
+# Liste les fichiers d'une extension, sans cachés ni fichiers compilés/générés
+_cpcode_find() {
+    local _ext="$1"
+    if $INCLUDE_BUILD; then
+        find "$SOURCE_DIR" -type f -name "*.$_ext" | grep -v '/\.'
+    else
+        local _f
+        while IFS= read -r _f; do
+            # Filtre sur le chemin relatif au dossier source (pas sur le dossier lui-même)
+            [[ "/${_f#"$SOURCE_DIR"}" =~ /(target|build|dist|out|node_modules|__pycache__|venv|coverage)/ ]] && continue
+            [[ "$_f" =~ \.min\.(js|css)$ ]] && continue
+            echo "$_f"
+        done < <(find "$SOURCE_DIR" -type f -name "*.$_ext" | grep -v '/\.')
+    fi
+}
 
 # ── Traitement des fichiers ───────────────────────────────────────────────
 for EXT in "${EXTENSIONS[@]}"; do
@@ -152,7 +172,7 @@ for EXT in "${EXTENSIONS[@]}"; do
 
         (( NB_FILES++ )) || true
 
-    done < <(find "$SOURCE_DIR" -type f -name "*.$EXT" | grep -v '/\.')
+    done < <(_cpcode_find "$EXT")
 done
 
 # ── Enveloppe JSON finale ────────────────────────────────────────────────
