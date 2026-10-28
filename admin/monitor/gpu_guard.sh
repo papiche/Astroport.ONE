@@ -11,7 +11,8 @@
 #             par 24 h. Au-delà : pas de reboot, alerte dans le journal
 #             (le GPU est alors probablement mort : intervention humaine).
 # Historique : ~/.zen/log/gpu_guard.history (epoch des reboots déclenchés).
-# Reboot via `sudo systemctl reboot` (systemctl est NOPASSWD, cf. install_sudoers.sh).
+# Reboot via `sudo systemctl reboot -ff` (forcé : un reboot graceful se bloque sur un GPU mort ;
+# systemctl est NOPASSWD, cf. install_sudoers.sh).
 ########################################################################
 DRY=0; [[ "$1" == "--dry-run" ]] && DRY=1
 LOGDIR="$HOME/.zen/log"; mkdir -p "$LOGDIR"
@@ -59,6 +60,10 @@ fi
 
 echo "$now" >> "$HISTORY"
 if (( DRY )); then say "[dry-run] reboot déclenché"; exit 0; fi
-say "REBOOT (${n24}/${MAX_24H} sur 24 h)"
+say "REBOOT FORCÉ (${n24}/${MAX_24H} sur 24 h)"
 sync
-sudo systemctl reboot
+# Reboot FORCÉ (-ff = reboot(2) direct, sans arrêt des services) : avec un GPU mort, les
+# processus bloqués dans le pilote nvidia (état D, drm_release) empêchent le reboot graceful
+# d'aboutir (2026-10-28 : machine figée 50 min, remise sous tension à la main).
+# Nécessite le même droit sudo NOPASSWD que `systemctl reboot` (install_sudoers.sh).
+sudo -n systemctl reboot --force --force || sudo -n systemctl reboot
