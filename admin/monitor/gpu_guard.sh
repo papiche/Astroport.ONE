@@ -7,9 +7,11 @@
 #
 # Détection : nvidia-smi échoue/timeout 2 fois (30 s d'écart), alors que le
 #             GPU a déjà été vu fonctionnel (marqueur ~/.zen/log/gpu_expected).
-# Garde-fous : uptime >= 10 min, >= 30 min entre deux reboots, max 2 reboots
-#             par 24 h. Au-delà : pas de reboot, alerte dans le journal
-#             (le GPU est alors probablement mort : intervention humaine).
+# Garde-fous : uptime >= 5 min ; délai ENTRE reboots croissant (5 min, puis x2
+#             par reboot des dernières 24 h : 5, 10, 20, 40, 80, 160 min, plafond 6 h).
+#             On reboote TOUJOURS, plus lentement si le GPU retombe en boucle.
+# Alerte    : mail au Capitaine à chaque disparition (max 1 / 30 min), envoyé
+#             AVANT le reboot ; il dit si le reboot est immédiat ou différé.
 # Historique : ~/.zen/log/gpu_guard.history (epoch des reboots déclenchés).
 # Reboot via `sudo systemctl reboot -ff`, puis SysRq b si le noyau reste figé dans le pilote nvidia
 # (systemctl et tee /proc/sysrq-trigger sont NOPASSWD, cf. install_sudoers.sh).
@@ -18,10 +20,33 @@ DRY=0; [[ "$1" == "--dry-run" ]] && DRY=1
 LOGDIR="$HOME/.zen/log"; mkdir -p "$LOGDIR"
 EXPECTED="$LOGDIR/gpu_expected"
 HISTORY="$LOGDIR/gpu_guard.history"
-MIN_UPTIME=600; MIN_GAP=1800; MAX_24H=2
+MIN_UPTIME=300; MIN_GAP=300; MAX_GAP=21600; ALERT_GAP=1800
 
 say() { echo "$(date '+%F %T') gpu_guard: $*" | tee -a "$LOGDIR/gpu_guard.log"; logger -t gpu_guard -p user.crit "$*"; }
 gpu_ok() { timeout 10 nvidia-smi -L >/dev/null 2>&1; }
+
+# alert_captain SUJET DÉTAIL — mail au Capitaine (rate-limité), synchrone (borné à 60 s)
+alert_captain() {
+    local lock="$LOGDIR/.gpu_alert_last" t
+    [[ -e "$lock" && $(( $(date +%s) - $(stat -c %Y "$lock") )) -lt $ALERT_GAP ]] && return 0
+    touch "$lock"
+    # shellcheck disable=SC1090
+    [[ -z "$CAPTAINEMAIL" ]] && . "$HOME/.zen/Astroport.ONE/tools/my.sh" >/dev/null 2>&1
+    [[ -z "$CAPTAINEMAIL" ]] && { say "alerte Capitaine impossible : CAPTAINEMAIL inconnu"; return 1; }
+    t=$(mktemp /tmp/gpu_alert_XXXXXX.html)
+    {
+        echo "<h2>🚨 GPU NVIDIA disparu — $(hostname)</h2>"
+        echo "<p><strong>Date :</strong> $(date '+%F %T') — uptime ${up}s</p>"
+        echo "<p><strong>Reboots GPU sur 24 h :</strong> ${n24:-?}</p>"
+        printf '<p>%s</p>' "$2"
+        echo "<pre style=\"background:#fff3cd;padding:1em;\">$(printf '%s' "$dmesg_hint" | sed 's/&/\&amp;/g;s/</\&lt;/g')</pre>"
+        echo "<p>Si cela se répète : câble/alimentation PCIe, slot, température (<code>~/.zen/log/gpu_guard.log</code>).</p>"
+    } > "$t"
+    timeout 60 bash "$HOME/.zen/Astroport.ONE/tools/mailjet.sh" --template "$0" --expire 48h \
+        "$CAPTAINEMAIL" "$t" "🚨 GPU disparu — $(hostname) : $1" >/dev/null 2>&1 \
+        || say "envoi du mail au Capitaine échoué"
+    rm -f "$t"
+}
 
 command -v nvidia-smi >/dev/null || exit 0
 
@@ -50,17 +75,20 @@ if (( up < MIN_UPTIME )); then
     say "reboot différé : uptime < ${MIN_UPTIME}s (démarrage en cours ?)"; exit 1
 fi
 last=$(tail -1 "$HISTORY" 2>/dev/null); last=${last:-0}
-if (( now - last < MIN_GAP )); then
-    say "PAS DE REBOOT : dernier reboot il y a $(( (now-last)/60 )) min (< $((MIN_GAP/60)))"; exit 1
-fi
 n24=$(awk -v t=$(( now - 86400 )) '$1>t' "$HISTORY" 2>/dev/null | wc -l)
-if (( n24 >= MAX_24H )); then
-    say "ABANDON : ${n24} reboots GPU en 24 h (max ${MAX_24H}) — GPU probablement défaillant, intervention requise"; exit 1
+# Délai exigé : 30 min x 2^n24 (n24 = reboots GPU des dernières 24 h), plafonné
+gap=$(( MIN_GAP << (n24 > 6 ? 6 : n24) )); (( gap > MAX_GAP )) && gap=$MAX_GAP
+if (( now - last < gap )); then
+    wait_s=$(( gap - (now - last) ))
+    say "REBOOT DIFFÉRÉ : dernier il y a $(( (now-last)/60 )) min, délai exigé $(( gap/60 )) min (${n24} sur 24 h) — prochain vers $(date -d "+${wait_s} sec" +%T)"
+    alert_captain "reboot différé" "Le GPU est tombé de nouveau (${n24} reboots en 24 h). Reboot automatique différé à environ $(date -d "+${wait_s} sec" +%T) (délai croissant). Un arrêt complet avec coupure secteur est préférable."
+    exit 1
 fi
+alert_captain "reboot en cours" "Le GPU a disparu : reboot forcé immédiat (${n24} reboots en 24 h, délai suivant : $(( (gap<<1 > MAX_GAP ? MAX_GAP : gap<<1)/60 )) min)."
 
 echo "$now" >> "$HISTORY"
 if (( DRY )); then say "[dry-run] reboot déclenché"; exit 0; fi
-say "REBOOT FORCÉ (${n24}/${MAX_24H} sur 24 h)"
+say "REBOOT FORCÉ (${n24} sur 24 h, délai appliqué $(( gap/60 )) min)"
 sync
 # Reboot FORCÉ (-ff = reboot(2) direct, sans arrêt des services) : avec un GPU mort, les
 # processus bloqués dans le pilote nvidia (état D, drm_release) empêchent le reboot graceful
