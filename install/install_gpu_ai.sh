@@ -3,7 +3,7 @@
 # install_gpu_ai.sh — Détection GPU + installation Ollama (systemd) & ComfyUI (venv+systemd)
 #
 # Paramètres de référence sagittarius :
-#   Ollama  : User=ollama, OLLAMA_HOST=0.0.0.0, FLASH_ATTENTION=1, NUM_PARALLEL=2
+#   Ollama  : User=ollama, OLLAMA_HOST=0.0.0.0, FLASH_ATTENTION=1, NUM_PARALLEL=1
 #   ComfyUI : ~/comfyui_env/ + ~/workspace/ComfyUI/ --normalvram --listen 0.0.0.0
 #
 # Variables d'entrée (mode silencieux) :
@@ -150,7 +150,7 @@ if _ask_yes INSTALL_OLLAMA "Installer Ollama (LLM local, systemd, port 11434) ?"
 [Service]
 Environment="OLLAMA_HOST=0.0.0.0"
 Environment="OLLAMA_FLASH_ATTENTION=1"
-Environment="OLLAMA_NUM_PARALLEL=2"
+Environment="OLLAMA_NUM_PARALLEL=1"
 Environment="OLLAMA_KV_CACHE_TYPE=q4_0"
 Environment="OLLAMA_MAX_LOADED_MODELS=2"
 EOF

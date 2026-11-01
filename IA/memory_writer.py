@@ -45,6 +45,9 @@ from prompt_safety import wrap_untrusted
 
 # ── Réglages ────────────────────────────────────────────────────────────────
 WRITER_MODEL     = os.environ.get("MEMORY_WRITER_MODEL", "gemma3:12b")
+# Contexte explicite : sans lui Ollama (NUM_PARALLEL=2) alloue 65536 jetons de cache KV d'un coup
+# au chargement de gemma3:12b — c'est ce qui a fait tomber le GPU (Xid 79, 2026-11-01).
+WRITER_CTX       = int(os.environ.get("MEMORY_WRITER_CTX", "8192"))
 NEIGHBOR_MIN     = 0.55    # voisin « du même sujet » (bge-m3 : hors-sujet ≤ 0,55)
 DUPLICATE_MIN    = 0.92    # quasi identique : on n'appelle même pas l'IA
 MAX_FACTS        = 6       # faits retenus par lot
@@ -312,7 +315,8 @@ def _ask(prompt):
     from question import answer_question
     import ollama_metrics
     with ollama_metrics.source("memory_writer"):
-        raw = answer_question(prompt, model_name=WRITER_MODEL, temperature=0.1, format_json=True)
+        raw = answer_question(prompt, model_name=WRITER_MODEL, temperature=0.1, format_json=True,
+                              ctx=WRITER_CTX)
     if not raw:
         raise RuntimeError("le modèle n'a rien répondu (Ollama injoignable ?)")
     return json.loads(raw.strip())
