@@ -44,4 +44,11 @@ do
     fi
 done
 
+## gpu_guard.sh : reboot de secours (SysRq b) quand `systemctl reboot -ff` reste bloqué dans le pilote nvidia
+teebin=$(which tee)
+echo "$USER ALL=(ALL) NOPASSWD:$teebin /proc/sysrq-trigger" \
+    | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/sysrq-trigger') \
+    && echo "SUDOERS RIGHT SET FOR : $teebin /proc/sysrq-trigger" \
+    || echo "ERROR setting sudoers for sysrq-trigger"
+
 echo "######### SUDOERS OK ############################"

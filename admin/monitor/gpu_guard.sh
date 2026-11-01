@@ -11,8 +11,8 @@
 #             par 24 h. Au-delà : pas de reboot, alerte dans le journal
 #             (le GPU est alors probablement mort : intervention humaine).
 # Historique : ~/.zen/log/gpu_guard.history (epoch des reboots déclenchés).
-# Reboot via `sudo systemctl reboot -ff` (forcé : un reboot graceful se bloque sur un GPU mort ;
-# systemctl est NOPASSWD, cf. install_sudoers.sh).
+# Reboot via `sudo systemctl reboot -ff`, puis SysRq b si le noyau reste figé dans le pilote nvidia
+# (systemctl et tee /proc/sysrq-trigger sont NOPASSWD, cf. install_sudoers.sh).
 ########################################################################
 DRY=0; [[ "$1" == "--dry-run" ]] && DRY=1
 LOGDIR="$HOME/.zen/log"; mkdir -p "$LOGDIR"
@@ -66,4 +66,10 @@ sync
 # processus bloqués dans le pilote nvidia (état D, drm_release) empêchent le reboot graceful
 # d'aboutir (2026-10-28 : machine figée 50 min, remise sous tension à la main).
 # Nécessite le même droit sudo NOPASSWD que `systemctl reboot` (install_sudoers.sh).
-sudo -n systemctl reboot --force --force || sudo -n systemctl reboot
+# 2026-11-01 : même le -ff reste bloqué (reboot(2) → device_shutdown → pilote nvidia, état D).
+# Filet : si la machine tourne encore 45 s après, SysRq s (sync) u (remount ro) b (reboot immédiat,
+# sans arrêt des périphériques). Droit sudo : /etc/sudoers.d/sysrq-trigger (install_sudoers.sh).
+sudo -n timeout 20 systemctl reboot --force --force &
+sleep 45
+say "reboot -ff sans effet après 45 s : SysRq s,u,b"
+for k in s u b; do echo $k | sudo -n tee /proc/sysrq-trigger >/dev/null; sleep 3; done
