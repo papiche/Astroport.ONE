@@ -615,9 +615,7 @@ ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 ## Mémoire géolocalisée (Qdrant uplanet_geo) : publications géolocalisées likées → UMAP (1 like) / SECTOR (3) / REGION (12).
 ## Index reconstruit depuis NOSTR, processus autonome (setsid) : ne bloque pas le refresh.
 ## Journal PERMANENT (avec rotation, cf. plus haut) : ~/.zen/log/geo_memory_AAAAMMJJ.log — ~/.zen/tmp/ est purgé chaque nuit.
-if [[ -e ~/.zen/GPU_AUTO_OFF ]]; then
-    echo "⏸️  GPU_AUTO_OFF : geo_memory sauté"
-elif [[ -f "${MY_PATH}/IA/geo_memory.py" ]]; then
+if [[ -f "${MY_PATH}/IA/geo_memory.py" ]]; then
     mkdir -p "$LOG_DIR"
     setsid nohup python3 "${MY_PATH}/IA/geo_memory.py" refresh >> "$LOG_DIR/geo_memory_$(date +%Y%m%d).log" 2>&1 < /dev/null &
 else
@@ -1035,9 +1033,7 @@ fi
 ## CODEBASE INDEX — Rafraîchissement incrémental Qdrant (collection codebase)
 ########################################################################
 CODEBASE_IDX="${MY_PATH}/admin/ia_db/codebase_index.sh"
-if [[ -e ~/.zen/GPU_AUTO_OFF ]]; then
-    echo "⏸️  GPU_AUTO_OFF : codebase index sauté"
-elif [[ -x "$CODEBASE_IDX" ]] && curl -sf --max-time 2 "http://127.0.0.1:6333/healthz" &>/dev/null; then
+if [[ -x "$CODEBASE_IDX" ]] && curl -sf --max-time 2 "http://127.0.0.1:6333/healthz" &>/dev/null; then
     echo "🧠 Rafraîchissement incrémental codebase → Qdrant..."
     bash "$CODEBASE_IDX" --incremental >> "$LOG_FILE" 2>&1 \
         && echo "✅ codebase_index --incremental OK" \
@@ -1063,9 +1059,7 @@ ARBOR_ELIGIBILITY="${MY_PATH}/IA/arbor_baton_eligibility.sh"
 
 ARBOR_BATON="${MY_PATH}/IA/arbor_baton.sh"
 ARBOR_MINER="${MY_PATH}/IA/arbor_self_improve.py"
-if [[ -e ~/.zen/GPU_AUTO_OFF ]]; then
-    echo "⏸️  GPU_AUTO_OFF : mining ARBOR sauté"
-elif [[ -f "$ARBOR_MINER" ]]; then
+if [[ -f "$ARBOR_MINER" ]]; then
     if [[ -x "$ARBOR_BATON" ]] && ! "$ARBOR_BATON" check-and-claim >> "$LOG_FILE" 2>&1; then
         echo "ℹ️  BRO Arbor : bâton détenu par une autre station — mining différé ici." >> "$LOG_FILE"
     else

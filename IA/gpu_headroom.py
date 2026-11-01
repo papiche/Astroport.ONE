@@ -53,20 +53,6 @@ class GpuBusy(RuntimeError):
     """La carte n'a pas la place de charger le modèle demandé dans le délai accordé."""
 
 
-GPU_AUTO_OFF_FILE = os.path.expanduser("~/.zen/GPU_AUTO_OFF")
-
-
-def auto_off():
-    """INTERRUPTEUR GÉNÉRAL (2026-11-02) : fichier ~/.zen/GPU_AUTO_OFF (ou GPU_AUTO_OFF=1) = AUCUN usage automatique du GPU
-    (BRO, ARBOR, index, mémoire…). Levé par `rm ~/.zen/GPU_AUTO_OFF`. Vérifié par ensure() et make_room_for_comfy()."""
-    return os.environ.get("GPU_AUTO_OFF") == "1" or os.path.exists(GPU_AUTO_OFF_FILE)
-
-
-def _refuse_if_off(what):
-    if auto_off():
-        raise GpuBusy("GPU désactivé par le Capitaine (%s) : %s refusé — `rm %s` pour réactiver" % (GPU_AUTO_OFF_FILE, what, GPU_AUTO_OFF_FILE))
-
-
 # ── entrées/sorties isolées (remplaçables dans les tests) ───────────────────
 def _get(url, timeout=3):
     with urllib.request.urlopen(url, timeout=timeout) as r:
@@ -263,7 +249,6 @@ def ensure(model=None, need_gb=None, wait=None, ctx=None):
     """Retourne quand la carte peut accueillir `model` (avec `ctx` jetons de contexte) ; lève GpuBusy sinon. Jamais
     bloquant plus de `wait` secondes. Un modèle déjà chargé avec un contexte PLUS PETIT que `ctx` sera rechargé par
     Ollama (poids + cache KV agrandi) : ce n'est pas la voie rapide."""
-    _refuse_if_off("appel Ollama %s" % (model or ""))
     if os.environ.get("GPU_HEADROOM_OFF") == "1":
         return
     wait = DEFAULT_WAIT if wait is None else wait
@@ -351,7 +336,6 @@ def ollama_unload(model):
 def make_room_for_comfy(need_gb, label="job ComfyUI", wait=30):
     """À appeler AVANT de soumettre un job à ComfyUI (`need_gb` = estimation de sa VRAM de pointe).
     Retourne quand Ollama ne gêne plus ; lève GpuBusy si la place ne peut pas être faite."""
-    _refuse_if_off("job ComfyUI %s" % label)
     if os.environ.get("GPU_HEADROOM_OFF") == "1":
         return
     if not same_gpu():

@@ -614,11 +614,6 @@ generate_ssh_service() {
 # HELPER + WRAPPER publish_service : respecte DRAGON_PRIVATE_SERVICES depuis ~/.zen/Astroport.ONE/.env
 # (my.sh source déjà .env, donc DRAGON_PRIVATE_SERVICES est disponible ici)
 _is_private_service() {
-    # GPU_AUTO_OFF (2026-11-02) : interrupteur général du GPU — aucun pair de la constellation ne peut
-    # consommer Ollama / ComfyUI de cette station (un job distant a planté la carte). Levé par rm ~/.zen/GPU_AUTO_OFF.
-    if [[ -e "${HOME}/.zen/GPU_AUTO_OFF" ]]; then
-        case "$1" in ollama|comfyui|open-webui|ollama-*|comfyui-*) return 0 ;; esac
-    fi
     local _slug="$1"
     # grep -F (pas -w) : avec -w, un motif " ssh " exige que le caractère SUIVANT soit
     # non-alphanumérique alors que l'espace final du motif est déjà consommé — le test échouait
