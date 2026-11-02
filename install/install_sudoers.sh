@@ -52,3 +52,9 @@ echo "$USER ALL=(ALL) NOPASSWD:$teebin /proc/sysrq-trigger" \
     || echo "ERROR setting sudoers for sysrq-trigger"
 
 echo "######### SUDOERS OK ############################"
+
+## SysRq actif en permanence (filet de gpu_guard.sh quand reboot(2) reste bloqué dans le pilote nvidia)
+echo "kernel.sysrq = 1" | sudo tee /etc/sysctl.d/99-astroport-sysrq.conf >/dev/null \
+    && sudo sysctl -q -p /etc/sysctl.d/99-astroport-sysrq.conf \
+    && echo "SYSRQ enabled (kernel.sysrq=1)" \
+    || echo "ERROR enabling kernel.sysrq"

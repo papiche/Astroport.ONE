@@ -97,7 +97,20 @@ sync
 # 2026-11-01 : même le -ff reste bloqué (reboot(2) → device_shutdown → pilote nvidia, état D).
 # Filet : si la machine tourne encore 45 s après, SysRq s (sync) u (remount ro) b (reboot immédiat,
 # sans arrêt des périphériques). Droit sudo : /etc/sudoers.d/sysrq-trigger (install_sudoers.sh).
-sudo -n timeout 20 systemctl reboot --force --force &
-sleep 45
-say "reboot -ff sans effet après 45 s : SysRq s,u,b"
-for k in s u b; do echo $k | sudo -n tee /proc/sysrq-trigger >/dev/null; sleep 3; done
+# 2026-11-02 : `sudo -n timeout 20 systemctl …` échouait (« a password is required ») car sudoers
+# n'autorise que /usr/bin/systemctl, pas `timeout` : le timeout passe donc AVANT sudo.
+# Si sudo refuse (code ≠ 0 immédiat), inutile d'attendre 45 s : SysRq tout de suite.
+timeout 20 sudo -n /usr/bin/systemctl reboot --force --force &
+_rb=$!
+for _i in $(seq 1 45); do
+    sleep 1
+    if ! kill -0 "$_rb" 2>/dev/null; then
+        wait "$_rb"; _rc=$?
+        (( _rc != 0 )) && say "systemctl reboot -ff a échoué (code $_rc) : SysRq sans attendre"
+        break
+    fi
+done
+say "reboot -ff sans effet (ou refusé) : SysRq s,u,b"
+# SysRq doit être actif (kernel.sysrq=1, posé par install_sudoers.sh) ; sinon on le dit.
+[[ "$(cat /proc/sys/kernel/sysrq 2>/dev/null)" == "0" ]] && say "⚠️ kernel.sysrq=0 : SysRq ignoré — voir install_sudoers.sh"
+for k in s u b; do echo $k | sudo -n /usr/bin/tee /proc/sysrq-trigger >/dev/null || say "❌ sudo tee sysrq-trigger refusé ($k)"; sleep 3; done
