@@ -13,7 +13,12 @@
 #   - Récupère l'historique via squid (transfersReceived + transfersIssued)
 #   - Pour chaque tx entrante, vérifie que la source a le même "primal wallet"
 #   - Un "primal wallet" = fromId de la PREMIÈRE tx reçue par ce wallet
-#   - Les intrusions sont redirigées vers UPLANETNAME_INTRUSION via PAYforSURE.sh
+#   - Les intrusions PROUVÉES sont redirigées vers UPLANETNAME_INTRUSION via PAYforSURE.sh
+#   - Primale = accord de 2 indexeurs ; non vérifiée → aucun virement (revérifiée plus tard)
+#   - Virement d'un portefeuille coopératif de la station = interne, toujours valide
+#   - INTRUSION et le Ğ1 maître ne sont jamais contrôlés ; un wallet coopératif n'est
+#     jamais vidé (DRAIN) ni détruit
+#   - PRIMAL_DRY_RUN=1 : décrit ce qui serait fait, sans aucun virement
 #   - Anti double-traitement : ID unique par tx dans le commentaire de redirection
 #
 # Usage: primal_wallet_control.sh <wallet_dunikey> <wallet_pubkey> <master_primal> <player_email>
@@ -154,46 +159,121 @@ get_wallet_history_squid() {
     return 0
 }
 
+# ── Indexeurs interrogés pour une primale ─────────────────────────────────────
+# Une primale décide d'un mouvement de fonds : on ne croit jamais un seul indexeur.
+# PRIMAL_SQUIDS (liste séparée par des espaces) force la liste ; sinon les squids
+# valides de duniter_getnode.sh, puis SQUID_URL et la liste de repli.
+primal_squids() {
+    if [[ -n "${PRIMAL_SQUIDS:-}" ]]; then
+        tr ' ' '\n' <<< "$PRIMAL_SQUIDS" | grep -v '^$'
+        return
+    fi
+    {
+        echo "$SQUID_URL"
+        if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+            "${MY_PATH}/duniter_getnode.sh" all 2>>"$HOME/.zen/tmp/primal_getnode.err" \
+                | jq -r '.squid[]?.url // empty' 2>>"$HOME/.zen/tmp/primal_getnode.err"
+        fi
+        printf '%s\n' "https://g1-squid.axiom-team.fr/v1/graphql" \
+            "https://squid.g1.coinduf.eu/v1/graphql" "https://squid.g1.gyroi.de/v1/graphql"
+    } | grep -v '^$' | awk '!seen[$0]++' | head -4
+}
+
+# Réponse d'UN indexeur sur la primale d'un wallet :
+#   g1…       l'émetteur de la première transaction reçue
+#   NONE      aucune transaction reçue
+#   AMBIGU    deux émetteurs différents dans le même premier bloc (ordre non garanti)
+#   (rien)    indexeur injoignable ou réponse invalide
+primal_from_squid() {
+    local url="$1" wallet="$2" query resp
+    query=$(jq -cn --arg w "$wallet" '{
+        query: "query($w:String!){transfers(condition:{toId:$w},orderBy:BLOCK_NUMBER_ASC,first:2){nodes{fromId blockNumber}}}",
+        variables: {w: $w}
+    }')
+    resp=$(curl -sf --max-time 15 -X POST -H "Content-Type: application/json" \
+        --data "$query" "$url") || { logw "Indexeur injoignable : $url" >&2; return 1; }
+    echo "$resp" | jq -e '.data.transfers.nodes' >/dev/null 2>&1 || {
+        logw "Réponse invalide de $url : $(head -c 200 <<< "$resp")" >&2; return 1; }
+    echo "$resp" | jq -r '.data.transfers.nodes as $n
+        | if ($n | length) == 0 then "NONE"
+          elif ($n | length) > 1 and $n[0].blockNumber == $n[1].blockNumber and $n[0].fromId != $n[1].fromId then "AMBIGU"
+          else $n[0].fromId end'
+}
+
 # ── get_primal_source_squid ───────────────────────────────────────────────────
-# La source primale d'un wallet = fromId de sa toute première transaction reçue
+# La source primale d'un wallet = fromId de sa toute première transaction reçue.
+# N'est retenue (et mise en cache) que si au moins DEUX indexeurs donnent la même
+# réponse (un seul suffit s'il est le seul configuré). Désaccord, indexeur en retard,
+# ambiguïté dans le premier bloc, wallet vide → retour 2, primale « non vérifiée » :
+# l'appelant ne doit JAMAIS en déduire une intrusion.
+# Cache : ~/.zen/tmp/coucou/<wallet>.primal_q (coucou est épargné par la purge de 20h12).
+# L'ancien cache <wallet>.primal (un seul indexeur, ou marqueur posé à l'envoi) n'est plus cru ici.
 get_primal_source_squid() {
     local wallet_pubkey="$1"
     local silent="${2:-false}"
 
-    # Cache pour éviter de requerier une info immuable
-    local cache_file="$HOME/.zen/tmp/coucou/${wallet_pubkey}.primal"
+    local cache_file="$HOME/.zen/tmp/coucou/${wallet_pubkey}.primal_q"
     mkdir -p "$(dirname "$cache_file")"
 
     if [[ -s "$cache_file" ]]; then
         local cached
         cached=$(cat "$cache_file")
-        [[ "$silent" != "true" ]] && log "Primal (cache) pour ${wallet_pubkey} : ${cached:0:12}..."
+        [[ "$silent" != "true" ]] && log "Primal (cache, quorum) pour ${wallet_pubkey} : ${cached:0:12}..." >&2
         echo "$cached"
         return 0
     fi
 
-    [[ "$silent" != "true" ]] && log "Recherche primal pour ${wallet_pubkey}..."
+    [[ "$silent" != "true" ]] && log "Recherche primal pour ${wallet_pubkey} (quorum d'indexeurs)..." >&2
 
-    local query
-    query=$(jq -cn --arg w "$wallet_pubkey" '{
-        query: "query($w:String!){transfers(condition:{toId:$w},orderBy:BLOCK_NUMBER_ASC,first:1){nodes{fromId blockNumber}}}",
-        variables: {w: $w}
-    }')
+    local urls=() answers=() url ans
+    mapfile -t urls < <(primal_squids)
+    for url in "${urls[@]}"; do
+        ans=$(primal_from_squid "$url" "$wallet_pubkey") || continue
+        [[ -n "$ans" ]] && answers+=("$ans")
+        [[ ${#answers[@]} -ge 2 ]] && break
+    done
 
-    local resp primal
-    resp=$(graphql "$query") || return 1
-    primal=$(echo "$resp" | jq -r '.data.transfers.nodes[0].fromId // ""')
-
-    if [[ -n "$primal" && "$primal" != "null" ]]; then
-        echo "$primal" > "$cache_file"
-        [[ "$silent" != "true" ]] && logok "Primal de ${wallet_pubkey} : ${primal}..."
-        echo "$primal"
-        return 0
-    else
-        [[ "$silent" != "true" ]] && logw "Pas de primal trouvé pour ${wallet_pubkey} (wallet sans historique ?)"
-        echo ""
-        return 1
+    local need=2
+    [[ ${#urls[@]} -lt 2 ]] && need=1
+    if [[ ${#answers[@]} -lt $need ]]; then
+        logw "Primale de ${wallet_pubkey:0:12} non vérifiée : ${#answers[@]}/${need} indexeur(s) ont répondu" >&2
+        return 2
     fi
+    local first="${answers[0]}" a
+    for a in "${answers[@]}"; do
+        if [[ "$a" != "$first" ]]; then
+            logw "Primale de ${wallet_pubkey:0:12} non vérifiée : indexeurs en désaccord (${answers[*]})" >&2
+            return 2
+        fi
+    done
+    if [[ "$first" == "NONE" || "$first" == "AMBIGU" ]]; then
+        logw "Primale de ${wallet_pubkey:0:12} non vérifiée : ${first}" >&2
+        return 2
+    fi
+
+    echo "$first" > "$cache_file"
+    [[ "$silent" != "true" ]] && logok "Primal de ${wallet_pubkey} : ${first} (${#answers[@]} indexeurs d'accord)" >&2
+    echo "$first"
+    return 0
+}
+
+# Clé publique SS58 (g1…) d'un fichier dunikey (vide si illisible)
+dunikey_ss58() {
+    local pub
+    pub=$(grep 'pub:' "$1" 2>/dev/null | awk '{print $2}')
+    [[ -z "$pub" ]] && return 1
+    if ! [[ "$pub" =~ ^g1 ]] && [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
+        pub=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$pub") || return 1
+    fi
+    echo "$pub"
+}
+
+# Un portefeuille coopératif (uplanet*.dunikey, NODE) n'est jamais vidé ni détruit.
+is_cooperative_dunikey() {
+    case "$(basename "$1")" in
+        uplanet.dunikey|uplanet.*.dunikey|secret.NODE.dunikey) return 0 ;;
+    esac
+    return 1
 }
 
 # ── get_zencard_owner ─────────────────────────────────────────────────────────
@@ -371,6 +451,39 @@ control_primal_transactions() {
         fi
     fi
 
+    # ── INTRUSION n'est jamais contrôlé : il reçoit par construction des fonds
+    #    extérieurs (sinon il se renverrait ses propres fonds, INTRUSION→INTRUSION).
+    local intrusion_self=""
+    intrusion_self=$(get_intrusion_pubkey 2>/dev/null)
+    if [[ "$(basename "$wallet_dunikey")" == "uplanet.INTRUSION.dunikey" \
+          || ( -n "$intrusion_self" && "$wallet_pubkey" == "$intrusion_self" ) ]]; then
+        log "Wallet INTRUSION : jamais soumis au contrôle primal — rien à faire."
+        return 0
+    fi
+    # Le Ğ1 maître reçoit lui aussi de l'extérieur (achats de ẐEN) : pas de contrôle.
+    if [[ "$wallet_pubkey" == "$master_primal" ]]; then
+        log "Wallet Ğ1 maître : jamais soumis au contrôle primal — rien à faire."
+        return 0
+    fi
+
+    local is_coop=false
+    is_cooperative_dunikey "$wallet_dunikey" && is_coop=true
+
+    # Portefeuilles coopératifs de cette station : un virement de l'un d'eux est
+    # interne à la coopérative (leur propre primale est contrôlée séparément).
+    local -A coop_senders=()
+    local _dk _pk
+    for _dk in "$HOME"/.zen/game/uplanet.dunikey "$HOME"/.zen/game/uplanet.*.dunikey "$HOME"/.zen/game/secret.NODE.dunikey; do
+        [[ -f "$_dk" ]] || continue
+        [[ "$(basename "$_dk")" == "uplanet.INTRUSION.dunikey" ]] && continue
+        _pk=$(dunikey_ss58 "$_dk") && coop_senders["$_pk"]=1
+    done
+    [[ -n "${UPLANETG1PUB:-}" ]] && coop_senders["$UPLANETG1PUB"]=1
+
+    # Mode essai : PRIMAL_DRY_RUN=1 décrit ce qui serait fait, sans aucun virement.
+    local dry_run="${PRIMAL_DRY_RUN:-0}"
+    [[ "$dry_run" == "1" ]] && logw "MODE ESSAI (PRIMAL_DRY_RUN=1) : aucun virement ne sera fait"
+
     # ── Affichage wallet surveillé ───────────────────────────────────────────
     display_wallet_info "WALLET SURVEILLÉ" "$wallet_pubkey" "Wallet sous contrôle primal"
     display_wallet_info "PRIMAL MAÎTRE" "$master_primal" "Source primale attendue pour les tx valides"
@@ -399,6 +512,7 @@ control_primal_transactions() {
 
     # ── Boucle sur les transactions ──────────────────────────────────────────
     local new_intrusions=0
+    local unverified=0
     local incoming_count=0
     local consecutive_failures=0
     local MAX_CONSECUTIVE_FAILURES=3   # Stop after 3 consecutive PAYforSURE failures
@@ -459,13 +573,19 @@ control_primal_transactions() {
             continue
         fi
 
-        # ── Vérification primal via squid ─────────────────────────────────
-        local tx_primal
-        tx_primal=$(get_primal_source_squid "$pubkey" "true")
+        # ── Virement interne à la coopérative ────────────────────────────
+        if [[ -n "${coop_senders[$pubkey]:-}" ]]; then
+            logok "TX valide — émise par un portefeuille coopératif (${pubkey:0:12})"
+            continue
+        fi
 
-        if [[ -z "$tx_primal" || "$tx_primal" == "null" ]]; then
-            logw "Impossible de déterminer le primal de ${pubkey:0:12} — traité comme INTRUSION"
-            tx_primal="UNKNOWN"
+        # ── Vérification primal via squid (quorum d'indexeurs) ────────────
+        local tx_primal
+        if ! tx_primal=$(get_primal_source_squid "$pubkey" "true"); then
+            # Jamais d'intrusion sur une primale non prouvée : on revérifiera au prochain passage.
+            logw "Primale de ${pubkey:0:12} non vérifiée — à revérifier, AUCUN virement (bloc ${block_num}, ${amount} Ğ1)"
+            unverified=$(( unverified + 1 ))
+            continue
         fi
 
         log "  Primal de ${pubkey:0:12} : ${tx_primal:0:12}..."
@@ -514,6 +634,12 @@ control_primal_transactions() {
         echo "   Bloc       : $block_num"
         echo "   ID tx      : $tx_id"
 
+        if [[ "$dry_run" == "1" ]]; then
+            logw "ESSAI : ${amount} Ğ1 seraient renvoyés vers INTRUSION (ID: $tx_id)"
+            new_intrusions=$(( new_intrusions + 1 ))
+            continue
+        fi
+
         # Créer le wallet INTRUSION si nécessaire
         if ! create_intrusion_wallet; then
             loge "Impossible de créer le wallet INTRUSION — abandon"
@@ -534,6 +660,13 @@ control_primal_transactions() {
         wallet_balance=$(get_wallet_balance "$wallet_pubkey")
         if (( $(echo "${wallet_balance:-0} < $amount" | bc -l) )); then
             logw "Solde insuffisant pour rediriger ${amount} Ğ1 (solde: ${wallet_balance} Ğ1, ID: $tx_id)"
+
+            # Un portefeuille coopératif n'est JAMAIS vidé (il garde sa réserve de 1 Ğ1)
+            # ni détruit : le renvoi est reporté et le Capitaine doit trancher.
+            if [[ "$is_coop" == true ]]; then
+                loge "Portefeuille coopératif ${wallet_pubkey:0:12} : solde insuffisant, renvoi REPORTÉ (jamais de vidage) — à examiner par le Capitaine (ID: $tx_id)"
+                continue
+            fi
 
             # Vider TOUT le solde (y compris 1 Ğ1 existential deposit) vers INTRUSION
             local drain_comment="UPLANET:${UPLANETG1PUB:0:8}:DRAIN:${wallet_pubkey:0:8}:INTRUSION"
@@ -601,6 +734,7 @@ control_primal_transactions() {
     echo "🔢 Intrusions exist: $existing_intrusions"
     echo "🆕 Nouvelles intrus: $new_intrusions"
     echo "📊 Total intrusions: $total_intrusions"
+    echo "❔ Non vérifiées   : $unverified (revérifiées au prochain passage, aucun virement)"
     echo
 
     if [[ "$new_intrusions" -gt 0 ]]; then

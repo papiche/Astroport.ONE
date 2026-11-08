@@ -1157,7 +1157,7 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME_ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
     ["UPLANETNAME_IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
-    ["UPLANETNAME_INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+    ## UPLANETNAME_INTRUSION : jamais contrôlé (il reçoit par construction des fonds extérieurs)
     ["UPLANETNAME_CAPITAL"]="$HOME/.zen/game/uplanet.CAPITAL.dunikey"
     ["UPLANETNAME_AMORTISSEMENT"]="$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey"
     ["NODE"]="$HOME/.zen/game/secret.NODE.dunikey"
