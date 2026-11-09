@@ -7,6 +7,8 @@
 # Usage : setup_npm_dynamic.sh <SERVICE_NAME> <LOCAL_PORT> [FORWARD_HOST]
 # Exemple: setup_npm_dynamic.sh ollama 11434
 #          → crée https://ollama.DOMAIN → 127.0.0.1:11434
+#          setup_npm_dynamic.sh astroportd 8090
+#          → crée https://astroportd.DOMAIN → astroportd (WebSockets, délais d'une heure)
 #
 # Licence : AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
@@ -150,8 +152,18 @@ fi
 
 # ── WebSocket (services streaming/API) ───────────────────────────────────────
 WEBSOCKET="false"
+BLOCK_EXPLOITS="true"
+ADVANCED=""
 case "$SERVICE_NAME" in
     ollama|open_webui|webui|nostr|relay|comfyui|dify|duniter*|g1) WEBSOCKET="true" ;;
+    astroportd)
+        # Relai Nostr, WebDAV et API sur un seul hôte : WebSockets, connexions longues (nginx coupe une
+        # connexion muette après 60 s), et pas de filtre « exploits » (il refuse des requêtes légitimes,
+        # par exemple une adresse « =http://… » passée en paramètre).
+        WEBSOCKET="true"
+        BLOCK_EXPLOITS="false"
+        ADVANCED='proxy_read_timeout 1h;\nproxy_send_timeout 1h;'
+        ;;
 esac
 
 # ── Création proxy ────────────────────────────────────────────────────────────
@@ -171,11 +183,11 @@ RESULT=$(curl -s -X POST "$NPM_API/nginx/proxy-hosts" \
         \"http2_support\": true,
         \"hsts_enabled\": false,
         \"hsts_subdomains\": false,
-        \"block_exploits\": true,
+        \"block_exploits\": ${BLOCK_EXPLOITS},
         \"allow_websocket_upgrade\": ${WEBSOCKET},
         \"meta\": ${META},
         \"locations\": [],
-        \"advanced_config\": \"\"
+        \"advanced_config\": \"${ADVANCED}\"
     }")
 
 PROXY_ID=$(echo "$RESULT" | \

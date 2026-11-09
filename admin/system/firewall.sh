@@ -25,6 +25,8 @@
 #  │ 51820   │ udp      │ WireGuard HUB (VPN Constellation)    │
 #  │ 4002-4100│ tcp+udp │ IPFS Satellites (Redirection VPN)    │
 #  │ 30333   │ tcp+udp  │ Duniter v2s P2P (mirroir G1 — optionnel) │
+#  │ 4101-4110│ tcp     │ astroportd maillage P2P (1 port / UPlanet) │
+#  │ 8090    │ udp      │ astroportd visio (STUN + relais d'appel) │
 #  └─────────┴──────────┴────────────────────────────────────────┘
 #
 #  PORTS LOCALHOST UNIQUEMENT (bloqués depuis l'extérieur)
@@ -34,6 +36,7 @@
 #  │ 8080    │ tcp      │ IPFS Gateway (via NPM)                │
 #  │ 12345   │ tcp      │ Astroport API (via NPM)               │
 #  │ 54321   │ tcp      │ UPassport API (via NPM)               │
+#  │ 8090    │ tcp      │ astroportd interface (via NPM, LAN)   │
 #  │ 81      │ tcp      │ NPM Admin UI (localhost)              │
 #  │ 1883    │ tcp      │ MQTT Mosquitto (localhost)            │
 #  │ 8111    │ tcp      │ Icecast2 Live Broadcasting (SoundSpot) │
@@ -151,6 +154,14 @@ fire_on() {
         echo "  ℹ️  30333     Duniter v2s P2P (non configuré — ignoré)"
     fi
 
+    ## astroportd : maillage P2P (indispensable à une station relais de la constellation ; sans lui, deux
+    ## voisines du réseau local qui ont toutes deux ce pare-feu ne se joignent pas) et visio en UDP (NPM ne
+    ## transmet pas l'UDP). L'interface web (8090/tcp) passe par NPM : réseau local et Docker seulement.
+    sudo ufw allow 4101:4110/tcp comment 'astroportd maillage P2P'
+    sudo ufw allow 8090/udp      comment 'astroportd visio STUN/TURN'
+    echo "  ✅ 4101-4110/tcp astroportd maillage P2P"
+    echo "  ✅ 8090/udp  astroportd visio (STUN + relais d'appel)"
+
     echo "
 ── PRIORITÉ 1 : ALLOWS (avant les DENY pour éviter le masquage) ───"
 
@@ -169,6 +180,7 @@ fire_on() {
         sudo ufw allow from "${LAN_RANGE}" to any port 12345 proto tcp comment "LAN→Astroport" > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 8080  proto tcp comment "LAN→IPFS GW"   > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 54321 proto tcp comment "LAN→UPassport"  > /dev/null 2>&1
+        sudo ufw allow from "${LAN_RANGE}" to any port 8090  proto tcp comment "LAN→astroportd (NPM d'une autre machine)" > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 7777  proto tcp comment "LAN→NOSTR"     > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 81    proto tcp comment "LAN→NPM Admin" > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 11434 proto tcp comment "LAN/Docker→Ollama" > /dev/null 2>&1
@@ -189,6 +201,7 @@ fire_on() {
         "8080:IPFS Gateway (via NPM uniquement)" \
         "12345:Astroport API (via NPM uniquement)" \
         "54321:UPassport API (via NPM uniquement)" \
+        "8090:astroportd interface (via NPM uniquement)" \
         "81:NPM Admin UI (LAN autorisé, Internet bloqué)" \
         "1883:MQTT Mosquitto" \
         "4416:bgutil PO token provider (Docker)" \
@@ -247,7 +260,7 @@ fire_status() {
     sudo ufw status verbose
     echo ""
     echo "Ports d'écoute actifs :"
-    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4002|4003|5001|51820|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|81|1883|9090|9615|9944|30333|8111|1704|1780) " \
+    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4002|4003|5001|51820|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|8090|4101|81|1883|9090|9615|9944|30333|8111|1704|1780) " \
         | awk '{print "  " $1 " " $4 " " $5}' | sort -t: -k2 -n
     echo "########################################################################"
 }
