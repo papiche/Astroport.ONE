@@ -82,7 +82,7 @@ if [[ ! -f "$INSTALL_FLAG" ]]; then
         export NODE_DOMAIN='${ASTRO_DOMAIN}'
         export INSTALL_PROFILE='${INSTALL_PROFILE}'
         ## Lancer install.sh de manière non-interactive
-        bash ${ASTRO_DIR}/install.sh \
+        bash ${ASTRO_DIR}/install.sh --legacy \
             '${CAPTAIN_EMAIL}' \
             '${ASTRO_DOMAIN}' \
             '' \

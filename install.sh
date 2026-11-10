@@ -27,6 +27,8 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo ""
     echo "Options :"
     echo "  --help, -h       Affiche cette aide et quitte."
+    echo "  --astroportd     Installe astroportd (recommandé) et clone ~/.zen/Astroport.ONE : ni Docker, ni UPassport, ni strfry."
+    echo "  --legacy         Installation historique complète (IPFS, UPassport, strfry, Docker…), à demander : INSTALL_MODE=astroportd|legacy."
     echo ""
     echo "Paramètres positionnels (optionnels) :"
     echo "  1. EMAIL         Email du Capitaine (ex: alice@mail.com)."
@@ -49,6 +51,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "  CAPTAIN_EMAIL, NODE_DOMAIN, CAPTAIN_EMAIL_DOMAIN, INSTALL_PROFILE"
     echo "  INSTALL_OLLAMA=yes|no    → Ollama (si GPU détecté)"
     echo "  INSTALL_COMFYUI=yes|no   → ComfyUI (si GPU détecté ; COMFYUI_VIDEO_MODELS=yes pour les modèles vidéo)"
+    echo "  INSTALL_ASTROPORTD       → y/n : installer astroportd (cœur Rust) en fin d'installation (sinon question)"
     echo "  INSTALL_AI_SERVICES      → Liste des services IA à installer (ex: open-webui,qdrant) (si profil ai-company)"
     echo ""
     echo "Options supplémentaires :"
@@ -75,11 +78,7 @@ done
 ##  Lancement "root" interdit...
 ########################################################################
 [ $(id -u) -eq 0 ] && echo "LANCEMENT root INTERDIT. " && exit 1
-[[ ! $(groups | grep -w sudo) && ! $(groups | grep -w wheel) ]] \
-    && echo "AUCUN GROUPE sudo/wheel — corrigez puis relancez :" \
-    && echo "  su - root -c \"usermod -aG sudo $USER\"" \
-    && echo "  (Arch/SteamOS : usermod -aG wheel $USER)" \
-    && exit 1
+## (le groupe sudo/wheel n'est exigé que par l'installation historique : voir plus bas ; astroportd n'en a pas besoin)
 
 ########################################################################
 ## STEAMOS : vérification du mode Bureau (Gaming Mode incompatible)
@@ -94,6 +93,70 @@ if grep -q "SteamOS" /etc/os-release 2>/dev/null; then
         exit 1
     fi
 fi
+
+########################################################################
+## MODE D'INSTALLATION : astroportd (recommandé) ou installation historique
+##   astroportd : le cœur Rust (relai Nostr, uCloud WebDAV, P2P, Ẑen, web) + le code d'Astroport.ONE cloné dans
+##                ~/.zen/Astroport.ONE (ses outils et scripts, dont ce qui assiste astroportd pour BRO).
+##                Rien d'autre : ni Docker, ni UPassport, ni strfry, ni IPFS/kubo, ni profils.
+##   legacy     : l'installation complète d'avant (IPFS, UPassport, strfry, Docker, profils…), conservée à l'identique.
+##   Choix : --astroportd | --legacy, ou INSTALL_MODE=astroportd|legacy. Sans choix, on demande (défaut : astroportd) ;
+##   sans terminal ou en -y, c'est astroportd aussi : une station historique qui se met à jour par cron doit passer --legacy
+##   (ou INSTALL_MODE=legacy). Aucun droit sudo n'est demandé pour astroportd.
+########################################################################
+_INSTALL_MODE="${INSTALL_MODE:-}"
+for _arg in "$@"; do
+    case "$_arg" in --astroportd) _INSTALL_MODE=astroportd ;; --legacy) _INSTALL_MODE=legacy ;; esac
+done
+## --astroportd / --legacy ne sont pas des paramètres positionnels (EMAIL, DOMAINE…) : on les retire.
+_ARGS=(); for _arg in "$@"; do [[ "$_arg" == "--astroportd" || "$_arg" == "--legacy" ]] || _ARGS+=("$_arg"); done
+set -- ${_ARGS[@]+"${_ARGS[@]}"}
+if [[ -z "$_INSTALL_MODE" && "$_SILENT" == "true" ]] || [[ -z "$_INSTALL_MODE" && ! -t 0 ]]; then
+    _INSTALL_MODE=astroportd   # défaut silencieux (cron, CI, -y) : astroportd ; l'historique se demande (--legacy)
+elif [[ -z "$_INSTALL_MODE" ]]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  🚀 INSTALLATION                                              ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║  1) astroportd (recommandé) : un seul programme Rust, plus   ║"
+    echo "║     le code d'Astroport.ONE cloné dans ~/.zen/Astroport.ONE  ║"
+    echo "║  2) installation historique : IPFS, UPassport, strfry,       ║"
+    echo "║     Docker… (stations existantes)                            ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    read -r -p "Votre choix [1] : " _mode_ans
+    case "${_mode_ans:-1}" in 2) _INSTALL_MODE=legacy ;; *) _INSTALL_MODE=astroportd ;; esac
+fi
+if [[ "$_INSTALL_MODE" == "astroportd" ]]; then
+    command -v git >/dev/null 2>&1 || { echo "git est nécessaire : sudo apt install git"; exit 1; }
+    command -v curl >/dev/null 2>&1 || { echo "curl est nécessaire : sudo apt install curl"; exit 1; }
+    _AO_DIR="$HOME/.zen/Astroport.ONE"
+    mkdir -p "$HOME/.zen"
+    if [[ -d "$_AO_DIR/.git" ]]; then
+        echo "▶ Astroport.ONE déjà cloné : mise à jour (sans toucher à vos modifications)"
+        git -C "$_AO_DIR" pull --ff-only --quiet 2>/dev/null \
+            || echo "ℹ️  Mise à jour impossible (modifications locales ?) : version présente conservée."
+    elif [[ -e "$_AO_DIR" ]]; then
+        echo "ℹ️  $_AO_DIR existe déjà (lien ou dossier de travail) : laissé tel quel."
+    else
+        echo "▶ Clonage d'Astroport.ONE dans $_AO_DIR"
+        git clone --depth 1 https://github.com/papiche/Astroport.ONE.git "$_AO_DIR" \
+            || { echo "✘ git clone impossible"; exit 1; }
+    fi
+    chmod +x "$_AO_DIR"/*.sh "$_AO_DIR"/tools/*.sh 2>/dev/null || true
+    echo "  ✔ Outils d'Astroport.ONE : $_AO_DIR  (PATH : export PATH=\"$_AO_DIR/tools:\$PATH\")"
+    echo ""
+    echo "▶ Installation d'astroportd"
+    curl -fsSL --proto '=https' --tlsv1.2 "https://raw.githubusercontent.com/papiche/astroportd/main/install.sh" | bash \
+        || { echo "⚠️  astroportd : installation interrompue — relancez : curl -fsSL https://raw.githubusercontent.com/papiche/astroportd/main/install.sh | bash"; exit 1; }
+    exit 0
+fi
+
+## Installation historique seulement : sudo/wheel est nécessaire (paquets, services, pare-feu).
+[[ ! $(groups | grep -w sudo) && ! $(groups | grep -w wheel) ]] \
+    && echo "AUCUN GROUPE sudo/wheel — corrigez puis relancez :" \
+    && echo "  su - root -c \"usermod -aG sudo $USER\"" \
+    && echo "  (Arch/SteamOS : usermod -aG wheel $USER)" \
+    && exit 1
 
 ################################################################## PARAMÈTRES
 ## $1 = Email Capitaine (ou "" pour auto)
@@ -2039,6 +2102,42 @@ fi
 
 echo "  ✅ Redémarrage terminé"
 echo "Pour les boitiers Argon : curl https://download.argon40.com/argon1.sh | bash"
+########################################################################
+## ASTROPORTD — le cœur Rust, qui s'appuie sur le code d'Astroport.ONE pour BRO (proposition)
+##   INSTALL_ASTROPORTD=y|n  répond d'avance (installation non interactive : rien n'est installé sans « y »)
+########################################################################
+_ASTROPORTD_URL="https://raw.githubusercontent.com/papiche/astroportd/main/install.sh"
+_ASTROPORTD_BIN="$HOME/.local/bin/astroportd"
+_ap_choice="${INSTALL_ASTROPORTD:-}"
+if [[ -z "$_ap_choice" ]]; then
+    if [[ -t 0 ]]; then
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  🦀 ASTROPORTD — un seul programme Rust                       ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        echo "║  Relai Nostr, uCloud chiffré (WebDAV), maillage P2P, Ẑen et   ║"
+        echo "║  interface web, en un seul programme Rust. Astroport.ONE reste║"
+        echo "║  installé : son code assiste astroportd pour utiliser BRO.    ║"
+        echo "║  Votre identité Y-Level (secret.june, clé SSH) est reconnue : ║"
+        echo "║  elle n'est jamais redérivée.                                 ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        if [[ -x "$_ASTROPORTD_BIN" ]]; then
+            read -r -p "astroportd $("$_ASTROPORTD_BIN" --version 2>/dev/null | awk '{print $2}') est déjà installé. Le mettre à jour ? [y/N] " _ap_choice
+        else
+            read -r -p "Installer astroportd maintenant ? [y/N] " _ap_choice
+        fi
+    else
+        echo "ℹ️  astroportd : curl -fsSL $_ASTROPORTD_URL | bash   (ou INSTALL_ASTROPORTD=y)"
+    fi
+fi
+if [[ "${_ap_choice}" == "y" || "${_ap_choice}" == "Y" ]]; then
+    echo "⏳ Installation d'astroportd..."
+    curl -fsSL --proto '=https' --tlsv1.2 "$_ASTROPORTD_URL" | bash \
+        || echo "⚠️  astroportd : installation interrompue — relancez : curl -fsSL $_ASTROPORTD_URL | bash"
+elif [[ -n "${_ap_choice}" ]]; then
+    echo "→ astroportd ignoré. Quand vous voulez : curl -fsSL $_ASTROPORTD_URL | bash"
+fi
+
 ########################################################################
 ## REVERROUILLAGE STEAMOS (si applicable)
 ########################################################################

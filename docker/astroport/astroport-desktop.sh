@@ -169,7 +169,7 @@ first_boot_install() {
 
     # Run install.sh (handles all dependencies, IPFS, Python, etc.)
     cd "$ASTRO"
-    bash ./install.sh 2>&1 | tee "$HOME/.zen/tmp/install-desktop.log" || {
+    bash ./install.sh --legacy 2>&1 | tee "$HOME/.zen/tmp/install-desktop.log" || {
         echo ">>> WARNING: install.sh had errors (expected for systemd in Docker)"
         echo ">>> Check ~/.zen/tmp/install-desktop.log"
     }

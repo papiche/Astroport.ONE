@@ -119,6 +119,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     ## Lancer install.sh de manière non-interactive
     bash <(curl -sL https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.sh) \
+      --legacy \
       "${CAPTAIN_EMAIL}" \
       "${NODE_DOMAIN}" \
       "" \

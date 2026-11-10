@@ -12,6 +12,8 @@ Licensed under AGPL-3.0. Author: Fred (support@qo-op.com).
 
 ### Bare Metal Installation
 ```bash
+./install.sh --astroportd                # Recommandé : installe astroportd (cœur Rust) + clone ~/.zen/Astroport.ONE ; ni Docker, ni UPassport, ni strfry
+./install.sh --legacy                    # Installation historique complète (INSTALL_MODE=astroportd|legacy ; défaut astroportd, y compris sans terminal ou en -y : les cron des stations historiques passent --legacy ; astroportd n'exige pas sudo)
 ./install.sh                          # Standard : IPFS + NOSTR + G1 (interactif)
 ./install.sh "" "" "" nextcloud       # Standard + NextCloud AIO (cloud privé 128Go)
 ./install.sh "" "" "" ai-company      # Standard + Stack IA (Ollama, Open WebUI, Qdrant)
