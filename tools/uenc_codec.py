@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
 """
-uenc_codec.py — Codec partagé pour le format de chiffrement UENC (AES-256-GCM).
+uenc_codec.py — Codec partagé pour le format de chiffrement UENC v2 (STREAM).
 
-Format binaire : MAGIC(4="UENC") + VERSION(1) + ENC_TYPE(1) + IV(12) + CIPHERTEXT+TAG
+Format binaire (identique à astroportd, crates/astro-crypto/src/uenc/v2.rs) :
+
+    en-tête de 14 octets : MAGIC(4="UENC") + VERSION(1=2) + ENC_TYPE(1) + CHUNK_LOG2(1) + PRÉFIXE DE NONCE(7)
+    puis des blocs de 2^CHUNK_LOG2 octets de clair (64 Kio à l'écriture) chiffrés + TAG(16).
+
+Chaque bloc est scellé avec : nonce = préfixe(7) + indice du bloc (u32 big-endian) + drapeau « dernier »(1 octet),
+et l'en-tête complet de 14 octets en données associées (AAD). Le drapeau « dernier » interdit la troncature.
+ENC_TYPE : 0x01 = AES-256-GCM (écriture), 0x02 = ChaCha20-Poly1305 (lecture seulement ici).
+
+L'ancien format v1 (monolithique, IV de 12 octets) n'est PLUS lu ni écrit : la v1.0 d'astroportd l'a retiré.
 
 Module unique remplaçant les implémentations dupliquées de
 UPassport/routers/media_upload.py (_encrypt_aes256gcm) et du heredoc Python
@@ -20,15 +29,20 @@ même convention que --nsec-stdin ailleurs dans ce dépôt) :
 La première ligne de stdin est la clé hex, le reste (binaire) est la donnée.
 """
 
+import os
 import sys
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
 UENC_MAGIC = b"UENC"
-UENC_VERSION = 0x01
+UENC_VERSION = 0x02
 UENC_TYPE_AES256GCM = 0x01
-UENC_HEADER_LEN = 6   # MAGIC(4) + VERSION(1) + ENC_TYPE(1)
-UENC_IV_LEN = 12
+UENC_TYPE_CHACHA20POLY1305 = 0x02
+UENC_HEADER_LEN = 14      # MAGIC(4) + VERSION(1) + ENC_TYPE(1) + CHUNK_LOG2(1) + PRÉFIXE(7)
+UENC_PREFIX_LEN = 7
+UENC_TAG_LEN = 16
+UENC_CHUNK_LOG2 = 16      # blocs de 64 Kio en écriture
+_MIN_CHUNK_LOG2, _MAX_CHUNK_LOG2 = 12, 24
 
 
 def _key_bytes(key_hex: str) -> bytes:
@@ -38,33 +52,54 @@ def _key_bytes(key_hex: str) -> bytes:
     return key
 
 
-def encrypt_aes256gcm(data: bytes, key_hex: str) -> tuple[bytes, str]:
-    """Chiffre `data` avec AES-256-GCM. Retourne (payload_uenc, iv_hex)."""
-    import os
+def _nonce(prefix: bytes, index: int, last: bool) -> bytes:
+    return prefix + index.to_bytes(4, "big") + (b"\x01" if last else b"\x00")
 
-    key = _key_bytes(key_hex)
-    iv = os.urandom(UENC_IV_LEN)
-    ciphertext = AESGCM(key).encrypt(iv, data, None)  # ciphertext + 16 bytes tag
-    payload = UENC_MAGIC + bytes([UENC_VERSION, UENC_TYPE_AES256GCM]) + iv + ciphertext
-    return payload, iv.hex()
+
+def encrypt_aes256gcm(data: bytes, key_hex: str) -> tuple[bytes, str]:
+    """Chiffre `data` en UENC v2 (AES-256-GCM, blocs de 64 Kio). Retourne
+    (payload_uenc, prefixe_hex) : le préfixe de nonce (7 octets) tient lieu d'« IV » informatif."""
+    aead = AESGCM(_key_bytes(key_hex))
+    prefix = os.urandom(UENC_PREFIX_LEN)
+    header = UENC_MAGIC + bytes([UENC_VERSION, UENC_TYPE_AES256GCM, UENC_CHUNK_LOG2]) + prefix
+    cs = 1 << UENC_CHUNK_LOG2
+    # Au moins un bloc (éventuellement vide) ; le dernier porte le drapeau « last ».
+    chunks = [data[o:o + cs] for o in range(0, len(data), cs)] or [b""]
+    out = [header]
+    for index, chunk in enumerate(chunks):
+        out.append(aead.encrypt(_nonce(prefix, index, index == len(chunks) - 1), chunk, header))
+    return b"".join(out), prefix.hex()
 
 
 def decrypt_aes256gcm(payload: bytes, key_hex: str) -> bytes:
-    """Déchiffre un payload UENC. Lève ValueError (magic/version invalide)
-    ou cryptography.exceptions.InvalidTag (clé fausse / données altérées)."""
-    if len(payload) < UENC_HEADER_LEN + UENC_IV_LEN:
+    """Déchiffre un payload UENC v2. Lève ValueError (magic/version/format invalide)
+    ou cryptography.exceptions.InvalidTag (clé fausse / données altérées ou tronquées)."""
+    if len(payload) < UENC_HEADER_LEN + UENC_TAG_LEN:
         raise ValueError("Payload UENC trop court")
     if payload[:4] != UENC_MAGIC:
         raise ValueError(f"Magic invalide: {payload[:4]!r} (attendu {UENC_MAGIC!r})")
-    version, enc_type = payload[4], payload[5]
+    version, enc_type, chunk_log2 = payload[4], payload[5], payload[6]
     if version != UENC_VERSION:
-        raise ValueError(f"Version UENC non supportée: {version}")
-    if enc_type != UENC_TYPE_AES256GCM:
-        raise ValueError(f"Type de chiffrement non supporté: {enc_type}")
-    iv = payload[UENC_HEADER_LEN:UENC_HEADER_LEN + UENC_IV_LEN]
-    ciphertext = payload[UENC_HEADER_LEN + UENC_IV_LEN:]
+        raise ValueError(f"Version UENC non supportée: {version} (seule la v2 est lue)")
+    if not _MIN_CHUNK_LOG2 <= chunk_log2 <= _MAX_CHUNK_LOG2:
+        raise ValueError(f"Taille de bloc UENC invalide: 2^{chunk_log2}")
     key = _key_bytes(key_hex)
-    return AESGCM(key).decrypt(iv, ciphertext, None)
+    if enc_type == UENC_TYPE_AES256GCM:
+        aead = AESGCM(key)
+    elif enc_type == UENC_TYPE_CHACHA20POLY1305:
+        aead = ChaCha20Poly1305(key)
+    else:
+        raise ValueError(f"Type de chiffrement non supporté: {enc_type}")
+    header, prefix = payload[:UENC_HEADER_LEN], payload[7:UENC_HEADER_LEN]
+    ct_chunk = (1 << chunk_log2) + UENC_TAG_LEN
+    body = payload[UENC_HEADER_LEN:]
+    chunks = [body[o:o + ct_chunk] for o in range(0, len(body), ct_chunk)]
+    if not chunks or len(chunks[-1]) < UENC_TAG_LEN:
+        raise ValueError("Payload UENC tronqué")
+    return b"".join(
+        aead.decrypt(_nonce(prefix, index, index == len(chunks) - 1), chunk, header)
+        for index, chunk in enumerate(chunks)
+    )
 
 
 def _cli() -> int:
